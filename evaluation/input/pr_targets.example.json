@@ -1,0 +1,22 @@
+[
+  {
+    "repository": "rails/rails",
+    "pr_number": 50000
+  },
+  {
+    "repository": "spring-projects/spring-boot",
+    "pr_number": 40000
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 29000
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 10000
+  },
+  {
+    "repository": "sveltejs/svelte",
+    "pr_number": 15000
+  }
+]

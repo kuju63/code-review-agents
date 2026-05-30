@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gold_pr_item.schema.json",
+  "title": "GoldPrItem",
+  "type": "object",
+  "required": [
+    "id",
+    "repository",
+    "pr_number",
+    "title",
+    "labels",
+    "file_changes",
+    "human_findings"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "repository": {
+      "type": "string",
+      "description": "owner/repo"
+    },
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "file_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "patch"],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "patch": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "human_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "path", "line", "summary", "source"],
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "correctness",
+              "security",
+              "performance",
+              "maintainability",
+              "style",
+              "unknown"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "unknown"]
+          },
+          "path": {
+            "type": "string"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "summary": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "URL to original review comment"
+          }
+        }
+      }
+    }
+  }
+}

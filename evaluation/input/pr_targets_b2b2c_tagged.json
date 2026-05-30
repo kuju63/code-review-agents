@@ -1,0 +1,242 @@
+[
+  {
+    "repository": "rails/rails",
+    "pr_number": 57110,
+    "stack": "rails",
+    "priority_themes": ["data_access", "performance", "stability"],
+    "risk_priority": "medium",
+    "selection_note": "DB introspection query optimization"
+  },
+  {
+    "repository": "rails/rails",
+    "pr_number": 57490,
+    "stack": "rails",
+    "priority_themes": ["input_validation", "security", "api_boundary"],
+    "risk_priority": "high",
+    "selection_note": "parameter filtering behavior"
+  },
+  {
+    "repository": "rails/rails",
+    "pr_number": 48128,
+    "stack": "rails",
+    "priority_themes": ["business_logic", "consistency"],
+    "risk_priority": "medium",
+    "selection_note": "counter update API behavior"
+  },
+  {
+    "repository": "rails/rails",
+    "pr_number": 56340,
+    "stack": "rails",
+    "priority_themes": ["storage", "operations"],
+    "risk_priority": "low",
+    "selection_note": "active storage guide/docs context"
+  },
+  {
+    "repository": "rails/rails",
+    "pr_number": 55638,
+    "stack": "rails",
+    "priority_themes": ["api_boundary", "maintainability"],
+    "risk_priority": "low",
+    "selection_note": "docs wording correction"
+  },
+  {
+    "repository": "rails/rails",
+    "pr_number": 55156,
+    "stack": "rails",
+    "priority_themes": ["file_handling", "stability"],
+    "risk_priority": "medium",
+    "selection_note": "attach blob crash fix"
+  },
+  {
+    "repository": "spring-projects/spring-boot",
+    "pr_number": 50456,
+    "stack": "spring-boot",
+    "priority_themes": ["null_safety", "stability"],
+    "risk_priority": "medium",
+    "selection_note": "null check for assert provider"
+  },
+  {
+    "repository": "spring-projects/spring-boot",
+    "pr_number": 50473,
+    "stack": "spring-boot",
+    "priority_themes": ["session", "security", "configuration"],
+    "risk_priority": "high",
+    "selection_note": "session URI config support"
+  },
+  {
+    "repository": "spring-projects/spring-boot",
+    "pr_number": 50446,
+    "stack": "spring-boot",
+    "priority_themes": ["testability", "maintainability"],
+    "risk_priority": "low",
+    "selection_note": "application context assert API"
+  },
+  {
+    "repository": "spring-projects/spring-boot",
+    "pr_number": 50383,
+    "stack": "spring-boot",
+    "priority_themes": ["dependency", "operations"],
+    "risk_priority": "medium",
+    "selection_note": "remove legacy compatibility code"
+  },
+  {
+    "repository": "spring-projects/spring-boot",
+    "pr_number": 50419,
+    "stack": "spring-boot",
+    "priority_themes": ["code_quality", "maintainability"],
+    "risk_priority": "low",
+    "selection_note": "pattern matching polish"
+  },
+  {
+    "repository": "spring-projects/spring-boot",
+    "pr_number": 50273,
+    "stack": "spring-boot",
+    "priority_themes": ["aop", "data_exposure", "security"],
+    "risk_priority": "high",
+    "selection_note": "endpoint exposing internals"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 36558,
+    "stack": "react",
+    "priority_themes": ["supply_chain", "ci_cd", "security"],
+    "risk_priority": "high",
+    "selection_note": "artifact attestation"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 36555,
+    "stack": "react",
+    "priority_themes": ["release", "operations"],
+    "risk_priority": "medium",
+    "selection_note": "CI enablement on maintenance branch"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 36516,
+    "stack": "react",
+    "priority_themes": ["streaming", "rendering", "correctness"],
+    "risk_priority": "high",
+    "selection_note": "flight stream backpressure fix"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 36482,
+    "stack": "react",
+    "priority_themes": ["performance", "devtools"],
+    "risk_priority": "medium",
+    "selection_note": "overhead reduction"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 35890,
+    "stack": "react",
+    "priority_themes": ["ssr", "asset_loading", "correctness"],
+    "risk_priority": "high",
+    "selection_note": "font preload duplication case"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 35568,
+    "stack": "react",
+    "priority_themes": ["documentation", "maintainability"],
+    "risk_priority": "low",
+    "selection_note": "docs terminology update"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 14889,
+    "stack": "vue",
+    "priority_themes": ["runtime", "rendering", "correctness"],
+    "risk_priority": "high",
+    "selection_note": "component v-for remove behavior"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 14888,
+    "stack": "vue",
+    "priority_themes": ["key_management", "rendering"],
+    "risk_priority": "high",
+    "selection_note": "v-for key preservation"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 14821,
+    "stack": "vue",
+    "priority_themes": ["ssr", "performance"],
+    "risk_priority": "medium",
+    "selection_note": "iterable materialization optimization"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 14877,
+    "stack": "vue",
+    "priority_themes": ["lifecycle", "correctness"],
+    "risk_priority": "medium",
+    "selection_note": "teleport unmount condition"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 14865,
+    "stack": "vue",
+    "priority_themes": ["transition", "keep_alive", "correctness"],
+    "risk_priority": "medium",
+    "selection_note": "persisted transition hooks"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 14861,
+    "stack": "vue",
+    "priority_themes": ["compiler", "memoization", "correctness"],
+    "risk_priority": "medium",
+    "selection_note": "v-for key processing"
+  },
+  {
+    "repository": "sveltejs/svelte",
+    "pr_number": 18278,
+    "stack": "svelte",
+    "priority_themes": ["performance", "runtime"],
+    "risk_priority": "medium",
+    "selection_note": "set membership optimization"
+  },
+  {
+    "repository": "sveltejs/svelte",
+    "pr_number": 18233,
+    "stack": "svelte",
+    "priority_themes": ["compiler", "correctness"],
+    "risk_priority": "medium",
+    "selection_note": "consecutive if optimization"
+  },
+  {
+    "repository": "sveltejs/svelte",
+    "pr_number": 18255,
+    "stack": "svelte",
+    "priority_themes": ["release", "operations"],
+    "risk_priority": "low",
+    "selection_note": "version package update"
+  },
+  {
+    "repository": "sveltejs/svelte",
+    "pr_number": 18311,
+    "stack": "svelte",
+    "priority_themes": ["sandbox", "stability"],
+    "risk_priority": "low",
+    "selection_note": "sandbox printing fix"
+  },
+  {
+    "repository": "sveltejs/svelte",
+    "pr_number": 18307,
+    "stack": "svelte",
+    "priority_themes": ["maintainability", "cleanup"],
+    "risk_priority": "low",
+    "selection_note": "unused property removal"
+  },
+  {
+    "repository": "sveltejs/svelte",
+    "pr_number": 18303,
+    "stack": "svelte",
+    "priority_themes": ["batching", "correctness"],
+    "risk_priority": "medium",
+    "selection_note": "double unlink prevention"
+  }
+]

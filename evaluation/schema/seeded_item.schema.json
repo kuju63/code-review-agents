@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seeded_item.schema.json",
+  "title": "SeededItem",
+  "type": "object",
+  "required": [
+    "id",
+    "base_source",
+    "repository",
+    "pr_number",
+    "file_changes",
+    "must_find"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "base_source": {
+      "type": "string",
+      "description": "Original Gold item id"
+    },
+    "repository": {
+      "type": "string"
+    },
+    "pr_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "file_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "patch"],
+        "properties": {
+          "path": { "type": "string" },
+          "patch": { "type": "string" }
+        }
+      }
+    },
+    "must_find": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "category", "severity", "path", "line", "summary"],
+        "properties": {
+          "rule_id": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": ["security", "performance", "correctness", "maintainability"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"]
+          },
+          "path": { "type": "string" },
+          "line": { "type": "integer", "minimum": 1 },
+          "summary": { "type": "string" }
+        }
+      }
+    }
+  }
+}
