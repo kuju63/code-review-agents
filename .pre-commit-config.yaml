@@ -19,7 +19,8 @@ repos:
     rev: v0.9.37
     hooks:
       - id: pymarkdown
-        args:
+        args: 
           - --config=.pymarkdown.json
           - scan
         files: \.md$
+
