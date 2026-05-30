@@ -1,0 +1,12 @@
+{
+  "extensions": {
+    "markdown-tables": {
+      "enabled" : true
+    }
+  },
+  "plugins": {
+    "MD013": {
+      "enabled": false
+    }
+  }
+}
