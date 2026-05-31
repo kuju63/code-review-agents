@@ -262,7 +262,6 @@ $RECYCLE.BIN/
 __MACOSX/
 .AppleDouble
 .LSOverride
-Icon[]
 
 # Resource forks
 ._*
@@ -283,7 +282,6 @@ Icon[]
 .file
 .disk_label*
 lost+found
-.HFS+ Private Directory Data[]
 
 # Directories potentially created on remote AFP share
 .AppleDB
@@ -330,3 +328,4 @@ tmbootpicker.efi
 
 # Log files created by default by the nohup command
 nohup.out
+junit.xml
