@@ -38,13 +38,13 @@ jobs:
         run: uv run pytest --cov=code_review_agent --cov-branch --cov-report=xml --cov-fail-under=75 --junitxml=junit.xml -o junit_family=legacy
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           use_oidc: true
           report_type: test_results
       - name: Upload coverage reports to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           use_oidc: true
           report_type: coverage
