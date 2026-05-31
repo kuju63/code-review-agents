@@ -24,7 +24,9 @@ class FileChange(BaseModel):
     """
 
     filePath: str = Field(..., description="Relative path of the changed file")
-    patch: str = Field(..., description="Unified diff patch for the file")
+    patch: str | None = Field(
+        default=None, description="Unified diff patch for the file"
+    )
 
 
 class PRInfo(BaseModel):
@@ -40,7 +42,7 @@ class PRInfo(BaseModel):
 
     title: str = Field(..., description="PR title")
     pr_number: int = Field(..., description="PR number")
-    body: str = Field(..., description="PR body description")
+    body: str | None = Field(default=None, description="PR body description")
     labels: list[str] = Field(default_factory=list, description="PR labels")
     file_changes: list[FileChange] = Field(
         default_factory=list,
@@ -55,8 +57,17 @@ class PRInfoResult(BaseModel):
         repository_info: Owner and repository name.
         project_summary: Summary generated from the repository README.
         pr_info: PR metadata and file changes.
+        dependency_files: Paths of dependency manifest files changed in
+            the PR (e.g. ``package.json``, ``pyproject.toml``).
     """
 
     repository_info: RepositoryInfo = Field(..., description="Repository information")
     project_summary: str = Field(..., description="Project summary from README")
     pr_info: PRInfo = Field(..., description="PR information and file changes")
+    dependency_files: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Paths of dependency manifest files changed in the PR "
+            "(e.g. package.json, pyproject.toml)"
+        ),
+    )

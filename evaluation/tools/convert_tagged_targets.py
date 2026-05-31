@@ -101,7 +101,9 @@ def select_balanced(rows: list[TaggedTarget], limit: int) -> list[TaggedTarget]:
 
     # Prioritize higher risk first within each stack.
     for stack in by_stack:
-        by_stack[stack].sort(key=lambda r: RISK_SCORE.get(r.risk_priority, 1), reverse=True)
+        by_stack[stack].sort(
+            key=lambda r: RISK_SCORE.get(r.risk_priority, 1), reverse=True
+        )
 
     stacks = sorted(by_stack.keys())
     selected: list[TaggedTarget] = []
@@ -134,10 +136,17 @@ def summarize(rows: list[TaggedTarget]) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Convert tagged PR targets into execution target JSON")
+    parser = argparse.ArgumentParser(
+        description="Convert tagged PR targets into execution target JSON"
+    )
     parser.add_argument("--input", required=True, help="Tagged JSON input path")
     parser.add_argument("--output", required=True, help="Execution JSON output path")
-    parser.add_argument("--limit", type=int, default=0, help="Maximum number of targets (0 means no limit)")
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=0,
+        help="Maximum number of targets (0 means no limit)",
+    )
     parser.add_argument("--stacks", default="", help="Comma-separated stack filter")
     parser.add_argument(
         "--min-risk",
@@ -150,10 +159,16 @@ def main() -> int:
         default="",
         help="Comma-separated themes; include row if any theme matches",
     )
-    parser.add_argument("--balanced", action="store_true", help="Pick targets in round-robin by stack")
-    parser.add_argument("--shuffle", action="store_true", help="Shuffle before limiting")
+    parser.add_argument(
+        "--balanced", action="store_true", help="Pick targets in round-robin by stack"
+    )
+    parser.add_argument(
+        "--shuffle", action="store_true", help="Shuffle before limiting"
+    )
     parser.add_argument("--seed", type=int, default=42, help="Random seed for shuffle")
-    parser.add_argument("--print-summary", action="store_true", help="Print selection summary")
+    parser.add_argument(
+        "--print-summary", action="store_true", help="Print selection summary"
+    )
     args = parser.parse_args()
 
     rows = load_tagged(args.input)

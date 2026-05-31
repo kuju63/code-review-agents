@@ -78,7 +78,11 @@ def match_findings(gold: list[Finding], pred: list[Finding]) -> tuple[int, int]:
         matched += 1
         used_pred.add(hit_index)
         p = pred[hit_index]
-        if g.severity != "unknown" and p.severity != "unknown" and g.severity == p.severity:
+        if (
+            g.severity != "unknown"
+            and p.severity != "unknown"
+            and g.severity == p.severity
+        ):
             severity_matched += 1
 
     return matched, severity_matched
@@ -94,7 +98,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Score review agent evaluation")
     parser.add_argument("--gold", required=True)
     parser.add_argument("--seeded", required=True)
-    parser.add_argument("--pred", required=True, help="Predictions JSONL with id + agent_findings")
+    parser.add_argument(
+        "--pred", required=True, help="Predictions JSONL with id + agent_findings"
+    )
     args = parser.parse_args()
 
     gold_rows = read_jsonl(args.gold)
@@ -153,7 +159,9 @@ def main() -> int:
         },
         "seeded": {
             "must_find_recall": safe_div(seeded_detected, seeded_total),
-            "critical_miss_rate": safe_div(seeded_critical_missed, seeded_critical_total),
+            "critical_miss_rate": safe_div(
+                seeded_critical_missed, seeded_critical_total
+            ),
             "counts": {
                 "seeded_total": seeded_total,
                 "seeded_detected": seeded_detected,

@@ -2,6 +2,7 @@
 
 from .agents import PRInfoCollector
 from .models import FileChange, PRInfo, PRInfoResult, RepositoryInfo
+from .tools import GITHUB_MCP_URL, create_github_mcp_client
 
 __all__ = [
     "PRInfoCollector",
@@ -9,6 +10,8 @@ __all__ = [
     "FileChange",
     "PRInfo",
     "PRInfoResult",
+    "create_github_mcp_client",
+    "GITHUB_MCP_URL",
 ]
 
 

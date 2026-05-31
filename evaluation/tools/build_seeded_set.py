@@ -72,7 +72,9 @@ def inject_patch(original_patch: str, line_snippet: str) -> tuple[str, int]:
 
     # Find a reasonable injection point after first hunk header.
     insert_idx = 1 if patch_lines[0].startswith("@@") else 0
-    injected = patch_lines[:insert_idx] + [f"+{line_snippet}"] + patch_lines[insert_idx:]
+    injected = (
+        patch_lines[:insert_idx] + [f"+{line_snippet}"] + patch_lines[insert_idx:]
+    )
 
     # Best-effort line extraction from hunk header.
     header = patch_lines[0] if patch_lines else ""
@@ -82,7 +84,9 @@ def inject_patch(original_patch: str, line_snippet: str) -> tuple[str, int]:
     return "\n".join(injected), injected_line
 
 
-def choose_rule(rules: list[dict[str, Any]], lang: str, rnd: random.Random) -> dict[str, Any] | None:
+def choose_rule(
+    rules: list[dict[str, Any]], lang: str, rnd: random.Random
+) -> dict[str, Any] | None:
     candidates = [rule for rule in rules if lang in rule.get("languages", [])]
     if not candidates:
         return None
@@ -137,9 +141,13 @@ def build_seeded_item(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build Seeded set from Gold set")
     parser.add_argument("--gold", required=True, help="Path to Gold JSONL")
-    parser.add_argument("--catalog", required=True, help="Path to mutation catalog JSON")
+    parser.add_argument(
+        "--catalog", required=True, help="Path to mutation catalog JSON"
+    )
     parser.add_argument("--output", required=True, help="Path to output Seeded JSONL")
-    parser.add_argument("--multiplier", type=int, default=1, help="Seeded items per Gold item")
+    parser.add_argument(
+        "--multiplier", type=int, default=1, help="Seeded items per Gold item"
+    )
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     args = parser.parse_args()
 

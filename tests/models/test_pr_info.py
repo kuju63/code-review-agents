@@ -30,11 +30,15 @@ class TestFileChange:
     def test_valid(self):
         fc = FileChange(filePath="src/index.ts", patch="@@ -1,1 +1,2 @@\n+import x")
         assert fc.filePath == "src/index.ts"
-        assert "@@ -1,1" in fc.patch
+        assert "@@ -1,1" in fc.patch  # type: ignore[operator]
 
-    def test_missing_fields_raise(self):
+    def test_patch_none(self):
+        fc = FileChange(filePath="image.png")
+        assert fc.patch is None
+
+    def test_missing_filepath_raises(self):
         with pytest.raises(ValidationError):
-            FileChange(filePath="src/index.ts")  # type: ignore[call-arg]
+            FileChange()  # type: ignore[call-arg]
 
 
 class TestPRInfo:
@@ -45,6 +49,10 @@ class TestPRInfo:
         assert pr.body == "Fixes #41"
         assert pr.labels == []
         assert pr.file_changes == []
+
+    def test_body_none(self):
+        pr = PRInfo(title="No desc", pr_number=1)
+        assert pr.body is None
 
     def test_with_labels_and_changes(self):
         fc = FileChange(filePath="src/App.tsx", patch="@@ -1 +1 @@\n-old\n+new")
@@ -73,6 +81,7 @@ class TestPRInfoResult:
             repository_info=repo,
             project_summary="A sample project.",
             pr_info=pr,
+            dependency_files=["package.json"],
         )
 
     def test_valid(self):
@@ -80,6 +89,17 @@ class TestPRInfoResult:
         assert result.repository_info.owner == "owner"
         assert result.project_summary == "A sample project."
         assert result.pr_info.pr_number == 10
+        assert result.dependency_files == ["package.json"]
+
+    def test_dependency_files_default_empty(self):
+        repo = RepositoryInfo(owner="o", repository="r")
+        pr = PRInfo(title="T", pr_number=1)
+        result = PRInfoResult(
+            repository_info=repo,
+            project_summary="Summary.",
+            pr_info=pr,
+        )
+        assert result.dependency_files == []
 
     def test_json_round_trip(self):
         result = self._make_result()
@@ -91,6 +111,6 @@ class TestPRInfoResult:
         with pytest.raises(ValidationError):
             PRInfoResult(  # type: ignore[call-arg]
                 repository_info=RepositoryInfo(owner="o", repository="r"),
-                pr_info=PRInfo(title="T", pr_number=1, body=""),
+                pr_info=PRInfo(title="T", pr_number=1),
                 # project_summary intentionally omitted
             )

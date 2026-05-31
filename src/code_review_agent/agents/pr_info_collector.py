@@ -4,16 +4,11 @@ Collects pull request information from GitHub and returns structured data
 for use by downstream review agents.
 """
 
-import functools
-
-from mcp.client.streamable_http import streamablehttp_client
 from strands import Agent
 from strands.models.openai import OpenAIModel
-from strands.tools.mcp import MCPClient
 
 from ..models.pr_info import PRInfoResult
-
-GITHUB_MCP_URL = "https://api.githubcopilot.com/mcp/read-only"
+from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
 
 SYSTEM_PROMPT = """\
 Please generate summary information from GitHub based on the repository and PR \
@@ -23,8 +18,9 @@ The output results will be used in subsequent code reviews by multiple agents, \
 so please do not include any guesswork.
 The information used by subsequent agents includes `repository information` \
 (owner, repository name), `project summary` (generated based on the README.md \
-file in the repository root), and `PR information` (PR title, body, labels, \
-file changes).
+file in the repository root), `PR information` (PR title, body, labels, \
+file changes), and `dependency files` (paths of dependency manifest files \
+changed in the PR, such as package.json, pyproject.toml, requirements.txt).
 File changes are limited to TypeScript/JavaScript files (.ts, .tsx, .js, .jsx), \
 CSS/SCSS files (.css, .scss), HTML files (.html), and package.json files. \
 All changed lines and details must be comprehensively covered for each file.
@@ -54,7 +50,7 @@ def is_target_file(file_path: str) -> bool:
 
     _, ext = os.path.splitext(file_path)
     filename = os.path.basename(file_path)
-    return ext.lower() in _TARGET_EXTENSIONS or filename == "package.json"
+    return ext.lower() in _TARGET_EXTENSIONS or filename in _TARGET_FILENAMES
 
 
 class PRInfoCollector:
@@ -80,28 +76,14 @@ class PRInfoCollector:
         self._model_id = model_id
         self._mcp_url = mcp_url
 
-    def _create_mcp_client(self) -> MCPClient:
-        """Create a new MCPClient connected to GitHub MCP.
-
-        Returns:
-            Configured MCPClient instance.
-        """
-        token = self._github_token
-        url = self._mcp_url
-        return MCPClient(
-            functools.partial(
-                streamablehttp_client,
-                url=url,
-                headers={"Authorization": f"Bearer {token}"},
-            )
-        )
-
     def collect(self, owner: str, repo: str, pr_number: int) -> PRInfoResult:
         """Collect PR information from GitHub and return structured data.
 
         Connects to the GitHub MCP endpoint, runs the Strands Agent to
         retrieve PR details and README, then returns a validated
-        :class:`PRInfoResult`.
+        :class:`PRInfoResult`.  File changes are filtered so only
+        review-relevant files (as determined by :func:`is_target_file`)
+        are included in the result.
 
         Args:
             owner: Repository owner (user or organization name).
@@ -114,7 +96,7 @@ class PRInfoCollector:
         prompt = _COLLECT_PROMPT_TEMPLATE.format(
             owner=owner, repo=repo, pr_number=pr_number
         )
-        mcp_client = self._create_mcp_client()
+        mcp_client = create_github_mcp_client(self._github_token, self._mcp_url)
         with mcp_client:
             agent = Agent(
                 model=OpenAIModel(model_id=self._model_id),
@@ -125,4 +107,14 @@ class PRInfoCollector:
                 PRInfoResult,
                 prompt=prompt,
             )
-        return result
+
+        filtered_changes = [
+            fc for fc in result.pr_info.file_changes if is_target_file(fc.filePath)
+        ]
+        return result.model_copy(
+            update={
+                "pr_info": result.pr_info.model_copy(
+                    update={"file_changes": filtered_changes}
+                )
+            }
+        )
