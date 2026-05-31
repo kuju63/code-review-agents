@@ -74,7 +74,7 @@ def _api_get(url: str, token: str) -> Any:
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {token}",
             "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": "code-review-agent-eval"
+            "User-Agent": "code-review-agent-eval",
         },
     )
     with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310
@@ -119,7 +119,9 @@ def _normalize_severity(text: str) -> str:
         ]
     ):
         return "high"
-    if any(k in t for k in ["medium", "performance", "slow", "memory", "n+1", "n plus one"]):
+    if any(
+        k in t for k in ["medium", "performance", "slow", "memory", "n+1", "n plus one"]
+    ):
         return "medium"
     if any(k in t for k in ["low", "nit", "minor", "style"]):
         return "low"
@@ -146,7 +148,18 @@ def _normalize_category(text: str) -> str:
         ]
     ):
         return "security"
-    if any(k in t for k in ["slow", "performance", "render", "latency", "n+1", "index", "query plan"]):
+    if any(
+        k in t
+        for k in [
+            "slow",
+            "performance",
+            "render",
+            "latency",
+            "n+1",
+            "index",
+            "query plan",
+        ]
+    ):
         return "performance"
     if any(
         k in t
@@ -230,7 +243,7 @@ def build_gold_item(target: Target, token: str) -> dict[str, Any]:
             "path": path,
             "line": _extract_line(comment),
             "summary": summary,
-            "source": comment.get("html_url") or pr_data.get("html_url")
+            "source": comment.get("html_url") or pr_data.get("html_url"),
         }
         human_findings.append(finding)
 
@@ -252,7 +265,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build Gold PR dataset from GitHub")
     parser.add_argument("--input", required=True, help="Path to input target JSON")
     parser.add_argument("--output", required=True, help="Path to output JSONL")
-    parser.add_argument("--sleep", type=float, default=0.2, help="Sleep between API calls")
+    parser.add_argument(
+        "--sleep", type=float, default=0.2, help="Sleep between API calls"
+    )
     args = parser.parse_args()
 
     token = os.getenv("GITHUB_TOKEN")
@@ -269,17 +284,23 @@ def main() -> int:
             try:
                 item = build_gold_item(target, token)
             except urllib.error.HTTPError as e:
-                print(f"[WARN] skip {target.repository}#{target.pr_number}: HTTP {e.code}")
+                print(
+                    f"[WARN] skip {target.repository}#{target.pr_number}: HTTP {e.code}"
+                )
                 continue
             except Exception as e:  # noqa: BLE001
                 print(f"[WARN] skip {target.repository}#{target.pr_number}: {e}")
                 continue
 
             if not item["file_changes"]:
-                print(f"[INFO] no target file changes: {target.repository}#{target.pr_number}")
+                print(
+                    f"[INFO] no target file changes: {target.repository}#{target.pr_number}"
+                )
                 continue
             if not item["human_findings"]:
-                print(f"[INFO] no review comments: {target.repository}#{target.pr_number}")
+                print(
+                    f"[INFO] no review comments: {target.repository}#{target.pr_number}"
+                )
                 continue
 
             out.write(json.dumps(item, ensure_ascii=False) + "\n")
