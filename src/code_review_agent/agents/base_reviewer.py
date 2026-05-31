@@ -1,0 +1,166 @@
+"""Base classes for review agents in the parallel review stage.
+
+Defines the reviewer interface (:class:`ReviewAgent`) and a shared LLM-backed
+implementation (:class:`LLMReviewAgent`).  Concrete reviewers (React technical,
+security, future stacks/perspectives) subclass these and supply only their
+metadata and system prompt, so behaviour is configured rather than re-coded.
+"""
+
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import ClassVar
+
+from strands import Agent
+from strands.models.openai import OpenAIModel
+
+from ..models.review import (
+    ProjectType,
+    ReviewContext,
+    ReviewOutput,
+    ReviewPerspective,
+    ReviewResult,
+)
+from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
+
+
+@dataclass(frozen=True)
+class ReviewerConfig:
+    """Shared runtime configuration injected into each reviewer.
+
+    Attributes:
+        github_token: GitHub token used for the GitHub MCP ``Authorization``
+            header.
+        model_id: OpenAI-compatible model ID used by every reviewer.
+        mcp_url: GitHub MCP endpoint URL.
+    """
+
+    github_token: str
+    model_id: str = "gpt-4o"
+    mcp_url: str = GITHUB_MCP_URL
+
+
+class ReviewAgent(ABC):
+    """Interface for a reviewer in the parallel review stage.
+
+    Subclasses declare their identity and scope via the class-level metadata
+    and implement :meth:`review`.  The registry indexes reviewers by
+    ``perspective`` x ``project_types``; the orchestrator instantiates them
+    with a :class:`ReviewerConfig` and runs :meth:`review` concurrently.
+
+    Class Attributes:
+        reviewer_id: Stable identifier of the reviewer.
+        perspective: The review perspective this reviewer covers.
+        project_types: Project types this reviewer applies to.
+    """
+
+    reviewer_id: ClassVar[str]
+    perspective: ClassVar[ReviewPerspective]
+    project_types: ClassVar[frozenset[ProjectType]]
+
+    def __init__(self, config: ReviewerConfig) -> None:
+        self._config = config
+
+    @abstractmethod
+    def review(
+        self,
+        context: ReviewContext,
+        project_type: ProjectType | None = None,
+    ) -> ReviewResult:
+        """Review the change described by ``context``.
+
+        Args:
+            context: Input boundary wrapping the collected PR information.
+            project_type: The project type this review was selected for, used
+                to annotate the result.  ``None`` when not scoped.
+
+        Returns:
+            The reviewer's findings wrapped with its identity metadata.
+        """
+        raise NotImplementedError
+
+
+class LLMReviewAgent(ReviewAgent):
+    """LLM-backed reviewer using a Strands ``Agent`` and GitHub MCP.
+
+    Concrete reviewers set :attr:`system_prompt` (and optionally toggle
+    :attr:`uses_github_mcp`).  The execution pattern mirrors
+    :class:`~code_review_agent.agents.pr_info_collector.PRInfoCollector`:
+    the GitHub MCP client is opened as a synchronous context manager and the
+    agent produces a :class:`ReviewOutput` via ``structured_output``.
+
+    Class Attributes:
+        system_prompt: System prompt defining the reviewer's role and rules.
+        uses_github_mcp: Whether to connect the GitHub MCP client so the agent
+            can fetch additional repository files.
+    """
+
+    system_prompt: ClassVar[str]
+    uses_github_mcp: ClassVar[bool] = True
+
+    def review(
+        self,
+        context: ReviewContext,
+        project_type: ProjectType | None = None,
+    ) -> ReviewResult:
+        prompt = self._build_prompt(context)
+        model = OpenAIModel(model_id=self._config.model_id)
+
+        if self.uses_github_mcp:
+            mcp_client = create_github_mcp_client(
+                self._config.github_token, self._config.mcp_url
+            )
+            with mcp_client:
+                agent = Agent(
+                    model=model,
+                    system_prompt=self.system_prompt,
+                    tools=[mcp_client],
+                )
+                output: ReviewOutput = agent.structured_output(
+                    ReviewOutput, prompt=prompt
+                )
+        else:
+            agent = Agent(model=model, system_prompt=self.system_prompt, tools=[])
+            output = agent.structured_output(ReviewOutput, prompt=prompt)
+
+        return ReviewResult(
+            reviewer_id=self.reviewer_id,
+            perspective=self.perspective,
+            project_type=project_type,
+            output=output,
+        )
+
+    def _build_prompt(self, context: ReviewContext) -> str:
+        """Serialise the review-relevant PR information into a prompt.
+
+        Shared by every LLM reviewer so the perspective-specific guidance lives
+        only in the system prompt, not in input formatting.
+
+        Args:
+            context: Input boundary wrapping the collected PR information.
+
+        Returns:
+            A human-readable prompt describing the repository, PR, dependency
+            files, and per-file diffs.
+        """
+        pr = context.pr_info
+        repo = pr.repository_info
+        lines = [
+            f"Repository: {repo.owner}/{repo.repository}",
+            f"Project summary: {pr.project_summary}",
+            "",
+            f"PR #{pr.pr_info.pr_number}: {pr.pr_info.title}",
+            f"Body: {pr.pr_info.body or '(none)'}",
+            f"Labels: {', '.join(pr.pr_info.labels) or '(none)'}",
+            f"Dependency files changed: {', '.join(pr.dependency_files) or '(none)'}",
+            "",
+            "Changed files (diff patches):",
+        ]
+        for change in pr.pr_info.file_changes:
+            lines.append(f"--- {change.filePath} ---")
+            lines.append(change.patch or "(patch unavailable; fetch via GitHub)")
+        lines.append("")
+        lines.append(
+            "Only the modified sections are provided. Retrieve full files from "
+            "GitHub as needed."
+        )
+        return "\n".join(lines)

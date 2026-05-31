@@ -2,11 +2,24 @@
 
 ## 1. Goals
 
-This project uses a three-agent review flow:
+This project uses a multi-stage review flow:
 
-1. Technical reviewer
-2. Security reviewer
-3. Lead engineer selector
+1. PR Info Collector (produces the structured `PRInfoResult` input)
+2. Parallel review stage — an extensible set of reviewers selected per project
+   type and run concurrently
+3. Lead engineer selector (downstream synthesis; not yet implemented)
+
+The parallel review stage is organized along two orthogonal axes so reviewers
+can be added without changing the orchestration:
+
+- Review perspective: `technical` and `security` are implemented; `spec_consistency`
+  and `requirements_consistency` are planned (they require spec/requirement inputs
+  in addition to `PRInfoResult`).
+- Project type: `react_ts` is implemented; `spring_boot`, `nextjs`, `nuxt`, and
+  `wasm` are planned.
+
+See [docs/review-agents-design.md](../docs/review-agents-design.md) for the
+extensible architecture (registry + orchestrator + `ReviewContext`).
 
 The evaluation strategy must validate:
 
