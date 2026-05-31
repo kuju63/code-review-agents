@@ -112,7 +112,9 @@ class ReviewOrchestrator:
         """Resolve which reviewers to run and the project type each targets.
 
         A reviewer that applies to several detected project types is run only
-        once, labelled with the first matching type.
+        once, labelled with the first matching type in a deterministic order
+        (project types are sorted by value so the annotation is stable across
+        runs).
 
         Args:
             context: Input boundary wrapping the collected PR information.
@@ -128,7 +130,7 @@ class ReviewOrchestrator:
             project_types = detect_project_types(context.pr_info)
 
         targeted: dict[type[ReviewAgent], ProjectType] = {}
-        for pt in project_types:
+        for pt in sorted(project_types, key=lambda p: p.value):
             for cls in get_reviewer_classes(pt, perspectives):
                 targeted.setdefault(cls, pt)
 

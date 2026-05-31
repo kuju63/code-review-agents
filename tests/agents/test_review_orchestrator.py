@@ -174,3 +174,33 @@ class TestRun:
 
         assert calls == ["counting"]
         assert len(report.results) == 1
+
+    def test_multi_type_annotation_is_deterministic(self):
+        # nextjs sorts before react_ts by value, so a reviewer covering both
+        # detected types is always annotated with the lowest-sorted type.
+        class _MultiReviewer(ReviewAgent):
+            reviewer_id = "multi"
+            perspective = ReviewPerspective.TECHNICAL
+            project_types = frozenset({ProjectType.REACT_TS, ProjectType.NEXTJS})
+
+            def review(self, context, project_type=None):
+                return ReviewResult(
+                    reviewer_id=self.reviewer_id,
+                    perspective=self.perspective,
+                    project_type=project_type,
+                    output=ReviewOutput(summary="ok"),
+                )
+
+        with (
+            patch(
+                f"{_MOD}.detect_project_types",
+                return_value={ProjectType.REACT_TS, ProjectType.NEXTJS},
+            ),
+            patch(
+                f"{_MOD}.get_reviewer_classes",
+                return_value=[_MultiReviewer],
+            ),
+        ):
+            for _ in range(5):
+                report = _orchestrator().run(_context())
+                assert report.results[0].project_type is ProjectType.NEXTJS

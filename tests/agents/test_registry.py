@@ -126,10 +126,17 @@ class TestDetectProjectTypes:
         )
         assert ProjectType.REACT_TS in detect_project_types(pr)
 
-    def test_no_detection_without_package_json(self):
+    def test_detects_react_from_tsx_only(self):
+        # A PR touching only src/*.tsx changes no manifest; detection must
+        # still recognise it as React/TypeScript.
         pr = _pr_info(file_paths=["src/App.tsx"], dependency_files=[])
-        assert detect_project_types(pr) == set()
+        assert detect_project_types(pr) == {ProjectType.REACT_TS}
 
-    def test_no_detection_without_ts_js(self):
+    def test_detects_react_from_package_json_only(self):
+        # A dependency bump (package.json only) qualifies on its own.
         pr = _pr_info(file_paths=["styles/main.css"], dependency_files=["package.json"])
+        assert detect_project_types(pr) == {ProjectType.REACT_TS}
+
+    def test_no_detection_without_ts_js_or_manifest(self):
+        pr = _pr_info(file_paths=["styles/main.css", "index.html"], dependency_files=[])
         assert detect_project_types(pr) == set()

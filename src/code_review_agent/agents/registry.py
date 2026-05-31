@@ -80,6 +80,17 @@ def detect_project_types(pr_info: PRInfoResult) -> set[ProjectType]:
     project type explicitly.  New stacks add their own branch here (for
     example ``pom.xml``/``build.gradle`` for Spring Boot).
 
+    The signal is the changed files, since ``dependency_files`` only lists
+    manifests *changed* by the PR — a typical PR touching only ``src/*.tsx``
+    changes no manifest, so requiring ``package.json`` would miss it.  A
+    TS/JS/JSX change alone is therefore treated as a React/TypeScript signal,
+    and a ``package.json`` change (e.g. a dependency bump) qualifies on its own.
+
+    Note:
+        This is a heuristic over PR-changed files only.  A more reliable
+        repository-level stack signal (e.g. reading the root ``package.json``)
+        is a future enhancement once that input is available here.
+
     Args:
         pr_info: Structured PR information from the PR Info Collector.
 
@@ -95,6 +106,6 @@ def detect_project_types(pr_info: PRInfoResult) -> set[ProjectType]:
     has_ts_js = any(path.endswith((".ts", ".tsx", ".js", ".jsx")) for path in paths)
 
     detected: set[ProjectType] = set()
-    if has_package_json and has_ts_js:
+    if has_ts_js or has_package_json:
         detected.add(ProjectType.REACT_TS)
     return detected

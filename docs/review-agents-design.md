@@ -79,8 +79,12 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
 - `get_reviewer_classes(project_type, perspectives=None)` が、対象種別に適用され観点フィルタに
   合致するレビュアークラス群を返す。**拡張の中心点**であり、新しいセルの追加はクラス追加 +
   デコレータ登録だけで完結する。
-- `detect_project_types(pr_info)` が `dependency_files` と変更ファイル拡張子から種別を推定する。
-  プロジェクト種別が明示されなかった場合のデフォルト選択に使う。将来種別の判定分岐はここに足す。
+- `detect_project_types(pr_info)` が変更ファイルの拡張子・manifest から種別を推定する。
+  `dependency_files` は「PRで変更された」manifest のみのため、`src/*.tsx` だけ変更する典型 PR を
+  取りこぼさないよう、TS/JS/JSX の変更があれば（package.json 変更がなくても）react_ts と判定する。
+  package.json 単独の変更（依存更新）も単体で該当する。明示指定がない場合のデフォルト選択に使い、
+  将来種別の判定分岐はここに足す。なお現状は PR 変更ファイルのみのヒューリスティックで、
+  リポジトリ直下 manifest 等のより確実な signal は将来の入力拡張時に取り込む。
 
 ### 3.4 オーケストレータ — `ReviewOrchestrator`
 
