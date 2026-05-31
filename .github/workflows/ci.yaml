@@ -35,7 +35,7 @@ jobs:
       - name: Run type checkers
         run: uv run pyright
       - name: Run tests
-        run: uv run pytest --cov --cov-branch --cov-report=xml --cov=code_review_agent --junitxml=junit.xml -o junit_family=legacy
+        run: uv run pytest --cov --cov-branch --cov-report=xml --cov=code_review_agent --cov-fail-under=75 --junitxml=junit.xml -o junit_family=legacy
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/codecov-action@v5
