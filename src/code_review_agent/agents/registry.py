@@ -9,6 +9,7 @@ orchestrator or this module's selection logic is required.
 """
 
 from collections.abc import Iterable
+from typing import TypeVar
 
 from ..models.pr_info import PRInfoResult
 from ..models.review import ProjectType, ReviewPerspective
@@ -16,12 +17,15 @@ from .base_reviewer import ReviewAgent
 
 _REGISTRY: list[type[ReviewAgent]] = []
 
+_ReviewerT = TypeVar("_ReviewerT", bound=ReviewAgent)
 
-def register_reviewer(cls: type[ReviewAgent]) -> type[ReviewAgent]:
+
+def register_reviewer(cls: type[_ReviewerT]) -> type[_ReviewerT]:
     """Register a reviewer class so the orchestrator can discover it.
 
     Intended for use as a class decorator.  The class declares its scope via
-    its ``perspective`` and ``project_types`` metadata.
+    its ``perspective`` and ``project_types`` metadata.  The concrete class
+    type is preserved so decorated reviewers keep their own attributes.
 
     Args:
         cls: The reviewer class to register.

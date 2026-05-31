@@ -9,6 +9,10 @@ from .registry import (
     register_reviewer,
 )
 
+# Importing the reviewers package registers the concrete reviewers as a side
+# effect, so they are discoverable via the registry once `agents` is imported.
+from .reviewers import ReactCodeReviewer, SecurityReviewer
+
 __all__ = [
     "PRInfoCollector",
     "ReviewAgent",
@@ -18,4 +22,6 @@ __all__ = [
     "get_registered_reviewers",
     "get_reviewer_classes",
     "detect_project_types",
+    "ReactCodeReviewer",
+    "SecurityReviewer",
 ]
