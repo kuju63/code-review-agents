@@ -22,7 +22,7 @@
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
   // Use 'postCreateCommand' to run commands after the container is created.
-  "updateContentCommand": "uv --no-config sync",
+  "updateContentCommand": "uv sync",
   "containerUser": "vscode",
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
