@@ -22,7 +22,10 @@
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
   // Use 'postCreateCommand' to run commands after the container is created.
-  "updateContentCommand": "id && ls -la /workspaces/code-review-agents && uv sync",
+  "updateContentCommand": "uv --no-config sync",
+  "containerUser": "vscode",
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
   // Configure tool-specific properties.
   "customizations": {
     "vscode": {
