@@ -13,8 +13,8 @@
       "shellautocompletion": true,
       "version": "latest"
     },
-    "ghcr.io/devcontainers-extra/features/homebrew-package:1": {
-      "package": "betterleaks/tap/betterleaks"
+    "ghcr.io/kuju63/devcontainer-features/betterleaks:1": {
+      "version": "latest"
     }
   },
   // Features to add to the dev container. More info: https://containers.dev/features.
