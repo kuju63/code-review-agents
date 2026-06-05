@@ -22,7 +22,7 @@
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
   // Use 'postCreateCommand' to run commands after the container is created.
-  "updateContentCommand": "uv sync --config-file=pyproject.toml --frozen",
+  "postAttachCommand": "uv sync --frozen",
   "containerUser": "vscode",
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
