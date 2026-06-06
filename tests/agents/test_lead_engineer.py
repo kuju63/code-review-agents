@@ -21,12 +21,16 @@ def _make_finding(
     priority: ReviewPriority = ReviewPriority.MEDIUM,
     file_path: str | None = "src/App.tsx",
     line: int | None = 10,
+    context: str | None = None,
+    proposed_fix: str | None = None,
 ) -> ReviewFinding:
     return ReviewFinding(
         file_path=file_path,
         line=line,
         comment=comment,
         priority=priority,
+        context=context,
+        proposed_fix=proposed_fix,
     )
 
 
@@ -153,6 +157,44 @@ class TestBuildPromptAndIndex:
         assert "Critical XSS" in prompt
         assert "src/User.tsx" in prompt
         assert "99" in prompt
+
+    def test_finding_context_in_prompt(self):
+        finding = _make_finding(
+            comment="Use sanitize() before rendering",
+            context="User-controlled data flows into this element without escaping",
+        )
+        report = _make_report(results=[_make_result(findings=[finding])])
+        agent = self._agent()
+
+        prompt, _ = agent._build_prompt_and_index(report)
+
+        assert "User-controlled data flows into this element without escaping" in prompt
+
+    def test_finding_proposed_fix_in_prompt(self):
+        finding = _make_finding(
+            comment="Use sanitize() before rendering",
+            proposed_fix="Replace innerHTML with textContent or DOMPurify.sanitize()",
+        )
+        report = _make_report(results=[_make_result(findings=[finding])])
+        agent = self._agent()
+
+        prompt, _ = agent._build_prompt_and_index(report)
+
+        assert "Replace innerHTML with textContent or DOMPurify.sanitize()" in prompt
+
+    def test_finding_without_context_and_proposed_fix_omits_those_fields(self):
+        finding = _make_finding(
+            comment="Missing null check",
+            context=None,
+            proposed_fix=None,
+        )
+        report = _make_report(results=[_make_result(findings=[finding])])
+        agent = self._agent()
+
+        prompt, _ = agent._build_prompt_and_index(report)
+
+        assert "context:" not in prompt
+        assert "proposed_fix:" not in prompt
 
 
 class TestResolveDecisions:

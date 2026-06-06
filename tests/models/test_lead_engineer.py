@@ -19,6 +19,7 @@ def _make_decision(
     comment: str = "Test finding",
     file_path: str | None = "src/App.tsx",
     line: int | None = 10,
+    proposed_fix: str | None = None,
 ):
     from code_review_agent.models.lead_engineer import DecisionVerdict, FindingDecision
 
@@ -26,7 +27,11 @@ def _make_decision(
         reviewer_id=reviewer_id,
         perspective=perspective,
         finding=_make_finding(
-            comment=comment, priority=priority, file_path=file_path, line=line
+            comment=comment,
+            priority=priority,
+            file_path=file_path,
+            line=line,
+            proposed_fix=proposed_fix,
         ),
         verdict=DecisionVerdict(verdict_str),
         reason="reason",
@@ -40,12 +45,16 @@ def _make_finding(
     priority: ReviewPriority = ReviewPriority.MEDIUM,
     file_path: str | None = "src/App.tsx",
     line: int | None = 10,
+    context: str | None = None,
+    proposed_fix: str | None = None,
 ) -> ReviewFinding:
     return ReviewFinding(
         file_path=file_path,
         line=line,
         comment=comment,
         priority=priority,
+        context=context,
+        proposed_fix=proposed_fix,
     )
 
 
@@ -240,6 +249,39 @@ class TestLeadEngineerReport:
         assert "src/App.tsx" in md
         assert "XSS issue" in md
         assert "L42" in md
+
+    def test_to_markdown_accepted_with_proposed_fix_shows_suggested_fix(self):
+        decisions = [
+            _make_decision(
+                "accept",
+                ReviewPriority.HIGH,
+                comment="Use sanitize() before rendering",
+                file_path="src/App.tsx",
+                line=42,
+                proposed_fix="Replace innerHTML with textContent",
+            ),
+        ]
+        report = self._make_report(decisions=decisions)
+        md = report.to_markdown()
+
+        assert "**Suggested fix**" in md
+        assert "Replace innerHTML with textContent" in md
+
+    def test_to_markdown_accepted_without_proposed_fix_omits_suggested_fix(self):
+        decisions = [
+            _make_decision(
+                "accept",
+                ReviewPriority.HIGH,
+                comment="Missing error handling",
+                file_path="src/App.tsx",
+                line=10,
+                proposed_fix=None,
+            ),
+        ]
+        report = self._make_report(decisions=decisions)
+        md = report.to_markdown()
+
+        assert "**Suggested fix**" not in md
 
     def test_to_markdown_rejected_in_details_block(self):
         decisions = [
