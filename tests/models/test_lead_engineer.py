@@ -354,3 +354,47 @@ class TestLeadEngineerReport:
         assert len(result["lead_decisions"]) == 2
         verdicts = {d["decision"] for d in result["lead_decisions"]}
         assert verdicts == {"accept", "reject"}
+
+    def test_to_evaluation_format_excludes_empty_file_path_from_agent_findings(self):
+        decisions = [
+            _make_decision("accept", file_path="src/Valid.tsx", line=10),
+            _make_decision("accept", file_path="", line=10),
+        ]
+        report = self._make_report(decisions=decisions)
+        result = report.to_evaluation_format("owner/repo#1")
+
+        assert len(result["agent_findings"]) == 1
+        assert result["agent_findings"][0]["path"] == "src/Valid.tsx"
+
+    def test_to_evaluation_format_excludes_missing_line_from_agent_findings(self):
+        decisions = [
+            _make_decision("accept", file_path="src/Valid.tsx", line=42),
+            _make_decision("accept", file_path="src/NoLine.tsx", line=None),
+        ]
+        report = self._make_report(decisions=decisions)
+        result = report.to_evaluation_format("owner/repo#1")
+
+        assert len(result["agent_findings"]) == 1
+        assert result["agent_findings"][0]["line"] == 42
+
+    def test_to_evaluation_format_excludes_empty_file_path_from_lead_decisions(self):
+        decisions = [
+            _make_decision("accept", file_path="src/Valid.tsx", line=10),
+            _make_decision("reject", file_path="", line=10),
+        ]
+        report = self._make_report(decisions=decisions)
+        result = report.to_evaluation_format("owner/repo#1")
+
+        assert len(result["lead_decisions"]) == 1
+        assert result["lead_decisions"][0]["path"] == "src/Valid.tsx"
+
+    def test_to_evaluation_format_excludes_missing_line_from_lead_decisions(self):
+        decisions = [
+            _make_decision("accept", file_path="src/Valid.tsx", line=5),
+            _make_decision("reject", file_path="src/NoLine.tsx", line=None),
+        ]
+        report = self._make_report(decisions=decisions)
+        result = report.to_evaluation_format("owner/repo#1")
+
+        assert len(result["lead_decisions"]) == 1
+        assert result["lead_decisions"][0]["line"] == 5

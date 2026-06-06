@@ -212,23 +212,23 @@ class LeadEngineerReport(BaseModel):
         """
         agent_findings = [
             {
-                "path": d.finding.file_path or "",
-                "line": d.finding.line or 1,
+                "path": d.finding.file_path,
+                "line": d.finding.line,
                 "category": d.perspective.value,
                 "severity": d.final_priority.value,
                 "summary": d.finding.comment,
             }
             for d in self.accepted()
-            if d.finding.file_path is not None
+            if d.finding.file_path and d.finding.line is not None
         ]
         lead_decisions = [
             {
-                "path": d.finding.file_path or "",
-                "line": d.finding.line or 1,
+                "path": d.finding.file_path,
+                "line": d.finding.line,
                 "decision": d.verdict.value,
             }
             for d in self.decisions
-            if d.finding.file_path is not None
+            if d.finding.file_path and d.finding.line is not None
         ]
         return {
             "id": pr_id,
