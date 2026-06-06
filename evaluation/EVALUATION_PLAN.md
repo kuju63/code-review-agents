@@ -7,7 +7,8 @@ This project uses a multi-stage review flow:
 1. PR Info Collector (produces the structured `PRInfoResult` input)
 2. Parallel review stage — an extensible set of reviewers selected per project
    type and run concurrently
-3. Lead engineer selector (downstream synthesis; not yet implemented)
+3. Lead engineer selector (downstream synthesis; evaluates reviewer findings and
+   decides which to accept or reject)
 
 The parallel review stage is organized along two orthogonal axes so reviewers
 can be added without changing the orchestration:
@@ -120,6 +121,23 @@ Must include stack-specific traps:
 - Severity Agreement: matched_severity / matched_gold_issues
 - Location Hit Rate: matched_file_line / matched_gold_issues
 - Decision Agreement (lead): decisions_matching_human / all_decisions
+
+## 3.1.1 Lead Engineer Decision Metrics
+
+These metrics evaluate the quality of the Lead Engineer's accept/reject decisions.
+
+- Decision Precision: (accepted_findings ∩ gold_issues) / accepted_findings
+  — measures how often accepted findings correspond to real issues
+- Decision Recall: (accepted_findings ∩ gold_issues) / gold_issues
+  — measures how many real issues were accepted (not rejected)
+
+No-Speculation Gate (verified against Seeded set):
+
+- All findings in `accepted_findings` must originate from a reviewer in the
+  parallel review stage. The Lead Engineer must not introduce new findings not
+  present in `ReviewReport.results`.
+- Verified by checking that every finding in the evaluation output's
+  `agent_findings` matches a finding from the reviewer outputs for that PR.
 
 Matching rule:
 
