@@ -194,13 +194,19 @@ class TestResolveDecisions:
         assert decisions[0].finding is finding
         assert decisions[0].verdict == DecisionVerdict.ACCEPT
 
-    def test_invalid_index_is_skipped(self):
+    def test_unknown_index_in_llm_output_is_skipped_but_finding_gets_default_reject(
+        self,
+    ):
         from code_review_agent.models.lead_engineer import (
             DecisionVerdict,
             FindingDecisionOutput,
         )
 
-        index_map = self._make_index_map([_make_finding()])
+        finding = _make_finding(
+            comment="Uncovered finding", priority=ReviewPriority.HIGH
+        )
+        index_map = self._make_index_map([finding])
+        # LLM returns only index 999 (unknown); index 1 has no decision
         raw = [
             FindingDecisionOutput(
                 finding_index=999,
@@ -214,7 +220,79 @@ class TestResolveDecisions:
 
         decisions = agent._resolve_decisions(raw, index_map)
 
-        assert decisions == []
+        # index 1 must get a default REJECT decision
+        assert len(decisions) == 1
+        assert decisions[0].finding is finding
+        assert decisions[0].verdict == DecisionVerdict.REJECT
+        # final_priority falls back to the original finding.priority
+        assert decisions[0].final_priority == ReviewPriority.HIGH
+
+    def test_duplicate_index_uses_first_occurrence(self):
+        from code_review_agent.models.lead_engineer import (
+            DecisionVerdict,
+            FindingDecisionOutput,
+        )
+
+        finding = _make_finding(comment="XSS")
+        index_map = self._make_index_map([finding])
+        # LLM returns finding_index=1 twice
+        raw = [
+            FindingDecisionOutput(
+                finding_index=1,
+                verdict=DecisionVerdict.ACCEPT,
+                reason="first occurrence",
+                impact="critical",
+                final_priority=ReviewPriority.CRITICAL,
+            ),
+            FindingDecisionOutput(
+                finding_index=1,
+                verdict=DecisionVerdict.REJECT,
+                reason="duplicate — should be ignored",
+                impact="none",
+                final_priority=ReviewPriority.LOW,
+            ),
+        ]
+        agent = self._agent()
+
+        decisions = agent._resolve_decisions(raw, index_map)
+
+        assert len(decisions) == 1
+        assert decisions[0].verdict == DecisionVerdict.ACCEPT
+        assert decisions[0].reason == "first occurrence"
+
+    def test_missing_index_gets_default_reject_with_original_priority(self):
+        from code_review_agent.models.lead_engineer import (
+            DecisionVerdict,
+            FindingDecisionOutput,
+        )
+
+        finding_a = _make_finding(comment="A", priority=ReviewPriority.CRITICAL)
+        finding_b = _make_finding(comment="B", priority=ReviewPriority.LOW)
+        index_map = self._make_index_map([finding_a, finding_b])
+        # LLM only covers index 1; index 2 is missing
+        raw = [
+            FindingDecisionOutput(
+                finding_index=1,
+                verdict=DecisionVerdict.ACCEPT,
+                reason="ok",
+                impact="high",
+                final_priority=ReviewPriority.CRITICAL,
+            ),
+        ]
+        agent = self._agent()
+
+        decisions = agent._resolve_decisions(raw, index_map)
+
+        assert len(decisions) == 2
+        accepted = [d for d in decisions if d.verdict == DecisionVerdict.ACCEPT]
+        rejected = [d for d in decisions if d.verdict == DecisionVerdict.REJECT]
+        assert len(accepted) == 1
+        assert accepted[0].finding.comment == "A"
+        assert len(rejected) == 1
+        assert rejected[0].finding.comment == "B"
+        assert (
+            rejected[0].final_priority == ReviewPriority.LOW
+        )  # falls back to original
 
     def test_mixed_valid_and_invalid_indexes(self):
         from code_review_agent.models.lead_engineer import (
@@ -251,9 +329,10 @@ class TestResolveDecisions:
 
         decisions = agent._resolve_decisions(raw, index_map)
 
+        # index 99 unknown → ignored; both valid findings get their LLM decisions
         assert len(decisions) == 2
-        assert decisions[0].finding.comment == "A"
-        assert decisions[1].finding.comment == "B"
+        comments = {d.finding.comment for d in decisions}
+        assert comments == {"A", "B"}
 
     def test_multiple_reviewers_correct_reviewer_id(self):
         from code_review_agent.models.lead_engineer import (

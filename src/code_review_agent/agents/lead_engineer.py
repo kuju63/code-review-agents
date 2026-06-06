@@ -13,6 +13,7 @@ from strands import Agent
 from strands.models.openai import OpenAIModel
 
 from ..models.lead_engineer import (
+    DecisionVerdict,
     FindingDecision,
     FindingDecisionOutput,
     LeadEngineerOutput,
@@ -171,24 +172,43 @@ class LeadEngineerAgent:
     ) -> list[FindingDecision]:
         """Resolve LLM output indexes to original findings.
 
+        Normalises the LLM output to guarantee exactly one decision per finding
+        in ``index_map``:
+
+        1. Unknown indexes (not in ``index_map``) are logged and skipped.
+        2. Duplicate indexes use only the first occurrence; later duplicates are
+           logged and discarded.
+        3. Findings with no LLM decision receive a deterministic default:
+           ``REJECT`` with ``final_priority`` set to the original
+           ``finding.priority``.
+
         Args:
             raw: LLM-generated decision outputs using finding indexes.
             index_map: Map from finding index to (reviewer_id, perspective,
                 finding) built by :meth:`_build_prompt_and_index`.
 
         Returns:
-            Resolved decisions.  Outputs with unknown indexes are silently
-            skipped — they are logged but do not raise an exception.
+            Resolved decisions with exactly one entry per finding in
+            ``index_map``.
         """
         decisions: list[FindingDecision] = []
+        seen: set[int] = set()
+
         for d in raw:
             entry = index_map.get(d.finding_index)
             if entry is None:
                 logger.warning(
-                    "LeadEngineerAgent: unknown finding_index %d in LLM output — skipped",
+                    "LeadEngineerAgent: unknown finding_index %d — skipped",
                     d.finding_index,
                 )
                 continue
+            if d.finding_index in seen:
+                logger.warning(
+                    "LeadEngineerAgent: duplicate finding_index %d — using first occurrence",
+                    d.finding_index,
+                )
+                continue
+            seen.add(d.finding_index)
             reviewer_id, perspective, finding = entry
             decisions.append(
                 FindingDecision(
@@ -201,4 +221,23 @@ class LeadEngineerAgent:
                     final_priority=d.final_priority,
                 )
             )
+
+        for idx, (reviewer_id, perspective, finding) in index_map.items():
+            if idx not in seen:
+                logger.warning(
+                    "LeadEngineerAgent: finding_index %d has no LLM decision — defaulting to REJECT",
+                    idx,
+                )
+                decisions.append(
+                    FindingDecision(
+                        reviewer_id=reviewer_id,
+                        perspective=perspective,
+                        finding=finding,
+                        verdict=DecisionVerdict.REJECT,
+                        reason="No decision provided by lead engineer.",
+                        impact="Unknown — no evaluation provided.",
+                        final_priority=finding.priority,
+                    )
+                )
+
         return decisions
