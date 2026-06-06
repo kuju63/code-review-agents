@@ -1,6 +1,7 @@
 """Agents for code review workflow."""
 
 from .base_reviewer import LLMReviewAgent, ReviewAgent, ReviewerConfig
+from .lead_engineer import LeadEngineerAgent
 from .pr_info_collector import PRInfoCollector
 from .registry import (
     detect_project_types,
@@ -18,6 +19,7 @@ __all__ = [
     "ReviewAgent",
     "LLMReviewAgent",
     "ReviewerConfig",
+    "LeadEngineerAgent",
     "register_reviewer",
     "get_registered_reviewers",
     "get_reviewer_classes",
