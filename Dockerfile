@@ -1,30 +1,42 @@
 # syntax=docker/dockerfile:1
 
+# コンテナ内 Python バージョン — base image 更新時に合わせて変更すること
+# NOTE: cgr.dev/chainguard/python の free tier は latest タグのみ提供。
+#       Python 3.12 固定タグは非対応のため 3.14 を使用している。
+#       pyproject.toml の requires-python = ">=3.12" の範囲内であり有効な選択。
+#       ダイジスト固定により Python バージョンは凍結されている。
+ARG PYTHON_VERSION=3.14
+
 ###############################################################################
 # Stage 0: uv バイナリ取得
-# ghcr.io/astral-sh/uv:latest — uv の公式イメージからバイナリのみ抽出
-# ビルドステージにコピーして使用することで、ランタイムへの混入を防ぐ
+# ghcr.io/astral-sh/uv:0.11.19 — バージョン+ダイジェスト固定で再現性を確保
+# Renovate が FROM 行を自動更新する (renovate.json config:recommended)
 ###############################################################################
-FROM ghcr.io/astral-sh/uv:latest AS uv-binary
+FROM ghcr.io/astral-sh/uv:0.11.19@sha256:b46b03ddfcfbf8f547af7e9eaefdf8a39c8cebcba7c98858d3162bd28cf536f6 AS uv-binary
 
 ###############################################################################
 # Stage 1: builder
 # cgr.dev/chainguard/python:latest-dev — ランタイムと同一 Wolfi/glibc ベース
-# → cryptography / cffi / uvloop 等バイナリ拡張の ABI 互換を保証
-# → gcc・glibc・OpenSSL のバージョン差異によるランタイムエラーを排除
+# - ABI 互換: cryptography / cffi / uvloop 等のバイナリ拡張の互換を保証
+# - ダイジェスト固定: タグ更新による意図しない Python バージョン変更を防止
 ###############################################################################
-FROM cgr.dev/chainguard/python:latest-dev AS builder
+FROM cgr.dev/chainguard/python:latest-dev@sha256:f3280dd7b9c07bda753c41c1693e36a5a50aaba8bc30c7bbe3ee875fb283cda0 AS builder
 
 USER root
 
 COPY --from=uv-binary /uv /usr/local/bin/uv
 
+# UV_COMPILE_BYTECODE: .pyc を事前生成（起動高速化）
+# UV_LINK_MODE=copy: ハードリンク非対応環境へのフォールバック
+# UV_PYTHON_DOWNLOADS=never: コンテナ内での Python 追加ダウンロードを禁止
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never
 
 WORKDIR /app
 
+# 依存ファイルを先にコピーしてレイヤーキャッシュを最大化
+# README.md は pyproject.toml の readme フィールドで uv_build が参照するため必須
 COPY pyproject.toml uv.lock README.md ./
 
 # Phase 1: 依存パッケージのみ先にインストール（キャッシュ最大化）
@@ -50,22 +62,28 @@ RUN uv sync --frozen --no-dev --no-editable --no-cache && \
 # Stage 2: runtime
 # cgr.dev/chainguard/python:latest — Wolfi ベース、ゼロ CVE ポリシー、シェルなし
 # - nonroot ユーザー (UID 65532) がビルトイン
+# - ダイジェスト固定: Python バージョン変化による site-packages パス破損を防止
 ###############################################################################
-FROM cgr.dev/chainguard/python:latest AS runtime
+FROM cgr.dev/chainguard/python:latest@sha256:c07f71aa800e06e9dacd2d4964a60ecb386f953ac0576d37bafd710d78d161b1 AS runtime
+
+# multi-stage ARG スコープ: pre-FROM で宣言した ARG を runtime ステージで再宣言
+# base image 更新時は ARG PYTHON_VERSION とダイジェストを合わせて更新すること
+ARG PYTHON_VERSION
 
 WORKDIR /app
 
 # システム Python の site-packages に直接インストールする
 # → PYTHONPATH 非依存: ランタイムで -e PYTHONPATH を上書きされてもパッケージが見つかる
 # → site.py がスタートアップ時にこのディレクトリを sys.path に追加する
-# NOTE: パスは cgr.dev/chainguard/python:latest の Python バージョンに依存する
-#       (現在 Python 3.14)。バージョン変更時は更新が必要。
-COPY --from=builder /app/pysite /usr/lib/python3.14/site-packages/
+COPY --from=builder /app/pysite /usr/lib/python${PYTHON_VERSION}/site-packages/
 
 # console script をコピー (シェバン修正済み: #!/usr/bin/python)
 # exec 形式 ENTRYPOINT から直接起動されるため sys.argv[0] が正しく設定される
 COPY --from=builder /app/bin/code-review-agent /usr/local/bin/code-review-agent
 
+# PYTHONDONTWRITEBYTECODE: 実行時の .pyc 生成を抑制（read-only fs 対応）
+# PYTHONUNBUFFERED: stdout/stderr をバッファリングなしで出力（ログ即時反映）
+# PYTHONFAULTHANDLER: クラッシュ時にスタックトレースを出力
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1

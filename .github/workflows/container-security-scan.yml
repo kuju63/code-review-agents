@@ -29,6 +29,8 @@ jobs:
     permissions:
       contents: read
       security-events: write
+      # cache-from/cache-to: type=gha は actions キャッシュの読み書きに write 権限が必要
+      actions: write
 
     steps:
       - name: Checkout repository
@@ -49,15 +51,16 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # trivy-action に関する注意:
+      # trivy-action のセキュリティに関する注記:
       # 2026-03-19 にサプライチェーン攻撃で大多数のバージョンタグが書き換えられた
       # (CVE-2026-33634, GHSA-69fq-xp46-6x23)
-      # v0.35.0 以降は GitHub の immutable releases 機能で保護されており安全
-      # さらなる安全性確保には完全な commit SHA へのピン留めを推奨:
-      #   uses: aquasecurity/trivy-action@<full-40-char-sha>  # v0.36.0
+      # v0.35.0 以降は GitHub の immutable releases 機能で保護されているが、
+      # タグは依然として mutable であり再書き換えのリスクがゼロではない。
+      # 完全な安全性のため commit SHA にピン留めすること（下記参照）。
       - name: Run Trivy vulnerability scanner
         id: trivy
-        uses: aquasecurity/trivy-action@v0.36.0
+        # SHA ピン: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           image-ref: code-review-agent:${{ github.sha }}
           format: sarif
