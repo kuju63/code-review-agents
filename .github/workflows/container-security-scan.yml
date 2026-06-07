@@ -1,0 +1,78 @@
+name: Container Security Scan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - src/**
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/container-security-scan.yml
+  # main への直接プッシュ (bot の依存更新等) もスキャン対象にする
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - src/**
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/container-security-scan.yml
+
+jobs:
+  trivy-scan:
+    name: Trivy Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+      # cache-from/cache-to: type=gha は actions キャッシュの読み書きに write 権限が必要
+      actions: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # ベースイメージが cgr.dev (Chainguard) と ghcr.io (astral-sh) のみのため
+      # Docker Hub への認証は不要。GHA キャッシュでベースレイヤーの再プルを抑制。
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build container image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          tags: code-review-agent:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # trivy-action のセキュリティに関する注記:
+      # 2026-03-19 にサプライチェーン攻撃で大多数のバージョンタグが書き換えられた
+      # (CVE-2026-33634, GHSA-69fq-xp46-6x23)
+      # v0.35.0 以降は GitHub の immutable releases 機能で保護されているが、
+      # タグは依然として mutable であり再書き換えのリスクがゼロではない。
+      # 完全な安全性のため commit SHA にピン留めすること（下記参照）。
+      - name: Run Trivy vulnerability scanner
+        id: trivy
+        # SHA ピン: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: code-review-agent:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+          ignore-unfixed: true
+
+      # ビルドステップ失敗時は trivy-results.sarif が存在しないためスキップする
+      # trivy ステップが実行されていれば (成功・失敗どちらでも) SARIF をアップロードする
+      - name: Upload scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v4
+        if: steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure'
+        with:
+          sarif_file: trivy-results.sarif
