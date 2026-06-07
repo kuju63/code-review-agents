@@ -151,8 +151,8 @@ python evaluation/tools/score_evaluation.py \
 
 ## Contributing
 
-Issue / Pull Request 歓迎です。  
-大きな変更の前には、目的と影響範囲を Issue で共有してください。
+コントリビューション手順は `CONTRIBUTING.md` を参照してください。  
+不具合報告・機能要望は Issue 作成を前提としています。
 
 ## Authors
 

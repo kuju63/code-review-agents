@@ -15,43 +15,13 @@ Deployment: Docker or Alternative tools(ex. Podman), K8s
 
 ## Frequently Used Commands
 
-Use the following commands during local development.
-
-### Initial Setup
-
-```bash
-uv venv
-source .venv/bin/activate
-uv sync
-pre-commit install
-```
+For shared development commands (initial setup, test, lint/format, build), refer to [CONTRIBUTING.md](CONTRIBUTING.md#3-local-development-commands).
 
 ### Run Application
 
 ```bash
 source .venv/bin/activate
 uv run code-review-agent
-```
-
-### Test
-
-```bash
-uv run pytest
-```
-
-### Lint and Format
-
-```bash
-uv run ruff check
-uv run ruff check --fix
-uv run ruff format
-uv run ruff format --check
-```
-
-### Build
-
-```bash
-uv build
 ```
 
 ### Evaluation Pipeline
@@ -64,21 +34,13 @@ python evaluation/tools/score_evaluation.py \
  --pred evaluation/data/agent_predictions.jsonl
 ```
 
-## Coding Rule
+## Coding Rules
 
-- Comply with PEP 8
-- Specifying type hints
-- Adhere to the principle of “one module, one responsibility” and follow general design principles
-- Create documentation comments in Google style format.
-- Keep line comments focused on why and what; do not add comments that are obvious from reading the source code.
+For shared implementation and design rules, refer to [CONTRIBUTING.md](CONTRIBUTING.md#4-implementation-and-design-rules).
 
 ## Quality / Feature Requirements
 
-Use the following minimum acceptance criteria for each feature:
-
-- User feature requirements are verified.
-- All tests pass.
-- Test coverage is 75% or higher.
+For contributor-facing quality gates and the Spec-Driven + TDD workflow, refer to [CONTRIBUTING.md](CONTRIBUTING.md#2-development-flow-spec-driven--tdd).
 
 Verification policy:
 
@@ -103,6 +65,59 @@ Agent navigation links for requirement verification:
 - Purpose:
   - Preserve rollback points before implementation starts or before major changes.
   - Enable quick recovery when issues occur.
+
+### Required Execution Checklist for Coding Agent
+
+The Mermaid diagram below is a visual summary. For implementation tasks, the Coding Agent MUST execute the following checklist in order and MUST NOT skip gates.
+
+1. Clarify requirements and edge cases.
+
+   - If requirements are ambiguous, stop implementation and ask for clarification.
+
+2. Write/update the spec before coding.
+
+   - Save requirement decisions in repository documents (for example `plan/` or `docs/`).
+   - If the task adds or changes a feature, create or update the corresponding document under `docs/`.
+
+3. Create a rollback point.
+
+   - Commit the spec baseline before implementation starts.
+
+4. Execute TDD cycle.
+
+   - Write tests first (Red).
+   - Implement minimal changes to pass tests (Green).
+   - Refactor while preserving behavior (Refactor).
+
+5. Run mandatory validation commands.
+
+    ```bash
+    uv run pytest
+    uv run ruff check
+    uv run ruff format --check
+    ```
+
+6. Gate decision after validation.
+
+   - If any command fails, return to Step 5 and fix.
+   - If all commands pass, commit one completed feature unit.
+
+7. Re-validate quality gate after refactoring.
+
+   - Ensure requirements are still satisfied.
+   - Ensure tests pass.
+   - Ensure coverage is >= 75%.
+
+8. Create/update Pull Request.
+
+   - Fill PR description using `.github/pull_request_template.md`.
+   - Include summary, change details, impact scope, related Issue, test results, documentation updates, and rollback plan.
+
+9. Address review comments.
+
+   - Apply fixes.
+   - Re-run Step 6 commands.
+   - Update branch until review is approved.
 
 ```mermaid
 flowchart TD
