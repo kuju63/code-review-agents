@@ -33,7 +33,6 @@ build/
 .pre-commit-config.yaml
 .editorconfig
 .python-version
-renovate.json
 
 # ドキュメント
 docs/
@@ -48,6 +47,7 @@ CLAUDE.md
 *.pem
 *.key
 *.crt
+*.json
 
 # macOS
 .DS_Store

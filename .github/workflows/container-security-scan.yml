@@ -9,11 +9,23 @@ on:
       - src/**
       - pyproject.toml
       - uv.lock
+      - .github/workflows/container-security-scan.yml
+  # main への直接プッシュ (bot の依存更新等) もスキャン対象にする
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - src/**
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/container-security-scan.yml
 
 jobs:
   trivy-scan:
     name: Trivy Vulnerability Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       security-events: write
@@ -44,6 +56,7 @@ jobs:
       # さらなる安全性確保には完全な commit SHA へのピン留めを推奨:
       #   uses: aquasecurity/trivy-action@<full-40-char-sha>  # v0.36.0
       - name: Run Trivy vulnerability scanner
+        id: trivy
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: code-review-agent:${{ github.sha }}
@@ -53,8 +66,10 @@ jobs:
           exit-code: '1'
           ignore-unfixed: true
 
+      # ビルドステップ失敗時は trivy-results.sarif が存在しないためスキップする
+      # trivy ステップが実行されていれば (成功・失敗どちらでも) SARIF をアップロードする
       - name: Upload scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure'
         with:
           sarif_file: trivy-results.sarif

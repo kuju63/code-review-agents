@@ -15,56 +15,58 @@ FROM ghcr.io/astral-sh/uv:latest AS uv-binary
 ###############################################################################
 FROM cgr.dev/chainguard/python:latest-dev AS builder
 
-# ビルド操作に root 権限が必要なため一時的に切り替え
 USER root
 
-# uv バイナリを標準パスにコピー
 COPY --from=uv-binary /uv /usr/local/bin/uv
 
-# UV_COMPILE_BYTECODE: .pyc を事前生成（起動高速化）
-# UV_LINK_MODE=copy: ハードリンク非対応環境へのフォールバック
-# UV_PYTHON_DOWNLOADS=never: コンテナ内での Python 追加ダウンロードを禁止
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never
 
 WORKDIR /app
 
-# 依存ファイルを先にコピーしてレイヤーキャッシュを最大化
-# README.md は pyproject.toml の readme フィールドで uv_build が参照するため必須
 COPY pyproject.toml uv.lock README.md ./
+
+# Phase 1: 依存パッケージのみ先にインストール（キャッシュ最大化）
+# pyproject.toml / uv.lock が変わらない限りこのレイヤーは再利用される
+# --no-install-project: プロジェクト自身のインストールを後回しにする
+RUN uv sync --frozen --no-dev --no-install-project --no-cache
+
+# src/ を後からコピーすることで依存レイヤーのキャッシュを保護する
 COPY src/ ./src/
 
-# 本番依存のみをインストールし site-packages を固定パスに抽出
-# --frozen : uv.lock を厳密に適用（再現性保証）
-# --no-dev : pytest・ruff 等の開発依存を除外
-# --no-editable : site-packages へのコピーインストール（runtime に src/ 不要）
-# --no-cache : キャッシュをイメージレイヤーに残さない
-# venv のシンボリックリンク構造はランタイム不要のため site-packages のみ抽出
+# Phase 2: プロジェクト本体をインストールして site-packages と bin を抽出
+# --no-editable: site-packages へのコピーインストール（runtime に src/ 不要）
 RUN uv sync --frozen --no-dev --no-editable --no-cache && \
-    mkdir -p /app/pysite && \
-    cp -r /app/.venv/lib/python*/site-packages/. /app/pysite/
+    mkdir -p /app/pysite /app/bin && \
+    cp -r /app/.venv/lib/python*/site-packages/. /app/pysite/ && \
+    # console script のシェバンを Chainguard ランタイムの Python パスに修正
+    # sys.argv[0] = "/usr/local/bin/code-review-agent" になるため argparse 等が正常動作する
+    cp /app/.venv/bin/code-review-agent /app/bin/ && \
+    sed -i '1s|.*|#!/usr/bin/python|' /app/bin/code-review-agent && \
+    chmod +x /app/bin/code-review-agent
 
 ###############################################################################
 # Stage 2: runtime
 # cgr.dev/chainguard/python:latest — Wolfi ベース、ゼロ CVE ポリシー、シェルなし
 # - nonroot ユーザー (UID 65532) がビルトイン
-# - venv を持ち込まないため venv シンボリックリンクの修正が不要
 ###############################################################################
 FROM cgr.dev/chainguard/python:latest AS runtime
 
 WORKDIR /app
 
-# site-packages のみコピー（venv 全体を持ち込まない）
-# ビルダーと同一 Chainguard イメージのため Python ABI が完全に一致する
-COPY --from=builder --chown=nonroot:nonroot /app/pysite /app/site-packages
+# システム Python の site-packages に直接インストールする
+# → PYTHONPATH 非依存: ランタイムで -e PYTHONPATH を上書きされてもパッケージが見つかる
+# → site.py がスタートアップ時にこのディレクトリを sys.path に追加する
+# NOTE: パスは cgr.dev/chainguard/python:latest の Python バージョンに依存する
+#       (現在 Python 3.14)。バージョン変更時は更新が必要。
+COPY --from=builder /app/pysite /usr/lib/python3.14/site-packages/
 
-# PYTHONPATH: venv なしでパッケージを検索できるようにする
-# PYTHONDONTWRITEBYTECODE: 実行時の .pyc 生成を抑制（read-only fs 対応）
-# PYTHONUNBUFFERED: stdout/stderr をバッファリングなしで出力（ログ即時反映）
-# PYTHONFAULTHANDLER: クラッシュ時にスタックトレースを出力
-ENV PYTHONPATH="/app/site-packages" \
-    PYTHONDONTWRITEBYTECODE=1 \
+# console script をコピー (シェバン修正済み: #!/usr/bin/python)
+# exec 形式 ENTRYPOINT から直接起動されるため sys.argv[0] が正しく設定される
+COPY --from=builder /app/bin/code-review-agent /usr/local/bin/code-review-agent
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONFAULTHANDLER=1
 
@@ -77,5 +79,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD ["/usr/bin/python", "-c", "import code_review_agent"]
 
-# venv を経由しないため Chainguard ランタイムの /usr/bin/python を直接使用
-ENTRYPOINT ["/usr/bin/python", "-c", "from code_review_agent import main; main()"]
+ENTRYPOINT ["/usr/local/bin/code-review-agent"]
