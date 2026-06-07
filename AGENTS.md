@@ -24,7 +24,7 @@ The `.claude/settings.local.json` is gitignored (personal settings) and must be
 copied manually to each worktree.
 
 ```bash
-mkdir -p .claude && cp ../../../.claude/settings.local.json .claude/
+mkdir -p .claude && cp ../../../.claude/settings.local.json .claude/ && cp -r ../../../.claude/local .claude/
 ```
 
 ### Run Application
