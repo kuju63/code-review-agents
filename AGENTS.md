@@ -24,9 +24,11 @@ The `.claude/settings.local.json` is gitignored (personal settings) and must be
 copied manually to each worktree.
 
 ```bash
-mkdir -p .claude
+WORKTREE_ROOT=$(git rev-parse --show-toplevel)
 PROJECT_ROOT=$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)
-cp "$PROJECT_ROOT/.claude/settings.local.json" .claude/
+mkdir -p "$WORKTREE_ROOT/.claude"
+[ -f "$PROJECT_ROOT/.claude/settings.local.json" ] && \
+  cp "$PROJECT_ROOT/.claude/settings.local.json" "$WORKTREE_ROOT/.claude/"
 ```
 
 ### Run Application
