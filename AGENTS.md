@@ -27,7 +27,6 @@ copied manually to each worktree.
 mkdir -p .claude
 PROJECT_ROOT=$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)
 cp "$PROJECT_ROOT/.claude/settings.local.json" .claude/
-cp -r "$PROJECT_ROOT/.claude/local" .claude/
 ```
 
 ### Run Application
