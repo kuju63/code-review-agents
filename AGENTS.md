@@ -17,6 +17,20 @@ Deployment: Docker or Alternative tools(ex. Podman), K8s
 
 For shared development commands (initial setup, test, lint/format, build), refer to [CONTRIBUTING.md](CONTRIBUTING.md#3-local-development-commands).
 
+### Worktree Setup
+
+After creating a new worktree, copy the local Claude Code hook settings into it.
+The `.claude/settings.local.json` is gitignored (personal settings) and must be
+copied manually to each worktree.
+
+```bash
+WORKTREE_ROOT=$(git rev-parse --show-toplevel)
+PROJECT_ROOT=$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)
+mkdir -p "$WORKTREE_ROOT/.claude"
+[ -f "$PROJECT_ROOT/.claude/settings.local.json" ] && \
+  cp "$PROJECT_ROOT/.claude/settings.local.json" "$WORKTREE_ROOT/.claude/"
+```
+
 ### Run Application
 
 ```bash
