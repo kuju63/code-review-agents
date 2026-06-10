@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/pyproject.toml">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/pyproject.toml" />
+              <option name="originalContent" value="[project]&#10;name = &quot;code-review-agent&quot;&#10;version = &quot;0.1.0&quot;&#10;description = &quot;Add your description here&quot;&#10;readme = &quot;README.md&quot;&#10;authors = [&#10;    { name = &quot;kuju63&quot;, email = &quot;lh182051+src@gmail.com&quot; }&#10;]&#10;requires-python = &quot;&gt;=3.12&quot;&#10;dependencies = [&#10;    &quot;fastapi&gt;=0.136.3&quot;,&#10;    &quot;pydantic&gt;=2.13.4&quot;,&#10;    &quot;strands-agents[openai]&gt;=1.41.0&quot;,&#10;    &quot;uvicorn[standard]&gt;=0.48.0&quot;,&#10;]&#10;&#10;[project.scripts]&#10;code-review-agent = &quot;code_review_agent:main&quot;&#10;&#10;[build-system]&#10;requires = [&quot;uv_build&gt;=0.11.8,&lt;0.12.0&quot;]&#10;build-backend = &quot;uv_build&quot;&#10;&#10;[tool.pyright]&#10;venvPath = &quot;.&quot;&#10;venv = &quot;.venv&quot;&#10;&#10;[dependency-groups]&#10;dev = [&#10;    &quot;pre-commit&gt;=4.6.0&quot;,&#10;    &quot;pyright&gt;=1.1.409&quot;,&#10;    &quot;pytest&gt;=9.0.3&quot;,&#10;    &quot;pytest-cov&gt;=7.1.0&quot;,&#10;    &quot;ruff&gt;=0.15.15&quot;,&#10;]&#10;" />
+              <option name="updatedContent" value="[project]&#10;name = &quot;code-review-agent&quot;&#10;version = &quot;0.1.0&quot;&#10;description = &quot;Add your description here&quot;&#10;readme = &quot;README.md&quot;&#10;authors = [&#10;    { name = &quot;kuju63&quot;, email = &quot;lh182051+src@gmail.com&quot; }&#10;]&#10;requires-python = &quot;&gt;=3.12&quot;&#10;dependencies = [&#10;    &quot;fastapi&gt;=0.136.3&quot;,&#10;    &quot;httpx&gt;=0.28&quot;,&#10;    &quot;pydantic&gt;=2.13.4&quot;,&#10;    &quot;pydantic-settings&gt;=2.0&quot;,&#10;    &quot;python-dotenv&gt;=1.0&quot;,&#10;    &quot;strands-agents[openai]&gt;=1.41.0&quot;,&#10;    &quot;uvicorn[standard]&gt;=0.48.0&quot;,&#10;]&#10;&#10;[project.scripts]&#10;code-review-agent = &quot;code_review_agent:main&quot;&#10;&#10;[build-system]&#10;requires = [&quot;uv_build&gt;=0.11.8,&lt;0.12.0&quot;]&#10;build-backend = &quot;uv_build&quot;&#10;&#10;[tool.pyright]&#10;venvPath = &quot;.&quot;&#10;venv = &quot;.venv&quot;&#10;&#10;[tool.pytest.ini_options]&#10;asyncio_mode = &quot;strict&quot;&#10;&#10;[dependency-groups]&#10;dev = [&#10;    &quot;pre-commit&gt;=4.6.0&quot;,&#10;    &quot;pyright&gt;=1.1.409&quot;,&#10;    &quot;pytest&gt;=9.0.3&quot;,&#10;    &quot;pytest-asyncio&gt;=0.26&quot;,&#10;    &quot;pytest-cov&gt;=7.1.0&quot;,&#10;    &quot;ruff&gt;=0.15.15&quot;,&#10;]&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
