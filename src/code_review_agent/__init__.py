@@ -60,5 +60,17 @@ __all__ = [
 
 
 def main() -> None:
-    """Entry point placeholder."""
-    print("Hello from code-review-agent!")
+    """Start the A2A HTTP server."""
+    import uvicorn
+
+    from .api.app import create_app
+    from .api.config import Settings
+
+    settings = Settings()
+    app = create_app(settings)
+    uvicorn.run(
+        app,
+        host=settings.host,
+        port=settings.port,
+        log_level=settings.log_level,
+    )
