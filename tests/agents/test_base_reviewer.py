@@ -175,3 +175,41 @@ class TestReview:
             reviewer.review(_make_context())
 
         mock_model_cls.assert_called_once_with(model_id="gpt-4o-mini")
+
+    def test_passes_llm_base_url_to_openai_model_when_set(self):
+        reviewer = _StubReviewer(
+            ReviewerConfig(
+                github_token="tok",
+                model_id="gpt-4o",
+                llm_base_url="http://localhost:11434/v1",
+            )
+        )
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.structured_output.return_value = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+        ):
+            reviewer.review(_make_context())
+
+        mock_model_cls.assert_called_once_with(
+            model_id="gpt-4o", client_args={"base_url": "http://localhost:11434/v1"}
+        )
+
+    def test_omits_base_url_from_openai_model_when_not_set(self):
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok", model_id="gpt-4o"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.structured_output.return_value = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+        ):
+            reviewer.review(_make_context())
+
+        mock_model_cls.assert_called_once_with(model_id="gpt-4o")

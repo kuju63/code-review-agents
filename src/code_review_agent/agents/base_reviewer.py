@@ -37,6 +37,7 @@ class ReviewerConfig:
     github_token: str
     model_id: str = "gpt-4o"
     mcp_url: str = GITHUB_MCP_URL
+    llm_base_url: str | None = None
 
 
 class ReviewAgent(ABC):
@@ -103,7 +104,13 @@ class LLMReviewAgent(ReviewAgent):
         project_type: ProjectType | None = None,
     ) -> ReviewResult:
         prompt = self._build_prompt(context)
-        model = OpenAIModel(model_id=self._config.model_id)
+        if self._config.llm_base_url:
+            model = OpenAIModel(
+                model_id=self._config.model_id,
+                client_args={"base_url": self._config.llm_base_url},
+            )
+        else:
+            model = OpenAIModel(model_id=self._config.model_id)
 
         if self.uses_github_mcp:
             mcp_client = create_github_mcp_client(

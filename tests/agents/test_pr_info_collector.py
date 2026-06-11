@@ -234,3 +234,39 @@ class TestPRInfoCollectorCollect:
         mock_factory.assert_called_once_with(
             "mytoken", "https://custom.example.com/mcp"
         )
+
+    def test_passes_llm_base_url_to_openai_model_when_set(self):
+        collector = PRInfoCollector(
+            github_token="tok", llm_base_url="http://localhost:11434/v1"
+        )
+        mock_mcp = self._mock_mcp()
+        mock_agent_instance = MagicMock()
+        mock_agent_instance.structured_output.return_value = self._make_result()
+        _MOD = "code_review_agent.agents.pr_info_collector"
+
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_MOD}.Agent", return_value=mock_agent_instance),
+            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+        ):
+            collector.collect("octocat", "hello", 1)
+
+        mock_model_cls.assert_called_once_with(
+            model_id="gpt-4o", client_args={"base_url": "http://localhost:11434/v1"}
+        )
+
+    def test_omits_base_url_from_openai_model_when_not_set(self):
+        collector = PRInfoCollector(github_token="tok")
+        mock_mcp = self._mock_mcp()
+        mock_agent_instance = MagicMock()
+        mock_agent_instance.structured_output.return_value = self._make_result()
+        _MOD = "code_review_agent.agents.pr_info_collector"
+
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_MOD}.Agent", return_value=mock_agent_instance),
+            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+        ):
+            collector.collect("octocat", "hello", 1)
+
+        mock_model_cls.assert_called_once_with(model_id="gpt-4o")
