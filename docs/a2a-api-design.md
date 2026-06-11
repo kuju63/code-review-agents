@@ -668,13 +668,24 @@ def create_router(settings: Settings, store: TaskStore) -> APIRouter:
 def main() -> None:
     """FastAPI + Uvicorn で A2A 準拠 API サーバーを起動する。"""
     import uvicorn
+    from dotenv import load_dotenv
     from .api.app import create_app
     from .api.config import Settings
+
+    # LLM SDK は非プレフィックスの OPENAI_API_KEY を os.environ から直接読むため、
+    # サーバープロセスに .env を読み込む。load_dotenv() は既存の環境変数を上書き
+    # しないので、シェルで export した値が優先される。
+    load_dotenv()
 
     settings = Settings()
     app = create_app(settings)
     uvicorn.run(app, host=settings.host, port=settings.port, log_level=settings.log_level)
 ```
+
+> **補足:** `Settings`（pydantic-settings）は `CODE_REVIEW_` プレフィックス付き変数のみを
+> 読み込み、`os.environ` には反映しない。一方 Strands の `OpenAIModel` は非プレフィックスの
+> `OPENAI_API_KEY` を `os.environ` から直接参照する。`uv run` は `.env` を自動読込しないため、
+> `main()` 冒頭で `load_dotenv()` を呼び、シェルへ export せずに `.env` から認証情報を供給する。
 
 ---
 
