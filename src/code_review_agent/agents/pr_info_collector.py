@@ -105,8 +105,14 @@ class PRInfoCollector:
             )
         else:
             openai_model = OpenAIModel(model_id=self._model_id)
+        # In strands >=1.41 ``MCPClient`` is a ``ToolProvider`` whose lifecycle
+        # the Agent owns: it calls ``start()`` while loading tools and
+        # ``stop()`` on cleanup.  Opening it ourselves with ``with`` would start
+        # the session a second time and raise "the client session is currently
+        # running", so we hand the client to the Agent and stop it
+        # deterministically in ``finally`` (``stop`` is idempotent).
         mcp_client = create_github_mcp_client(self._github_token, self._mcp_url)
-        with mcp_client:
+        try:
             agent = Agent(
                 model=openai_model,
                 system_prompt=SYSTEM_PROMPT,
@@ -116,6 +122,8 @@ class PRInfoCollector:
                 PRInfoResult,
                 prompt=prompt,
             )
+        finally:
+            mcp_client.stop(None, None, None)
 
         filtered_changes = [
             fc for fc in result.pr_info.file_changes if is_target_file(fc.filePath)

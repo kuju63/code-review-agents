@@ -113,10 +113,17 @@ class LLMReviewAgent(ReviewAgent):
             model = OpenAIModel(model_id=self._config.model_id)
 
         if self.uses_github_mcp:
+            # In strands >=1.41 ``MCPClient`` is a ``ToolProvider`` whose
+            # lifecycle the Agent owns: it calls ``start()`` while loading tools
+            # and ``stop()`` on cleanup.  Opening it ourselves with ``with``
+            # would start the session a second time and raise "the client
+            # session is currently running", so we hand the client to the Agent
+            # and stop it deterministically in ``finally`` (``stop`` is
+            # idempotent).
             mcp_client = create_github_mcp_client(
                 self._config.github_token, self._config.mcp_url
             )
-            with mcp_client:
+            try:
                 agent = Agent(
                     model=model,
                     system_prompt=self.system_prompt,
@@ -125,6 +132,8 @@ class LLMReviewAgent(ReviewAgent):
                 output: ReviewOutput = agent.structured_output(
                     ReviewOutput, prompt=prompt
                 )
+            finally:
+                mcp_client.stop(None, None, None)
         else:
             agent = Agent(model=model, system_prompt=self.system_prompt, tools=[])
             output = agent.structured_output(ReviewOutput, prompt=prompt)
