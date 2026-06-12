@@ -35,19 +35,27 @@ class TaskStore:
 
     async def set_completed(self, task_id: str, parts: list) -> None:
         async with self._lock:
-            if task := self._store.get(task_id):
+            task = self._store.get(task_id)
+            if task is not None:
                 self._store[task_id] = task.model_copy(
                     update={
                         "status": A2ATaskStatus.COMPLETED,
                         "message": A2AMessage(role="agent", parts=parts),
                     }
                 )
-        asyncio.create_task(self._schedule_delete(task_id))
+        # Only schedule TTL deletion for a task that actually exists; otherwise
+        # an unknown id would spawn a background task that sleeps for the full
+        # TTL and then pops nothing.  Scheduled outside the lock to avoid
+        # holding it across task creation.
+        if task is not None:
+            asyncio.create_task(self._schedule_delete(task_id))
 
     async def set_failed(self, task_id: str, error: str) -> None:
         async with self._lock:
-            if task := self._store.get(task_id):
+            task = self._store.get(task_id)
+            if task is not None:
                 self._store[task_id] = task.model_copy(
                     update={"status": A2ATaskStatus.FAILED, "error": error}
                 )
-        asyncio.create_task(self._schedule_delete(task_id))
+        if task is not None:
+            asyncio.create_task(self._schedule_delete(task_id))

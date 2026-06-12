@@ -1,5 +1,5 @@
 import asyncio
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -76,6 +76,29 @@ class TestTaskStoreSetCompleted:
         store = TaskStore()
         await store.set_completed("no-such-id", [])
 
+    @pytest.mark.asyncio
+    async def test_set_completed_on_existing_task_schedules_delete(self) -> None:
+        store = TaskStore()
+        task = await store.create()
+        with patch.object(
+            store, "_schedule_delete", new_callable=AsyncMock
+        ) as mock_sched:
+            await store.set_completed(task.id, [])
+            await asyncio.sleep(0)
+        mock_sched.assert_called_once_with(task.id)
+
+    @pytest.mark.asyncio
+    async def test_set_completed_on_nonexistent_task_does_not_schedule_delete(
+        self,
+    ) -> None:
+        store = TaskStore()
+        with patch.object(
+            store, "_schedule_delete", new_callable=AsyncMock
+        ) as mock_sched:
+            await store.set_completed("no-such-id", [])
+            await asyncio.sleep(0)
+        mock_sched.assert_not_called()
+
 
 class TestTaskStoreSetFailed:
     @pytest.mark.asyncio
@@ -92,6 +115,29 @@ class TestTaskStoreSetFailed:
     async def test_set_failed_on_nonexistent_task_is_noop(self) -> None:
         store = TaskStore()
         await store.set_failed("no-such-id", "error")
+
+    @pytest.mark.asyncio
+    async def test_set_failed_on_existing_task_schedules_delete(self) -> None:
+        store = TaskStore()
+        task = await store.create()
+        with patch.object(
+            store, "_schedule_delete", new_callable=AsyncMock
+        ) as mock_sched:
+            await store.set_failed(task.id, "error")
+            await asyncio.sleep(0)
+        mock_sched.assert_called_once_with(task.id)
+
+    @pytest.mark.asyncio
+    async def test_set_failed_on_nonexistent_task_does_not_schedule_delete(
+        self,
+    ) -> None:
+        store = TaskStore()
+        with patch.object(
+            store, "_schedule_delete", new_callable=AsyncMock
+        ) as mock_sched:
+            await store.set_failed("no-such-id", "error")
+            await asyncio.sleep(0)
+        mock_sched.assert_not_called()
 
 
 class TestTaskStoreTTL:
