@@ -71,10 +71,12 @@ class PRInfoCollector:
         github_token: str,
         model_id: str = "gpt-4o",
         mcp_url: str = GITHUB_MCP_URL,
+        llm_base_url: str | None = None,
     ) -> None:
         self._github_token = github_token
         self._model_id = model_id
         self._mcp_url = mcp_url
+        self._llm_base_url = llm_base_url
 
     def collect(self, owner: str, repo: str, pr_number: int) -> PRInfoResult:
         """Collect PR information from GitHub and return structured data.
@@ -96,10 +98,23 @@ class PRInfoCollector:
         prompt = _COLLECT_PROMPT_TEMPLATE.format(
             owner=owner, repo=repo, pr_number=pr_number
         )
+        if self._llm_base_url:
+            openai_model = OpenAIModel(
+                model_id=self._model_id,
+                client_args={"base_url": self._llm_base_url},
+            )
+        else:
+            openai_model = OpenAIModel(model_id=self._model_id)
+        # In strands >=1.41 ``MCPClient`` is a ``ToolProvider`` whose lifecycle
+        # the Agent owns: it calls ``start()`` while loading tools and
+        # ``stop()`` on cleanup.  Opening it ourselves with ``with`` would start
+        # the session a second time and raise "the client session is currently
+        # running", so we hand the client to the Agent and stop it
+        # deterministically in ``finally`` (``stop`` is idempotent).
         mcp_client = create_github_mcp_client(self._github_token, self._mcp_url)
-        with mcp_client:
+        try:
             agent = Agent(
-                model=OpenAIModel(model_id=self._model_id),
+                model=openai_model,
                 system_prompt=SYSTEM_PROMPT,
                 tools=[mcp_client],
             )
@@ -107,6 +122,8 @@ class PRInfoCollector:
                 PRInfoResult,
                 prompt=prompt,
             )
+        finally:
+            mcp_client.stop(None, None, None)
 
         filtered_changes = [
             fc for fc in result.pr_info.file_changes if is_target_file(fc.filePath)

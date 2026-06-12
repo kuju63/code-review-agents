@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from code_review_agent.agents.base_reviewer import (
     LLMReviewAgent,
     ReviewAgent,
@@ -63,10 +65,7 @@ def _make_context() -> ReviewContext:
 
 
 def _mock_mcp() -> MagicMock:
-    mock_mcp = MagicMock()
-    mock_mcp.__enter__ = MagicMock(return_value=mock_mcp)
-    mock_mcp.__exit__ = MagicMock(return_value=False)
-    return mock_mcp
+    return MagicMock()
 
 
 def _output() -> ReviewOutput:
@@ -100,7 +99,9 @@ class TestBuildPrompt:
 class TestReview:
     """review() runs the agent and wraps the output with metadata."""
 
-    def test_opens_mcp_and_calls_structured_output(self):
+    def test_loads_mcp_as_tool_and_stops_it(self):
+        """The Agent starts the MCP client while loading tools; review() must
+        hand it over as a tool and stop it deterministically afterwards."""
         reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
         mock_mcp = _mock_mcp()
         mock_agent = MagicMock()
@@ -115,12 +116,27 @@ class TestReview:
             reviewer.review(_make_context())
 
         mock_factory.assert_called_once_with("tok", reviewer._config.mcp_url)
-        mock_mcp.__enter__.assert_called_once()
-        mock_mcp.__exit__.assert_called_once()
+        mock_mcp.stop.assert_called_once_with(None, None, None)
 
         call_kwargs = mock_agent_cls.call_args.kwargs
         assert call_kwargs["system_prompt"] == "You are a stub reviewer."
         assert call_kwargs["tools"] == [mock_mcp]
+
+    def test_stops_mcp_even_when_agent_raises(self):
+        """``stop()`` must run even if the agent run fails (finally cleanup)."""
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.structured_output.side_effect = RuntimeError("boom")
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+        ):
+            with pytest.raises(RuntimeError, match="boom"):
+                reviewer.review(_make_context())
+
+        mock_mcp.stop.assert_called_once_with(None, None, None)
 
         args, kwargs = mock_agent.structured_output.call_args
         assert args[0] is ReviewOutput
@@ -175,3 +191,41 @@ class TestReview:
             reviewer.review(_make_context())
 
         mock_model_cls.assert_called_once_with(model_id="gpt-4o-mini")
+
+    def test_passes_llm_base_url_to_openai_model_when_set(self):
+        reviewer = _StubReviewer(
+            ReviewerConfig(
+                github_token="tok",
+                model_id="gpt-4o",
+                llm_base_url="http://localhost:11434/v1",
+            )
+        )
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.structured_output.return_value = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+        ):
+            reviewer.review(_make_context())
+
+        mock_model_cls.assert_called_once_with(
+            model_id="gpt-4o", client_args={"base_url": "http://localhost:11434/v1"}
+        )
+
+    def test_omits_base_url_from_openai_model_when_not_set(self):
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok", model_id="gpt-4o"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.structured_output.return_value = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+        ):
+            reviewer.review(_make_context())
+
+        mock_model_cls.assert_called_once_with(model_id="gpt-4o")

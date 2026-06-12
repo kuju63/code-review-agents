@@ -1,0 +1,155 @@
+import asyncio
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
+from code_review_agent.a2a.models import A2ADataPart, A2ATaskStatus
+from code_review_agent.a2a.task_store import TASK_TTL_SECONDS, TaskStore
+
+
+class TestTaskStoreCreate:
+    @pytest.mark.asyncio
+    async def test_create_returns_submitted_task(self) -> None:
+        store = TaskStore()
+        task = await store.create()
+        assert task.status == A2ATaskStatus.SUBMITTED
+        assert task.id != ""
+        assert task.message is None
+        assert task.error is None
+
+    @pytest.mark.asyncio
+    async def test_create_generates_unique_ids(self) -> None:
+        store = TaskStore()
+        t1 = await store.create()
+        t2 = await store.create()
+        assert t1.id != t2.id
+
+
+class TestTaskStoreGet:
+    @pytest.mark.asyncio
+    async def test_get_existing_task(self) -> None:
+        store = TaskStore()
+        task = await store.create()
+        found = await store.get(task.id)
+        assert found is not None
+        assert found.id == task.id
+
+    @pytest.mark.asyncio
+    async def test_get_nonexistent_task_returns_none(self) -> None:
+        store = TaskStore()
+        result = await store.get("nonexistent-id")
+        assert result is None
+
+
+class TestTaskStoreSetWorking:
+    @pytest.mark.asyncio
+    async def test_set_working_updates_status(self) -> None:
+        store = TaskStore()
+        task = await store.create()
+        await store.set_working(task.id)
+        updated = await store.get(task.id)
+        assert updated is not None
+        assert updated.status == A2ATaskStatus.WORKING
+
+    @pytest.mark.asyncio
+    async def test_set_working_on_nonexistent_task_is_noop(self) -> None:
+        store = TaskStore()
+        await store.set_working("no-such-id")
+
+
+class TestTaskStoreSetCompleted:
+    @pytest.mark.asyncio
+    async def test_set_completed_updates_status_and_message(self) -> None:
+        store = TaskStore()
+        task = await store.create()
+        parts = [A2ADataPart(data={"result": "ok"})]
+        await store.set_completed(task.id, parts)
+        updated = await store.get(task.id)
+        assert updated is not None
+        assert updated.status == A2ATaskStatus.COMPLETED
+        assert updated.message is not None
+        assert updated.message.role == "agent"
+        assert len(updated.message.parts) == 1
+
+    @pytest.mark.asyncio
+    async def test_set_completed_on_nonexistent_task_is_noop(self) -> None:
+        store = TaskStore()
+        await store.set_completed("no-such-id", [])
+
+    @pytest.mark.asyncio
+    async def test_set_completed_on_existing_task_schedules_delete(self) -> None:
+        store = TaskStore()
+        task = await store.create()
+        with patch.object(
+            store, "_schedule_delete", new_callable=AsyncMock
+        ) as mock_sched:
+            await store.set_completed(task.id, [])
+            await asyncio.sleep(0)
+        mock_sched.assert_called_once_with(task.id)
+
+    @pytest.mark.asyncio
+    async def test_set_completed_on_nonexistent_task_does_not_schedule_delete(
+        self,
+    ) -> None:
+        store = TaskStore()
+        with patch.object(
+            store, "_schedule_delete", new_callable=AsyncMock
+        ) as mock_sched:
+            await store.set_completed("no-such-id", [])
+            await asyncio.sleep(0)
+        mock_sched.assert_not_called()
+
+
+class TestTaskStoreSetFailed:
+    @pytest.mark.asyncio
+    async def test_set_failed_updates_status_and_error(self) -> None:
+        store = TaskStore()
+        task = await store.create()
+        await store.set_failed(task.id, "something went wrong")
+        updated = await store.get(task.id)
+        assert updated is not None
+        assert updated.status == A2ATaskStatus.FAILED
+        assert updated.error == "something went wrong"
+
+    @pytest.mark.asyncio
+    async def test_set_failed_on_nonexistent_task_is_noop(self) -> None:
+        store = TaskStore()
+        await store.set_failed("no-such-id", "error")
+
+    @pytest.mark.asyncio
+    async def test_set_failed_on_existing_task_schedules_delete(self) -> None:
+        store = TaskStore()
+        task = await store.create()
+        with patch.object(
+            store, "_schedule_delete", new_callable=AsyncMock
+        ) as mock_sched:
+            await store.set_failed(task.id, "error")
+            await asyncio.sleep(0)
+        mock_sched.assert_called_once_with(task.id)
+
+    @pytest.mark.asyncio
+    async def test_set_failed_on_nonexistent_task_does_not_schedule_delete(
+        self,
+    ) -> None:
+        store = TaskStore()
+        with patch.object(
+            store, "_schedule_delete", new_callable=AsyncMock
+        ) as mock_sched:
+            await store.set_failed("no-such-id", "error")
+            await asyncio.sleep(0)
+        mock_sched.assert_not_called()
+
+
+class TestTaskStoreTTL:
+    def test_ttl_constant(self) -> None:
+        assert TASK_TTL_SECONDS == 1800
+
+    @pytest.mark.asyncio
+    async def test_task_deleted_after_ttl(self) -> None:
+        store = TaskStore()
+        task = await store.create()
+        with patch("code_review_agent.a2a.task_store.TASK_TTL_SECONDS", 0):
+            await store.set_completed(task.id, [])
+            await asyncio.sleep(0.05)
+        result = await store.get(task.id)
+        assert result is None

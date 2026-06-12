@@ -9,7 +9,10 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.136.3",
+    "httpx>=0.28",
     "pydantic>=2.13.4",
+    "pydantic-settings>=2.0",
+    "python-dotenv>=1.0",
     "strands-agents[openai]>=1.41.0",
     "uvicorn[standard]>=0.48.0",
 ]
@@ -25,11 +28,15 @@ build-backend = "uv_build"
 venvPath = "."
 venv = ".venv"
 
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+
 [dependency-groups]
 dev = [
     "pre-commit>=4.6.0",
     "pyright>=1.1.409",
     "pytest>=9.0.3",
+    "pytest-asyncio>=0.26",
     "pytest-cov>=7.1.0",
     "ruff>=0.15.15",
 ]

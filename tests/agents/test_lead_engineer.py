@@ -524,3 +524,45 @@ class TestLeadEngineerAgentEvaluate:
             LeadEngineerAgent(config).evaluate(_make_report())
 
         mock_model_cls.assert_called_once_with(model_id="gpt-4o")
+
+    def test_passes_llm_base_url_to_openai_model_when_set(self):
+        from code_review_agent.agents.lead_engineer import LeadEngineerAgent
+        from code_review_agent.models.lead_engineer import LeadEngineerOutput
+
+        config = ReviewerConfig(
+            github_token="",
+            model_id="gpt-4o",
+            llm_base_url="http://localhost:11434/v1",
+        )
+        mock_agent = MagicMock()
+        mock_agent.structured_output.return_value = LeadEngineerOutput(
+            overall_summary="ok", decisions=[]
+        )
+
+        with (
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+        ):
+            LeadEngineerAgent(config).evaluate(_make_report())
+
+        mock_model_cls.assert_called_once_with(
+            model_id="gpt-4o", client_args={"base_url": "http://localhost:11434/v1"}
+        )
+
+    def test_omits_base_url_from_openai_model_when_not_set(self):
+        from code_review_agent.agents.lead_engineer import LeadEngineerAgent
+        from code_review_agent.models.lead_engineer import LeadEngineerOutput
+
+        config = ReviewerConfig(github_token="", model_id="gpt-4o")
+        mock_agent = MagicMock()
+        mock_agent.structured_output.return_value = LeadEngineerOutput(
+            overall_summary="ok", decisions=[]
+        )
+
+        with (
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+        ):
+            LeadEngineerAgent(config).evaluate(_make_report())
+
+        mock_model_cls.assert_called_once_with(model_id="gpt-4o")

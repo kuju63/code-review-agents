@@ -82,7 +82,13 @@ class LeadEngineerAgent:
             Final report with accept/reject decisions for every finding.
         """
         prompt, index_map = self._build_prompt_and_index(report)
-        model = OpenAIModel(model_id=self._config.model_id)
+        if self._config.llm_base_url:
+            model = OpenAIModel(
+                model_id=self._config.model_id,
+                client_args={"base_url": self._config.llm_base_url},
+            )
+        else:
+            model = OpenAIModel(model_id=self._config.model_id)
         agent = Agent(model=model, system_prompt=self.system_prompt, tools=[])
         output: LeadEngineerOutput = agent.structured_output(
             LeadEngineerOutput, prompt=prompt

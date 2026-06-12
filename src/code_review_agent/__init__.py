@@ -60,5 +60,24 @@ __all__ = [
 
 
 def main() -> None:
-    """Entry point placeholder."""
-    print("Hello from code-review-agent!")
+    """Start the A2A HTTP server."""
+    import uvicorn
+    from dotenv import load_dotenv
+
+    from .api.app import create_app
+    from .api.config import Settings
+
+    # Load .env into the process environment so the LLM SDK (which reads the
+    # unprefixed OPENAI_API_KEY) and any non-CODE_REVIEW_ credentials are
+    # available without exporting them in the shell.  load_dotenv() does not
+    # override variables already set, so a shell export still takes precedence.
+    load_dotenv()
+
+    settings = Settings()
+    app = create_app(settings)
+    uvicorn.run(
+        app,
+        host=settings.host,
+        port=settings.port,
+        log_level=settings.log_level,
+    )

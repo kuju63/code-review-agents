@@ -100,10 +100,7 @@ class TestPRInfoCollectorCollect:
         )
 
     def _mock_mcp(self) -> MagicMock:
-        mock_mcp = MagicMock()
-        mock_mcp.__enter__ = MagicMock(return_value=mock_mcp)
-        mock_mcp.__exit__ = MagicMock(return_value=False)
-        return mock_mcp
+        return MagicMock()
 
     def test_collect_calls_agent_with_correct_prompt(self):
         expected_result = self._make_result()
@@ -138,8 +135,13 @@ class TestPRInfoCollectorCollect:
 
         assert result.repository_info.owner == "octocat"
 
-    def test_collect_opens_and_closes_mcp_client(self):
-        """MCP client context manager must be entered and exited."""
+    def test_collect_stops_mcp_client(self):
+        """The Agent owns the MCP client lifecycle; collect() must stop it.
+
+        In strands >=1.41 the client is started by the Agent while loading
+        tools, so collect() no longer opens it via ``with``.  It must instead
+        call ``stop()`` deterministically once the agent run completes.
+        """
         collector = PRInfoCollector(github_token="tok")
         mock_mcp = self._mock_mcp()
         mock_agent_instance = MagicMock()
@@ -157,8 +159,29 @@ class TestPRInfoCollectorCollect:
         ):
             collector.collect("octocat", "hello", 1)
 
-        mock_mcp.__enter__.assert_called_once()
-        mock_mcp.__exit__.assert_called_once()
+        mock_mcp.stop.assert_called_once_with(None, None, None)
+
+    def test_collect_stops_mcp_client_even_when_agent_raises(self):
+        """``stop()`` must run even if the agent run fails (finally cleanup)."""
+        collector = PRInfoCollector(github_token="tok")
+        mock_mcp = self._mock_mcp()
+        mock_agent_instance = MagicMock()
+        mock_agent_instance.structured_output.side_effect = RuntimeError("boom")
+
+        with (
+            patch(
+                "code_review_agent.agents.pr_info_collector.create_github_mcp_client",
+                return_value=mock_mcp,
+            ),
+            patch(
+                "code_review_agent.agents.pr_info_collector.Agent",
+                return_value=mock_agent_instance,
+            ),
+        ):
+            with pytest.raises(RuntimeError, match="boom"):
+                collector.collect("octocat", "hello", 1)
+
+        mock_mcp.stop.assert_called_once_with(None, None, None)
 
     def test_collect_returns_pr_info_result(self):
         collector = PRInfoCollector(github_token="tok")
@@ -234,3 +257,39 @@ class TestPRInfoCollectorCollect:
         mock_factory.assert_called_once_with(
             "mytoken", "https://custom.example.com/mcp"
         )
+
+    def test_passes_llm_base_url_to_openai_model_when_set(self):
+        collector = PRInfoCollector(
+            github_token="tok", llm_base_url="http://localhost:11434/v1"
+        )
+        mock_mcp = self._mock_mcp()
+        mock_agent_instance = MagicMock()
+        mock_agent_instance.structured_output.return_value = self._make_result()
+        _MOD = "code_review_agent.agents.pr_info_collector"
+
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_MOD}.Agent", return_value=mock_agent_instance),
+            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+        ):
+            collector.collect("octocat", "hello", 1)
+
+        mock_model_cls.assert_called_once_with(
+            model_id="gpt-4o", client_args={"base_url": "http://localhost:11434/v1"}
+        )
+
+    def test_omits_base_url_from_openai_model_when_not_set(self):
+        collector = PRInfoCollector(github_token="tok")
+        mock_mcp = self._mock_mcp()
+        mock_agent_instance = MagicMock()
+        mock_agent_instance.structured_output.return_value = self._make_result()
+        _MOD = "code_review_agent.agents.pr_info_collector"
+
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_MOD}.Agent", return_value=mock_agent_instance),
+            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+        ):
+            collector.collect("octocat", "hello", 1)
+
+        mock_model_cls.assert_called_once_with(model_id="gpt-4o")

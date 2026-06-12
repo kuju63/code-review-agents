@@ -250,6 +250,21 @@ src/code_review_agent/
 
 ## 4. 各エージェントの AgentCard 定義
 
+> **スキーマ表現に関する設計判断（`inputSchema` / `outputSchema`）**
+>
+> 本節の JSON 例では可読性のため `{"$ref": "#/components/schemas/X"}` 表記を用いるが、
+> **実装では各 skill の `inputSchema` / `outputSchema` に自己完結した JSON Schema を埋め込む**
+> （Pydantic の `Model.model_json_schema()` を使用、内部参照は `#/$defs/...`）。
+>
+> | 選択肢 | 内容 | 採否 | 理由 |
+> |---|---|---|---|
+> | A: `model_json_schema()` 埋め込み | 参照先モデルの完全スキーマ（`$defs` 自己完結）を埋め込む | **採用** | AgentCard は `/.well-known/agent.json` で agent 単位に配信され、各 skill スキーマは単体で解決可能であるべき。モデル変更に自動追従し、A2A クライアントが検証可能 |
+> | B: `components.schemas` を AgentCard に追加 | ルートに `components` を持たせ `#/components/...` 参照を維持 | 却下 | `#/components` は OpenAPI 固有の記法で、標準 JSON Schema 文書としては非自己完結。AgentCard モデルに非標準フィールドが必要 |
+> | C: `{"type": "object"}` 等の緩いスキーマ | 参照を捨て型情報を最小化 | 却下 | 検証価値を失い、A2A クライアントが入出力を検証できない |
+>
+> 却下案 B の問題（`components` セクション不在による解決不能な `$ref`）は実 PR レビューでも指摘され、案 A で解消した。
+> 回帰防止として、全 AgentCard に `#/components/` 参照が現れないことをテストで担保する（`tests/api/test_app.py`）。
+
 ### 4.1 PR Info Collector
 
 **URL プレフィックス**: `/pr-info-collector`
@@ -668,13 +683,24 @@ def create_router(settings: Settings, store: TaskStore) -> APIRouter:
 def main() -> None:
     """FastAPI + Uvicorn で A2A 準拠 API サーバーを起動する。"""
     import uvicorn
+    from dotenv import load_dotenv
     from .api.app import create_app
     from .api.config import Settings
+
+    # LLM SDK は非プレフィックスの OPENAI_API_KEY を os.environ から直接読むため、
+    # サーバープロセスに .env を読み込む。load_dotenv() は既存の環境変数を上書き
+    # しないので、シェルで export した値が優先される。
+    load_dotenv()
 
     settings = Settings()
     app = create_app(settings)
     uvicorn.run(app, host=settings.host, port=settings.port, log_level=settings.log_level)
 ```
+
+> **補足:** `Settings`（pydantic-settings）は `CODE_REVIEW_` プレフィックス付き変数のみを
+> 読み込み、`os.environ` には反映しない。一方 Strands の `OpenAIModel` は非プレフィックスの
+> `OPENAI_API_KEY` を `os.environ` から直接参照する。`uv run` は `.env` を自動読込しないため、
+> `main()` 冒頭で `load_dotenv()` を呼び、シェルへ export せずに `.env` から認証情報を供給する。
 
 ---
 
