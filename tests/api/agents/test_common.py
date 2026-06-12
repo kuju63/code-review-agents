@@ -1,5 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 
 from code_review_agent.a2a.models import A2ADataPart, A2AMessage, A2ATextPart
@@ -82,3 +83,21 @@ class TestVerifyGithubToken:
             await verify_github_token("ghp_nobearer")
 
         assert exc_info.value.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_raises_503_when_github_unreachable(self) -> None:
+        from fastapi import HTTPException
+
+        mock_client = AsyncMock()
+        mock_client.get.side_effect = httpx.ConnectError("name resolution failed")
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=False)
+
+        with patch(
+            "code_review_agent.api.agents.common.httpx.AsyncClient",
+            return_value=mock_client,
+        ):
+            with pytest.raises(HTTPException) as exc_info:
+                await verify_github_token("Bearer ghp_validtoken")
+
+        assert exc_info.value.status_code == 503
