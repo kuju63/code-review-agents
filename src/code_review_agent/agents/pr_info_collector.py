@@ -24,7 +24,16 @@ changed in the PR, such as package.json, pyproject.toml, requirements.txt).
 File changes are limited to TypeScript/JavaScript files (.ts, .tsx, .js, .jsx), \
 CSS/SCSS files (.css, .scss), HTML files (.html), and package.json files. \
 All changed lines and details must be comprehensively covered for each file.
-You must use a tool to retrieve information from GitHub.
+
+You must use a tool to retrieve information from GitHub. In particular, you \
+must call a tool that returns the list of changed files and their diffs (for \
+example the pull request "get files" / "get diff" operation) so that every \
+changed file path is obtained from GitHub, not guessed.
+
+`file_changes` must be an array with one entry per changed file, each carrying \
+that file's path and patch. Do NOT summarise the changed files into a count or \
+an aggregate object (for example a single object with a `changed_files_count` \
+field); list each file individually.
 """
 
 _COLLECT_PROMPT_TEMPLATE = (
@@ -118,10 +127,14 @@ class PRInfoCollector:
                 system_prompt=SYSTEM_PROMPT,
                 tools=[mcp_client],
             )
-            result: PRInfoResult = agent.structured_output(
-                PRInfoResult,
-                prompt=prompt,
-            )
+            # Run the tool loop first so the Agent actually calls GitHub MCP
+            # (toolUse -> toolResult) and fetches real PR data into the
+            # conversation context.  ``structured_output`` alone skips the tool
+            # loop and makes the model fabricate the JSON, so we split the two
+            # steps: ``agent(prompt)`` to fetch, then ``structured_output``
+            # (without a prompt) to structure the fetched context.
+            agent(prompt)
+            result: PRInfoResult = agent.structured_output(PRInfoResult)
         finally:
             mcp_client.stop(None, None, None)
 

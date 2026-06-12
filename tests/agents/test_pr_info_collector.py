@@ -56,6 +56,25 @@ class TestIsTargetFile:
         assert is_target_file(path) is False
 
 
+class TestSystemPrompt:
+    """The SYSTEM_PROMPT must instruct the model to retrieve the changed-file
+    list via a tool and emit it as a per-file array, not a count summary.
+
+    This guards against the secondary failure observed in the gemma-4-e4b
+    measurement where file_changes collapsed into an aggregate object
+    (e.g. ``changed_files_count``) instead of one entry per file.
+    """
+
+    def test_prompt_requires_tool_use(self):
+        assert "tool" in SYSTEM_PROMPT.lower()
+
+    def test_prompt_requires_file_list_as_array(self):
+        lowered = SYSTEM_PROMPT.lower()
+        # Must mention listing/array of changed files and forbid count summaries.
+        assert "array" in lowered or "one entry per file" in lowered
+        assert "count" in lowered or "summar" in lowered
+
+
 class TestPRInfoCollectorInit:
     """Tests for PRInfoCollector initialisation."""
 
@@ -126,12 +145,14 @@ class TestPRInfoCollectorCollect:
         assert call_kwargs["system_prompt"] == SYSTEM_PROMPT
         assert call_kwargs["tools"] == [mock_mcp]
 
-        mock_agent_instance.structured_output.assert_called_once_with(
-            PRInfoResult,
-            prompt=_COLLECT_PROMPT_TEMPLATE.format(
-                owner="octocat", repo="hello", pr_number=1
-            ),
+        expected_prompt = _COLLECT_PROMPT_TEMPLATE.format(
+            owner="octocat", repo="hello", pr_number=1
         )
+        # 案A: first the agent is invoked with the prompt to run the tool loop
+        # (toolUse against GitHub MCP), then structured_output is called WITHOUT
+        # a prompt so it structures the conversation context (the fetched data).
+        mock_agent_instance.assert_called_once_with(expected_prompt)
+        mock_agent_instance.structured_output.assert_called_once_with(PRInfoResult)
 
         assert result.repository_info.owner == "octocat"
 
