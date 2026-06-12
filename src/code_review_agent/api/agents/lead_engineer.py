@@ -14,8 +14,13 @@ from code_review_agent.a2a.sanitizers import sanitize_error
 from code_review_agent.a2a.task_store import TaskStore
 from code_review_agent.agents.base_reviewer import ReviewerConfig
 from code_review_agent.agents.lead_engineer import LeadEngineerAgent
-from code_review_agent.api.agents.common import _extract_data, verify_github_token
+from code_review_agent.api.agents.common import (
+    LeadEngineerSkillInput,
+    _extract_data,
+    verify_github_token,
+)
 from code_review_agent.api.config import Settings
+from code_review_agent.models.lead_engineer import LeadEngineerReport
 from code_review_agent.models.review import ReviewReport
 
 
@@ -52,17 +57,8 @@ def lead_engineer_router(settings: Settings, store: TaskStore) -> APIRouter:
                     id="evaluate_findings",
                     name="Evaluate Findings",
                     description="Triages and prioritises code review findings from the parallel review stage.",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "review_report": {
-                                "$ref": "#/components/schemas/ReviewReport"
-                            },
-                            "model_id": {"type": "string", "default": "gpt-4o"},
-                        },
-                        "required": ["review_report"],
-                    },
-                    outputSchema={"$ref": "#/components/schemas/LeadEngineerReport"},
+                    inputSchema=LeadEngineerSkillInput.model_json_schema(),
+                    outputSchema=LeadEngineerReport.model_json_schema(),
                 )
             ],
         )

@@ -14,10 +14,14 @@ from code_review_agent.a2a.sanitizers import sanitize_error
 from code_review_agent.a2a.task_store import TaskStore
 from code_review_agent.agents.base_reviewer import ReviewerConfig
 from code_review_agent.agents.reviewers.security import SecurityReviewer
-from code_review_agent.api.agents.common import _extract_data, verify_github_token
+from code_review_agent.api.agents.common import (
+    ReviewerSkillInput,
+    _extract_data,
+    verify_github_token,
+)
 from code_review_agent.api.config import Settings
 from code_review_agent.models.pr_info import PRInfoResult
-from code_review_agent.models.review import ReviewContext
+from code_review_agent.models.review import ReviewContext, ReviewResult
 
 
 async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -> None:
@@ -54,15 +58,8 @@ def security_reviewer_router(settings: Settings, store: TaskStore) -> APIRouter:
                     id="review_security",
                     name="Review Security",
                     description="Performs a security-focused code review using GitHub MCP.",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {
-                            "pr_info": {"$ref": "#/components/schemas/PRInfoResult"},
-                            "model_id": {"type": "string", "default": "gpt-4o"},
-                        },
-                        "required": ["pr_info"],
-                    },
-                    outputSchema={"$ref": "#/components/schemas/ReviewResult"},
+                    inputSchema=ReviewerSkillInput.model_json_schema(),
+                    outputSchema=ReviewResult.model_json_schema(),
                 )
             ],
         )

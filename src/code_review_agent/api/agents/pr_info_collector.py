@@ -15,6 +15,7 @@ from code_review_agent.a2a.task_store import TaskStore
 from code_review_agent.agents.pr_info_collector import PRInfoCollector
 from code_review_agent.api.agents.common import _extract_data, verify_github_token
 from code_review_agent.api.config import Settings
+from code_review_agent.models.pr_info import PRInfoResult
 
 
 async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -> None:
@@ -63,7 +64,7 @@ def pr_info_collector_router(settings: Settings, store: TaskStore) -> APIRouter:
                         },
                         "required": ["owner", "repo", "pr_number"],
                     },
-                    outputSchema={"$ref": "#/components/schemas/PRInfoResult"},
+                    outputSchema=PRInfoResult.model_json_schema(),
                 )
             ],
         )

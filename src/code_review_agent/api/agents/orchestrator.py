@@ -18,6 +18,7 @@ from code_review_agent.agents.pr_info_collector import PRInfoCollector
 from code_review_agent.agents.review_orchestrator import ReviewOrchestrator
 from code_review_agent.api.agents.common import _extract_data, verify_github_token
 from code_review_agent.api.config import Settings
+from code_review_agent.models.lead_engineer import LeadEngineerReport
 from code_review_agent.models.review import ReviewContext
 
 
@@ -83,7 +84,7 @@ def orchestrator_router(settings: Settings, store: TaskStore) -> APIRouter:
                         },
                         "required": ["owner", "repo", "pr_number"],
                     },
-                    outputSchema={"$ref": "#/components/schemas/LeadEngineerReport"},
+                    outputSchema=LeadEngineerReport.model_json_schema(),
                 )
             ],
         )
