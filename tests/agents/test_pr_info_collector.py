@@ -112,6 +112,26 @@ class TestExtractLabelNames:
         assert _extract_label_names(None) == []
 
 
+class TestExtractHeadRef:
+    """Tests for _extract_head_ref."""
+
+    def test_prefers_sha(self):
+        from code_review_agent.agents.pr_info_collector import _extract_head_ref
+
+        assert _extract_head_ref({"head": {"sha": "abc", "ref": "br"}}) == "abc"
+
+    def test_falls_back_to_ref(self):
+        from code_review_agent.agents.pr_info_collector import _extract_head_ref
+
+        assert _extract_head_ref({"head": {"ref": "br"}}) == "br"
+
+    def test_none_when_absent(self):
+        from code_review_agent.agents.pr_info_collector import _extract_head_ref
+
+        assert _extract_head_ref({}) is None
+        assert _extract_head_ref({"head": None}) is None
+
+
 class TestToolTextBlocks:
     """Tests for the _tool_text_blocks MCP result parser."""
 
@@ -136,12 +156,23 @@ _PR_GET = {
     # GitHub MCP ``get`` returns labels as plain strings, not {"name": ...}.
     "labels": ["scope: progress"],
     "state": "closed",
+    "head": {"sha": "headsha123", "ref": "feature-branch"},
 }
 _PR_FILES = [
     {"filename": "src/index.ts", "patch": "@@ -1 +1 @@\n-a\n+b"},
     {"filename": "src/main.py", "patch": "@@ -1 +1 @@\n-x\n+y"},  # non-target
     {"filename": "package.json", "patch": "@@ -1 +1 @@\n-p\n+q"},  # dep + target
-    {"filename": "requirements.txt", "patch": "@@ -1 +1 @@\n-r\n+s"},  # dep only
+    {"filename": "requirements.txt", "patch": "@@ -1 +1 @@\n-r\n+s"},  # changed dep
+]
+# Repo-root listing at the PR head ref.  Note it intentionally differs from the
+# changed files: it has pnpm-lock.yaml (NOT changed by the PR) and lacks
+# requirements.txt (which the PR changed).  dependency_files must reflect THIS
+# (the project's dependency context), not the changed manifests.
+_ROOT_LISTING = [
+    {"type": "file", "name": "package.json", "path": "package.json"},
+    {"type": "file", "name": "pnpm-lock.yaml", "path": "pnpm-lock.yaml"},
+    {"type": "file", "name": "README.md", "path": "README.md"},
+    {"type": "dir", "name": "src", "path": "src"},
 ]
 _README_BODY = "MyLib is a small utility library for widgets."
 
@@ -155,10 +186,13 @@ def _make_mcp(
     pr_files: list[dict] | None = None,
     readme_blocks: list[str] | None = None,
     readme_error: bool = False,
+    root_listing: list[dict] | None = None,
+    root_error: bool = False,
 ) -> MagicMock:
     """Build a mock MCP client whose call_tool_sync dispatches by arguments."""
     pr_get = _PR_GET if pr_get is None else pr_get
     pr_files = _PR_FILES if pr_files is None else pr_files
+    root_listing = _ROOT_LISTING if root_listing is None else root_listing
     if readme_blocks is None:
         readme_blocks = ["successfully downloaded text file", _README_BODY]
 
@@ -170,6 +204,11 @@ def _make_mcp(
             batch = pr_files if page == 1 else []
             return _tool_result(json.dumps(batch))
         if name == "get_file_contents":
+            # Root directory listing (dependency files) vs README file body.
+            if arguments.get("path") == "/":
+                if root_error:
+                    return _tool_result("error", is_error=True)
+                return _tool_result(json.dumps(root_listing))
             if readme_error:
                 return _tool_result("not found", is_error=True)
             return {
@@ -232,9 +271,30 @@ class TestPRInfoCollectorCollect:
         assert paths == ["src/index.ts", "package.json"]
         assert result.pr_info.file_changes[0].patch == "@@ -1 +1 @@\n-a\n+b"
 
-    def test_dependency_files_detected_from_changed_files(self):
+    def test_dependency_files_from_repo_root_not_changed_files(self):
+        """dependency_files reflect the repo's manifests at the PR head ref,
+        not only the manifests the PR changed."""
         result = self._run(_make_mcp())
-        assert result.dependency_files == ["package.json", "requirements.txt"]
+        # Root listing has package.json + pnpm-lock.yaml; the PR changed
+        # requirements.txt (not at root) -- it must NOT appear, and the
+        # unchanged pnpm-lock.yaml MUST appear.
+        assert result.dependency_files == ["package.json", "pnpm-lock.yaml"]
+
+    def test_dependency_files_listed_at_pr_head_ref(self):
+        """The root listing is pinned to the PR head SHA."""
+        mcp = _make_mcp()
+        self._run(mcp)
+        root_calls = [
+            c
+            for c in mcp.call_tool_sync.call_args_list
+            if c.args[1] == "get_file_contents" and c.args[2].get("path") == "/"
+        ]
+        assert len(root_calls) == 1
+        assert root_calls[0].args[2]["ref"] == "headsha123"
+
+    def test_dependency_files_empty_when_root_listing_unavailable(self):
+        result = self._run(_make_mcp(root_error=True))
+        assert result.dependency_files == []
 
     def test_no_hallucination_paths_are_verbatim_from_mcp(self):
         """Every returned path must come from the MCP get_files payload."""
@@ -266,6 +326,22 @@ class TestPRInfoCollectorCollect:
     def test_empty_summary_when_readme_unavailable(self):
         result = self._run(_make_mcp(readme_error=True))
         assert result.project_summary == ""
+
+    def test_summary_failure_does_not_discard_facts(self):
+        """If the summary LLM raises, facts are kept and summary is empty."""
+        collector = PRInfoCollector(github_token="tok")
+        failing_agent = MagicMock(side_effect=RuntimeError("model load failed"))
+        mcp = _make_mcp()
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=failing_agent),
+            patch(f"{_MOD}.OpenAIModel"),
+        ):
+            result = collector.collect("mui", "material-ui", 48591)
+        assert result.project_summary == ""
+        # Deterministic facts are still present.
+        assert result.pr_info.title == "[progress] Show runtime errors only once"
+        assert result.dependency_files == ["package.json", "pnpm-lock.yaml"]
 
     def test_starts_and_stops_mcp_client(self):
         mcp = _make_mcp()

@@ -106,6 +106,22 @@ def _extract_label_names(labels: Any) -> list[str]:
     return names
 
 
+def _extract_head_ref(pr_details: dict[str, Any]) -> str | None:
+    """Return the PR head commit SHA (or ref) to pin "point in time" reads.
+
+    Args:
+        pr_details: The parsed ``pull_request_read`` ``get`` payload.
+
+    Returns:
+        The head commit SHA if available, else the head ref name, else None
+        (in which case callers fall back to the repository default branch).
+    """
+    head = pr_details.get("head") or {}
+    if isinstance(head, dict):
+        return head.get("sha") or head.get("ref")
+    return None
+
+
 def _tool_text_blocks(result: dict[str, Any]) -> list[str]:
     """Extract the text payloads from an MCP tool result.
 
@@ -177,20 +193,33 @@ class PRInfoCollector:
             pr_details = self._read_pr_details(mcp_client, owner, repo, pr_number)
             changed_files = self._read_changed_files(mcp_client, owner, repo, pr_number)
             readme_text = self._read_readme(mcp_client, owner, repo)
+            # ``dependency_files`` describes the packages the project depends on
+            # so downstream reviewers know the dependency context.  It is the set
+            # of manifest files present in the repo at this PR's point in time --
+            # NOT only the manifests changed by the PR -- so we list the repo
+            # root at the PR head ref rather than deriving from changed files.
+            head_ref = _extract_head_ref(pr_details)
+            dependency_files = self._read_dependency_files(
+                mcp_client, owner, repo, head_ref
+            )
         finally:
             mcp_client.stop(None, None, None)
 
-        project_summary = self._summarize_readme(readme_text) if readme_text else ""
+        # The README summary is the only non-deterministic step.  It must never
+        # discard the deterministically-fetched facts: if the summary LLM is
+        # unavailable (e.g. model load / connection error), fall back to an
+        # empty summary rather than failing the whole collect().
+        project_summary = ""
+        if readme_text:
+            try:
+                project_summary = self._summarize_readme(readme_text)
+            except Exception:
+                project_summary = ""
 
         file_changes = [
             FileChange(filePath=f["filename"], patch=f.get("patch"))
             for f in changed_files
             if is_target_file(f.get("filename", ""))
-        ]
-        dependency_files = [
-            f["filename"]
-            for f in changed_files
-            if is_dependency_file(f.get("filename", ""))
         ]
 
         return PRInfoResult(
@@ -251,6 +280,42 @@ class PRInfoCollector:
                 break
             page += 1
         return files
+
+    def _read_dependency_files(
+        self, mcp_client: Any, owner: str, repo: str, ref: str | None
+    ) -> list[str]:
+        """List dependency manifest files at the repo root for the given ref.
+
+        Returns the paths of dependency manifests (see
+        :func:`is_dependency_file`) present at the repository root at ``ref``,
+        describing the project's dependency context regardless of whether the
+        PR changed them.  Returns an empty list if the listing is unavailable.
+        """
+        args: dict[str, Any] = {"owner": owner, "repo": repo, "path": "/"}
+        if ref:
+            args["ref"] = ref
+        try:
+            result = mcp_client.call_tool_sync(
+                "root-listing", "get_file_contents", args
+            )
+            texts = _tool_text_blocks(result)
+        except Exception:
+            return []
+        if not texts:
+            return []
+        try:
+            entries = json.loads(texts[-1])
+        except (ValueError, TypeError):
+            return []
+        if not isinstance(entries, list):
+            return []
+        return [
+            entry["path"]
+            for entry in entries
+            if isinstance(entry, dict)
+            and entry.get("type") == "file"
+            and is_dependency_file(entry.get("path", ""))
+        ]
 
     def _read_readme(self, mcp_client: Any, owner: str, repo: str) -> str | None:
         """Fetch the repository README text, or None if unavailable."""
