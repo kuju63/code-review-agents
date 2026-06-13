@@ -2,46 +2,57 @@
 
 Collects pull request information from GitHub and returns structured data
 for use by downstream review agents.
+
+Design note (2026-06-13): the factual fields (title, body, labels, file
+changes) are retrieved **deterministically** from the GitHub MCP server via
+``MCPClient.call_tool_sync`` -- no LLM tool loop and no ``structured_output``.
+An LLM had previously been asked to structure these facts, but a small model
+fabricated file paths and paraphrased the title/labels even when the correct
+data was already in context (see
+``docs/pr-info-collector-tooluse-fix-spec.md`` §2.5).  Deterministic mapping
+makes file-path hallucination impossible and removes the runaway tool loop.
+The only LLM call left is summarising the README into ``project_summary``.
 """
+
+import json
+import os
+from typing import Any
 
 from strands import Agent
 from strands.models.openai import OpenAIModel
 
-from ..models.pr_info import PRInfoResult
+from ..models.pr_info import FileChange, PRInfo, PRInfoResult, RepositoryInfo
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
 
-SYSTEM_PROMPT = """\
-Please generate summary information from GitHub based on the repository and PR \
-number specified by the user, and output it in a structured JSON format.
-
-The output results will be used in subsequent code reviews by multiple agents, \
-so please do not include any guesswork.
-The information used by subsequent agents includes `repository information` \
-(owner, repository name), `project summary` (generated based on the README.md \
-file in the repository root), `PR information` (PR title, body, labels, \
-file changes), and `dependency files` (paths of dependency manifest files \
-changed in the PR, such as package.json, pyproject.toml, requirements.txt).
-File changes are limited to TypeScript/JavaScript files (.ts, .tsx, .js, .jsx), \
-CSS/SCSS files (.css, .scss), HTML files (.html), and package.json files. \
-All changed lines and details must be comprehensively covered for each file.
-
-You must use a tool to retrieve information from GitHub. In particular, you \
-must call a tool that returns the list of changed files and their diffs (for \
-example the pull request "get files" / "get diff" operation) so that every \
-changed file path is obtained from GitHub, not guessed.
-
-`file_changes` must be an array with one entry per changed file, each carrying \
-that file's path and patch. Do NOT summarise the changed files into a count or \
-an aggregate object (for example a single object with a `changed_files_count` \
-field); list each file individually.
+SUMMARY_SYSTEM_PROMPT = """\
+You are given the README of a software project. Summarise what the project is \
+and what it does in 2-4 concise sentences of plain prose. Base the summary only \
+on the provided README text; do not invent facts. Output the summary text only, \
+with no preamble, headings, or markdown.
 """
-
-_COLLECT_PROMPT_TEMPLATE = (
-    "Please collect PR info for the repository {owner}/{repo}, PR #{pr_number}."
-)
 
 _TARGET_EXTENSIONS = frozenset([".ts", ".tsx", ".js", ".jsx", ".css", ".scss", ".html"])
 _TARGET_FILENAMES = frozenset(["package.json"])
+_DEPENDENCY_FILENAMES = frozenset(
+    [
+        "package.json",
+        "package-lock.json",
+        "yarn.lock",
+        "pnpm-lock.yaml",
+        "pyproject.toml",
+        "requirements.txt",
+        "poetry.lock",
+        "Pipfile",
+        "Pipfile.lock",
+    ]
+)
+
+# README is truncated before summarisation to keep the single LLM call cheap
+# and within context limits for small local models.
+_README_MAX_CHARS = 6000
+# GitHub MCP ``get_files`` is paginated; request large pages and loop until a
+# short page signals the end so large PRs are covered comprehensively.
+_FILES_PER_PAGE = 100
 
 
 def is_target_file(file_path: str) -> bool:
@@ -55,24 +66,53 @@ def is_target_file(file_path: str) -> bool:
     Returns:
         True when the file matches a target extension or filename.
     """
-    import os
-
     _, ext = os.path.splitext(file_path)
     filename = os.path.basename(file_path)
     return ext.lower() in _TARGET_EXTENSIONS or filename in _TARGET_FILENAMES
 
 
-class PRInfoCollector:
-    """Agent that collects PR information from GitHub.
+def is_dependency_file(file_path: str) -> bool:
+    """Return True if the file is a dependency manifest or lock file.
 
-    Uses Strands Agent with GitHub MCP tools to retrieve PR details,
-    project README summary, and per-file diff patches for review-relevant
-    file types.
+    Args:
+        file_path: Relative path to the file within the repository.
+
+    Returns:
+        True when the basename matches a known dependency manifest filename.
+    """
+    return os.path.basename(file_path) in _DEPENDENCY_FILENAMES
+
+
+def _tool_text_blocks(result: dict[str, Any]) -> list[str]:
+    """Extract the text payloads from an MCP tool result.
+
+    Args:
+        result: The dict returned by ``MCPClient.call_tool_sync``.
+
+    Returns:
+        The non-empty ``text`` fields of the result content blocks.
+
+    Raises:
+        RuntimeError: If the tool reported an error.
+    """
+    if result.get("isError"):
+        texts = [b.get("text", "") for b in result.get("content", []) if b.get("text")]
+        raise RuntimeError(f"GitHub MCP tool error: {' '.join(texts) or 'unknown'}")
+    return [b["text"] for b in result.get("content", []) if b.get("text")]
+
+
+class PRInfoCollector:
+    """Collects PR information from GitHub deterministically.
+
+    Retrieves PR details and the changed-file list directly from the GitHub
+    MCP server (no LLM tool loop), maps them onto :class:`PRInfoResult`, and
+    uses a single tool-free LLM call only to summarise the project README.
 
     Args:
         github_token: GitHub personal access token or Copilot token.
-        model_id: OpenAI-compatible model ID to use for the agent.
+        model_id: OpenAI-compatible model ID used for the README summary.
         mcp_url: URL of the GitHub MCP endpoint.
+        llm_base_url: Optional OpenAI-compatible base URL (e.g. LM Studio).
     """
 
     def __init__(
@@ -90,11 +130,11 @@ class PRInfoCollector:
     def collect(self, owner: str, repo: str, pr_number: int) -> PRInfoResult:
         """Collect PR information from GitHub and return structured data.
 
-        Connects to the GitHub MCP endpoint, runs the Strands Agent to
-        retrieve PR details and README, then returns a validated
-        :class:`PRInfoResult`.  File changes are filtered so only
-        review-relevant files (as determined by :func:`is_target_file`)
-        are included in the result.
+        Connects to the GitHub MCP endpoint, retrieves the PR details, the
+        full changed-file list, and the README deterministically, then maps
+        them onto a validated :class:`PRInfoResult`.  File changes are filtered
+        so only review-relevant files (see :func:`is_target_file`) are kept.
+        The README is summarised with a single tool-free LLM call.
 
         Args:
             owner: Repository owner (user or organization name).
@@ -104,47 +144,119 @@ class PRInfoCollector:
         Returns:
             Structured PR information ready for downstream review agents.
         """
-        prompt = _COLLECT_PROMPT_TEMPLATE.format(
-            owner=owner, repo=repo, pr_number=pr_number
-        )
-        if self._llm_base_url:
-            openai_model = OpenAIModel(
-                model_id=self._model_id,
-                client_args={"base_url": self._llm_base_url},
-            )
-        else:
-            openai_model = OpenAIModel(model_id=self._model_id)
-        # In strands >=1.41 ``MCPClient`` is a ``ToolProvider`` whose lifecycle
-        # the Agent owns: it calls ``start()`` while loading tools and
-        # ``stop()`` on cleanup.  Opening it ourselves with ``with`` would start
-        # the session a second time and raise "the client session is currently
-        # running", so we hand the client to the Agent and stop it
-        # deterministically in ``finally`` (``stop`` is idempotent).
         mcp_client = create_github_mcp_client(self._github_token, self._mcp_url)
+        # Used standalone (not via Agent), we own the client's lifecycle:
+        # start the session, then stop it deterministically in ``finally``.
+        mcp_client.start()
         try:
-            agent = Agent(
-                model=openai_model,
-                system_prompt=SYSTEM_PROMPT,
-                tools=[mcp_client],
-            )
-            # Run the tool loop first so the Agent actually calls GitHub MCP
-            # (toolUse -> toolResult) and fetches real PR data into the
-            # conversation context.  ``structured_output`` alone skips the tool
-            # loop and makes the model fabricate the JSON, so we split the two
-            # steps: ``agent(prompt)`` to fetch, then ``structured_output``
-            # (without a prompt) to structure the fetched context.
-            agent(prompt)
-            result: PRInfoResult = agent.structured_output(PRInfoResult)
+            pr_details = self._read_pr_details(mcp_client, owner, repo, pr_number)
+            changed_files = self._read_changed_files(mcp_client, owner, repo, pr_number)
+            readme_text = self._read_readme(mcp_client, owner, repo)
         finally:
             mcp_client.stop(None, None, None)
 
-        filtered_changes = [
-            fc for fc in result.pr_info.file_changes if is_target_file(fc.filePath)
+        project_summary = self._summarize_readme(readme_text) if readme_text else ""
+
+        file_changes = [
+            FileChange(filePath=f["filename"], patch=f.get("patch"))
+            for f in changed_files
+            if is_target_file(f.get("filename", ""))
         ]
-        return result.model_copy(
-            update={
-                "pr_info": result.pr_info.model_copy(
-                    update={"file_changes": filtered_changes}
-                )
-            }
+        dependency_files = [
+            f["filename"]
+            for f in changed_files
+            if is_dependency_file(f.get("filename", ""))
+        ]
+
+        return PRInfoResult(
+            repository_info=RepositoryInfo(owner=owner, repository=repo),
+            project_summary=project_summary,
+            pr_info=PRInfo(
+                title=pr_details.get("title", ""),
+                pr_number=pr_details.get("number", pr_number),
+                body=pr_details.get("body"),
+                labels=[
+                    label["name"]
+                    for label in pr_details.get("labels", [])
+                    if isinstance(label, dict) and label.get("name")
+                ],
+                file_changes=file_changes,
+            ),
+            dependency_files=dependency_files,
         )
+
+    def _read_pr_details(
+        self, mcp_client: Any, owner: str, repo: str, pr_number: int
+    ) -> dict[str, Any]:
+        """Fetch PR metadata (title, body, labels, number) deterministically."""
+        result = mcp_client.call_tool_sync(
+            "pr-get",
+            "pull_request_read",
+            {
+                "method": "get",
+                "owner": owner,
+                "repo": repo,
+                "pullNumber": pr_number,
+            },
+        )
+        texts = _tool_text_blocks(result)
+        return json.loads(texts[0]) if texts else {}
+
+    def _read_changed_files(
+        self, mcp_client: Any, owner: str, repo: str, pr_number: int
+    ) -> list[dict[str, Any]]:
+        """Fetch the full changed-file list, paging until exhausted."""
+        files: list[dict[str, Any]] = []
+        page = 1
+        while True:
+            result = mcp_client.call_tool_sync(
+                f"pr-files-{page}",
+                "pull_request_read",
+                {
+                    "method": "get_files",
+                    "owner": owner,
+                    "repo": repo,
+                    "pullNumber": pr_number,
+                    "page": page,
+                    "perPage": _FILES_PER_PAGE,
+                },
+            )
+            texts = _tool_text_blocks(result)
+            batch = json.loads(texts[0]) if texts else []
+            if not batch:
+                break
+            files.extend(batch)
+            if len(batch) < _FILES_PER_PAGE:
+                break
+            page += 1
+        return files
+
+    def _read_readme(self, mcp_client: Any, owner: str, repo: str) -> str | None:
+        """Fetch the repository README text, or None if unavailable."""
+        try:
+            result = mcp_client.call_tool_sync(
+                "readme",
+                "get_file_contents",
+                {"owner": owner, "repo": repo, "path": "README.md"},
+            )
+            texts = _tool_text_blocks(result)
+        except Exception:
+            return None
+        # ``get_file_contents`` returns a status block followed by the file
+        # body; the last text block holds the README content.
+        return texts[-1] if texts else None
+
+    def _build_model(self) -> OpenAIModel:
+        """Build the OpenAI-compatible model for README summarisation."""
+        if self._llm_base_url:
+            return OpenAIModel(
+                model_id=self._model_id,
+                client_args={"base_url": self._llm_base_url},
+            )
+        return OpenAIModel(model_id=self._model_id)
+
+    def _summarize_readme(self, readme_text: str) -> str:
+        """Summarise the README with a single tool-free LLM call."""
+        agent = Agent(model=self._build_model(), system_prompt=SUMMARY_SYSTEM_PROMPT)
+        result = agent(readme_text[:_README_MAX_CHARS])
+        return str(result).strip()

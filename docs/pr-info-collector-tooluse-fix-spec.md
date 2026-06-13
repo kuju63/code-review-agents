@@ -72,6 +72,64 @@ result = agent.structured_output(PRInfoResult)
 
 ---
 
+## 2.5 設計転換: 完全決定論化（案A を置き換え, 2026-06-13）
+
+### 2.5.1 案A の実測で残った2課題
+
+案A（§2.1-2.2）を 20 回再計測した結果（`..._AFTER_FIX.md`）、根本原因（ツール未呼び出し）は
+解消し Title 完全一致 0%→73% / File F1 0.00→0.69 と大幅改善した。しかし**2つの課題が残った**:
+
+1. **ファイルのハルシネーション**: run 1/8/11 は**ファイルパスが完全正解（ツールで実取得済み）**なのに、
+   `structured_output`（2回目の LLM 呼び出し）が Title/Label を言い換え・創作した。データは会話文脈に
+   あるのに小型モデルが忠実に転記しない＝構造化生成そのものが創作の温床。
+2. **ツールループの長時間化**: 平均 16.6s→312.6s（最大 1039s）。小型モデルがループ内で暴走し、
+   20 回中 9 回が LM Studio のメモリ枯渇で環境失敗した。
+
+### 2.5.2 着眼: ファクトを LLM に生成させない
+
+`title` / `body` / `labels` / `file_changes` は**すべて GitHub API が構造化データとして返す事実**であり、
+LLM に再生成させる必然性がない。`MCPClient.call_tool_sync` でツールを**コードから決定論的に直接呼べる**
+（LLM ループ不要）ことを実測で確認した。これにより**両課題が同時に消える**:
+
+- ハルシネーション = **原理的に0**（LLM が生成しないので創作の余地がない）
+- ツールループ = **消滅**（固定回数の API 呼び出しのみ。暴走しない）
+
+### 2.5.3 採用する設計（案E: 完全決定論化）
+
+| 案 | 内容 | 採用 | 理由 |
+|---|---|---|---|
+| 案A | LLM エージェント + ツールループ + structured_output | 却下（置き換え） | 忠実性・長時間化の2課題が残る（§2.5.1） |
+| ハイブリッド | LLM ループ維持 + file_changes のみ決定論上書き | 却下 | Title/Label 忠実性とループ長時間化が未解決 |
+| **案E** | **ツールループ廃止。`call_tool_sync` で GitHub MCP を直接叩き、ファクトを決定論マッピング。`project_summary` のみ単発 LLM 要約** | **採用** | ハルシネーション0・ループ長時間化0を両立。下流契約（`PRInfoResult` 型）は維持 |
+
+**`collect()` の決定論データ取得（LLM 不使用）**:
+
+| フィールド | 取得元（`pull_request_read` 等） | マッピング |
+|---|---|---|
+| `pr_info.title` / `body` | `method=get` の JSON | `data["title"]` / `data["body"]` |
+| `pr_info.labels` | `method=get` の JSON | `[l["name"] for l in data["labels"]]` |
+| `pr_info.pr_number` | `method=get` / 入力 | `data["number"]` |
+| `pr_info.file_changes` | `method=get_files` の JSON 配列 | `FileChange(filePath=f["filename"], patch=f["patch"])` を `is_target_file` で絞り込み。`page`/`perPage` で全件ページング |
+| `dependency_files` | `method=get_files` の filename | `is_dependency_file` で判定 |
+| `repository_info` | 入力引数 | `owner` / `repo` |
+
+**`project_summary`（唯一の LLM）**: README を `get_file_contents`（path=README.md）で取得し、
+**ツールなし・単発**の `Agent(model, system_prompt=要約用)` 呼び出しで 2-4 文に要約。ツールループは
+発生せず、要約は事実性要求が低く創作の害が小さい。README 取得失敗時は空文字へフォールバック。
+
+「構造化してレスポンスを返却すること自体をやめてもよい」というユーザー許可は、**LLM による構造化生成の
+廃止**を指す。`PRInfoResult` という型（構造）自体は下流レビューエージェント（A2A API 契約）が期待するため
+維持し、その**中身の埋め方**を LLM 生成 → MCP 決定論パースへ置き換える。
+
+### 2.5.4 受け入れ基準の更新（案E）
+
+- **ファイルパス F1 = 1.0（ハルシネーション 0）** を必達とする（決定論取得のため原理的に保証）。
+- Title / Label / Body も GitHub の値と完全一致。
+- 実行時間は案A（平均312s）から大幅短縮（固定 3-4 回の API 呼び出し + 任意で要約1回）。
+- 20 回試行で結果が**完全収束**（ばらつきは要約文のみ）。
+
+---
+
 ## 3. 受け入れ基準
 
 修正前レポートとの差分で評価する。レポート6.3 の暫定基準を参照:

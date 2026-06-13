@@ -1,22 +1,27 @@
-"""Tests for PRInfoCollector agent."""
+"""Tests for the deterministic PRInfoCollector agent.
 
+The collector retrieves factual PR data (title, body, labels, changed files)
+directly from the GitHub MCP server via ``call_tool_sync`` -- no LLM tool loop
+and no ``structured_output``.  Only the README summary uses an LLM.  These
+tests therefore mock ``MCPClient.call_tool_sync`` and the summary ``Agent``.
+"""
+
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from code_review_agent.agents.pr_info_collector import (
-    PRInfoCollector,
-    _COLLECT_PROMPT_TEMPLATE,
     GITHUB_MCP_URL,
-    SYSTEM_PROMPT,
+    PRInfoCollector,
+    SUMMARY_SYSTEM_PROMPT,
+    _tool_text_blocks,
+    is_dependency_file,
     is_target_file,
 )
-from code_review_agent.models.pr_info import (
-    FileChange,
-    PRInfo,
-    PRInfoResult,
-    RepositoryInfo,
-)
+from code_review_agent.models.pr_info import PRInfoResult
+
+_MOD = "code_review_agent.agents.pr_info_collector"
 
 
 class TestIsTargetFile:
@@ -56,23 +61,103 @@ class TestIsTargetFile:
         assert is_target_file(path) is False
 
 
-class TestSystemPrompt:
-    """The SYSTEM_PROMPT must instruct the model to retrieve the changed-file
-    list via a tool and emit it as a per-file array, not a count summary.
+class TestIsDependencyFile:
+    """Tests for the is_dependency_file helper."""
 
-    This guards against the secondary failure observed in the gemma-4-e4b
-    measurement where file_changes collapsed into an aggregate object
-    (e.g. ``changed_files_count``) instead of one entry per file.
-    """
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "package.json",
+            "frontend/package.json",
+            "package-lock.json",
+            "yarn.lock",
+            "pnpm-lock.yaml",
+            "pyproject.toml",
+            "requirements.txt",
+            "poetry.lock",
+            "Pipfile",
+            "Pipfile.lock",
+        ],
+    )
+    def test_dependency_files(self, path: str):
+        assert is_dependency_file(path) is True
 
-    def test_prompt_requires_tool_use(self):
-        assert "tool" in SYSTEM_PROMPT.lower()
+    @pytest.mark.parametrize(
+        "path",
+        ["src/index.ts", "README.md", "Makefile", "src/app.py"],
+    )
+    def test_non_dependency_files(self, path: str):
+        assert is_dependency_file(path) is False
 
-    def test_prompt_requires_file_list_as_array(self):
-        lowered = SYSTEM_PROMPT.lower()
-        # Must mention listing/array of changed files and forbid count summaries.
-        assert "array" in lowered or "one entry per file" in lowered
-        assert "count" in lowered or "summar" in lowered
+
+class TestToolTextBlocks:
+    """Tests for the _tool_text_blocks MCP result parser."""
+
+    def test_extracts_text_blocks(self):
+        result = {
+            "isError": False,
+            "content": [{"text": "a"}, {"text": ""}, {"text": "b"}],
+        }
+        assert _tool_text_blocks(result) == ["a", "b"]
+
+    def test_raises_on_tool_error(self):
+        result = {"isError": True, "content": [{"text": "boom"}]}
+        with pytest.raises(RuntimeError, match="boom"):
+            _tool_text_blocks(result)
+
+
+# ── Fixtures emulating GitHub MCP tool responses ────────────────────────────
+_PR_GET = {
+    "number": 48591,
+    "title": "[progress] Show runtime errors only once",
+    "body": "Fixes #48562",
+    "labels": [{"name": "scope: progress"}],
+    "state": "closed",
+}
+_PR_FILES = [
+    {"filename": "src/index.ts", "patch": "@@ -1 +1 @@\n-a\n+b"},
+    {"filename": "src/main.py", "patch": "@@ -1 +1 @@\n-x\n+y"},  # non-target
+    {"filename": "package.json", "patch": "@@ -1 +1 @@\n-p\n+q"},  # dep + target
+    {"filename": "requirements.txt", "patch": "@@ -1 +1 @@\n-r\n+s"},  # dep only
+]
+_README_BODY = "MyLib is a small utility library for widgets."
+
+
+def _tool_result(payload_text: str, *, is_error: bool = False) -> dict:
+    return {"isError": is_error, "content": [{"text": payload_text}]}
+
+
+def _make_mcp(
+    pr_get: dict | None = None,
+    pr_files: list[dict] | None = None,
+    readme_blocks: list[str] | None = None,
+    readme_error: bool = False,
+) -> MagicMock:
+    """Build a mock MCP client whose call_tool_sync dispatches by arguments."""
+    pr_get = _PR_GET if pr_get is None else pr_get
+    pr_files = _PR_FILES if pr_files is None else pr_files
+    if readme_blocks is None:
+        readme_blocks = ["successfully downloaded text file", _README_BODY]
+
+    def dispatch(tool_use_id, name, arguments):
+        if name == "pull_request_read" and arguments["method"] == "get":
+            return _tool_result(json.dumps(pr_get))
+        if name == "pull_request_read" and arguments["method"] == "get_files":
+            page = arguments.get("page", 1)
+            batch = pr_files if page == 1 else []
+            return _tool_result(json.dumps(batch))
+        if name == "get_file_contents":
+            if readme_error:
+                return _tool_result("not found", is_error=True)
+            return {
+                "isError": False,
+                "content": [{"text": t} for t in readme_blocks],
+            }
+        raise AssertionError(f"unexpected tool call: {name} {arguments}")
+
+    mcp = MagicMock()
+    mcp.call_tool_sync.side_effect = dispatch
+    return mcp
 
 
 class TestPRInfoCollectorInit:
@@ -95,222 +180,148 @@ class TestPRInfoCollectorInit:
 
 
 class TestPRInfoCollectorCollect:
-    """Tests for the collect() method."""
+    """Tests for the deterministic collect() method."""
 
-    def _make_result(
-        self,
-        file_changes: list[FileChange] | None = None,
-    ) -> PRInfoResult:
-        if file_changes is None:
-            file_changes = [
-                FileChange(filePath="src/index.ts", patch="@@ -1 +1 @@\n-a\n+b")
-            ]
-        return PRInfoResult(
-            repository_info=RepositoryInfo(owner="octocat", repository="hello"),
-            project_summary="Hello world project.",
-            pr_info=PRInfo(
-                title="Fix",
-                pr_number=1,
-                body="Fixes a bug",
-                labels=["bug"],
-                file_changes=file_changes,
-            ),
-            dependency_files=["package.json"],
-        )
-
-    def _mock_mcp(self) -> MagicMock:
-        return MagicMock()
-
-    def test_collect_calls_agent_with_correct_prompt(self):
-        expected_result = self._make_result()
-        collector = PRInfoCollector(github_token="tok")
-        mock_mcp = self._mock_mcp()
-        mock_agent_instance = MagicMock()
-        mock_agent_instance.structured_output.return_value = expected_result
-
+    def _run(self, mcp: MagicMock, summary: str = "A summary.") -> PRInfoResult:
+        collector = PRInfoCollector(github_token="tok", llm_base_url=None)
+        mock_agent = MagicMock(return_value=summary)
         with (
-            patch(
-                "code_review_agent.agents.pr_info_collector.create_github_mcp_client",
-                return_value=mock_mcp,
-            ),
-            patch(
-                "code_review_agent.agents.pr_info_collector.Agent",
-                return_value=mock_agent_instance,
-            ) as mock_agent_cls,
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel"),
         ):
-            result = collector.collect("octocat", "hello", 1)
+            return collector.collect("mui", "material-ui", 48591)
 
-        mock_agent_cls.assert_called_once()
-        call_kwargs = mock_agent_cls.call_args.kwargs
-        assert call_kwargs["system_prompt"] == SYSTEM_PROMPT
-        assert call_kwargs["tools"] == [mock_mcp]
+    def test_maps_pr_metadata_deterministically(self):
+        result = self._run(_make_mcp())
+        assert result.pr_info.title == "[progress] Show runtime errors only once"
+        assert result.pr_info.pr_number == 48591
+        assert result.pr_info.body == "Fixes #48562"
+        assert result.pr_info.labels == ["scope: progress"]
+        assert result.repository_info.owner == "mui"
+        assert result.repository_info.repository == "material-ui"
 
-        expected_prompt = _COLLECT_PROMPT_TEMPLATE.format(
-            owner="octocat", repo="hello", pr_number=1
-        )
-        # 案A: first the agent is invoked with the prompt to run the tool loop
-        # (toolUse against GitHub MCP), then structured_output is called WITHOUT
-        # a prompt so it structures the conversation context (the fetched data).
-        mock_agent_instance.assert_called_once_with(expected_prompt)
-        mock_agent_instance.structured_output.assert_called_once_with(PRInfoResult)
+    def test_file_changes_filtered_to_target_files(self):
+        result = self._run(_make_mcp())
+        paths = [fc.filePath for fc in result.pr_info.file_changes]
+        # src/index.ts and package.json are targets; src/main.py and
+        # requirements.txt are not review targets.
+        assert paths == ["src/index.ts", "package.json"]
+        assert result.pr_info.file_changes[0].patch == "@@ -1 +1 @@\n-a\n+b"
 
-        assert result.repository_info.owner == "octocat"
+    def test_dependency_files_detected_from_changed_files(self):
+        result = self._run(_make_mcp())
+        assert result.dependency_files == ["package.json", "requirements.txt"]
 
-    def test_collect_stops_mcp_client(self):
-        """The Agent owns the MCP client lifecycle; collect() must stop it.
+    def test_no_hallucination_paths_are_verbatim_from_mcp(self):
+        """Every returned path must come from the MCP get_files payload."""
+        result = self._run(_make_mcp())
+        mcp_paths = {f["filename"] for f in _PR_FILES}
+        for fc in result.pr_info.file_changes:
+            assert fc.filePath in mcp_paths
 
-        In strands >=1.41 the client is started by the Agent while loading
-        tools, so collect() no longer opens it via ``with``.  It must instead
-        call ``stop()`` deterministically once the agent run completes.
-        """
+    def test_project_summary_from_single_llm_call(self):
         collector = PRInfoCollector(github_token="tok")
-        mock_mcp = self._mock_mcp()
-        mock_agent_instance = MagicMock()
-        mock_agent_instance.structured_output.return_value = self._make_result()
-
+        mock_agent = MagicMock(return_value="MyLib summary.")
+        mcp = _make_mcp()
         with (
-            patch(
-                "code_review_agent.agents.pr_info_collector.create_github_mcp_client",
-                return_value=mock_mcp,
-            ),
-            patch(
-                "code_review_agent.agents.pr_info_collector.Agent",
-                return_value=mock_agent_instance,
-            ),
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=mock_agent) as agent_cls,
+            patch(f"{_MOD}.OpenAIModel"),
         ):
-            collector.collect("octocat", "hello", 1)
+            result = collector.collect("mui", "material-ui", 48591)
 
-        mock_mcp.stop.assert_called_once_with(None, None, None)
+        assert result.project_summary == "MyLib summary."
+        # Summary agent is constructed with the summary prompt and NO tools.
+        kwargs = agent_cls.call_args.kwargs
+        assert kwargs["system_prompt"] == SUMMARY_SYSTEM_PROMPT
+        assert "tools" not in kwargs
+        # The README body (last block) is what gets summarised.
+        mock_agent.assert_called_once()
+        assert _README_BODY in mock_agent.call_args.args[0]
 
-    def test_collect_stops_mcp_client_even_when_agent_raises(self):
-        """``stop()`` must run even if the agent run fails (finally cleanup)."""
+    def test_empty_summary_when_readme_unavailable(self):
+        result = self._run(_make_mcp(readme_error=True))
+        assert result.project_summary == ""
+
+    def test_starts_and_stops_mcp_client(self):
+        mcp = _make_mcp()
+        self._run(mcp)
+        mcp.start.assert_called_once()
+        mcp.stop.assert_called_once_with(None, None, None)
+
+    def test_stops_mcp_client_even_when_read_raises(self):
+        mcp = _make_mcp()
+        mcp.call_tool_sync.side_effect = RuntimeError("boom")
         collector = PRInfoCollector(github_token="tok")
-        mock_mcp = self._mock_mcp()
-        mock_agent_instance = MagicMock()
-        mock_agent_instance.structured_output.side_effect = RuntimeError("boom")
-
         with (
-            patch(
-                "code_review_agent.agents.pr_info_collector.create_github_mcp_client",
-                return_value=mock_mcp,
-            ),
-            patch(
-                "code_review_agent.agents.pr_info_collector.Agent",
-                return_value=mock_agent_instance,
-            ),
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=MagicMock()),
+            patch(f"{_MOD}.OpenAIModel"),
+            pytest.raises(RuntimeError, match="boom"),
         ):
-            with pytest.raises(RuntimeError, match="boom"):
-                collector.collect("octocat", "hello", 1)
+            collector.collect("mui", "material-ui", 48591)
+        mcp.stop.assert_called_once_with(None, None, None)
 
-        mock_mcp.stop.assert_called_once_with(None, None, None)
+    def test_paginates_changed_files(self):
+        """get_files is paged until a short page ends the loop."""
+        page1 = [{"filename": f"src/f{i}.ts", "patch": "p"} for i in range(100)]
+        page2 = [{"filename": "src/last.ts", "patch": "p"}]
 
-    def test_collect_returns_pr_info_result(self):
-        collector = PRInfoCollector(github_token="tok")
-        mock_mcp = self._mock_mcp()
-        mock_agent_instance = MagicMock()
-        mock_agent_instance.structured_output.return_value = self._make_result()
+        def dispatch(tool_use_id, name, arguments):
+            if name == "pull_request_read" and arguments["method"] == "get":
+                return _tool_result(json.dumps(_PR_GET))
+            if name == "pull_request_read" and arguments["method"] == "get_files":
+                batch = page1 if arguments["page"] == 1 else page2
+                return _tool_result(json.dumps(batch))
+            if name == "get_file_contents":
+                return {"isError": False, "content": [{"text": _README_BODY}]}
+            raise AssertionError(name)
 
-        with (
-            patch(
-                "code_review_agent.agents.pr_info_collector.create_github_mcp_client",
-                return_value=mock_mcp,
-            ),
-            patch(
-                "code_review_agent.agents.pr_info_collector.Agent",
-                return_value=mock_agent_instance,
-            ),
-        ):
-            result = collector.collect("octocat", "hello", 1)
+        mcp = MagicMock()
+        mcp.call_tool_sync.side_effect = dispatch
+        result = self._run(mcp)
+        assert len(result.pr_info.file_changes) == 101
 
+    def test_returns_pr_info_result(self):
+        result = self._run(_make_mcp())
         assert isinstance(result, PRInfoResult)
-        assert result.repository_info.owner == "octocat"
 
-    def test_collect_filters_non_target_files(self):
-        """Non-target files returned by the LLM must be stripped from result."""
-        raw_changes = [
-            FileChange(filePath="src/index.ts", patch="@@ -1 +1 @@\n-a\n+b"),
-            FileChange(filePath="src/main.py", patch="@@ -1 +1 @@\n-x\n+y"),
-            FileChange(filePath="README.md", patch="@@ -1 +1 @@\n-r\n+s"),
-        ]
-        collector = PRInfoCollector(github_token="tok")
-        mock_mcp = self._mock_mcp()
-        mock_agent_instance = MagicMock()
-        mock_agent_instance.structured_output.return_value = self._make_result(
-            file_changes=raw_changes
-        )
-
-        with (
-            patch(
-                "code_review_agent.agents.pr_info_collector.create_github_mcp_client",
-                return_value=mock_mcp,
-            ),
-            patch(
-                "code_review_agent.agents.pr_info_collector.Agent",
-                return_value=mock_agent_instance,
-            ),
-        ):
-            result = collector.collect("octocat", "hello", 1)
-
-        assert len(result.pr_info.file_changes) == 1
-        assert result.pr_info.file_changes[0].filePath == "src/index.ts"
-
-    def test_collect_uses_create_github_mcp_client(self):
-        """collect() must delegate MCP client creation to create_github_mcp_client."""
+    def test_uses_create_github_mcp_client(self):
         collector = PRInfoCollector(
             github_token="mytoken", mcp_url="https://custom.example.com/mcp"
         )
-        mock_mcp = self._mock_mcp()
-        mock_agent_instance = MagicMock()
-        mock_agent_instance.structured_output.return_value = self._make_result()
-
+        mcp = _make_mcp()
         with (
-            patch(
-                "code_review_agent.agents.pr_info_collector.create_github_mcp_client",
-                return_value=mock_mcp,
-            ) as mock_factory,
-            patch(
-                "code_review_agent.agents.pr_info_collector.Agent",
-                return_value=mock_agent_instance,
-            ),
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp) as factory,
+            patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
+            patch(f"{_MOD}.OpenAIModel"),
         ):
-            collector.collect("octocat", "hello", 1)
-
-        mock_factory.assert_called_once_with(
-            "mytoken", "https://custom.example.com/mcp"
-        )
+            collector.collect("mui", "material-ui", 48591)
+        factory.assert_called_once_with("mytoken", "https://custom.example.com/mcp")
 
     def test_passes_llm_base_url_to_openai_model_when_set(self):
         collector = PRInfoCollector(
             github_token="tok", llm_base_url="http://localhost:11434/v1"
         )
-        mock_mcp = self._mock_mcp()
-        mock_agent_instance = MagicMock()
-        mock_agent_instance.structured_output.return_value = self._make_result()
-        _MOD = "code_review_agent.agents.pr_info_collector"
-
+        mcp = _make_mcp()
         with (
-            patch(f"{_MOD}.create_github_mcp_client", return_value=mock_mcp),
-            patch(f"{_MOD}.Agent", return_value=mock_agent_instance),
-            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
+            patch(f"{_MOD}.OpenAIModel") as model_cls,
         ):
-            collector.collect("octocat", "hello", 1)
-
-        mock_model_cls.assert_called_once_with(
+            collector.collect("mui", "material-ui", 48591)
+        model_cls.assert_called_once_with(
             model_id="gpt-4o", client_args={"base_url": "http://localhost:11434/v1"}
         )
 
     def test_omits_base_url_from_openai_model_when_not_set(self):
         collector = PRInfoCollector(github_token="tok")
-        mock_mcp = self._mock_mcp()
-        mock_agent_instance = MagicMock()
-        mock_agent_instance.structured_output.return_value = self._make_result()
-        _MOD = "code_review_agent.agents.pr_info_collector"
-
+        mcp = _make_mcp()
         with (
-            patch(f"{_MOD}.create_github_mcp_client", return_value=mock_mcp),
-            patch(f"{_MOD}.Agent", return_value=mock_agent_instance),
-            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
+            patch(f"{_MOD}.OpenAIModel") as model_cls,
         ):
-            collector.collect("octocat", "hello", 1)
-
-        mock_model_cls.assert_called_once_with(model_id="gpt-4o")
+            collector.collect("mui", "material-ui", 48591)
+        model_cls.assert_called_once_with(model_id="gpt-4o")
