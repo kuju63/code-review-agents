@@ -123,10 +123,21 @@ def main() -> None:
             return f"{m:.3f}", f"{sd:.3f}", "n/a"
         return f"{m:.3f}", f"{sd:.3f}", f"[{lo:.3f}, {hi:.3f}]"
 
+    def rate(count: int) -> str:
+        """Format ``count/n`` as a percentage, or ``n/a`` when no runs succeeded."""
+        if n == 0:
+            return f"{count}/0 (n/a)"
+        return f"{count}/{n} ({100 * count / n:.0f}%)"
+
+    # Derive the model label from the JSONL itself rather than hardcoding it, so
+    # a report generated from a different model's runs is labelled correctly.
+    models = sorted({r.get("model", "") for r in rows if r.get("model")})
+    model_label = ", ".join(f"`{m}`" for m in models) if models else "`(unknown)`"
+
     L = []
     L.append("# PR Info Collector 正確性検証レポート（20回統計分析）")
     L.append("")
-    L.append("**モデル**: `google/gemma-4-e4b`  ")
+    L.append(f"**モデル**: {model_label}  ")
     L.append("**対象PR**: mui/material-ui#48591  ")
     L.append("**正解取得元**: GitHub API (gh CLI)  ")
     L.append(f"**試行回数**: {total}（成功 {n} / 失敗 {total - n}）  ")
@@ -154,9 +165,7 @@ def main() -> None:
     L.append("| 指標 | 平均 | 標準偏差 | 95%CI | 完全一致率 |")
     L.append("|------|------|----------|-------|-----------|")
     tm, tsd, tci = fmt(title_sims)
-    L.append(
-        f"| Title 類似度 (0-1) | {tm} | {tsd} | {tci} | {title_exact}/{n} ({100 * title_exact / n:.0f}%) |"
-    )
+    L.append(f"| Title 類似度 (0-1) | {tm} | {tsd} | {tci} | {rate(title_exact)} |")
     fp, fpsd, fpci = fmt(file_precs)
     L.append(f"| ファイルパス Precision | {fp} | {fpsd} | {fpci} | — |")
     fr, frsd, frci = fmt(file_recs)
@@ -164,9 +173,7 @@ def main() -> None:
     ff, ffsd, ffci = fmt(file_f1s)
     L.append(f"| ファイルパス F1 | {ff} | {ffsd} | {ffci} | — |")
     lm, lsd, lci = fmt(label_jaccards)
-    L.append(
-        f"| Label Jaccard | {lm} | {lsd} | {lci} | {label_exact}/{n} ({100 * label_exact / n:.0f}%) |"
-    )
+    L.append(f"| Label Jaccard | {lm} | {lsd} | {lci} | {rate(label_exact)} |")
     fcm, fcsd, fcci = fmt([float(x) for x in file_count_err])
     L.append(f"| ファイル数誤差 (件) | {fcm} | {fcsd} | {fcci} | — |")
     em, esd, eci = fmt(elapsed)
@@ -174,13 +181,9 @@ def main() -> None:
     L.append("")
     L.append("### 構造項目の正答率")
     L.append("")
-    L.append(
-        f"- **PR番号一致**: {pr_number_correct}/{n} ({100 * pr_number_correct / n:.0f}%)"
-    )
-    L.append(
-        f"- **Body に正解参照(#48562)を含む**: {body_ok}/{n} ({100 * body_ok / n:.0f}%)"
-    )
-    L.append(f"- **ラベル完全一致**: {label_exact}/{n} ({100 * label_exact / n:.0f}%)")
+    L.append(f"- **PR番号一致**: {rate(pr_number_correct)}")
+    L.append(f"- **Body に正解参照(#48562)を含む**: {rate(body_ok)}")
+    L.append(f"- **ラベル完全一致**: {rate(label_exact)}")
     avg_hall = hallucinated_files_total / n if n else 0
     L.append(
         f"- **幻覚ファイル総数**: {hallucinated_files_total}（1試行あたり平均 {avg_hall:.2f} 件、正解集合に存在しないパス）"
@@ -188,9 +191,7 @@ def main() -> None:
     correct_files_recalled = sum(
         1 for r in ok if set(r.get("file_paths", []) or []) & GT_FILES
     )
-    L.append(
-        f"- **正解ファイルを1つでも含む試行**: {correct_files_recalled}/{n} ({100 * correct_files_recalled / n:.0f}%)"
-    )
+    L.append(f"- **正解ファイルを1つでも含む試行**: {rate(correct_files_recalled)}")
     L.append("")
     L.append("---")
     L.append("")
