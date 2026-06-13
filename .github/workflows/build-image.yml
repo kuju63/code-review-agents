@@ -65,4 +65,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            quay.io/kuju63/code-review-agent:${{ github.ref_name }}
+            quay.io/kuju63/code-review-agent:${{ github.event.release.tag_name }}
