@@ -333,3 +333,6 @@ tmbootpicker.efi
 # Log files created by default by the nohup command
 nohup.out
 junit.xml
+
+# PR Info Collector の計測出力（実行成果物のためバージョン管理しない）
+evaluation/data/pr_collector_repeated_*.jsonl
