@@ -292,6 +292,28 @@ class TestPRInfoCollectorCollect:
         assert len(root_calls) == 1
         assert root_calls[0].args[2]["ref"] == "headsha123"
 
+    def test_dependency_files_are_sorted(self):
+        """Output is sorted regardless of server-side listing order."""
+        unsorted_root = [
+            {"type": "file", "name": "pyproject.toml", "path": "pyproject.toml"},
+            {"type": "file", "name": "package.json", "path": "package.json"},
+            {"type": "file", "name": "Pipfile", "path": "Pipfile"},
+        ]
+        result = self._run(_make_mcp(root_listing=unsorted_root))
+        assert result.dependency_files == ["Pipfile", "package.json", "pyproject.toml"]
+
+    def test_readme_fetched_at_pr_head_ref(self):
+        """README is read at the PR head ref for reproducible summaries."""
+        mcp = _make_mcp()
+        self._run(mcp)
+        readme_calls = [
+            c
+            for c in mcp.call_tool_sync.call_args_list
+            if c.args[1] == "get_file_contents" and c.args[2].get("path") == "README.md"
+        ]
+        assert len(readme_calls) == 1
+        assert readme_calls[0].args[2]["ref"] == "headsha123"
+
     def test_dependency_files_empty_when_root_listing_unavailable(self):
         result = self._run(_make_mcp(root_error=True))
         assert result.dependency_files == []

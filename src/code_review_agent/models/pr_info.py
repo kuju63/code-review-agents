@@ -57,8 +57,10 @@ class PRInfoResult(BaseModel):
         repository_info: Owner and repository name.
         project_summary: Summary generated from the repository README.
         pr_info: PR metadata and file changes.
-        dependency_files: Paths of dependency manifest files changed in
-            the PR (e.g. ``package.json``, ``pyproject.toml``).
+        dependency_files: Paths of dependency manifest files present in the
+            repository at the PR head, describing the project's dependency
+            context regardless of whether the PR changed them
+            (e.g. ``package.json``, ``pyproject.toml``).
     """
 
     repository_info: RepositoryInfo = Field(..., description="Repository information")
@@ -67,7 +69,9 @@ class PRInfoResult(BaseModel):
     dependency_files: list[str] = Field(
         default_factory=list,
         description=(
-            "Paths of dependency manifest files changed in the PR "
+            "Paths of dependency manifest files present in the repository at "
+            "the PR head, describing the project's dependency context "
+            "regardless of whether the PR changed them "
             "(e.g. package.json, pyproject.toml)"
         ),
     )

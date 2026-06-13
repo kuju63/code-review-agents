@@ -167,7 +167,7 @@ class LLMReviewAgent(ReviewAgent):
             f"PR #{pr.pr_info.pr_number}: {pr.pr_info.title}",
             f"Body: {pr.pr_info.body or '(none)'}",
             f"Labels: {', '.join(pr.pr_info.labels) or '(none)'}",
-            f"Dependency files changed: {', '.join(pr.dependency_files) or '(none)'}",
+            f"Dependency files: {', '.join(pr.dependency_files) or '(none)'}",
             "",
             "Changed files (diff patches):",
         ]

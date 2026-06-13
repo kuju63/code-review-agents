@@ -191,14 +191,17 @@ class PRInfoCollector:
         try:
             mcp_client.start()
             pr_details = self._read_pr_details(mcp_client, owner, repo, pr_number)
+            # Pin all repo-content reads to the PR head commit so the result is
+            # reproducible and reflects this PR's point in time (rather than the
+            # moving default branch).
+            head_ref = _extract_head_ref(pr_details)
             changed_files = self._read_changed_files(mcp_client, owner, repo, pr_number)
-            readme_text = self._read_readme(mcp_client, owner, repo)
+            readme_text = self._read_readme(mcp_client, owner, repo, head_ref)
             # ``dependency_files`` describes the packages the project depends on
             # so downstream reviewers know the dependency context.  It is the set
             # of manifest files present in the repo at this PR's point in time --
             # NOT only the manifests changed by the PR -- so we list the repo
             # root at the PR head ref rather than deriving from changed files.
-            head_ref = _extract_head_ref(pr_details)
             dependency_files = self._read_dependency_files(
                 mcp_client, owner, repo, head_ref
             )
@@ -216,10 +219,12 @@ class PRInfoCollector:
             except Exception:
                 project_summary = ""
 
+        # Extract the filename once and use it for both the predicate and
+        # construction, so the two never disagree on the key/default.
         file_changes = [
-            FileChange(filePath=f["filename"], patch=f.get("patch"))
+            FileChange(filePath=name, patch=f.get("patch"))
             for f in changed_files
-            if is_target_file(f.get("filename", ""))
+            if is_target_file(name := f.get("filename", ""))
         ]
 
         return PRInfoResult(
@@ -309,22 +314,29 @@ class PRInfoCollector:
             return []
         if not isinstance(entries, list):
             return []
-        return [
+        # Sort for deterministic output regardless of server-side listing order.
+        return sorted(
             entry["path"]
             for entry in entries
             if isinstance(entry, dict)
             and entry.get("type") == "file"
             and is_dependency_file(entry.get("path", ""))
-        ]
+        )
 
-    def _read_readme(self, mcp_client: Any, owner: str, repo: str) -> str | None:
-        """Fetch the repository README text, or None if unavailable."""
+    def _read_readme(
+        self, mcp_client: Any, owner: str, repo: str, ref: str | None = None
+    ) -> str | None:
+        """Fetch the repository README text at ``ref``, or None if unavailable.
+
+        Pinning to the PR head ref keeps ``project_summary`` reproducible and
+        reflects README changes made on the PR branch rather than the moving
+        default branch.
+        """
+        args: dict[str, Any] = {"owner": owner, "repo": repo, "path": "README.md"}
+        if ref:
+            args["ref"] = ref
         try:
-            result = mcp_client.call_tool_sync(
-                "readme",
-                "get_file_contents",
-                {"owner": owner, "repo": repo, "path": "README.md"},
-            )
+            result = mcp_client.call_tool_sync("readme", "get_file_contents", args)
             texts = _tool_text_blocks(result)
         except Exception:
             return None
