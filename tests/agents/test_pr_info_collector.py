@@ -15,6 +15,7 @@ from code_review_agent.agents.pr_info_collector import (
     GITHUB_MCP_URL,
     PRInfoCollector,
     SUMMARY_SYSTEM_PROMPT,
+    _extract_label_names,
     _tool_text_blocks,
     is_dependency_file,
     is_target_file,
@@ -90,6 +91,27 @@ class TestIsDependencyFile:
         assert is_dependency_file(path) is False
 
 
+class TestExtractLabelNames:
+    """Tests for _extract_label_names (handles string and dict label shapes)."""
+
+    def test_string_labels(self):
+        assert _extract_label_names(["scope: progress", "bug"]) == [
+            "scope: progress",
+            "bug",
+        ]
+
+    def test_dict_labels(self):
+        assert _extract_label_names([{"name": "bug"}, {"name": "feat"}]) == [
+            "bug",
+            "feat",
+        ]
+
+    def test_mixed_and_empty(self):
+        assert _extract_label_names(["a", {"name": "b"}, {}, None]) == ["a", "b"]
+        assert _extract_label_names([]) == []
+        assert _extract_label_names(None) == []
+
+
 class TestToolTextBlocks:
     """Tests for the _tool_text_blocks MCP result parser."""
 
@@ -111,7 +133,8 @@ _PR_GET = {
     "number": 48591,
     "title": "[progress] Show runtime errors only once",
     "body": "Fixes #48562",
-    "labels": [{"name": "scope: progress"}],
+    # GitHub MCP ``get`` returns labels as plain strings, not {"name": ...}.
+    "labels": ["scope: progress"],
     "state": "closed",
 }
 _PR_FILES = [

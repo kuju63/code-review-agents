@@ -83,6 +83,29 @@ def is_dependency_file(file_path: str) -> bool:
     return os.path.basename(file_path) in _DEPENDENCY_FILENAMES
 
 
+def _extract_label_names(labels: Any) -> list[str]:
+    """Normalise a PR ``labels`` field into a list of label name strings.
+
+    The GitHub MCP ``pull_request_read`` ``get`` method returns labels as plain
+    strings (``["scope: progress"]``), whereas the REST API shape is a list of
+    objects (``[{"name": ...}]``).  Both are accepted so the mapping does not
+    depend on which shape the endpoint happens to return.
+
+    Args:
+        labels: The raw ``labels`` value from the PR payload.
+
+    Returns:
+        The label names as a list of strings.
+    """
+    names: list[str] = []
+    for label in labels or []:
+        if isinstance(label, str):
+            names.append(label)
+        elif isinstance(label, dict) and label.get("name"):
+            names.append(label["name"])
+    return names
+
+
 def _tool_text_blocks(result: dict[str, Any]) -> list[str]:
     """Extract the text payloads from an MCP tool result.
 
@@ -175,11 +198,7 @@ class PRInfoCollector:
                 title=pr_details.get("title", ""),
                 pr_number=pr_details.get("number", pr_number),
                 body=pr_details.get("body"),
-                labels=[
-                    label["name"]
-                    for label in pr_details.get("labels", [])
-                    if isinstance(label, dict) and label.get("name")
-                ],
+                labels=_extract_label_names(pr_details.get("labels", [])),
                 file_changes=file_changes,
             ),
             dependency_files=dependency_files,
