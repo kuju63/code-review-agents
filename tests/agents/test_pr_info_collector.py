@@ -273,6 +273,20 @@ class TestPRInfoCollectorCollect:
         mcp.start.assert_called_once()
         mcp.stop.assert_called_once_with(None, None, None)
 
+    def test_stops_mcp_client_even_when_start_raises(self):
+        """If start() fails, stop() must still run (start() is inside try)."""
+        mcp = _make_mcp()
+        mcp.start.side_effect = RuntimeError("startup failed")
+        collector = PRInfoCollector(github_token="tok")
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=MagicMock()),
+            patch(f"{_MOD}.OpenAIModel"),
+            pytest.raises(RuntimeError, match="startup failed"),
+        ):
+            collector.collect("mui", "material-ui", 48591)
+        mcp.stop.assert_called_once_with(None, None, None)
+
     def test_stops_mcp_client_even_when_read_raises(self):
         mcp = _make_mcp()
         mcp.call_tool_sync.side_effect = RuntimeError("boom")

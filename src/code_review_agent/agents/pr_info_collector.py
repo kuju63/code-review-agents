@@ -168,10 +168,12 @@ class PRInfoCollector:
             Structured PR information ready for downstream review agents.
         """
         mcp_client = create_github_mcp_client(self._github_token, self._mcp_url)
-        # Used standalone (not via Agent), we own the client's lifecycle:
-        # start the session, then stop it deterministically in ``finally``.
-        mcp_client.start()
+        # Used standalone (not via Agent), we own the client's lifecycle.  Start
+        # inside the ``try`` so that a failing ``start()`` (e.g. connection or
+        # auth error) still reaches ``finally`` and is cleaned up; ``stop()`` is
+        # safe to call even when ``start()`` did not complete.
         try:
+            mcp_client.start()
             pr_details = self._read_pr_details(mcp_client, owner, repo, pr_number)
             changed_files = self._read_changed_files(mcp_client, owner, repo, pr_number)
             readme_text = self._read_readme(mcp_client, owner, repo)

@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import time
 from datetime import datetime, timezone
@@ -54,7 +55,10 @@ def main() -> None:
     model_id = os.environ.get("CODE_REVIEW_MODEL_ID", "google/gemma-4-e4b")
     base_url = os.environ.get("CODE_REVIEW_LLM_BASE_URL")
 
-    safe_model = model_id.replace("/", "_")
+    # Sanitise filesystem-unfriendly characters so model ids like the Ollama
+    # form ``gemma4:e4b`` (documented in .env.example) do not produce filenames
+    # containing ``:`` (invalid on Windows) or other path-hostile characters.
+    safe_model = re.sub(r'[/\\:*?"<>|]', "_", model_id)
     out = (
         Path(__file__).parent.parent
         / "data"
