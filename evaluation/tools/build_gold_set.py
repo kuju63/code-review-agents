@@ -30,6 +30,8 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
+from dotenv import load_dotenv
+
 
 ALLOWED_EXTENSIONS = {
     ".js",
@@ -262,6 +264,8 @@ def build_gold_item(target: Target, token: str) -> dict[str, Any]:
 
 
 def main() -> int:
+    load_dotenv()
+
     parser = argparse.ArgumentParser(description="Build Gold PR dataset from GitHub")
     parser.add_argument("--input", required=True, help="Path to input target JSON")
     parser.add_argument("--output", required=True, help="Path to output JSONL")
