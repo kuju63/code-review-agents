@@ -17,6 +17,8 @@ import random
 import re
 from typing import Any
 
+from dotenv import load_dotenv
+
 
 def read_jsonl(path: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
@@ -139,6 +141,8 @@ def build_seeded_item(
 
 
 def main() -> int:
+    load_dotenv()
+
     parser = argparse.ArgumentParser(description="Build Seeded set from Gold set")
     parser.add_argument("--gold", required=True, help="Path to Gold JSONL")
     parser.add_argument(

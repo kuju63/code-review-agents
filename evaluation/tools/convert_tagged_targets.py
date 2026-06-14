@@ -27,6 +27,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
+from dotenv import load_dotenv
 
 RISK_SCORE = {"low": 1, "medium": 2, "high": 3}
 
@@ -136,6 +137,8 @@ def summarize(rows: list[TaggedTarget]) -> dict[str, Any]:
 
 
 def main() -> int:
+    load_dotenv()
+
     parser = argparse.ArgumentParser(
         description="Convert tagged PR targets into execution target JSON"
     )
