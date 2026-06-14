@@ -13,7 +13,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: github.ref_type == 'branch' && github.event_name == 'push'
     steps:
       - uses: actions/checkout@v6
 
@@ -45,7 +44,6 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag' && github.event_name == 'release'
     steps:
       - uses: actions/checkout@v6
       - name: Set up QEMU

@@ -91,11 +91,20 @@ def _run_a2a(
 
 
 def _to_predictions(lead_report_data: dict[str, Any], pr_id: str) -> dict[str, Any]:
-    """Convert LeadEngineerReport dict to agent_predictions.jsonl format."""
+    """Convert LeadEngineerReport dict to agent_predictions.jsonl format.
+
+    Category is normalized to "unknown" because the agent uses perspective-based
+    categories (technical/security) that don't match the Gold/Seeded taxonomy
+    (correctness/performance/etc.), causing is_match() to reject all non-unknown pairs.
+    Matching falls back to path+line+severity which is the intended signal.
+    """
     from code_review_agent.models.lead_engineer import LeadEngineerReport
 
     report = LeadEngineerReport.model_validate(lead_report_data)
-    return report.to_evaluation_format(pr_id)
+    pred = report.to_evaluation_format(pr_id)
+    for finding in pred.get("agent_findings", []):
+        finding["category"] = "unknown"
+    return pred
 
 
 def evaluate_gold_item(
@@ -104,6 +113,7 @@ def evaluate_gold_item(
     base_url: str,
     poll_interval: float,
     timeout: float,
+    model_id: str,
 ) -> dict[str, Any]:
     """Evaluate a gold PR item via the orchestrator endpoint."""
     owner, repo = item["repository"].split("/")
@@ -111,6 +121,7 @@ def evaluate_gold_item(
         "owner": owner,
         "repo": repo,
         "pr_number": item["pr_number"],
+        "model_id": model_id,
     }
     lead_data = _run_a2a(
         client, f"{base_url}/orchestrator", data, poll_interval, timeout
@@ -124,6 +135,7 @@ def evaluate_seeded_item(
     base_url: str,
     poll_interval: float,
     timeout: float,
+    model_id: str,
 ) -> dict[str, Any]:
     """Evaluate a seeded item: collect real PR metadata, inject seeded file_changes."""
     owner, repo = item["repository"].split("/")
@@ -133,7 +145,7 @@ def evaluate_seeded_item(
     pr_info_data = _run_a2a(
         client,
         f"{base_url}/pr-info-collector",
-        {"owner": owner, "repo": repo, "pr_number": pr_number},
+        {"owner": owner, "repo": repo, "pr_number": pr_number, "model_id": model_id},
         poll_interval,
         timeout,
     )
@@ -152,14 +164,14 @@ def evaluate_seeded_item(
     react_result = _run_a2a(
         client,
         f"{base_url}/react-reviewer",
-        {"pr_info": pr_info_data},
+        {"pr_info": pr_info_data, "model_id": model_id},
         poll_interval,
         timeout,
     )
     security_result = _run_a2a(
         client,
         f"{base_url}/security-reviewer",
-        {"pr_info": pr_info_data},
+        {"pr_info": pr_info_data, "model_id": model_id},
         poll_interval,
         timeout,
     )
@@ -169,7 +181,7 @@ def evaluate_seeded_item(
     lead_data = _run_a2a(
         client,
         f"{base_url}/lead-engineer",
-        {"review_report": review_report},
+        {"review_report": review_report, "model_id": model_id},
         poll_interval,
         timeout,
     )
@@ -219,6 +231,7 @@ def _build_report(
     commit_hash: str,
     model_id: str,
     executed_at: str,
+    failed_ids: list[str],
 ) -> str:
     g = scores["gold"]
     s = scores["seeded"]
@@ -236,6 +249,11 @@ def _build_report(
         pr_lines.append(f"| `{item['id']}` | {item['title'][:50]} | {nf} |")
 
     pr_table = "\n".join(pr_lines)
+
+    failure_section = ""
+    if failed_ids:
+        ids = "\n".join(f"- `{i}`" for i in failed_ids)
+        failure_section = f"\n## 失敗アイテム\n\n以下のアイテムはエラーにより評価できませんでした（スコアは部分結果）:\n\n{ids}\n"
 
     return f"""# Agent 性能評価レポート: React + MUI
 
@@ -287,7 +305,7 @@ def _build_report(
 
 - Critical Miss Rate = 0: {"✅" if critical_miss_ok else "❌"} ({s["critical_miss_rate"]:.3f})
 - Must-Find Recall ≥ 0.95: {"✅" if must_find_ok else "❌"} ({s["must_find_recall"]:.3f})
-"""
+{failure_section}"""
 
 
 def read_jsonl(path: str) -> list[dict[str, Any]]:
@@ -312,6 +330,8 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=_DEFAULT_TIMEOUT)
     args = parser.parse_args()
 
+    args.base_url = args.base_url.rstrip("/")
+
     github_token = os.environ.get("GITHUB_TOKEN")
     if not github_token:
         print("GITHUB_TOKEN is required (set in .env)", file=sys.stderr)
@@ -330,6 +350,7 @@ def main() -> int:
 
     headers = {"Authorization": f"Bearer {github_token}"}
     predictions: list[dict[str, Any]] = []
+    failed_ids: list[str] = []
 
     with httpx.Client(headers=headers) as client:
         # Health check
@@ -347,11 +368,17 @@ def main() -> int:
             print(f"  [{item['id']}] ... ", end="", flush=True)
             try:
                 pred = evaluate_gold_item(
-                    item, client, args.base_url, args.poll_interval, args.timeout
+                    item,
+                    client,
+                    args.base_url,
+                    args.poll_interval,
+                    args.timeout,
+                    model_id,
                 )
                 predictions.append(pred)
                 print(f"done ({len(pred['agent_findings'])} findings)")
             except Exception as e:
+                failed_ids.append(item["id"])
                 print(f"WARN: {e}")
 
         print("\n--- Seeded set evaluation ---")
@@ -360,15 +387,29 @@ def main() -> int:
             print(f"  [{short_id}] ... ", end="", flush=True)
             try:
                 pred = evaluate_seeded_item(
-                    item, client, args.base_url, args.poll_interval, args.timeout
+                    item,
+                    client,
+                    args.base_url,
+                    args.poll_interval,
+                    args.timeout,
+                    model_id,
                 )
                 predictions.append(pred)
                 print(f"done ({len(pred['agent_findings'])} findings)")
             except Exception as e:
+                failed_ids.append(item["id"])
                 print(f"WARN: {e}")
 
+    if failed_ids:
+        print(
+            f"\n[WARN] {len(failed_ids)} item(s) failed — scores reflect partial results only:",
+            file=sys.stderr,
+        )
+        for fid in failed_ids:
+            print(f"  - {fid}", file=sys.stderr)
+
     # Write predictions
-    os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     with open(args.output, "w", encoding="utf-8") as f:
         for pred in predictions:
             f.write(json.dumps(pred, ensure_ascii=False) + "\n")
@@ -385,14 +426,14 @@ def main() -> int:
 
     # Build and write report
     report_md = _build_report(
-        scores, gold_items, seeded_items, commit_hash, model_id, executed_at
+        scores, gold_items, seeded_items, commit_hash, model_id, executed_at, failed_ids
     )
     report_filename = f"report_{ts_str}-{commit_hash}.md"
     report_path = Path(args.output).parent / report_filename
     report_path.write_text(report_md, encoding="utf-8")
     print(f"\nReport written: {report_path}")
 
-    return 0
+    return 1 if failed_ids else 0
 
 
 if __name__ == "__main__":
