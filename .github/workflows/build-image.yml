@@ -1,4 +1,4 @@
-# .github/workflows/build.yml
+# .github/workflows/build-image.yml
 name: Build multi-arch image
 
 on:
@@ -7,6 +7,8 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -56,6 +58,9 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUARY_USERNAME }}
           password: ${{ secrets.QUARY_TOKEN }}
+      - name: Create version from tag name(e.g. v1.2.3 -> 1.2.3)
+        id: vars
+        run: echo "VERSION=$(echo ${GITHUB_REF_NAME} | sed 's/^v//')" >> $GITHUB_OUTPUT
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
@@ -63,4 +68,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            quay.io/kuju63/code-review-agent:${{ github.ref_name }}
+            quay.io/kuju63/code-review-agent:${{ steps.vars.outputs.VERSION }}
