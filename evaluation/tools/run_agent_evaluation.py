@@ -30,7 +30,7 @@ load_dotenv()
 
 _DEFAULT_BASE_URL = "http://localhost:8000"
 _DEFAULT_POLL_INTERVAL = 3
-_DEFAULT_TIMEOUT = 300
+_DEFAULT_TIMEOUT = 1800
 
 
 def _a2a_send(
