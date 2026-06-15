@@ -103,7 +103,8 @@ def _to_predictions(lead_report_data: dict[str, Any], pr_id: str) -> dict[str, A
     report = LeadEngineerReport.model_validate(lead_report_data)
     pred = report.to_evaluation_format(pr_id)
     for finding in pred.get("agent_findings", []):
-        finding["category"] = "unknown"
+        if finding.get("category") != "security":
+            finding["category"] = "unknown"
     return pred
 
 
