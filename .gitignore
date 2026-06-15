@@ -334,5 +334,5 @@ tmbootpicker.efi
 nohup.out
 junit.xml
 
-# PR Info Collector の計測出力（実行成果物のためバージョン管理しない）
-evaluation/data/*.jsonl
+# 評価実行成果物（実行のたびに再生成されるためバージョン管理しない）
+evaluation/data/

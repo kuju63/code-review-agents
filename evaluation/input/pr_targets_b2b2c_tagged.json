@@ -238,5 +238,45 @@
     "priority_themes": ["batching", "correctness"],
     "risk_priority": "medium",
     "selection_note": "double unlink prevention"
+  },
+  {
+    "repository": "mui/material-ui",
+    "pr_number": 48325,
+    "stack": "react",
+    "priority_themes": ["transitions", "rendering", "correctness"],
+    "risk_priority": "high",
+    "selection_note": "custom Transition component support (18 review comments)"
+  },
+  {
+    "repository": "mui/material-ui",
+    "pr_number": 48591,
+    "stack": "react",
+    "priority_themes": ["correctness", "error_handling"],
+    "risk_priority": "high",
+    "selection_note": "CircularProgress/LinearProgress runtime error dedup (10 review comments)"
+  },
+  {
+    "repository": "mui/material-ui",
+    "pr_number": 48616,
+    "stack": "react",
+    "priority_themes": ["types", "code_infra"],
+    "risk_priority": "medium",
+    "selection_note": "tsgo migration (4 review comments)"
+  },
+  {
+    "repository": "mui/material-ui",
+    "pr_number": 48650,
+    "stack": "react",
+    "priority_themes": ["correctness", "ui_behavior"],
+    "risk_priority": "medium",
+    "selection_note": "ButtonBase focus ripple lingering fix (2 review comments)"
+  },
+  {
+    "repository": "mui/material-ui",
+    "pr_number": 48626,
+    "stack": "react",
+    "priority_themes": ["api_correctness", "documentation"],
+    "risk_priority": "low",
+    "selection_note": "Autocomplete fullWidth prop docs update (2 review comments)"
   }
 ]
