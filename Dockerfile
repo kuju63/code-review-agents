@@ -20,7 +20,7 @@ FROM ghcr.io/astral-sh/uv:0.11.21@sha256:ff07b86af50d4d9391d9daf4ff89ce427bc544f
 # - ABI 互換: cryptography / cffi / uvloop 等のバイナリ拡張の互換を保証
 # - ダイジェスト固定: タグ更新による意図しない Python バージョン変更を防止
 ###############################################################################
-FROM cgr.dev/chainguard/python:latest-dev@sha256:fa7db0816e4dd581d4b4a76edda591804a71788b6a46e46af0b435dad4552642 AS builder
+FROM cgr.dev/chainguard/python:latest-dev@sha256:a62f72f9480c548cd3d7d07426a490aab2a38c4fa89b9665dc36780ed85aca9f AS builder
 
 USER root
 
@@ -64,7 +64,7 @@ RUN uv sync --frozen --no-dev --no-editable --no-cache && \
 # - nonroot ユーザー (UID 65532) がビルトイン
 # - ダイジェスト固定: Python バージョン変化による site-packages パス破損を防止
 ###############################################################################
-FROM cgr.dev/chainguard/python:latest@sha256:33334c2bf93fd99e6b3c42b518cc44bb5277a954826cdb4f9275ef95818d7eb7 AS runtime
+FROM cgr.dev/chainguard/python:latest@sha256:7036bf1b4a132cccad9f68ea9b9945642df49ea7f940194fbcb0429db8da0e48 AS runtime
 
 # multi-stage ARG スコープ: pre-FROM で宣言した ARG を runtime ステージで再宣言
 # base image 更新時は ARG PYTHON_VERSION とダイジェストを合わせて更新すること
