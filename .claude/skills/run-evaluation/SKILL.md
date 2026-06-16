@@ -1,6 +1,6 @@
 ---
 name: run-evaluation
-description: "Code Review Agentの性能評価を実行するスキル。Gold setとSeeded setを準備し、A2AサーバーをバックグラウンドでKし、評価スクリプトを実行して結果をObsidianに保存する。次のような要求で必ずこのスキルを使うこと: 「評価を実行してください」「性能評価をしてください」「run evaluation」「評価パイプライン」「Agentのスコアを確認したい」「review agentの精度を測りたい」"
+description: "Code Review Agentの性能評価を実行するスキル。Gold setとSeeded setを準備し、A2Aサーバーをバックグラウンドで起動し、評価スクリプトを実行して結果をObsidianに保存する。次のような要求で必ずこのスキルを使うこと: 「評価を実行してください」「性能評価をしてください」「run evaluation」「評価パイプライン」「Agentのスコアを確認したい」「review agentの精度を測りたい」"
 ---
 
 # run-evaluation スキル
@@ -88,21 +88,22 @@ echo "A2A server PID: $A2A_PID"
 起動完了を確認してから評価を開始する（最大60秒待つ）:
 
 ```bash
+SERVER_READY=0
 for i in $(seq 1 20); do
   sleep 3
   if curl -sf http://localhost:8000/docs > /dev/null 2>&1; then
     echo "A2A server is ready"
+    SERVER_READY=1
     break
   fi
   echo "Waiting for server... ($i/20)"
 done
-```
 
-20回試行しても応答しない場合はプロセスを停止して中断する:
-
-```bash
-kill $A2A_PID 2>/dev/null
-echo "ERROR: A2A server did not start within 60s"
+if [ "$SERVER_READY" -eq 0 ]; then
+  kill $A2A_PID 2>/dev/null
+  echo "ERROR: A2A server did not start within 60s"
+  exit 1
+fi
 ```
 
 ---
@@ -144,7 +145,11 @@ echo "A2A server (PID $A2A_PID) stopped"
 `evaluation/data/report_*.md` の最新ファイルを特定する:
 
 ```bash
-REPORT_PATH=$(ls -t evaluation/data/report_*.md | head -1)
+REPORT_PATH=$(ls -t evaluation/data/report_*.md 2>/dev/null | head -1)
+if [ -z "$REPORT_PATH" ]; then
+  echo "WARNING: No evaluation report found. Obsidian save skipped."
+  exit 1
+fi
 echo "Report: $REPORT_PATH"
 ```
 
