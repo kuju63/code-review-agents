@@ -1,7 +1,7 @@
 {
   "extensions": {
     "markdown-tables": {
-      "enabled" : true
+      "enabled": true
     }
   },
   "plugins": {
@@ -11,5 +11,11 @@
     "MD041": {
       "enabled": false
     }
+  },
+  "system": {
+    "exclude_path": ".claude"
+  },
+  "mode": {
+    "return_code_scheme": "minimal"
   }
 }
