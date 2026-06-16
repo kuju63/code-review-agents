@@ -53,6 +53,33 @@ class TestValidateURL:
         with pytest.raises(ValueError):
             _validate_url("example.com/no-scheme")
 
+    def test_no_hostname_rejected(self):
+        with pytest.raises(ValueError, match="hostname"):
+            _validate_url("http:///path/to/file")
+
+    def test_loopback_ip_rejected(self):
+        with pytest.raises(ValueError, match="private|reserved"):
+            _validate_url("http://127.0.0.1/secret")
+
+    def test_link_local_ip_rejected(self):
+        with pytest.raises(ValueError, match="private|reserved"):
+            _validate_url("http://169.254.169.254/latest/meta-data/")
+
+    def test_private_ip_class_a_rejected(self):
+        with pytest.raises(ValueError, match="private|reserved"):
+            _validate_url("http://10.0.0.1/admin")
+
+    def test_private_ip_class_c_rejected(self):
+        with pytest.raises(ValueError, match="private|reserved"):
+            _validate_url("http://192.168.1.1/admin")
+
+    def test_ipv6_loopback_rejected(self):
+        with pytest.raises(ValueError, match="private|reserved"):
+            _validate_url("http://[::1]/secret")
+
+    def test_public_ip_allowed(self):
+        _validate_url("https://8.8.8.8/")  # must not raise
+
 
 class TestStripHTML:
     def test_removes_tags(self):
@@ -112,7 +139,7 @@ class TestCreateUrlFetchTool:
         mock_get.assert_called_once_with(
             "https://owasp.org/Top10/",
             timeout=10,
-            follow_redirects=True,
+            follow_redirects=False,
         )
         assert "https://owasp.org/Top10/" in result
         assert "OWASP summary" in result
@@ -197,6 +224,18 @@ class TestCreateUrlFetchTool:
         prompt_arg = call_args.args[0]
         assert "CSRF prevention techniques" in prompt_arg
 
+    @patch("code_review_agent.tools.url_fetch._summarize")
+    @patch("code_review_agent.tools.url_fetch.httpx.get")
+    def test_summarize_exception_returns_error_string(self, mock_get, mock_summarize):
+        mock_get.return_value = self._make_response("<p>content</p>")
+        mock_summarize.side_effect = RuntimeError("model not available")
+
+        tool = create_url_fetch_tool(URLFetchConfig())
+        result = tool("https://example.com/doc")
+
+        assert result.startswith("[url_fetch error]")
+        assert "Summarization failed" in result
+
     @patch("code_review_agent.tools.url_fetch.Agent")
     @patch("code_review_agent.tools.url_fetch.httpx.get")
     def test_source_url_in_result(self, mock_get, mock_agent_cls):
@@ -208,9 +247,10 @@ class TestCreateUrlFetchTool:
 
         assert "[Source: https://example.com/doc]" in result
 
+    @patch("code_review_agent.tools.url_fetch.OpenAIModel")
     @patch("code_review_agent.tools.url_fetch.Agent")
     @patch("code_review_agent.tools.url_fetch.httpx.get")
-    def test_uses_custom_llm_base_url(self, mock_get, mock_agent_cls):
+    def test_uses_custom_llm_base_url(self, mock_get, mock_agent_cls, mock_model):
         mock_get.return_value = self._make_response("<p>content</p>")
         mock_agent_cls.return_value.return_value = "summary"
 
@@ -218,13 +258,7 @@ class TestCreateUrlFetchTool:
         tool = create_url_fetch_tool(cfg)
         tool("https://example.com/doc")
 
-        # OpenAIModel should have been called with custom base_url
-        with patch("code_review_agent.tools.url_fetch.OpenAIModel") as mock_model:
-            mock_agent_cls.return_value.return_value = "summary"
-            tool2 = create_url_fetch_tool(cfg)
-            mock_get.return_value = self._make_response("<p>content</p>")
-            tool2("https://example.com/doc")
-            mock_model.assert_called_once_with(
-                model_id=cfg.model_id,
-                client_args={"base_url": "http://localhost:8080/v1"},
-            )
+        mock_model.assert_called_once_with(
+            model_id=cfg.model_id,
+            client_args={"base_url": "http://localhost:8080/v1"},
+        )

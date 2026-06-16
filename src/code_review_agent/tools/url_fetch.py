@@ -7,6 +7,7 @@ pass a URLFetchConfig and receive a configured tool ready to be added to an
 Agent's tools list.
 """
 
+import ipaddress
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from urllib.parse import urlparse
@@ -80,6 +81,18 @@ def _validate_url(url: str) -> None:
         raise ValueError(
             f"URL scheme '{parsed.scheme}' is not allowed; use http or https"
         )
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("URL must include a non-empty hostname")
+    # Block IP literals that map to private, loopback, or link-local ranges
+    # (e.g. 127.0.0.1, 169.254.169.254/AWS metadata, 10.x, 192.168.x).
+    # DNS-name hosts are not blocked here; the network layer enforces those.
+    try:
+        addr = ipaddress.ip_address(hostname)
+    except ValueError:
+        return  # Not an IP literal — regular hostname, allowed
+    if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+        raise ValueError(f"URL hostname '{hostname}' is a private or reserved address")
 
 
 def _summarize(text: str, url: str, focus: str, config: URLFetchConfig) -> str:
@@ -137,7 +150,7 @@ def create_url_fetch_tool(config: URLFetchConfig):
             response = httpx.get(
                 url,
                 timeout=config.timeout_seconds,
-                follow_redirects=True,
+                follow_redirects=False,
             )
             response.raise_for_status()
         except httpx.TimeoutException:
@@ -159,7 +172,10 @@ def create_url_fetch_tool(config: URLFetchConfig):
             text = raw_text
 
         text = text[: config.max_raw_chars]
-        summary = _summarize(text, url, focus, config)
+        try:
+            summary = _summarize(text, url, focus, config)
+        except Exception as exc:
+            return f"[url_fetch error] Summarization failed: {exc}"
         return f"[Source: {url}]\n{summary}"
 
     return fetch_url_content
