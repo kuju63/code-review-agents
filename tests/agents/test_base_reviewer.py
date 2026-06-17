@@ -263,7 +263,7 @@ class TestURLFetchReviewer:
         mock_mcp = _mock_mcp()
         mock_url_fetch = MagicMock()
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = _output()
+        mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
@@ -282,7 +282,7 @@ class TestURLFetchReviewer:
         reviewer = _UrlFetchOnlyReviewer(ReviewerConfig(github_token="tok"))
         mock_url_fetch = MagicMock()
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = _output()
+        mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client") as mock_mcp_factory,
@@ -306,7 +306,7 @@ class TestURLFetchReviewer:
             )
         )
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = _output()
+        mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client"),
@@ -324,7 +324,7 @@ class TestURLFetchReviewer:
         reviewer = _UrlFetchReviewer(ReviewerConfig(github_token="tok"))
         mock_mcp = _mock_mcp()
         mock_agent = MagicMock()
-        mock_agent.structured_output.side_effect = RuntimeError("boom")
+        mock_agent.side_effect = RuntimeError("boom")
 
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
