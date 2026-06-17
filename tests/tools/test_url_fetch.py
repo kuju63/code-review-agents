@@ -1,5 +1,6 @@
 """Tests for URL fetch tool factory."""
 
+import socket
 from unittest.mock import MagicMock, patch
 
 import httpx
@@ -11,6 +12,9 @@ from code_review_agent.tools.url_fetch import (
     _validate_url,
     create_url_fetch_tool,
 )
+
+# Reusable DNS mock return value representing a public IP (example.com / 93.184.216.34)
+_PUBLIC_DNS = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
 
 
 class TestURLFetchConfig:
@@ -31,10 +35,16 @@ class TestURLFetchConfig:
 
 
 class TestValidateURL:
-    def test_http_allowed(self):
+    @patch(
+        "code_review_agent.tools.url_fetch.socket.getaddrinfo", return_value=_PUBLIC_DNS
+    )
+    def test_http_allowed(self, mock_dns):
         _validate_url("http://example.com/doc")  # must not raise
 
-    def test_https_allowed(self):
+    @patch(
+        "code_review_agent.tools.url_fetch.socket.getaddrinfo", return_value=_PUBLIC_DNS
+    )
+    def test_https_allowed(self, mock_dns):
         _validate_url("https://owasp.org/Top10/2025/")  # must not raise
 
     def test_file_scheme_rejected(self):
@@ -80,6 +90,22 @@ class TestValidateURL:
     def test_public_ip_allowed(self):
         _validate_url("https://8.8.8.8/")  # must not raise
 
+    @patch(
+        "code_review_agent.tools.url_fetch.socket.getaddrinfo",
+        return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.1", 0))],
+    )
+    def test_hostname_resolving_to_private_ip_rejected(self, mock_dns):
+        with pytest.raises(ValueError, match="private"):
+            _validate_url("http://internal.corp.example.com/")
+
+    @patch(
+        "code_review_agent.tools.url_fetch.socket.getaddrinfo",
+        return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 0))],
+    )
+    def test_localhost_hostname_rejected(self, mock_dns):
+        with pytest.raises(ValueError, match="private"):
+            _validate_url("http://localhost/")
+
 
 class TestStripHTML:
     def test_removes_tags(self):
@@ -113,6 +139,18 @@ class TestStripHTML:
 class TestCreateUrlFetchTool:
     """Tests for the @tool closure returned by create_url_fetch_tool."""
 
+    def setup_method(self):
+        # All tests in this class use external hostnames; patch DNS to avoid
+        # real network lookups and to keep tests stable in CI.
+        self._dns_patcher = patch(
+            "code_review_agent.tools.url_fetch.socket.getaddrinfo",
+            return_value=_PUBLIC_DNS,
+        )
+        self._dns_patcher.start()
+
+    def teardown_method(self):
+        self._dns_patcher.stop()
+
     def _make_response(
         self, text: str, content_type: str = "text/html", status: int = 200
     ):
@@ -121,6 +159,7 @@ class TestCreateUrlFetchTool:
         resp.headers = {"content-type": content_type}
         resp.status_code = status
         resp.raise_for_status = MagicMock()
+        resp.is_redirect = False
         return resp
 
     def test_returns_callable(self):
@@ -223,6 +262,25 @@ class TestCreateUrlFetchTool:
         call_args = mock_agent_cls.return_value.call_args
         prompt_arg = call_args.args[0]
         assert "CSRF prevention techniques" in prompt_arg
+
+    @patch("code_review_agent.tools.url_fetch.httpx.get")
+    def test_redirect_returns_error_string(self, mock_get):
+        mock_resp = MagicMock(spec=httpx.Response)
+        mock_resp.status_code = 301
+        mock_resp.raise_for_status = MagicMock()  # does NOT raise for 3xx
+        mock_resp.is_redirect = True
+        mock_resp.headers = {
+            "location": "https://redirected.example.com/doc",
+            "content-type": "text/html",
+        }
+        mock_get.return_value = mock_resp
+
+        tool = create_url_fetch_tool(URLFetchConfig())
+        result = tool("https://example.com/doc")
+
+        assert result.startswith("[url_fetch error]")
+        assert "redirects" in result
+        assert "https://redirected.example.com/doc" in result
 
     @patch("code_review_agent.tools.url_fetch._summarize")
     @patch("code_review_agent.tools.url_fetch.httpx.get")

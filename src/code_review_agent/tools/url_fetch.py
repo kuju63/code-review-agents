@@ -8,6 +8,7 @@ Agent's tools list.
 """
 
 import ipaddress
+import socket
 from dataclasses import dataclass
 from html.parser import HTMLParser
 from urllib.parse import urlparse
@@ -75,6 +76,10 @@ def _strip_html(html: str) -> str:
     return extractor.get_text()
 
 
+def _is_blocked_addr(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
+    return addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved
+
+
 def _validate_url(url: str) -> None:
     parsed = urlparse(url)
     if parsed.scheme not in _ALLOWED_SCHEMES:
@@ -84,15 +89,41 @@ def _validate_url(url: str) -> None:
     hostname = parsed.hostname
     if not hostname:
         raise ValueError("URL must include a non-empty hostname")
-    # Block IP literals that map to private, loopback, or link-local ranges
-    # (e.g. 127.0.0.1, 169.254.169.254/AWS metadata, 10.x, 192.168.x).
-    # DNS-name hosts are not blocked here; the network layer enforces those.
+
+    # Determine whether hostname is an IP literal or a DNS name.
+    addr: ipaddress.IPv4Address | ipaddress.IPv6Address | None
     try:
         addr = ipaddress.ip_address(hostname)
     except ValueError:
-        return  # Not an IP literal — regular hostname, allowed
-    if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
-        raise ValueError(f"URL hostname '{hostname}' is a private or reserved address")
+        addr = None
+
+    if addr is not None:
+        # IP literals are checked directly — no DNS lookup needed.
+        if _is_blocked_addr(addr):
+            raise ValueError(
+                f"URL hostname '{hostname}' is a private or reserved address"
+            )
+        return
+
+    # DNS hostname: resolve all returned IPs and apply the same block list.
+    # ⚠️ A TOCTOU window exists between this check and the actual HTTP request
+    # (classic DNS-rebinding vector). This significantly raises the bar but does
+    # not fully eliminate DNS-rebinding attacks.
+    try:
+        results = socket.getaddrinfo(hostname, None)
+    except OSError as exc:
+        raise ValueError(f"Cannot resolve hostname '{hostname}': {exc}") from exc
+
+    for _, _, _, _, sockaddr in results:
+        ip_str = sockaddr[0]
+        try:
+            resolved = ipaddress.ip_address(ip_str)
+        except ValueError:
+            continue  # Unexpected; skip unparseable entries from getaddrinfo
+        if _is_blocked_addr(resolved):
+            raise ValueError(
+                f"Hostname '{hostname}' resolves to a private address '{ip_str}'"
+            )
 
 
 def _summarize(text: str, url: str, focus: str, config: URLFetchConfig) -> str:
@@ -153,6 +184,13 @@ def create_url_fetch_tool(config: URLFetchConfig):
                 follow_redirects=False,
             )
             response.raise_for_status()
+            # raise_for_status() only raises on 4xx/5xx; handle 3xx explicitly.
+            if response.is_redirect:
+                location = response.headers.get("location", "(no Location header)")
+                return (
+                    f"[url_fetch error] URL redirects to {location!r}; "
+                    "provide the final URL directly"
+                )
         except httpx.TimeoutException:
             return (
                 f"[url_fetch error] Request timed out after "
