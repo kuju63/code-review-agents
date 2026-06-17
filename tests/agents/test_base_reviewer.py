@@ -45,6 +45,28 @@ class _NoMcpReviewer(LLMReviewAgent):
     uses_github_mcp = False
 
 
+class _UrlFetchReviewer(LLMReviewAgent):
+    """Reviewer that uses both GitHub MCP and URL fetch."""
+
+    reviewer_id = "stub-urlfetch"
+    perspective = ReviewPerspective.SECURITY
+    project_types = frozenset({ProjectType.REACT_TS})
+    system_prompt = "URL fetch + MCP."
+    uses_github_mcp = True
+    uses_url_fetch = True
+
+
+class _UrlFetchOnlyReviewer(LLMReviewAgent):
+    """Reviewer that uses URL fetch but not GitHub MCP."""
+
+    reviewer_id = "stub-urlfetchonly"
+    perspective = ReviewPerspective.SECURITY
+    project_types = frozenset({ProjectType.REACT_TS})
+    system_prompt = "URL fetch only."
+    uses_github_mcp = False
+    uses_url_fetch = True
+
+
 def _make_context() -> ReviewContext:
     return ReviewContext(
         pr_info=PRInfoResult(
@@ -229,3 +251,87 @@ class TestReview:
             reviewer.review(_make_context())
 
         mock_model_cls.assert_called_once_with(model_id="gpt-4o")
+
+
+class TestURLFetchReviewer:
+    """Tests for the uses_url_fetch × uses_github_mcp tool combinations."""
+
+    def test_url_fetch_and_mcp_reviewer_receives_both_tools(self):
+        """Reviewer with uses_url_fetch=True and uses_github_mcp=True should
+        pass [mcp_client, url_fetch_tool] to the Agent."""
+        reviewer = _UrlFetchReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_url_fetch = MagicMock()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.create_url_fetch_tool", return_value=mock_url_fetch),
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
+        ):
+            reviewer.review(_make_context())
+
+        tools = mock_agent_cls.call_args.kwargs["tools"]
+        assert mock_mcp in tools
+        assert mock_url_fetch in tools
+
+    def test_url_fetch_only_reviewer_skips_mcp(self):
+        """Reviewer with uses_url_fetch=True and uses_github_mcp=False should
+        receive only the url_fetch_tool (no MCP client)."""
+        reviewer = _UrlFetchOnlyReviewer(ReviewerConfig(github_token="tok"))
+        mock_url_fetch = MagicMock()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client") as mock_mcp_factory,
+            patch(f"{_BASE}.create_url_fetch_tool", return_value=mock_url_fetch),
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
+        ):
+            reviewer.review(_make_context())
+
+        mock_mcp_factory.assert_not_called()
+        tools = mock_agent_cls.call_args.kwargs["tools"]
+        assert tools == [mock_url_fetch]
+
+    def test_url_fetch_config_propagates_model_settings(self):
+        """URLFetchConfig passed to create_url_fetch_tool must inherit
+        model_id and llm_base_url from ReviewerConfig."""
+        reviewer = _UrlFetchOnlyReviewer(
+            ReviewerConfig(
+                github_token="tok",
+                model_id="gpt-4o-mini",
+                llm_base_url="http://localhost:11434/v1",
+            )
+        )
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client"),
+            patch(f"{_BASE}.create_url_fetch_tool") as mock_factory,
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+        ):
+            reviewer.review(_make_context())
+
+        call_config = mock_factory.call_args.args[0]
+        assert call_config.model_id == "gpt-4o-mini"
+        assert call_config.llm_base_url == "http://localhost:11434/v1"
+
+    def test_mcp_still_stopped_when_url_fetch_also_enabled(self):
+        """MCP cleanup must still run in finally even when url_fetch is also active."""
+        reviewer = _UrlFetchReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.side_effect = RuntimeError("boom")
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.create_url_fetch_tool", return_value=MagicMock()),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+        ):
+            with pytest.raises(RuntimeError, match="boom"):
+                reviewer.review(_make_context())
+
+        mock_mcp.stop.assert_called_once_with(None, None, None)
