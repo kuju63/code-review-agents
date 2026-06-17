@@ -8,7 +8,7 @@ metadata and system prompt, so behaviour is configured rather than re-coded.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import ClassVar
+from typing import ClassVar, cast
 
 from strands import Agent
 from strands.models.openai import OpenAIModel
@@ -129,14 +129,20 @@ class LLMReviewAgent(ReviewAgent):
                     system_prompt=self.system_prompt,
                     tools=[mcp_client],
                 )
-                output: ReviewOutput = agent.structured_output(
-                    ReviewOutput, prompt=prompt
+                output: ReviewOutput = cast(
+                    ReviewOutput,
+                    agent(
+                        prompt, structured_output_model=ReviewOutput
+                    ).structured_output,
                 )
             finally:
                 mcp_client.stop(None, None, None)
         else:
             agent = Agent(model=model, system_prompt=self.system_prompt, tools=[])
-            output = agent.structured_output(ReviewOutput, prompt=prompt)
+            output = cast(
+                ReviewOutput,
+                agent(prompt, structured_output_model=ReviewOutput).structured_output,
+            )
 
         return ReviewResult(
             reviewer_id=self.reviewer_id,
