@@ -432,7 +432,7 @@ class TestLeadEngineerAgentEvaluate:
         from code_review_agent.models.lead_engineer import LeadEngineerOutput
 
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = LeadEngineerOutput(
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
             overall_summary="ok", decisions=[]
         )
 
@@ -449,7 +449,7 @@ class TestLeadEngineerAgentEvaluate:
         from code_review_agent.models.lead_engineer import LeadEngineerOutput
 
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = LeadEngineerOutput(
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
             overall_summary="ok", decisions=[]
         )
 
@@ -459,8 +459,8 @@ class TestLeadEngineerAgentEvaluate:
         ):
             self._agent().evaluate(_make_report())
 
-        args, _ = mock_agent.structured_output.call_args
-        assert args[0] is LeadEngineerOutput
+        _, kwargs = mock_agent.call_args
+        assert kwargs.get("structured_output_model") is LeadEngineerOutput
 
     def test_returns_lead_engineer_report(self):
         from code_review_agent.models.lead_engineer import (
@@ -469,7 +469,7 @@ class TestLeadEngineerAgentEvaluate:
         )
 
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = LeadEngineerOutput(
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
             overall_summary="All good.", decisions=[]
         )
 
@@ -493,7 +493,7 @@ class TestLeadEngineerAgentEvaluate:
             )
         ]
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = LeadEngineerOutput(
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
             overall_summary="ok", decisions=[]
         )
 
@@ -511,7 +511,7 @@ class TestLeadEngineerAgentEvaluate:
 
         config = ReviewerConfig(github_token="tok", model_id="gpt-4o")
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = LeadEngineerOutput(
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
             overall_summary="ok", decisions=[]
         )
 
@@ -535,7 +535,7 @@ class TestLeadEngineerAgentEvaluate:
             llm_base_url="http://localhost:11434/v1",
         )
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = LeadEngineerOutput(
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
             overall_summary="ok", decisions=[]
         )
 
@@ -555,7 +555,7 @@ class TestLeadEngineerAgentEvaluate:
 
         config = ReviewerConfig(github_token="", model_id="gpt-4o")
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = LeadEngineerOutput(
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
             overall_summary="ok", decisions=[]
         )
 

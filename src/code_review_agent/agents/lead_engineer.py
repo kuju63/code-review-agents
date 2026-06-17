@@ -7,7 +7,7 @@ to triage and prioritise, not to extend the review.
 """
 
 import logging
-from typing import ClassVar
+from typing import ClassVar, cast
 
 from strands import Agent
 from strands.models.openai import OpenAIModel
@@ -90,8 +90,9 @@ class LeadEngineerAgent:
         else:
             model = OpenAIModel(model_id=self._config.model_id)
         agent = Agent(model=model, system_prompt=self.system_prompt, tools=[])
-        output: LeadEngineerOutput = agent.structured_output(
-            LeadEngineerOutput, prompt=prompt
+        output: LeadEngineerOutput = cast(
+            LeadEngineerOutput,
+            agent(prompt, structured_output_model=LeadEngineerOutput).structured_output,
         )
         decisions = self._resolve_decisions(output.decisions, index_map)
         return LeadEngineerReport(

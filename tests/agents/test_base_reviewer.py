@@ -105,7 +105,7 @@ class TestReview:
         reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
         mock_mcp = _mock_mcp()
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = _output()
+        mock_agent.return_value.structured_output = _output()
 
         with (
             patch(
@@ -127,7 +127,7 @@ class TestReview:
         reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
         mock_mcp = _mock_mcp()
         mock_agent = MagicMock()
-        mock_agent.structured_output.side_effect = RuntimeError("boom")
+        mock_agent.side_effect = RuntimeError("boom")
 
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
@@ -138,15 +138,15 @@ class TestReview:
 
         mock_mcp.stop.assert_called_once_with(None, None, None)
 
-        args, kwargs = mock_agent.structured_output.call_args
-        assert args[0] is ReviewOutput
-        assert "octocat/hello" in kwargs["prompt"]
+        args, kwargs = mock_agent.call_args
+        assert "octocat/hello" in args[0]
+        assert kwargs.get("structured_output_model") is ReviewOutput
 
     def test_wraps_output_with_metadata(self):
         reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
         mock_mcp = _mock_mcp()
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = _output()
+        mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
@@ -163,7 +163,7 @@ class TestReview:
     def test_no_mcp_reviewer_skips_mcp_client(self):
         reviewer = _NoMcpReviewer(ReviewerConfig(github_token="tok"))
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = _output()
+        mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client") as mock_factory,
@@ -181,7 +181,7 @@ class TestReview:
         )
         mock_mcp = _mock_mcp()
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = _output()
+        mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
@@ -202,7 +202,7 @@ class TestReview:
         )
         mock_mcp = _mock_mcp()
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = _output()
+        mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
@@ -219,7 +219,7 @@ class TestReview:
         reviewer = _StubReviewer(ReviewerConfig(github_token="tok", model_id="gpt-4o"))
         mock_mcp = _mock_mcp()
         mock_agent = MagicMock()
-        mock_agent.structured_output.return_value = _output()
+        mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
