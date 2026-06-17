@@ -77,7 +77,16 @@ def _strip_html(html: str) -> str:
 
 
 def _is_blocked_addr(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> bool:
-    return addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved
+    # Block private, loopback, link-local, reserved, and multicast ranges.
+    # Note: in Python 3.11+, is_global=True for multicast, so we check is_multicast
+    # explicitly rather than relying on `not is_global`.
+    return (
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_link_local
+        or addr.is_reserved
+        or addr.is_multicast
+    )
 
 
 def _validate_url(url: str) -> None:
@@ -86,6 +95,8 @@ def _validate_url(url: str) -> None:
         raise ValueError(
             f"URL scheme '{parsed.scheme}' is not allowed; use http or https"
         )
+    if parsed.username or parsed.password:
+        raise ValueError("URL must not include credentials (username or password)")
     hostname = parsed.hostname
     if not hostname:
         raise ValueError("URL must include a non-empty hostname")
@@ -184,13 +195,17 @@ def create_url_fetch_tool(config: URLFetchConfig):
                 follow_redirects=False,
             )
             response.raise_for_status()
-            # raise_for_status() only raises on 4xx/5xx; handle 3xx explicitly.
-            if response.is_redirect:
-                location = response.headers.get("location", "(no Location header)")
-                return (
-                    f"[url_fetch error] URL redirects to {location!r}; "
-                    "provide the final URL directly"
-                )
+            # raise_for_status() only raises on 4xx/5xx; handle all 3xx explicitly.
+            # is_redirect covers 301/302/307/308 with Location; 304/300/etc. also
+            # lack content and must be rejected rather than summarized as empty.
+            if 300 <= response.status_code < 400:
+                location = response.headers.get("location")
+                if location:
+                    return (
+                        f"[url_fetch error] URL redirects to {location!r}; "
+                        "provide the final URL directly"
+                    )
+                return f"[url_fetch error] Unexpected {response.status_code} response: {url}"
         except httpx.TimeoutException:
             return (
                 f"[url_fetch error] Request timed out after "
@@ -204,7 +219,7 @@ def create_url_fetch_tool(config: URLFetchConfig):
         content_type = response.headers.get("content-type", "")
         raw_text = response.text
 
-        if "html" in content_type:
+        if "html" in content_type.lower():
             text = _strip_html(raw_text)
         else:
             text = raw_text

@@ -90,6 +90,20 @@ class TestValidateURL:
     def test_public_ip_allowed(self):
         _validate_url("https://8.8.8.8/")  # must not raise
 
+    def test_multicast_ip_rejected(self):
+        # In Python 3.11+, is_global=True for multicast, so we block it explicitly
+        # via is_multicast rather than relying on not is_global.
+        with pytest.raises(ValueError, match="private|reserved|multicast"):
+            _validate_url("http://224.0.0.1/stream")
+
+    def test_unspecified_ip_rejected(self):
+        with pytest.raises(ValueError, match="private|reserved"):
+            _validate_url("http://0.0.0.0/")
+
+    def test_url_with_credentials_rejected(self):
+        with pytest.raises(ValueError, match="credentials"):
+            _validate_url("https://user:pass@example.com/doc")
+
     @patch(
         "code_review_agent.tools.url_fetch.socket.getaddrinfo",
         return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.1", 0))],
@@ -239,6 +253,13 @@ class TestCreateUrlFetchTool:
 
         assert result.startswith("[url_fetch error]")
 
+    def test_url_with_credentials_returns_error_string(self):
+        tool = create_url_fetch_tool(URLFetchConfig())
+        result = tool("https://user:pass@example.com/doc")
+
+        assert result.startswith("[url_fetch error]")
+        assert "credentials" in result.lower()
+
     @patch("code_review_agent.tools.url_fetch.Agent")
     @patch("code_review_agent.tools.url_fetch.httpx.get")
     def test_max_raw_chars_truncates(self, mock_get, mock_agent_cls):
@@ -295,6 +316,23 @@ class TestCreateUrlFetchTool:
         assert result.startswith("[url_fetch error]")
 
     @patch("code_review_agent.tools.url_fetch.httpx.get")
+    def test_3xx_non_redirect_returns_error_string(self, mock_get):
+        """304 Not Modified has no Location header so is_redirect=False, but all
+        3xx responses should be treated as errors, not summarized as empty content."""
+        mock_resp = MagicMock(spec=httpx.Response)
+        mock_resp.status_code = 304
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.is_redirect = False
+        mock_resp.headers = {"content-type": "text/html"}
+        mock_get.return_value = mock_resp
+
+        tool = create_url_fetch_tool(URLFetchConfig())
+        result = tool("https://example.com/doc")
+
+        assert result.startswith("[url_fetch error]")
+        assert "304" in result
+
+    @patch("code_review_agent.tools.url_fetch.httpx.get")
     def test_redirect_returns_error_string(self, mock_get):
         mock_resp = MagicMock(spec=httpx.Response)
         mock_resp.status_code = 301
@@ -312,6 +350,23 @@ class TestCreateUrlFetchTool:
         assert result.startswith("[url_fetch error]")
         assert "redirects" in result
         assert "https://redirected.example.com/doc" in result
+
+    @patch("code_review_agent.tools.url_fetch.Agent")
+    @patch("code_review_agent.tools.url_fetch.httpx.get")
+    def test_uppercase_content_type_html_stripped(self, mock_get, mock_agent_cls):
+        """Servers may return 'Text/HTML' — content-type check must be case-insensitive."""
+        mock_get.return_value = self._make_response(
+            "<p>visible</p><script>hidden()</script>",
+            content_type="Text/HTML; charset=utf-8",
+        )
+        mock_agent_cls.return_value.return_value = "summary"
+
+        tool = create_url_fetch_tool(URLFetchConfig())
+        tool("https://example.com/doc")
+
+        prompt_arg = mock_agent_cls.return_value.call_args.args[0]
+        assert "<p>" not in prompt_arg
+        assert "hidden" not in prompt_arg
 
     @patch("code_review_agent.tools.url_fetch._summarize")
     @patch("code_review_agent.tools.url_fetch.httpx.get")
