@@ -106,6 +106,14 @@ class TestValidateURL:
         with pytest.raises(ValueError, match="private"):
             _validate_url("http://localhost/")
 
+    @patch(
+        "code_review_agent.tools.url_fetch.socket.getaddrinfo",
+        side_effect=OSError("Name or service not known"),
+    )
+    def test_dns_resolution_failure_rejected(self, mock_dns):
+        with pytest.raises(ValueError, match="Cannot resolve"):
+            _validate_url("http://nonexistent.example.invalid/")
+
 
 class TestStripHTML:
     def test_removes_tags(self):
@@ -262,6 +270,29 @@ class TestCreateUrlFetchTool:
         call_args = mock_agent_cls.return_value.call_args
         prompt_arg = call_args.args[0]
         assert "CSRF prevention techniques" in prompt_arg
+
+    def test_dns_resolution_failure_returns_error_string(self):
+        # Override the class-level DNS mock to simulate a resolution failure.
+        with patch(
+            "code_review_agent.tools.url_fetch.socket.getaddrinfo",
+            side_effect=OSError("Name or service not known"),
+        ):
+            tool = create_url_fetch_tool(URLFetchConfig())
+            result = tool("https://nonexistent.example.invalid/")
+
+        assert result.startswith("[url_fetch error]")
+        assert "resolve" in result.lower()
+
+    @patch("code_review_agent.tools.url_fetch.httpx.get")
+    def test_network_connection_error_returns_error_string(self, mock_get):
+        # httpx.ConnectError is a subclass of httpx.HTTPError and represents
+        # low-level network failures (connection refused, network unreachable, …).
+        mock_get.side_effect = httpx.ConnectError("Connection refused")
+
+        tool = create_url_fetch_tool(URLFetchConfig())
+        result = tool("https://example.com/doc")
+
+        assert result.startswith("[url_fetch error]")
 
     @patch("code_review_agent.tools.url_fetch.httpx.get")
     def test_redirect_returns_error_string(self, mock_get):
