@@ -21,6 +21,7 @@ from ..models.review import (
     ReviewResult,
 )
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
+from ..tools.url_fetch import URLFetchConfig, create_url_fetch_tool
 
 
 @dataclass(frozen=True)
@@ -97,6 +98,7 @@ class LLMReviewAgent(ReviewAgent):
 
     system_prompt: ClassVar[str]
     uses_github_mcp: ClassVar[bool] = True
+    uses_url_fetch: ClassVar[bool] = False
 
     def review(
         self,
@@ -112,37 +114,42 @@ class LLMReviewAgent(ReviewAgent):
         else:
             model = OpenAIModel(model_id=self._config.model_id)
 
+        tools: list = []
+        # In strands >=1.41 ``MCPClient`` is a ``ToolProvider`` whose lifecycle
+        # the Agent owns: it calls ``start()`` while loading tools and ``stop()``
+        # on cleanup.  Opening it ourselves with ``with`` would start the session
+        # a second time and raise "the client session is currently running", so we
+        # hand the client to the Agent and stop it deterministically in ``finally``
+        # (``stop`` is idempotent).
+        mcp_client = None
         if self.uses_github_mcp:
-            # In strands >=1.41 ``MCPClient`` is a ``ToolProvider`` whose
-            # lifecycle the Agent owns: it calls ``start()`` while loading tools
-            # and ``stop()`` on cleanup.  Opening it ourselves with ``with``
-            # would start the session a second time and raise "the client
-            # session is currently running", so we hand the client to the Agent
-            # and stop it deterministically in ``finally`` (``stop`` is
-            # idempotent).
             mcp_client = create_github_mcp_client(
                 self._config.github_token, self._config.mcp_url
             )
-            try:
-                agent = Agent(
-                    model=model,
-                    system_prompt=self.system_prompt,
-                    tools=[mcp_client],
+            tools.append(mcp_client)
+
+        if self.uses_url_fetch:
+            url_fetch = create_url_fetch_tool(
+                URLFetchConfig(
+                    model_id=self._config.model_id,
+                    llm_base_url=self._config.llm_base_url,
                 )
-                output: ReviewOutput = cast(
-                    ReviewOutput,
-                    agent(
-                        prompt, structured_output_model=ReviewOutput
-                    ).structured_output,
-                )
-            finally:
-                mcp_client.stop(None, None, None)
-        else:
-            agent = Agent(model=model, system_prompt=self.system_prompt, tools=[])
-            output = cast(
+            )
+            tools.append(url_fetch)
+
+        try:
+            agent = Agent(
+                model=model,
+                system_prompt=self.system_prompt,
+                tools=tools,
+            )
+            output: ReviewOutput = cast(
                 ReviewOutput,
                 agent(prompt, structured_output_model=ReviewOutput).structured_output,
             )
+        finally:
+            if mcp_client is not None:
+                mcp_client.stop(None, None, None)
 
         return ReviewResult(
             reviewer_id=self.reviewer_id,
