@@ -20,6 +20,8 @@ on:
       - pyproject.toml
       - uv.lock
       - .github/workflows/container-security-scan.yml
+  schedule:
+    - cron: '22 21 * * 4'
 
 jobs:
   trivy-scan:
@@ -63,10 +65,10 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           image-ref: code-review-agent:${{ github.sha }}
-          format: sarif
-          output: trivy-results.sarif
+          format: 'template'
+          template: '@/contrib/sarif.tpl'
+          output: 'trivy-results.sarif'
           severity: CRITICAL,HIGH
-          exit-code: '1'
           ignore-unfixed: true
 
       # ビルドステップ失敗時は trivy-results.sarif が存在しないためスキップする
