@@ -26,6 +26,7 @@ _ENV_KEYS = [
     "CODE_REVIEW_LOG_LEVEL",
     "CODE_REVIEW_MODEL_ID",
     "CODE_REVIEW_LLM_BASE_URL",
+    "CODE_REVIEW_MAX_AGENT_TURNS",
     "CODE_REVIEW_AGENT_BASE_URL",
     "CODE_REVIEW_AGENT_PR_INFO_COLLECTOR_URL",
     "CODE_REVIEW_AGENT_REACT_REVIEWER_URL",
@@ -62,6 +63,10 @@ class TestSettingsDefaults:
         s = _IsolatedSettings()
         assert s.llm_base_url is None
 
+    def test_max_agent_turns_default_is_30(self, clean_env: None) -> None:
+        s = _IsolatedSettings()
+        assert s.max_agent_turns == 30
+
     def test_agent_base_url_default(self, clean_env: None) -> None:
         s = _IsolatedSettings()
         assert s.agent_base_url == "http://localhost:8000"
@@ -95,6 +100,13 @@ class TestSettingsFromEnv:
         monkeypatch.setenv("CODE_REVIEW_LLM_BASE_URL", "http://localhost:11434/v1")
         s = _IsolatedSettings()
         assert s.llm_base_url == "http://localhost:11434/v1"
+
+    def test_reads_max_agent_turns_from_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_MAX_AGENT_TURNS", "50")
+        s = _IsolatedSettings()
+        assert s.max_agent_turns == 50
 
 
 class TestResolveAgentUrl:

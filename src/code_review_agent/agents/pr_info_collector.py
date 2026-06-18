@@ -160,11 +160,13 @@ class PRInfoCollector:
         model_id: str = "gpt-4o",
         mcp_url: str = GITHUB_MCP_URL,
         llm_base_url: str | None = None,
+        max_agent_turns: int = 30,
     ) -> None:
         self._github_token = github_token
         self._model_id = model_id
         self._mcp_url = mcp_url
         self._llm_base_url = llm_base_url
+        self._max_agent_turns = max_agent_turns
 
     def collect(self, owner: str, repo: str, pr_number: int) -> PRInfoResult:
         """Collect PR information from GitHub and return structured data.
@@ -356,5 +358,8 @@ class PRInfoCollector:
     def _summarize_readme(self, readme_text: str) -> str:
         """Summarise the README with a single tool-free LLM call."""
         agent = Agent(model=self._build_model(), system_prompt=SUMMARY_SYSTEM_PROMPT)
-        result = agent(readme_text[:_README_MAX_CHARS])
+        result = agent(
+            readme_text[:_README_MAX_CHARS],
+            limits={"turns": self._max_agent_turns},
+        )
         return str(result).strip()

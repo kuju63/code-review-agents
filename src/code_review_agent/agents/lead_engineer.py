@@ -92,7 +92,11 @@ class LeadEngineerAgent:
         agent = Agent(model=model, system_prompt=self.system_prompt, tools=[])
         output: LeadEngineerOutput = cast(
             LeadEngineerOutput,
-            agent(prompt, structured_output_model=LeadEngineerOutput).structured_output,
+            agent(
+                prompt,
+                structured_output_model=LeadEngineerOutput,
+                limits={"turns": self._config.max_agent_turns},
+            ).structured_output,
         )
         decisions = self._resolve_decisions(output.decisions, index_map)
         return LeadEngineerReport(

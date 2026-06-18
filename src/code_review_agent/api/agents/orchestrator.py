@@ -32,6 +32,7 @@ async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -
             github_token=github_token,
             model_id=model_id,
             llm_base_url=settings.llm_base_url,
+            max_agent_turns=settings.max_agent_turns,
         )
         pr_info = await asyncio.to_thread(
             collector.collect,
@@ -44,6 +45,7 @@ async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -
             github_token=github_token,
             model_id=model_id,
             llm_base_url=settings.llm_base_url,
+            max_agent_turns=settings.max_agent_turns,
         )
         orchestrator = ReviewOrchestrator(config)
         context = ReviewContext(pr_info=pr_info)

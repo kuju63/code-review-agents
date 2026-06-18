@@ -33,12 +33,15 @@ class ReviewerConfig:
             header.
         model_id: OpenAI-compatible model ID used by every reviewer.
         mcp_url: GitHub MCP endpoint URL.
+        max_agent_turns: Maximum agent loop iterations per invocation.
+            Configurable via ``CODE_REVIEW_MAX_AGENT_TURNS``.
     """
 
     github_token: str
     model_id: str = "gpt-4o"
     mcp_url: str = GITHUB_MCP_URL
     llm_base_url: str | None = None
+    max_agent_turns: int = 30
 
 
 class ReviewAgent(ABC):
@@ -145,7 +148,11 @@ class LLMReviewAgent(ReviewAgent):
             )
             output: ReviewOutput = cast(
                 ReviewOutput,
-                agent(prompt, structured_output_model=ReviewOutput).structured_output,
+                agent(
+                    prompt,
+                    structured_output_model=ReviewOutput,
+                    limits={"turns": self._config.max_agent_turns},
+                ).structured_output,
             )
         finally:
             if mcp_client is not None:

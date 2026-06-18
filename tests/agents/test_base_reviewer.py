@@ -197,6 +197,38 @@ class TestReview:
         assert mock_agent_cls.call_args.kwargs["tools"] == []
         assert result.reviewer_id == "stub-nomcp"
 
+    def test_agent_called_with_default_limits(self):
+        """agent() receives limits={"turns": 30} by default."""
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+        ):
+            reviewer.review(_make_context())
+
+        _, kwargs = mock_agent.call_args
+        assert kwargs.get("limits") == {"turns": 30}
+
+    def test_agent_called_with_custom_max_agent_turns(self):
+        """Custom max_agent_turns is forwarded to the limits dict."""
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok", max_agent_turns=10))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+        ):
+            reviewer.review(_make_context())
+
+        _, kwargs = mock_agent.call_args
+        assert kwargs.get("limits") == {"turns": 10}
+
     def test_uses_configured_model_id(self):
         reviewer = _StubReviewer(
             ReviewerConfig(github_token="tok", model_id="gpt-4o-mini")
