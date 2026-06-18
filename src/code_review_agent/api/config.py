@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     model_id: str = "gpt-4o"
     llm_base_url: str | None = None
+    max_agent_turns: int = 30
 
     agent_base_url: str = "http://localhost:8000"
     agent_pr_info_collector_url: str | None = None

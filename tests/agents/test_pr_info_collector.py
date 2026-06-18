@@ -460,3 +460,33 @@ class TestPRInfoCollectorCollect:
         ):
             collector.collect("mui", "material-ui", 48591)
         model_cls.assert_called_once_with(model_id="gpt-4o")
+
+    def test_summary_agent_called_with_default_limits(self):
+        """_summarize_readme passes limits={"turns": 30} by default."""
+        collector = PRInfoCollector(github_token="tok")
+        mock_agent = MagicMock(return_value="summary text.")
+        mcp = _make_mcp()
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel"),
+        ):
+            collector.collect("mui", "material-ui", 48591)
+
+        _, kwargs = mock_agent.call_args
+        assert kwargs.get("limits") == {"turns": 30}
+
+    def test_summary_agent_called_with_custom_max_agent_turns(self):
+        """Custom max_agent_turns is forwarded to summary agent limits."""
+        collector = PRInfoCollector(github_token="tok", max_agent_turns=5)
+        mock_agent = MagicMock(return_value="summary text.")
+        mcp = _make_mcp()
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel"),
+        ):
+            collector.collect("mui", "material-ui", 48591)
+
+        _, kwargs = mock_agent.call_args
+        assert kwargs.get("limits") == {"turns": 5}

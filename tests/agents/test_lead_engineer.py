@@ -462,6 +462,44 @@ class TestLeadEngineerAgentEvaluate:
         _, kwargs = mock_agent.call_args
         assert kwargs.get("structured_output_model") is LeadEngineerOutput
 
+    def test_agent_called_with_default_limits(self):
+        """agent() receives limits={"turns": 30} by default."""
+        from code_review_agent.models.lead_engineer import LeadEngineerOutput
+
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
+            overall_summary="ok", decisions=[]
+        )
+
+        with (
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel"),
+        ):
+            self._agent().evaluate(_make_report())
+
+        _, kwargs = mock_agent.call_args
+        assert kwargs.get("limits") == {"turns": 30}
+
+    def test_agent_called_with_custom_max_agent_turns(self):
+        """Custom max_agent_turns from config is forwarded to limits."""
+        from code_review_agent.agents.lead_engineer import LeadEngineerAgent
+        from code_review_agent.models.lead_engineer import LeadEngineerOutput
+
+        config = ReviewerConfig(github_token="tok", max_agent_turns=5)
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
+            overall_summary="ok", decisions=[]
+        )
+
+        with (
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel"),
+        ):
+            LeadEngineerAgent(config).evaluate(_make_report())
+
+        _, kwargs = mock_agent.call_args
+        assert kwargs.get("limits") == {"turns": 5}
+
     def test_returns_lead_engineer_report(self):
         from code_review_agent.models.lead_engineer import (
             LeadEngineerOutput,
