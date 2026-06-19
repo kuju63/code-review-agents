@@ -64,7 +64,7 @@ RUN uv sync --frozen --no-dev --no-editable --no-cache && \
 # - nonroot ユーザー (UID 65532) がビルトイン
 # - ダイジェスト固定: Python バージョン変化による site-packages パス破損を防止
 ###############################################################################
-FROM cgr.dev/chainguard/python:latest@sha256:37e0742458293f7bfa45573297955574ec7430c5fc9c02344e541706e20f2007 AS runtime
+FROM cgr.dev/chainguard/python:latest@sha256:bbae4504f6381ba41b65111ce3bb229a7c4f4def6ac400576705044414a09001 AS runtime
 
 # multi-stage ARG スコープ: pre-FROM で宣言した ARG を runtime ステージで再宣言
 # base image 更新時は ARG PYTHON_VERSION とダイジェストを合わせて更新すること
