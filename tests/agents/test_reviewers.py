@@ -1,27 +1,35 @@
-"""Tests for the concrete React technical and security reviewers."""
+"""Tests for the concrete frontend technical and security reviewers."""
+
+from pathlib import Path
 
 from code_review_agent.agents import registry
 from code_review_agent.agents.base_reviewer import LLMReviewAgent
 from code_review_agent.agents.registry import get_reviewer_classes
-from code_review_agent.agents.reviewers import ReactCodeReviewer, SecurityReviewer
+from code_review_agent.agents.reviewers import FrontendReviewer, SecurityReviewer
 from code_review_agent.models.review import ProjectType, ReviewPerspective
 
 
-class TestReactCodeReviewer:
-    """React technical reviewer metadata and prompt."""
+class TestFrontendReviewer:
+    """Frontend technical reviewer metadata and prompt."""
 
     def test_is_llm_review_agent(self):
-        assert issubclass(ReactCodeReviewer, LLMReviewAgent)
+        assert issubclass(FrontendReviewer, LLMReviewAgent)
 
     def test_metadata(self):
-        assert ReactCodeReviewer.perspective is ReviewPerspective.TECHNICAL
-        assert ReactCodeReviewer.project_types == frozenset({ProjectType.REACT_TS})
-        assert ReactCodeReviewer.reviewer_id
+        assert FrontendReviewer.perspective is ReviewPerspective.TECHNICAL
+        assert FrontendReviewer.project_types == frozenset({ProjectType.REACT_TS})
+        assert FrontendReviewer.reviewer_id
 
-    def test_system_prompt_mentions_react(self):
-        prompt = ReactCodeReviewer.system_prompt
-        assert "React" in prompt
+    def test_system_prompt_mentions_frontend(self):
+        prompt = FrontendReviewer.system_prompt
+        assert "front-end" in prompt
         assert "package.json" in prompt
+
+    def test_skills_dir_points_to_skills_directory(self):
+        assert FrontendReviewer.skills_dir is not None
+        assert isinstance(FrontendReviewer.skills_dir, Path)
+        assert FrontendReviewer.skills_dir.exists()
+        assert FrontendReviewer.skills_dir.is_dir()
 
 
 class TestSecurityReviewer:
@@ -44,12 +52,12 @@ class TestRegistration:
 
     def test_both_registered_for_react_ts(self):
         registered = registry.get_registered_reviewers()
-        assert ReactCodeReviewer in registered
+        assert FrontendReviewer in registered
         assert SecurityReviewer in registered
 
     def test_selected_for_react_ts(self):
         selected = get_reviewer_classes(ProjectType.REACT_TS)
-        assert ReactCodeReviewer in selected
+        assert FrontendReviewer in selected
         assert SecurityReviewer in selected
 
     def test_both_perspectives_present(self):

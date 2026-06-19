@@ -8,10 +8,12 @@ metadata and system prompt, so behaviour is configured rather than re-coded.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 from typing import ClassVar, cast
 
-from strands import Agent
+from strands import Agent, AgentSkills
 from strands.models.openai import OpenAIModel
+from strands_tools import file_read, shell
 
 from ..models.review import (
     ProjectType,
@@ -102,6 +104,7 @@ class LLMReviewAgent(ReviewAgent):
     system_prompt: ClassVar[str]
     uses_github_mcp: ClassVar[bool] = True
     uses_url_fetch: ClassVar[bool] = False
+    skills_dir: ClassVar[Path | None] = None
 
     def review(
         self,
@@ -140,11 +143,17 @@ class LLMReviewAgent(ReviewAgent):
             )
             tools.append(url_fetch)
 
+        plugins: list = []
+        if self.skills_dir is not None:
+            tools.extend([file_read, shell])
+            plugins.append(AgentSkills(skills=self.skills_dir))
+
         try:
             agent = Agent(
                 model=model,
                 system_prompt=self.system_prompt,
                 tools=tools,
+                plugins=plugins,
             )
             output: ReviewOutput = cast(
                 ReviewOutput,

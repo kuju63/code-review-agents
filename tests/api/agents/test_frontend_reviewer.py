@@ -8,10 +8,10 @@ from fastapi.testclient import TestClient
 from code_review_agent.a2a.models import A2ATaskStatus
 from code_review_agent.a2a.task_store import TaskStore
 from code_review_agent.api.agents.common import verify_github_token
-from code_review_agent.api.agents.react_reviewer import react_reviewer_router
+from code_review_agent.api.agents.frontend_reviewer import frontend_reviewer_router
 from code_review_agent.api.config import Settings
 
-_MOD = "code_review_agent.api.agents.react_reviewer"
+_MOD = "code_review_agent.api.agents.frontend_reviewer"
 
 
 def _make_app() -> tuple[FastAPI, TaskStore]:
@@ -19,8 +19,8 @@ def _make_app() -> tuple[FastAPI, TaskStore]:
     store = TaskStore()
     settings = Settings(_env_file=None)  # type: ignore[call-arg]
     app.include_router(
-        react_reviewer_router(settings, store),
-        prefix="/react-reviewer",
+        frontend_reviewer_router(settings, store),
+        prefix="/frontend-reviewer",
     )
     app.dependency_overrides[verify_github_token] = lambda: "ghp_testtoken"
     return app, store
@@ -54,11 +54,11 @@ class TestAgentCard:
     def test_returns_agent_card(self) -> None:
         app, _ = _make_app()
         with TestClient(app) as client:
-            resp = client.get("/react-reviewer/.well-known/agent.json")
+            resp = client.get("/frontend-reviewer/.well-known/agent.json")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["name"] == "React Reviewer"
-        assert "/react-reviewer" in data["url"]
+        assert data["name"] == "Frontend Reviewer"
+        assert "/frontend-reviewer" in data["url"]
         assert len(data["skills"]) == 1
 
 
@@ -66,7 +66,7 @@ class TestSendTask:
     def test_returns_202_with_task_id(self) -> None:
         app, _ = _make_app()
         with TestClient(app) as client:
-            resp = client.post("/react-reviewer/tasks/send", json=_send_payload())
+            resp = client.post("/frontend-reviewer/tasks/send", json=_send_payload())
         assert resp.status_code == 202
         data = resp.json()
         assert data["task"]["status"] == "submitted"
@@ -77,7 +77,7 @@ class TestGetTask:
     def test_returns_404_for_unknown_task_id(self) -> None:
         app, _ = _make_app()
         with TestClient(app) as client:
-            resp = client.get("/react-reviewer/tasks/nonexistent-id")
+            resp = client.get("/frontend-reviewer/tasks/nonexistent-id")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -89,7 +89,7 @@ class TestGetTask:
         )
 
         mock_result = ReviewResult(
-            reviewer_id="react-technical",
+            reviewer_id="frontend-technical",
             perspective=ReviewPerspective.TECHNICAL,
             project_type=None,
             output=ReviewOutput(summary="Looks good.", findings=[]),
@@ -97,14 +97,14 @@ class TestGetTask:
 
         app, store = _make_app()
         with (
-            patch(f"{_MOD}.ReactCodeReviewer") as mock_reviewer_cls,
+            patch(f"{_MOD}.FrontendReviewer") as mock_reviewer_cls,
             TestClient(app) as client,
         ):
             mock_instance = MagicMock()
             mock_instance.review.return_value = mock_result
             mock_reviewer_cls.return_value = mock_instance
 
-            resp = client.post("/react-reviewer/tasks/send", json=_send_payload())
+            resp = client.post("/frontend-reviewer/tasks/send", json=_send_payload())
             assert resp.status_code == 202
             task_id = resp.json()["task"]["id"]
 
