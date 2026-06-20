@@ -3,7 +3,7 @@
 Defines the reviewer interface (:class:`ReviewAgent`) and a shared LLM-backed
 implementation (:class:`LLMReviewAgent`).  Concrete reviewers (React technical,
 security, future stacks/perspectives) subclass these and supply only their
-metadata and system prompt, so behaviour is configured rather than re-coded.
+metadata and system prompt, so behavior is configured rather than re-coded.
 """
 
 from abc import ABC, abstractmethod
@@ -13,6 +13,7 @@ from typing import ClassVar, cast
 
 from strands import Agent, AgentSkills
 from strands.models.openai import OpenAIModel
+from strands.types.agent import Limits
 from strands_tools import file_read, http_request
 
 from ..models.review import (
@@ -110,7 +111,7 @@ class LLMReviewAgent(ReviewAgent):
         context: ReviewContext,
         project_type: ProjectType | None = None,
     ) -> ReviewResult:
-        prompt = self._build_prompt(context)
+        prompt = LLMReviewAgent._build_prompt(context)
         if self._config.llm_base_url:
             model = OpenAIModel(
                 model_id=self._config.model_id,
@@ -148,12 +149,13 @@ class LLMReviewAgent(ReviewAgent):
                 tools=tools,
                 plugins=plugins,
             )
+            limits: Limits = {"turns": self._config.max_agent_turns}
             output: ReviewOutput = cast(
                 ReviewOutput,
                 agent(
                     prompt,
                     structured_output_model=ReviewOutput,
-                    limits={"turns": self._config.max_agent_turns},
+                    limits=limits,
                 ).structured_output,
             )
         finally:
@@ -167,8 +169,9 @@ class LLMReviewAgent(ReviewAgent):
             output=output,
         )
 
-    def _build_prompt(self, context: ReviewContext) -> str:
-        """Serialise the review-relevant PR information into a prompt.
+    @staticmethod
+    def _build_prompt(context: ReviewContext) -> str:
+        """Serialize the review-relevant PR information into a prompt.
 
         Shared by every LLM reviewer so the perspective-specific guidance lives
         only in the system prompt, not in input formatting.
