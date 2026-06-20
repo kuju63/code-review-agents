@@ -13,7 +13,7 @@ from typing import ClassVar, cast
 
 from strands import Agent, AgentSkills
 from strands.models.openai import OpenAIModel
-from strands_tools import file_read, shell
+from strands_tools import file_read
 
 from ..models.review import (
     ProjectType,
@@ -145,7 +145,7 @@ class LLMReviewAgent(ReviewAgent):
 
         plugins: list = []
         if self.skills_dir is not None:
-            tools.extend([file_read, shell])
+            tools.append(file_read)
             plugins.append(AgentSkills(skills=self.skills_dir))
 
         try:

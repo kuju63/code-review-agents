@@ -1,13 +1,16 @@
-# Frontend PR Review Agent
+# Frontend PR Review Skills
+
+This directory contains skill packages loaded by `AgentSkills` in `FrontendReviewer`.
+Each subdirectory is a skill: it holds a `SKILL.md` (metadata + reference index) and a
+`references/` directory of per-topic checklists.
 
 ## File structure
 
 ```
-system_prompt.md
-
 skills/
   reviewing-universal/              共通観点（全PRで使用）
     SKILL.md                          — カテゴリ概要 + reference目次
+    system_prompt.md                  — エージェントへのレビュー手順プロンプト
     references/
       security.md                     — XSS・シークレット・env変数 ← 毎PR必須
       correctness.md                  — ロジック・非同期・エッジケース
@@ -84,12 +87,12 @@ skills/
 # 例: Solid.js を追加する場合
 1. reviewing-frameworks/references/solid.md を作成
 2. reviewing-frameworks/SKILL.md の Reference files テーブルに1行追加
-3. system_prompt.md の Step 3 テーブルに1行追加
+3. reviewing-universal/system_prompt.md の Step 3 テーブルに1行追加
 ```
 
 SKILL.md 本体や他のreferenceファイルには一切触れない。
 
 ## ツール使用上限（1レビューあたり）
 
-- Context7 call pairs: 最大3回
-- URL Fetch: 最大3回
+- GitHub MCP tool calls: 最大5回
+- Skills activations: 最大4回（スキルパッケージごとに1回）

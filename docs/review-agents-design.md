@@ -71,8 +71,9 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
 - `LLMReviewAgent`: Strands `Agent` + GitHub MCP を使う共通実装。具体レビュアーは
   `system_prompt` 等の設定差分のみを与える（設定で振る舞いを変える、コードは共有）。
   任意で `skills_dir: Path | None` を設定可能。設定された場合、`AgentSkills(skills=skills_dir)`
-  プラグインと `file_read` / `shell` ツール（`strands-agents-tools`）が Agent に追加され、
+  プラグインと `file_read` ツール（`strands-agents-tools`）が Agent に追加され、
   プログレッシブ・ディスクロージャーによるスキルの段階的ロードが有効になる。
+  `shell` ツールは注入しない（スキルのリファレンスファイルは `file_read` で十分、かつ任意コマンド実行は最小権限の原則に反する）。
 - 各レビュアーの `review()` は**同期**実装で、`PRInfoCollector.collect()` と同じく
   `create_github_mcp_client` を `with` で開いて使う（MCP の同期コンテキストマネージャを
   そのまま扱える）。
