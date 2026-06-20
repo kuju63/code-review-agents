@@ -161,10 +161,10 @@ def evaluate_seeded_item(
     ]
     pr_info_data["pr_info"]["file_changes"] = seeded_file_changes
 
-    # Step 3: Run React reviewer and Security reviewer in parallel (sequential here for simplicity)
+    # Step 3: Run Frontend reviewer and Security reviewer in parallel (sequential here for simplicity)
     react_result = _run_a2a(
         client,
-        f"{base_url}/react-reviewer",
+        f"{base_url}/frontend-reviewer",
         {"pr_info": pr_info_data, "model_id": model_id},
         poll_interval,
         timeout,

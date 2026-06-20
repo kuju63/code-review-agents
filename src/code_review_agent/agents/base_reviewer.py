@@ -13,7 +13,7 @@ from typing import ClassVar, cast
 
 from strands import Agent, AgentSkills
 from strands.models.openai import OpenAIModel
-from strands_tools import file_read
+from strands_tools import file_read, http_request
 
 from ..models.review import (
     ProjectType,
@@ -23,7 +23,6 @@ from ..models.review import (
     ReviewResult,
 )
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
-from ..tools.url_fetch import URLFetchConfig, create_url_fetch_tool
 
 
 @dataclass(frozen=True)
@@ -135,13 +134,7 @@ class LLMReviewAgent(ReviewAgent):
             tools.append(mcp_client)
 
         if self.uses_url_fetch:
-            url_fetch = create_url_fetch_tool(
-                URLFetchConfig(
-                    model_id=self._config.model_id,
-                    llm_base_url=self._config.llm_base_url,
-                )
-            )
-            tools.append(url_fetch)
+            tools.append(http_request)
 
         plugins: list = []
         if self.skills_dir is not None:
