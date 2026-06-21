@@ -111,7 +111,7 @@ class LLMReviewAgent(ReviewAgent):
         context: ReviewContext,
         project_type: ProjectType | None = None,
     ) -> ReviewResult:
-        prompt = LLMReviewAgent._build_prompt(context)
+        prompt = self._build_prompt(context)
         if self._config.llm_base_url:
             model = OpenAIModel(
                 model_id=self._config.model_id,

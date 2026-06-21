@@ -162,7 +162,7 @@ def evaluate_seeded_item(
     pr_info_data["pr_info"]["file_changes"] = seeded_file_changes
 
     # Step 3: Run Frontend reviewer and Security reviewer in parallel (sequential here for simplicity)
-    react_result = _run_a2a(
+    frontend_result = _run_a2a(
         client,
         f"{base_url}/frontend-reviewer",
         {"pr_info": pr_info_data, "model_id": model_id},
@@ -178,7 +178,7 @@ def evaluate_seeded_item(
     )
 
     # Step 4: Lead engineer synthesis
-    review_report = {"results": [react_result, security_result], "errors": []}
+    review_report = {"results": [frontend_result, security_result], "errors": []}
     lead_data = _run_a2a(
         client,
         f"{base_url}/lead-engineer",

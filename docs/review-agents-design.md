@@ -141,7 +141,7 @@ Lead Engineer 自体は本リリースの対象外です。
 > **実装済みに変更（旧「未配線」）**: 参照ドキュメント取得は `AgentSkills` と
 > `src/code_review_agent/skills/` 内のスキルパッケージ（reviewing-universal / reviewing-languages
 > / reviewing-frameworks / reviewing-metaframeworks）として実装した。`FrontendReviewer` は
-> `skills_dir` を設定済みで、GitHub MCP + `file_read` / `shell` ツールとともに動作する。
+> `skills_dir` を設定済みで、GitHub MCP + `file_read` ツールとともに動作する（`shell` は最小権限の原則から注入しない）。
 
 ---
 
