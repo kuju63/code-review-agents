@@ -3,15 +3,18 @@
 Defines the reviewer interface (:class:`ReviewAgent`) and a shared LLM-backed
 implementation (:class:`LLMReviewAgent`).  Concrete reviewers (React technical,
 security, future stacks/perspectives) subclass these and supply only their
-metadata and system prompt, so behaviour is configured rather than re-coded.
+metadata and system prompt, so behavior is configured rather than re-coded.
 """
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from pathlib import Path
 from typing import ClassVar, cast
 
-from strands import Agent
+from strands import Agent, AgentSkills
 from strands.models.openai import OpenAIModel
+from strands.types.agent import Limits
+from strands_tools import file_read, http_request
 
 from ..models.review import (
     ProjectType,
@@ -21,7 +24,6 @@ from ..models.review import (
     ReviewResult,
 )
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
-from ..tools.url_fetch import URLFetchConfig, create_url_fetch_tool
 
 
 @dataclass(frozen=True)
@@ -102,6 +104,7 @@ class LLMReviewAgent(ReviewAgent):
     system_prompt: ClassVar[str]
     uses_github_mcp: ClassVar[bool] = True
     uses_url_fetch: ClassVar[bool] = False
+    skills_dir: ClassVar[Path | None] = None
 
     def review(
         self,
@@ -132,26 +135,27 @@ class LLMReviewAgent(ReviewAgent):
             tools.append(mcp_client)
 
         if self.uses_url_fetch:
-            url_fetch = create_url_fetch_tool(
-                URLFetchConfig(
-                    model_id=self._config.model_id,
-                    llm_base_url=self._config.llm_base_url,
-                )
-            )
-            tools.append(url_fetch)
+            tools.append(http_request)
+
+        plugins: list = []
+        if self.skills_dir is not None:
+            tools.append(file_read)
+            plugins.append(AgentSkills(skills=self.skills_dir))
 
         try:
             agent = Agent(
                 model=model,
                 system_prompt=self.system_prompt,
                 tools=tools,
+                plugins=plugins,
             )
+            limits: Limits = {"turns": self._config.max_agent_turns}
             output: ReviewOutput = cast(
                 ReviewOutput,
                 agent(
                     prompt,
                     structured_output_model=ReviewOutput,
-                    limits={"turns": self._config.max_agent_turns},
+                    limits=limits,
                 ).structured_output,
             )
         finally:
@@ -165,8 +169,9 @@ class LLMReviewAgent(ReviewAgent):
             output=output,
         )
 
-    def _build_prompt(self, context: ReviewContext) -> str:
-        """Serialise the review-relevant PR information into a prompt.
+    @staticmethod
+    def _build_prompt(context: ReviewContext) -> str:
+        """Serialize the review-relevant PR information into a prompt.
 
         Shared by every LLM reviewer so the perspective-specific guidance lives
         only in the system prompt, not in input formatting.

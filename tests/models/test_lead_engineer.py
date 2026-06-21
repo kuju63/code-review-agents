@@ -14,7 +14,7 @@ from code_review_agent.models.review import (
 def _make_decision(
     verdict_str: str = "accept",
     priority: ReviewPriority = ReviewPriority.MEDIUM,
-    reviewer_id: str = "react-technical",
+    reviewer_id: str = "frontend-technical",
     perspective: ReviewPerspective = ReviewPerspective.TECHNICAL,
     comment: str = "Test finding",
     file_path: str | None = "src/App.tsx",
@@ -146,7 +146,7 @@ class TestFindingDecision:
             comment="XSS via innerHTML", priority=ReviewPriority.HIGH
         )
         decision = FindingDecision(
-            reviewer_id="react-technical",
+            reviewer_id="frontend-technical",
             perspective=ReviewPerspective.TECHNICAL,
             finding=finding,
             verdict=DecisionVerdict.ACCEPT,
@@ -157,7 +157,7 @@ class TestFindingDecision:
 
         assert decision.finding is finding
         assert decision.finding.comment == "XSS via innerHTML"
-        assert decision.reviewer_id == "react-technical"
+        assert decision.reviewer_id == "frontend-technical"
         assert decision.perspective == ReviewPerspective.TECHNICAL
         assert decision.verdict == DecisionVerdict.ACCEPT
 

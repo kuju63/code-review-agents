@@ -29,7 +29,7 @@ _ENV_KEYS = [
     "CODE_REVIEW_MAX_AGENT_TURNS",
     "CODE_REVIEW_AGENT_BASE_URL",
     "CODE_REVIEW_AGENT_PR_INFO_COLLECTOR_URL",
-    "CODE_REVIEW_AGENT_REACT_REVIEWER_URL",
+    "CODE_REVIEW_AGENT_FRONTEND_REVIEWER_URL",
     "CODE_REVIEW_AGENT_SECURITY_REVIEWER_URL",
     "CODE_REVIEW_AGENT_LEAD_ENGINEER_URL",
     "CODE_REVIEW_AGENT_ORCHESTRATOR_URL",
@@ -74,7 +74,7 @@ class TestSettingsDefaults:
     def test_agent_url_overrides_default_to_none(self, clean_env: None) -> None:
         s = _IsolatedSettings()
         assert s.agent_pr_info_collector_url is None
-        assert s.agent_react_reviewer_url is None
+        assert s.agent_frontend_reviewer_url is None
         assert s.agent_security_reviewer_url is None
         assert s.agent_lead_engineer_url is None
         assert s.agent_orchestrator_url is None

@@ -29,14 +29,16 @@
 レビュアーは「どの観点を」「どのプロジェクト種別に対して」見るかで分類されます。
 セルにレビュアーを登録していくマトリクスとして拡張します。
 
-| 観点＼種別             | React/TS | Spring Boot | Next.js / Nuxt | WASM |
-| ---------------------- | -------- | ----------- | -------------- | ---- |
-| 技術 (technical)       | ✅ 実装済 | ⏳ 予定      | ⏳ 予定         | ⏳ 予定 |
-| セキュリティ (security)| ✅ 実装済 | ⏳ 予定      | ⏳ 予定         | ⏳ 予定 |
-| 仕様整合性 (spec)      | ⏳ 予定   | ⏳ 予定      | ⏳ 予定         | ⏳ 予定 |
-| 要件整合性 (requirements)| ⏳ 予定 | ⏳ 予定      | ⏳ 予定         | ⏳ 予定 |
+| 観点＼種別             | フロントエンド (React/Vue/Angular/Svelte/Next.js 等) | Spring Boot | WASM |
+| ---------------------- | ---------------------------------------------------- | ----------- | ---- |
+| 技術 (technical)       | ✅ 実装済 — `FrontendReviewer` + AgentSkills でフレームワーク検出 | ⏳ 予定 | ⏳ 予定 |
+| セキュリティ (security)| ✅ 実装済                                             | ⏳ 予定      | ⏳ 予定 |
+| 仕様整合性 (spec)      | ⏳ 予定                                               | ⏳ 予定      | ⏳ 予定 |
+| 要件整合性 (requirements)| ⏳ 予定                                             | ⏳ 予定      | ⏳ 予定 |
 
-- ✅ = 本リリースで実装。⏳ = enum 値・拡張点のみ用意（未登録）。
+- ✅ = 実装済。⏳ = enum 値・拡張点のみ用意（未登録）。
+- `detect_project_types()` はフロントエンド全プロジェクトを `ProjectType.REACT_TS` として返す（既存設計）。
+  Vue/Angular/Svelte/Next.js 等の差分はスキル内部のフレームワーク検出で吸収する。
 - 同一レビュアーを複数種別に登録することも可能（例: セキュリティ観点を複数スタックで共有）。
 
 ---
@@ -47,7 +49,7 @@
 PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
                                       │  registry: プロジェクト種別から
                                       │  適用レビュアークラスを選択
-                                      ├──▶ ReactCodeReviewer (technical)  ┐
+                                      ├──▶ FrontendReviewer (technical)   ┐
                                       └──▶ SecurityReviewer  (security)   ├ asyncio.gather で並列
                                                                           ┘
                                    ──▶ ReviewReport(results, errors)  ──▶ (将来) Lead Engineer
@@ -68,6 +70,10 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
   抽象メソッド `review(context: ReviewContext) -> ReviewResult` を定義する。
 - `LLMReviewAgent`: Strands `Agent` + GitHub MCP を使う共通実装。具体レビュアーは
   `system_prompt` 等の設定差分のみを与える（設定で振る舞いを変える、コードは共有）。
+  任意で `skills_dir: Path | None` を設定可能。設定された場合、`AgentSkills(skills=skills_dir)`
+  プラグインと `file_read` ツール（`strands-agents-tools`）が Agent に追加され、
+  プログレッシブ・ディスクロージャーによるスキルの段階的ロードが有効になる。
+  `shell` ツールは注入しない（スキルのリファレンスファイルは `file_read` で十分、かつ任意コマンド実行は最小権限の原則に反する）。
 - 各レビュアーの `review()` は**同期**実装で、`PRInfoCollector.collect()` と同じく
   `create_github_mcp_client` を `with` で開いて使う（MCP の同期コンテキストマネージャを
   そのまま扱える）。
@@ -126,11 +132,16 @@ Lead Engineer 自体は本リリースの対象外です。
 
 ## 5. 未配線の拡張点（本リリースで意図的に未実装）
 
-- **doc-fetch ツール**: spec 3.2/3.3 の URLComponent（React docs / OWASP）と Context7 は専用の
-  Strands ツールラッパーが未整備のため、本リリースでは GitHub MCP のみ接続し、参照ルールは
-  system_prompt に記述する。将来 `LLMReviewAgent` の tools 拡張点に配線する。
+- **フレームワーク別 ProjectType**: `ProjectType.NEXTJS` 等は宣言済みだが、`detect_project_types()`
+  は現状すべてのフロントエンドプロジェクトを `REACT_TS` として返す。`next.config.*` 等の
+  manifest を検出して個別に返すよう拡張可能。
 - **spec / requirement 入力**: `ReviewContext` の拡張フィールドとして追加予定（4 節参照）。
 - **Lead Engineer 合成**: `ReviewReport` を入力とする合成エージェントを別途実装予定。
+
+> **実装済みに変更（旧「未配線」）**: 参照ドキュメント取得は `AgentSkills` と
+> `src/code_review_agent/skills/` 内のスキルパッケージ（reviewing-universal / reviewing-languages
+> / reviewing-frameworks / reviewing-metaframeworks）として実装した。`FrontendReviewer` は
+> `skills_dir` を設定済みで、GitHub MCP + `file_read` ツールとともに動作する（`shell` は最小権限の原則から注入しない）。
 
 ---
 

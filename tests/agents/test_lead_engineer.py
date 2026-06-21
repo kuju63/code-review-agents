@@ -35,7 +35,7 @@ def _make_finding(
 
 
 def _make_result(
-    reviewer_id: str = "react-technical",
+    reviewer_id: str = "frontend-technical",
     perspective: ReviewPerspective = ReviewPerspective.TECHNICAL,
     findings: list[ReviewFinding] | None = None,
 ) -> ReviewResult:
@@ -87,7 +87,7 @@ class TestBuildPromptAndIndex:
     def test_index_map_maps_to_reviewer_id_and_finding(self):
         finding = _make_finding(comment="XSS issue")
         report = _make_report(
-            results=[_make_result(reviewer_id="react-technical", findings=[finding])]
+            results=[_make_result(reviewer_id="frontend-technical", findings=[finding])]
         )
         agent = self._agent()
 
@@ -95,7 +95,7 @@ class TestBuildPromptAndIndex:
 
         assert 1 in index_map
         reviewer_id, perspective, resolved_finding = index_map[1]
-        assert reviewer_id == "react-technical"
+        assert reviewer_id == "frontend-technical"
         assert perspective == ReviewPerspective.TECHNICAL
         assert resolved_finding is finding
 

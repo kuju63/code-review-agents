@@ -5,7 +5,7 @@ effect.  Add new reviewer modules here so they are discovered by the
 orchestrator.
 """
 
-from .react import ReactCodeReviewer
+from .frontend import FrontendReviewer
 from .security import SecurityReviewer
 
-__all__ = ["ReactCodeReviewer", "SecurityReviewer"]
+__all__ = ["FrontendReviewer", "SecurityReviewer"]

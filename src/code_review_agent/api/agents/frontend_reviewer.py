@@ -13,7 +13,7 @@ from code_review_agent.a2a.models import (
 from code_review_agent.a2a.sanitizers import sanitize_error
 from code_review_agent.a2a.task_store import TaskStore
 from code_review_agent.agents.base_reviewer import ReviewerConfig
-from code_review_agent.agents.reviewers.react import ReactCodeReviewer
+from code_review_agent.agents.reviewers.frontend import FrontendReviewer
 from code_review_agent.api.agents.common import (
     ReviewerSkillInput,
     _extract_data,
@@ -35,30 +35,30 @@ async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -
             llm_base_url=settings.llm_base_url,
             max_agent_turns=settings.max_agent_turns,
         )
-        reviewer = ReactCodeReviewer(config)
+        reviewer = FrontendReviewer(config)
         result = await asyncio.to_thread(reviewer.review, context)
         await store.set_completed(task_id, [A2ADataPart(data=result.model_dump())])
     except Exception as exc:
         await store.set_failed(task_id, sanitize_error(exc))
 
 
-def react_reviewer_router(settings: Settings, store: TaskStore) -> APIRouter:
+def frontend_reviewer_router(settings: Settings, store: TaskStore) -> APIRouter:
     router = APIRouter()
 
     @router.get("/.well-known/agent.json", response_model=AgentCard)
     async def get_agent_card() -> AgentCard:
         url = settings.resolve_agent_url(
-            "react-reviewer", settings.agent_react_reviewer_url
+            "frontend-reviewer", settings.agent_frontend_reviewer_url
         )
         return AgentCard(
-            name="React Reviewer",
-            description="Reviews React/TypeScript pull requests for component design, performance, and correct library usage.",
+            name="Frontend Reviewer",
+            description="Reviews front-end pull requests (React, Vue, Angular, Svelte, Next.js, etc.) for component design, performance, and correct library usage.",
             url=url,
             skills=[
                 AgentSkill(
-                    id="review_react_pr",
-                    name="Review React PR",
-                    description="Performs a technical code review for a React/TypeScript PR using GitHub MCP.",
+                    id="review_frontend_pr",
+                    name="Review Frontend PR",
+                    description="Performs a technical code review for a front-end PR using GitHub MCP and framework-specific skills.",
                     inputSchema=ReviewerSkillInput.model_json_schema(),
                     outputSchema=ReviewResult.model_json_schema(),
                 )

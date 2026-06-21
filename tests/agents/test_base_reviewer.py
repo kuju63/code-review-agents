@@ -290,66 +290,59 @@ class TestURLFetchReviewer:
 
     def test_url_fetch_and_mcp_reviewer_receives_both_tools(self):
         """Reviewer with uses_url_fetch=True and uses_github_mcp=True should
-        pass [mcp_client, url_fetch_tool] to the Agent."""
+        pass [mcp_client, http_request] to the Agent."""
+        from strands_tools import http_request
+
         reviewer = _UrlFetchReviewer(ReviewerConfig(github_token="tok"))
         mock_mcp = _mock_mcp()
-        mock_url_fetch = MagicMock()
         mock_agent = MagicMock()
         mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
-            patch(f"{_BASE}.create_url_fetch_tool", return_value=mock_url_fetch),
             patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
         ):
             reviewer.review(_make_context())
 
         tools = mock_agent_cls.call_args.kwargs["tools"]
         assert mock_mcp in tools
-        assert mock_url_fetch in tools
+        assert http_request in tools
 
     def test_url_fetch_only_reviewer_skips_mcp(self):
         """Reviewer with uses_url_fetch=True and uses_github_mcp=False should
-        receive only the url_fetch_tool (no MCP client)."""
+        receive only http_request (no MCP client)."""
+        from strands_tools import http_request
+
         reviewer = _UrlFetchOnlyReviewer(ReviewerConfig(github_token="tok"))
-        mock_url_fetch = MagicMock()
         mock_agent = MagicMock()
         mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client") as mock_mcp_factory,
-            patch(f"{_BASE}.create_url_fetch_tool", return_value=mock_url_fetch),
             patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
         ):
             reviewer.review(_make_context())
 
         mock_mcp_factory.assert_not_called()
         tools = mock_agent_cls.call_args.kwargs["tools"]
-        assert tools == [mock_url_fetch]
+        assert tools == [http_request]
 
-    def test_url_fetch_config_propagates_model_settings(self):
-        """URLFetchConfig passed to create_url_fetch_tool must inherit
-        model_id and llm_base_url from ReviewerConfig."""
-        reviewer = _UrlFetchOnlyReviewer(
-            ReviewerConfig(
-                github_token="tok",
-                model_id="gpt-4o-mini",
-                llm_base_url="http://localhost:11434/v1",
-            )
-        )
+    def test_url_fetch_reviewer_adds_http_request(self):
+        """uses_url_fetch=True must add the http_request tool from strands_tools."""
+        from strands_tools import http_request
+
+        reviewer = _UrlFetchOnlyReviewer(ReviewerConfig(github_token="tok"))
         mock_agent = MagicMock()
         mock_agent.return_value.structured_output = _output()
 
         with (
             patch(f"{_BASE}.create_github_mcp_client"),
-            patch(f"{_BASE}.create_url_fetch_tool") as mock_factory,
-            patch(f"{_BASE}.Agent", return_value=mock_agent),
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
         ):
             reviewer.review(_make_context())
 
-        call_config = mock_factory.call_args.args[0]
-        assert call_config.model_id == "gpt-4o-mini"
-        assert call_config.llm_base_url == "http://localhost:11434/v1"
+        tools = mock_agent_cls.call_args.kwargs["tools"]
+        assert http_request in tools
 
     def test_mcp_still_stopped_when_url_fetch_also_enabled(self):
         """MCP cleanup must still run in finally even when url_fetch is also active."""
@@ -360,7 +353,6 @@ class TestURLFetchReviewer:
 
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
-            patch(f"{_BASE}.create_url_fetch_tool", return_value=MagicMock()),
             patch(f"{_BASE}.Agent", return_value=mock_agent),
         ):
             with pytest.raises(RuntimeError, match="boom"):
