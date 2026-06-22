@@ -7,6 +7,8 @@ tests therefore mock ``MCPClient.call_tool_sync`` and the summary ``Agent``.
 """
 
 import json
+import logging
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -449,6 +451,95 @@ class TestPRInfoCollectorCollect:
         model_cls.assert_called_once_with(
             model_id="gpt-4o", client_args={"base_url": "http://localhost:11434/v1"}
         )
+
+    def test_logs_response_size(self, caplog):
+        """collect() logs response size in bytes and file_changes count."""
+        with caplog.at_level(
+            logging.INFO, logger="code_review_agent.agents.pr_info_collector"
+        ):
+            self._run(_make_mcp())
+        assert any(
+            "bytes" in r.message and "file_changes" in r.message for r in caplog.records
+        )
+
+    def test_writes_response_to_file_when_env_set(self, tmp_path):
+        """When PR_INFO_COLLECTOR_RESPONSE_FILE is set, writes JSON to that path."""
+        out_file = tmp_path / "response.json"
+        try:
+            with patch.dict(
+                os.environ, {"PR_INFO_COLLECTOR_RESPONSE_FILE": str(out_file)}
+            ):
+                result = self._run(_make_mcp())
+            written = json.loads(out_file.read_text())
+            assert written["pr_info"]["title"] == result.pr_info.title
+        finally:
+            out_file.unlink(missing_ok=True)
+
+    def test_writes_response_to_filename_only_uses_cwd(self, tmp_path, monkeypatch):
+        """When only a filename is given (no directory), the file is written to cwd."""
+        out_file = tmp_path / "response.json"
+        monkeypatch.chdir(tmp_path)
+        try:
+            with patch.dict(
+                os.environ, {"PR_INFO_COLLECTOR_RESPONSE_FILE": "response.json"}
+            ):
+                result = self._run(_make_mcp())
+            written = json.loads(out_file.read_text())
+            assert written["pr_info"]["title"] == result.pr_info.title
+        finally:
+            out_file.unlink(missing_ok=True)
+
+    def test_logs_absolute_path_after_write(self, tmp_path, caplog):
+        """Absolute output path is logged at INFO level after a successful write."""
+        out_file = tmp_path / "response.json"
+        try:
+            with (
+                caplog.at_level(
+                    logging.INFO, logger="code_review_agent.agents.pr_info_collector"
+                ),
+                patch.dict(
+                    os.environ, {"PR_INFO_COLLECTOR_RESPONSE_FILE": str(out_file)}
+                ),
+            ):
+                self._run(_make_mcp())
+            assert any(str(out_file) in r.message for r in caplog.records)
+        finally:
+            out_file.unlink(missing_ok=True)
+
+    def test_writes_response_to_nested_dir_when_env_set(self, tmp_path):
+        """Parent directories are created automatically when they do not exist."""
+        out_file = tmp_path / "new_subdir" / "response.json"
+        try:
+            with patch.dict(
+                os.environ, {"PR_INFO_COLLECTOR_RESPONSE_FILE": str(out_file)}
+            ):
+                result = self._run(_make_mcp())
+            written = json.loads(out_file.read_text())
+            assert written["pr_info"]["title"] == result.pr_info.title
+        finally:
+            out_file.unlink(missing_ok=True)
+
+    def test_no_file_written_when_env_not_set(self, tmp_path):
+        """When PR_INFO_COLLECTOR_RESPONSE_FILE is absent, no file is written."""
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if k != "PR_INFO_COLLECTOR_RESPONSE_FILE"
+        }
+        with patch.dict(os.environ, env, clear=True):
+            self._run(_make_mcp())
+        assert list(tmp_path.iterdir()) == []
+
+    def test_file_write_error_does_not_fail_collect(self, tmp_path):
+        """Write errors are logged as warnings and do not raise."""
+        # Place a regular file where makedirs would need to create a directory,
+        # causing NotADirectoryError (a subclass of OSError).
+        blocker = tmp_path / "not_a_dir"
+        blocker.write_text("I am a file, not a directory")
+        bad_path = str(blocker / "response.json")
+        with patch.dict(os.environ, {"PR_INFO_COLLECTOR_RESPONSE_FILE": bad_path}):
+            result = self._run(_make_mcp())
+        assert isinstance(result, PRInfoResult)
 
     def test_omits_base_url_from_openai_model_when_not_set(self):
         collector = PRInfoCollector(github_token="tok")
