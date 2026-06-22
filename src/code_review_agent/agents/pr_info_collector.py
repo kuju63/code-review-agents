@@ -15,6 +15,7 @@ The only LLM call left is summarising the README into ``project_summary``.
 """
 
 import json
+import logging
 import os
 from typing import Any
 
@@ -23,6 +24,8 @@ from strands.models.openai import OpenAIModel
 
 from ..models.pr_info import FileChange, PRInfo, PRInfoResult, RepositoryInfo
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
+
+logger = logging.getLogger(__name__)
 
 SUMMARY_SYSTEM_PROMPT = """\
 You are given the README of a software project. Summarise what the project is \
@@ -229,7 +232,7 @@ class PRInfoCollector:
             if is_target_file(name := f.get("filename", ""))
         ]
 
-        return PRInfoResult(
+        result = PRInfoResult(
             repository_info=RepositoryInfo(owner=owner, repository=repo),
             project_summary=project_summary,
             pr_info=PRInfo(
@@ -241,6 +244,32 @@ class PRInfoCollector:
             ),
             dependency_files=dependency_files,
         )
+
+        result_json = result.model_dump_json()
+        logger.info(
+            "PRInfoCollector response: %d bytes, %d file_changes",
+            len(result_json.encode()),
+            len(result.pr_info.file_changes),
+        )
+
+        output_path = os.environ.get("PR_INFO_COLLECTOR_RESPONSE_FILE")
+        if output_path:
+            try:
+                parent = os.path.dirname(output_path)
+                if parent:
+                    os.makedirs(parent, exist_ok=True)
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(result_json)
+                logger.info(
+                    "PR collector response written to %s",
+                    os.path.abspath(output_path),
+                )
+            except OSError as exc:
+                logger.warning(
+                    "Failed to write PR collector response to %s: %s", output_path, exc
+                )
+
+        return result
 
     def _read_pr_details(
         self, mcp_client: Any, owner: str, repo: str, pr_number: int
