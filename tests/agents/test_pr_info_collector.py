@@ -463,21 +463,27 @@ class TestPRInfoCollectorCollect:
         )
 
     def test_writes_response_to_file_when_env_set(self, tmp_path):
-        """When COLLECT_PR_COLLECTOR_AGENT_RESPONSE is set, writes JSON to that path."""
+        """When PR_INFO_COLLECTOR_RESPONSE_FILE is set, writes JSON to that path."""
         out_file = tmp_path / "response.json"
-        with patch.dict(
-            os.environ, {"COLLECT_PR_COLLECTOR_AGENT_RESPONSE": str(out_file)}
-        ):
+        with patch.dict(os.environ, {"PR_INFO_COLLECTOR_RESPONSE_FILE": str(out_file)}):
+            result = self._run(_make_mcp())
+        written = json.loads(out_file.read_text())
+        assert written["pr_info"]["title"] == result.pr_info.title
+
+    def test_writes_response_to_nested_dir_when_env_set(self, tmp_path):
+        """Parent directories are created automatically when they do not exist."""
+        out_file = tmp_path / "new_subdir" / "response.json"
+        with patch.dict(os.environ, {"PR_INFO_COLLECTOR_RESPONSE_FILE": str(out_file)}):
             result = self._run(_make_mcp())
         written = json.loads(out_file.read_text())
         assert written["pr_info"]["title"] == result.pr_info.title
 
     def test_no_file_written_when_env_not_set(self, tmp_path):
-        """When COLLECT_PR_COLLECTOR_AGENT_RESPONSE is absent, no file is written."""
+        """When PR_INFO_COLLECTOR_RESPONSE_FILE is absent, no file is written."""
         env = {
             k: v
             for k, v in os.environ.items()
-            if k != "COLLECT_PR_COLLECTOR_AGENT_RESPONSE"
+            if k != "PR_INFO_COLLECTOR_RESPONSE_FILE"
         }
         with patch.dict(os.environ, env, clear=True):
             self._run(_make_mcp())
@@ -485,8 +491,12 @@ class TestPRInfoCollectorCollect:
 
     def test_file_write_error_does_not_fail_collect(self, tmp_path):
         """Write errors are logged as warnings and do not raise."""
-        bad_path = str(tmp_path / "nonexistent_dir" / "response.json")
-        with patch.dict(os.environ, {"COLLECT_PR_COLLECTOR_AGENT_RESPONSE": bad_path}):
+        # Place a regular file where makedirs would need to create a directory,
+        # causing NotADirectoryError (a subclass of OSError).
+        blocker = tmp_path / "not_a_dir"
+        blocker.write_text("I am a file, not a directory")
+        bad_path = str(blocker / "response.json")
+        with patch.dict(os.environ, {"PR_INFO_COLLECTOR_RESPONSE_FILE": bad_path}):
             result = self._run(_make_mcp())
         assert isinstance(result, PRInfoResult)
 

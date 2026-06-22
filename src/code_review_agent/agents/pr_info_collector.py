@@ -252,9 +252,12 @@ class PRInfoCollector:
             len(result.pr_info.file_changes),
         )
 
-        output_path = os.environ.get("COLLECT_PR_COLLECTOR_AGENT_RESPONSE")
+        output_path = os.environ.get("PR_INFO_COLLECTOR_RESPONSE_FILE")
         if output_path:
             try:
+                parent = os.path.dirname(output_path)
+                if parent:
+                    os.makedirs(parent, exist_ok=True)
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(result_json)
             except OSError as exc:
