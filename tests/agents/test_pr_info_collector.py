@@ -470,6 +470,28 @@ class TestPRInfoCollectorCollect:
         written = json.loads(out_file.read_text())
         assert written["pr_info"]["title"] == result.pr_info.title
 
+    def test_writes_response_to_filename_only_uses_cwd(self, tmp_path, monkeypatch):
+        """When only a filename is given (no directory), the file is written to cwd."""
+        monkeypatch.chdir(tmp_path)
+        with patch.dict(
+            os.environ, {"PR_INFO_COLLECTOR_RESPONSE_FILE": "response.json"}
+        ):
+            result = self._run(_make_mcp())
+        written = json.loads((tmp_path / "response.json").read_text())
+        assert written["pr_info"]["title"] == result.pr_info.title
+
+    def test_logs_absolute_path_after_write(self, tmp_path, caplog):
+        """Absolute output path is logged at INFO level after a successful write."""
+        out_file = tmp_path / "response.json"
+        with (
+            caplog.at_level(
+                logging.INFO, logger="code_review_agent.agents.pr_info_collector"
+            ),
+            patch.dict(os.environ, {"PR_INFO_COLLECTOR_RESPONSE_FILE": str(out_file)}),
+        ):
+            self._run(_make_mcp())
+        assert any(str(out_file) in r.message for r in caplog.records)
+
     def test_writes_response_to_nested_dir_when_env_set(self, tmp_path):
         """Parent directories are created automatically when they do not exist."""
         out_file = tmp_path / "new_subdir" / "response.json"

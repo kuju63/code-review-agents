@@ -260,6 +260,10 @@ class PRInfoCollector:
                     os.makedirs(parent, exist_ok=True)
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(result_json)
+                logger.info(
+                    "PR collector response written to %s",
+                    os.path.abspath(output_path),
+                )
             except OSError as exc:
                 logger.warning(
                     "Failed to write PR collector response to %s: %s", output_path, exc
