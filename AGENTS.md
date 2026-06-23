@@ -15,9 +15,9 @@ Current implementation follows a 3-stage workflow in `src/code_review_agent/`:
 ## Technology
 
 Agent Framework: Strands Agents
-Development Language: Python 3.12 with venv
+Development Language: Python 3.14 with venv
 Testing Library: PyTest
-Deployment: Docker or Alternative tools(ex. Podman), K8s
+Deployment: Docker or Alternative tools(ex. Podman)
 
 Runtime integrations:
 
