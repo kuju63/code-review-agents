@@ -9,6 +9,7 @@ from code_review_agent.agents.base_reviewer import (
     ReviewAgent,
     ReviewerConfig,
 )
+from code_review_agent.skills.agent_skills_factory import AgentSkillType
 from code_review_agent.models.pr_info import (
     FileChange,
     PRInfo,
@@ -65,6 +66,16 @@ class _UrlFetchOnlyReviewer(LLMReviewAgent):
     system_prompt = "URL fetch only."
     uses_github_mcp = False
     uses_url_fetch = True
+
+
+class _SkillsReviewer(LLMReviewAgent):
+    """Reviewer that uses AgentSkills via skill_type."""
+
+    reviewer_id = "stub-skills"
+    perspective = ReviewPerspective.TECHNICAL
+    project_types = frozenset({ProjectType.REACT_TS})
+    system_prompt = "Skills reviewer."
+    skill_type = AgentSkillType.FRONTEND_REVIEW
 
 
 def _make_context() -> ReviewContext:
@@ -359,3 +370,82 @@ class TestURLFetchReviewer:
                 reviewer.review(_make_context())
 
         mock_mcp.stop.assert_called_once_with(None, None, None)
+
+
+class TestAgentSkillsIntegration:
+    """Tests for skill_type-driven AgentSkills integration."""
+
+    def test_none_skill_type_adds_no_plugins(self):
+        """skill_type=NONE must not add file_read or any plugin."""
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
+        ):
+            reviewer.review(_make_context())
+
+        call_kwargs = mock_agent_cls.call_args.kwargs
+        assert call_kwargs["plugins"] == []
+        from strands_tools import file_read
+
+        assert file_read not in call_kwargs["tools"]
+
+    def test_skill_type_adds_file_read_tool(self):
+        """skill_type != NONE must add file_read to the tools list."""
+        from strands_tools import file_read
+
+        reviewer = _SkillsReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
+            patch(f"{_BASE}.create_agent_skills", return_value=MagicMock()),
+        ):
+            reviewer.review(_make_context())
+
+        tools = mock_agent_cls.call_args.kwargs["tools"]
+        assert file_read in tools
+
+    def test_skill_type_calls_create_agent_skills(self):
+        """skill_type != NONE must delegate to create_agent_skills()."""
+        reviewer = _SkillsReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+        mock_skills = MagicMock()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+            patch(
+                f"{_BASE}.create_agent_skills", return_value=mock_skills
+            ) as mock_factory,
+        ):
+            reviewer.review(_make_context())
+
+        mock_factory.assert_called_once_with(AgentSkillType.FRONTEND_REVIEW)
+
+    def test_skill_type_adds_agent_skills_to_plugins(self):
+        """create_agent_skills() return value must appear in Agent plugins."""
+        reviewer = _SkillsReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+        mock_skills = MagicMock()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
+            patch(f"{_BASE}.create_agent_skills", return_value=mock_skills),
+        ):
+            reviewer.review(_make_context())
+
+        plugins = mock_agent_cls.call_args.kwargs["plugins"]
+        assert mock_skills in plugins

@@ -6,9 +6,8 @@ Angular, Svelte, Next.js, and others).  Framework-specific review criteria are
 provided via AgentSkills from the ``skills/`` directory.
 """
 
-from pathlib import Path
-
 from ...models.review import ProjectType, ReviewPerspective
+from ...skills.agent_skills_factory import AgentSkillType
 from ..base_reviewer import LLMReviewAgent
 from ..registry import register_reviewer
 
@@ -38,4 +37,4 @@ class FrontendReviewer(LLMReviewAgent):
     perspective = ReviewPerspective.TECHNICAL
     project_types = frozenset({ProjectType.REACT_TS})
     system_prompt = _SYSTEM_PROMPT
-    skills_dir = Path(__file__).parent.parent.parent / "skills"
+    skill_type = AgentSkillType.FRONTEND_REVIEW
