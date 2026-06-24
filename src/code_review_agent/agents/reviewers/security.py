@@ -6,6 +6,7 @@ section 3.3 of ``docs/review-agent-workflow-spec.md``.
 """
 
 from ...models.review import ProjectType, ReviewPerspective
+from ...skills.agent_skills_factory import AgentSkillType
 from ..base_reviewer import LLMReviewAgent
 from ..registry import register_reviewer
 
@@ -105,3 +106,4 @@ class SecurityReviewer(LLMReviewAgent):
     project_types = frozenset({ProjectType.REACT_TS})
     system_prompt = _SYSTEM_PROMPT
     uses_url_fetch = True
+    skill_type = AgentSkillType.WEB_SECURITY_REVIEW

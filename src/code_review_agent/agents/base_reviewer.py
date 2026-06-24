@@ -8,10 +8,9 @@ metadata and system prompt, so behavior is configured rather than re-coded.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
 from typing import ClassVar, cast
 
-from strands import Agent, AgentSkills
+from strands import Agent
 from strands.models.openai import OpenAIModel
 from strands.types.agent import Limits
 from strands_tools import file_read, http_request
@@ -23,6 +22,7 @@ from ..models.review import (
     ReviewPerspective,
     ReviewResult,
 )
+from ..skills.agent_skills_factory import AgentSkillType, create_agent_skills
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
 
 
@@ -104,7 +104,7 @@ class LLMReviewAgent(ReviewAgent):
     system_prompt: ClassVar[str]
     uses_github_mcp: ClassVar[bool] = True
     uses_url_fetch: ClassVar[bool] = False
-    skills_dir: ClassVar[Path | None] = None
+    skill_type: ClassVar[AgentSkillType] = AgentSkillType.NONE
 
     def review(
         self,
@@ -138,9 +138,9 @@ class LLMReviewAgent(ReviewAgent):
             tools.append(http_request)
 
         plugins: list = []
-        if self.skills_dir is not None:
+        if self.skill_type != AgentSkillType.NONE:
             tools.append(file_read)
-            plugins.append(AgentSkills(skills=self.skills_dir))
+            plugins.append(create_agent_skills(self.skill_type))
 
         try:
             agent = Agent(
