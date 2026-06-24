@@ -7,6 +7,8 @@ from strands import AgentSkills, Skill
 # Mirrors strands.vended_plugins.skills.agent_skills.SkillSource, which is not a public export.
 SkillSource: TypeAlias = str | Path | Skill
 
+_SKILLS_DIR = Path(__file__).parent
+
 
 class AgentSkillType(StrEnum):
     """
@@ -44,10 +46,10 @@ def _build_frontend_review_skills() -> list[SkillSource]:
         list[SkillSource]: A list of Skill instances for frontend review.
     """
     return [
-        Skill.from_file("reviewing-universal"),
-        Skill.from_file("reviewing-languages"),
-        Skill.from_file("reviewing-frameworks"),
-        Skill.from_file("reviewing-metaframeworks"),
+        Skill.from_file(_SKILLS_DIR / "reviewing-universal"),
+        Skill.from_file(_SKILLS_DIR / "reviewing-languages"),
+        Skill.from_file(_SKILLS_DIR / "reviewing-frameworks"),
+        Skill.from_file(_SKILLS_DIR / "reviewing-metaframeworks"),
     ]
 
 
@@ -57,4 +59,4 @@ def _build_web_security_review_skills() -> list[SkillSource]:
     Returns:
         list[SkillSource]: A list of Skill instances for web security review.
     """
-    return [Skill.from_file("web-security-review")]
+    return [Skill.from_file(_SKILLS_DIR / "web-security-review")]
