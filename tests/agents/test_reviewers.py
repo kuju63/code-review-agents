@@ -5,7 +5,11 @@ from code_review_agent.agents.base_reviewer import LLMReviewAgent
 from code_review_agent.agents.registry import get_reviewer_classes
 from code_review_agent.agents.reviewers import FrontendReviewer, SecurityReviewer
 from code_review_agent.models.review import ProjectType, ReviewPerspective
-from code_review_agent.skills.agent_skills_factory import AgentSkillType
+from code_review_agent.skills.agent_skills_factory import (
+    AgentSkillType,
+    create_agent_skills,
+)
+from strands import AgentSkills
 
 
 class TestFrontendReviewer:
@@ -27,6 +31,10 @@ class TestFrontendReviewer:
     def test_skill_type_is_frontend_review(self):
         assert FrontendReviewer.skill_type is AgentSkillType.FRONTEND_REVIEW
 
+    def test_frontend_review_skills_resolve(self):
+        result = create_agent_skills(AgentSkillType.FRONTEND_REVIEW)
+        assert isinstance(result, AgentSkills)
+
 
 class TestSecurityReviewer:
     """Security reviewer metadata and prompt."""
@@ -44,6 +52,10 @@ class TestSecurityReviewer:
 
     def test_skill_type_is_web_security_review(self):
         assert SecurityReviewer.skill_type is AgentSkillType.WEB_SECURITY_REVIEW
+
+    def test_web_security_review_skills_resolve(self):
+        result = create_agent_skills(AgentSkillType.WEB_SECURITY_REVIEW)
+        assert isinstance(result, AgentSkills)
 
 
 class TestRegistration:
