@@ -70,6 +70,21 @@ class _FailingReviewer(ReviewAgent):
         raise ValueError("boom")
 
 
+class _SlowReviewer(ReviewAgent):
+    reviewer_id = "fake-slow"
+    perspective = ReviewPerspective.TECHNICAL
+    project_types = frozenset({ProjectType.REACT_TS})
+
+    def review(self, context, project_type=None):
+        time.sleep(2)  # deliberately longer than the 0.35s test timeout
+        return ReviewResult(  # pragma: no cover
+            reviewer_id=self.reviewer_id,
+            perspective=self.perspective,
+            project_type=project_type,
+            output=ReviewOutput(summary="slow ok"),
+        )
+
+
 def _orchestrator() -> ReviewOrchestrator:
     return ReviewOrchestrator(ReviewerConfig(github_token="tok"))
 
@@ -174,6 +189,34 @@ class TestRun:
 
         assert calls == ["counting"]
         assert len(report.results) == 1
+
+    def test_timeout_converts_reviewer_to_error(self):
+        # _FakeSecurity sleeps 0.2s, _SlowReviewer sleeps 10s.
+        # timeout=0.35 lets _FakeSecurity finish but cuts off _SlowReviewer.
+        config = ReviewerConfig(github_token="tok", reviewer_timeout_seconds=0.35)
+        orchestrator = ReviewOrchestrator(config)
+        with patch(
+            f"{_MOD}.get_reviewer_classes",
+            return_value=[_SlowReviewer, _FakeSecurity],
+        ):
+            report = orchestrator.run(_context(), project_type=ProjectType.REACT_TS)
+
+        assert {r.reviewer_id for r in report.results} == {"fake-security"}
+        assert len(report.errors) == 1
+        assert report.errors[0].reviewer_id == "fake-slow"
+        assert "timed out" in report.errors[0].message
+
+    def test_none_timeout_does_not_restrict(self):
+        config = ReviewerConfig(github_token="tok", reviewer_timeout_seconds=None)
+        orchestrator = ReviewOrchestrator(config)
+        with patch(
+            f"{_MOD}.get_reviewer_classes",
+            return_value=[_FakeTechnical, _FakeSecurity],
+        ):
+            report = orchestrator.run(_context(), project_type=ProjectType.REACT_TS)
+
+        assert len(report.results) == 2
+        assert report.errors == []
 
     def test_multi_type_annotation_is_deterministic(self):
         # nextjs sorts before react_ts by value, so a reviewer covering both

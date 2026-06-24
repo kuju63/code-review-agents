@@ -226,8 +226,11 @@ class PRInfoCollector:
 
         # Extract the filename once and use it for both the predicate and
         # construction, so the two never disagree on the key/default.
+        # Patch content is intentionally omitted here: each downstream reviewer
+        # fetches only the diffs it needs via GitHub MCP, avoiding the large
+        # context payloads that caused reviewer timeouts on PRs like #48325.
         file_changes = [
-            FileChange(filePath=name, patch=f.get("patch"))
+            FileChange(filePath=name, patch=None)
             for f in changed_files
             if is_target_file(name := f.get("filename", ""))
         ]

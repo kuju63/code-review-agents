@@ -80,27 +80,47 @@ class ReviewOrchestrator:
         if not tasks:
             return ReviewReport()
 
-        outcomes = await asyncio.gather(
-            *(
-                asyncio.to_thread(reviewer.review, context, pt)
-                for reviewer, pt in tasks
-            ),
-            return_exceptions=True,
+        timeout = self._config.reviewer_timeout_seconds
+
+        # Each reviewer runs in a thread.  ``asyncio.wait`` with a timeout lets
+        # us mark slow reviewers as errors without waiting for their threads to
+        # finish — the threads continue in the background but their results are
+        # discarded.  This avoids the ``asyncio.wait_for`` + ``to_thread``
+        # pitfall where cancellation blocks until the thread exits.
+        asyncio_tasks = {
+            asyncio.create_task(
+                asyncio.to_thread(reviewer.review, context, pt),
+                name=reviewer.reviewer_id,
+            ): (reviewer, pt)
+            for reviewer, pt in tasks
+        }
+
+        done, pending = await asyncio.wait(
+            asyncio_tasks.keys(),
+            timeout=timeout,  # None means wait indefinitely
         )
 
         results: list[ReviewResult] = []
         errors: list[ReviewError] = []
-        for (reviewer, _), outcome in zip(tasks, outcomes):
-            if isinstance(outcome, BaseException):
+        for asyncio_task, (reviewer, _) in asyncio_tasks.items():
+            if asyncio_task in pending:
                 errors.append(
                     ReviewError(
                         reviewer_id=reviewer.reviewer_id,
                         perspective=reviewer.perspective,
-                        message=str(outcome),
+                        message=f"Reviewer timed out after {timeout}s",
+                    )
+                )
+            elif exc := asyncio_task.exception():
+                errors.append(
+                    ReviewError(
+                        reviewer_id=reviewer.reviewer_id,
+                        perspective=reviewer.perspective,
+                        message=str(exc),
                     )
                 )
             else:
-                results.append(outcome)
+                results.append(asyncio_task.result())
         return ReviewReport(results=results, errors=errors)
 
     def _select_reviewers(
