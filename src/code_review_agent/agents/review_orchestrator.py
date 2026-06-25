@@ -80,27 +80,44 @@ class ReviewOrchestrator:
         if not tasks:
             return ReviewReport()
 
-        outcomes = await asyncio.gather(
-            *(
-                asyncio.to_thread(reviewer.review, context, pt)
-                for reviewer, pt in tasks
-            ),
-            return_exceptions=True,
+        timeout = self._config.reviewer_timeout_seconds
+
+        # asyncio.wait_for + to_thread blocks until the thread exits on cancellation;
+        # asyncio.wait avoids this by letting timed-out threads finish in the background.
+        asyncio_tasks = {
+            asyncio.create_task(
+                asyncio.to_thread(reviewer.review, context, pt),
+                name=reviewer.reviewer_id,
+            ): (reviewer, pt)
+            for reviewer, pt in tasks
+        }
+
+        _, pending = await asyncio.wait(
+            asyncio_tasks.keys(),
+            timeout=timeout,  # None means wait indefinitely
         )
 
         results: list[ReviewResult] = []
         errors: list[ReviewError] = []
-        for (reviewer, _), outcome in zip(tasks, outcomes):
-            if isinstance(outcome, BaseException):
+        for asyncio_task, (reviewer, _) in asyncio_tasks.items():
+            if asyncio_task in pending:
                 errors.append(
                     ReviewError(
                         reviewer_id=reviewer.reviewer_id,
                         perspective=reviewer.perspective,
-                        message=str(outcome),
+                        message=f"Reviewer timed out after {timeout}s",
+                    )
+                )
+            elif exc := asyncio_task.exception():
+                errors.append(
+                    ReviewError(
+                        reviewer_id=reviewer.reviewer_id,
+                        perspective=reviewer.perspective,
+                        message=str(exc),
                     )
                 )
             else:
-                results.append(outcome)
+                results.append(asyncio_task.result())
         return ReviewReport(results=results, errors=errors)
 
     def _select_reviewers(

@@ -118,12 +118,15 @@ fi
 
 ## Step 4: 評価スクリプトの実行
 
+`--server-pid-file` を渡すことで、評価完了後にスクリプト自身が A2A サーバーを自動停止する（`finally` ブロックで `SIGTERM` 送信）。
+
 ```bash
 source .venv/bin/activate
 python evaluation/tools/run_agent_evaluation.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
-  --output evaluation/data/agent_predictions.jsonl
+  --output evaluation/data/agent_predictions.jsonl \
+  --server-pid-file /tmp/a2a_eval.pid
 EVAL_EXIT=$?
 ```
 
@@ -134,23 +137,26 @@ EVAL_EXIT=$?
 
 ---
 
-## Step 5: A2A サーバーを必ず停止
+## Step 5: サーバー停止の確認（念のためのフォールバック）
 
-**評価の成功・失敗にかかわらず、Step 3 で起動したサーバーを必ず停止する。**
+`run_agent_evaluation.py` の `--server-pid-file` オプションにより、スクリプト終了時に自動的に SIGTERM が送信される。
+スクリプトが異常終了した場合のフォールバックとして、PID ファイルが残っていれば手動停止する。
 
 ```bash
-A2A_PID=${A2A_PID:-$(cat /tmp/a2a_eval.pid 2>/dev/null)}
-if [ -n "$A2A_PID" ]; then
+if [ -f /tmp/a2a_eval.pid ]; then
+  A2A_PID=$(cat /tmp/a2a_eval.pid)
   kill "$A2A_PID" 2>/dev/null
-  echo "A2A server (PID $A2A_PID) stopped"
+  echo "A2A server (PID $A2A_PID) stopped (fallback)"
   rm -f /tmp/a2a_eval.pid
 else
-  echo "WARNING: A2A server PID not found, may already be stopped."
+  echo "A2A server already stopped by run_agent_evaluation.py"
 fi
 ```
 
-停止後に `EVAL_EXIT` を確認し、0 以外の場合はユーザーにエラーを報告する。
-終了コード 1 は一部アイテムの評価失敗（スコアは部分結果）。終了コード 2〜4 は致命的エラー。
+終了コードの確認:
+- `0`: 全評価成功
+- `1`: 一部アイテムの評価失敗（スコアは部分結果）
+- `2〜4`: 致命的エラー（ユーザーに報告する）
 
 ---
 

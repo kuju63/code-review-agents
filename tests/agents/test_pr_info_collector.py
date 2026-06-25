@@ -271,7 +271,8 @@ class TestPRInfoCollectorCollect:
         # src/index.ts and package.json are targets; src/main.py and
         # requirements.txt are not review targets.
         assert paths == ["src/index.ts", "package.json"]
-        assert result.pr_info.file_changes[0].patch == "@@ -1 +1 @@\n-a\n+b"
+        # Patch content is omitted by pr_info_collector; reviewers fetch via GitHub MCP.
+        assert result.pr_info.file_changes[0].patch is None
 
     def test_dependency_files_from_repo_root_not_changed_files(self):
         """dependency_files reflect the repo's manifests at the PR head ref,

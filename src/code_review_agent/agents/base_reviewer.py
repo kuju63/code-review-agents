@@ -37,6 +37,12 @@ class ReviewerConfig:
         mcp_url: GitHub MCP endpoint URL.
         max_agent_turns: Maximum agent loop iterations per invocation.
             Configurable via ``CODE_REVIEW_MAX_AGENT_TURNS``.
+        reviewer_timeout_seconds: Wall-clock timeout in seconds for the full
+            concurrent batch of reviewers.  All reviewers start simultaneously,
+            so this is effectively a per-reviewer limit.  ``None`` disables the
+            timeout (default).  Any reviewer still running when the timeout
+            expires is recorded as a :class:`ReviewError` and the others
+            continue.  Configurable via ``CODE_REVIEW_REVIEWER_TIMEOUT_SECONDS``.
     """
 
     github_token: str
@@ -44,6 +50,7 @@ class ReviewerConfig:
     mcp_url: str = GITHUB_MCP_URL
     llm_base_url: str | None = None
     max_agent_turns: int = 30
+    reviewer_timeout_seconds: float | None = None
 
 
 class ReviewAgent(ABC):
