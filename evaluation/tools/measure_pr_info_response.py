@@ -2,9 +2,11 @@
 """Measure the actual pr_info_collector response size for specified PRs.
 
 Calls the A2A /pr-info-collector endpoint for each target PR and reports
-the size breakdown of the response. PR_INFO_COLLECTOR_RESPONSE_FILE must be
-set (in .env) so the server writes the response to disk for independent
-verification.
+the size breakdown of the response. Patch content is not included in
+pr_info_collector output (reviewers fetch it on demand), so patch_bytes
+will always be zero; other metrics (total, body, project_summary) remain
+valid. PR_INFO_COLLECTOR_RESPONSE_FILE must be set (in .env) so the server
+writes the response to disk for independent verification.
 
 Usage:
   # Start the A2A server first, then:
@@ -16,12 +18,13 @@ from __future__ import annotations
 import json
 import os
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
 import httpx
 from dotenv import load_dotenv
+
+from a2a_client import a2a_poll, a2a_send
 
 load_dotenv()
 
@@ -33,33 +36,6 @@ _TARGETS = [
     ("mui", "material-ui", 48325),
     ("mui", "material-ui", 48591),
 ]
-
-
-def _send(client: httpx.Client, endpoint: str, data: dict[str, Any]) -> str:
-    payload = {"message": {"role": "user", "parts": [{"kind": "data", "data": data}]}}
-    resp = client.post(f"{endpoint}/tasks/send", json=payload, timeout=30)
-    resp.raise_for_status()
-    return resp.json()["task"]["id"]
-
-
-def _poll(client: httpx.Client, endpoint: str, task_id: str) -> dict[str, Any]:
-    deadline = time.monotonic() + _TIMEOUT
-    while True:
-        resp = client.get(f"{endpoint}/tasks/{task_id}", timeout=10)
-        resp.raise_for_status()
-        task = resp.json()
-        status = task["status"]
-        if status == "completed":
-            for part in task.get("message", {}).get("parts", []):
-                if part.get("kind") == "data":
-                    return part["data"]
-            raise RuntimeError(f"Task {task_id} completed but has no data part")
-        if status == "failed":
-            raise RuntimeError(f"Task {task_id} failed: {task.get('error', '?')}")
-        if time.monotonic() > deadline:
-            raise TimeoutError(f"Task {task_id} timed out after {_TIMEOUT}s")
-        print(f"  [{status}] polling...", flush=True)
-        time.sleep(_POLL_INTERVAL)
 
 
 def _measure(result: dict[str, Any], response_file: str | None) -> dict[str, Any]:
@@ -99,7 +75,6 @@ def _measure(result: dict[str, Any], response_file: str | None) -> dict[str, Any
 
 def _print_report(pr_id: str, metrics: dict[str, Any]) -> None:
     total_kb = metrics["total_bytes"] / 1024
-    patch_kb = metrics["patch_bytes"] / 1024
     print(f"\n{'=' * 60}")
     print(f"PR: {pr_id}")
     print(f"{'=' * 60}")
@@ -112,14 +87,15 @@ def _print_report(pr_id: str, metrics: dict[str, Any]) -> None:
         )
     print(f"  file_changes count  : {metrics['file_changes_count']}")
     print(
-        f"  Patch total         : {metrics['patch_bytes']:>10,} bytes  ({patch_kb:.1f} KB)"
+        f"  Patch total         : {metrics['patch_bytes']:>10,} bytes  "
+        f"(always 0 — patch delegated to reviewers)"
     )
     print(f"  PR body             : {metrics['body_bytes']:>10,} bytes")
     print(f"  project_summary     : {metrics['project_summary_bytes']:>10,} bytes")
     print(f"  dependency_files    : {metrics['dependency_files']}")
-    print("\n  Top files by patch size:")
+    print("\n  Top files by filename (patch size is always 0):")
     for path, size in metrics["file_details"][:10]:
-        print(f"    {size:>8,} bytes  {path}")
+        print(f"    {path}")
     if len(metrics["file_details"]) > 10:
         print(f"    ... and {len(metrics['file_details']) - 10} more files")
 
@@ -163,9 +139,16 @@ def main() -> None:
                     "pr_number": pr_number,
                     "model_id": model_id,
                 }
-                task_id = _send(client, f"{args.base_url}/pr-info-collector", data)
+                task_id = a2a_send(client, f"{args.base_url}/pr-info-collector", data)
                 print(f"  task_id: {task_id}", flush=True)
-                result = _poll(client, f"{args.base_url}/pr-info-collector", task_id)
+                result = a2a_poll(
+                    client,
+                    f"{args.base_url}/pr-info-collector",
+                    task_id,
+                    poll_interval=_POLL_INTERVAL,
+                    timeout=_TIMEOUT,
+                    verbose=True,
+                )
                 metrics = _measure(result, response_file)
                 _print_report(pr_id, metrics)
                 results.append({"id": pr_id, "metrics": metrics})
@@ -193,8 +176,7 @@ def main() -> None:
             print(
                 f"  {r['id']}: {m['total_bytes']:,} bytes "
                 f"({m['total_bytes'] / 1024:.1f} KB), "
-                f"{m['file_changes_count']} files, "
-                f"patch {m['patch_bytes']:,} bytes ({m['patch_bytes'] / 1024:.1f} KB)"
+                f"{m['file_changes_count']} files"
             )
 
 

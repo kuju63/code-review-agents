@@ -82,11 +82,8 @@ class ReviewOrchestrator:
 
         timeout = self._config.reviewer_timeout_seconds
 
-        # Each reviewer runs in a thread.  ``asyncio.wait`` with a timeout lets
-        # us mark slow reviewers as errors without waiting for their threads to
-        # finish — the threads continue in the background but their results are
-        # discarded.  This avoids the ``asyncio.wait_for`` + ``to_thread``
-        # pitfall where cancellation blocks until the thread exits.
+        # asyncio.wait_for + to_thread blocks until the thread exits on cancellation;
+        # asyncio.wait avoids this by letting timed-out threads finish in the background.
         asyncio_tasks = {
             asyncio.create_task(
                 asyncio.to_thread(reviewer.review, context, pt),
@@ -95,7 +92,7 @@ class ReviewOrchestrator:
             for reviewer, pt in tasks
         }
 
-        done, pending = await asyncio.wait(
+        _, pending = await asyncio.wait(
             asyncio_tasks.keys(),
             timeout=timeout,  # None means wait indefinitely
         )

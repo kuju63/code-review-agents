@@ -20,7 +20,6 @@ import os
 import signal
 import subprocess
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -28,57 +27,13 @@ from typing import Any
 import httpx
 from dotenv import load_dotenv
 
+from a2a_client import a2a_poll, a2a_send
+
 load_dotenv()
 
 _DEFAULT_BASE_URL = "http://localhost:8000"
 _DEFAULT_POLL_INTERVAL = 3
 _DEFAULT_TIMEOUT = 1800
-
-
-def _a2a_send(
-    client: httpx.Client,
-    endpoint: str,
-    data: dict[str, Any],
-) -> str:
-    """POST a task to an A2A endpoint and return the task_id."""
-    payload = {
-        "message": {
-            "role": "user",
-            "parts": [{"kind": "data", "data": data}],
-        }
-    }
-    resp = client.post(f"{endpoint}/tasks/send", json=payload, timeout=30)
-    resp.raise_for_status()
-    return resp.json()["task"]["id"]
-
-
-def _a2a_poll(
-    client: httpx.Client,
-    endpoint: str,
-    task_id: str,
-    poll_interval: float,
-    timeout: float,
-) -> dict[str, Any]:
-    """Poll until task completes/fails. Return task dict or raise on timeout/failure."""
-    deadline = time.monotonic() + timeout
-    while True:
-        resp = client.get(f"{endpoint}/tasks/{task_id}", timeout=10)
-        resp.raise_for_status()
-        task = resp.json()
-        status = task["status"]
-        if status == "completed":
-            parts = task.get("message", {}).get("parts", [])
-            for part in parts:
-                if part.get("kind") == "data":
-                    return part["data"]
-            raise RuntimeError(f"Task {task_id} completed but has no data part")
-        if status == "failed":
-            raise RuntimeError(f"Task {task_id} failed: {task.get('error', '?')}")
-        if time.monotonic() > deadline:
-            raise TimeoutError(
-                f"Task {task_id} timed out after {timeout}s (status={status})"
-            )
-        time.sleep(poll_interval)
 
 
 def _run_a2a(
@@ -88,8 +43,8 @@ def _run_a2a(
     poll_interval: float,
     timeout: float,
 ) -> dict[str, Any]:
-    task_id = _a2a_send(client, endpoint, data)
-    return _a2a_poll(client, endpoint, task_id, poll_interval, timeout)
+    task_id = a2a_send(client, endpoint, data)
+    return a2a_poll(client, endpoint, task_id, poll_interval, timeout)
 
 
 def _to_predictions(lead_report_data: dict[str, Any], pr_id: str) -> dict[str, Any]:
@@ -335,7 +290,7 @@ def _shutdown_server(pid_file: str | None) -> None:
         os.kill(pid, signal.SIGTERM)
         logging.info("A2A server (PID %d) terminated via %s", pid, pid_file)
         Path(pid_file).unlink(missing_ok=True)
-    except (FileNotFoundError, ValueError, ProcessLookupError) as exc:
+    except (FileNotFoundError, ValueError, ProcessLookupError, PermissionError) as exc:
         logging.debug("_shutdown_server: %s", exc)
 
 
