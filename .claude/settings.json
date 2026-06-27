@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./deploy/secrets.yaml)",
+      "Read(./deploy/secret.yaml)",
+      "Bash(cat ./.env)",
+      "Bash(cat ./deploy/secrets.yaml)",
+      "Bash(cat ./deploy/secret.yaml)",
+      "Bash(git push --force)",
+      "Bash(git push --force-with-lease)",
+      "Bash(git push origin --force)",
+      "Bash(git push origin --force-with-lease)",
+      "Bash(git push origin main --force)",
+      "Bash(git push origin main --force-with-lease)"
+    ]
+  }
+}
