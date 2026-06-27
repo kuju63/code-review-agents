@@ -23,6 +23,7 @@ spec:
       image: quay.io/kuju63/code-review-agent:latest
       ports:
         - containerPort: 8000
+          hostPort: 8000
           protocol: TCP
       envFrom:
         - configMapRef:
