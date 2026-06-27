@@ -93,8 +93,8 @@ USER nonroot
 EXPOSE 8000
 
 # シェルなし環境のため exec 形式を使用
-# FastAPI サーバー実装後は HTTP エンドポイント (/health) へのリクエストに変更すること
+# curl 非搭載の Chainguard イメージのため stdlib urllib.request で HTTP GET を実行
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD ["/usr/bin/python", "-c", "import code_review_agent"]
+    CMD ["/usr/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
 
 ENTRYPOINT ["/usr/local/bin/code-review-agent"]
