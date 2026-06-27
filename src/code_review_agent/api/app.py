@@ -31,4 +31,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.include_router(lead_engineer_router(settings, store), prefix="/lead-engineer")
     app.include_router(orchestrator_router(settings, store), prefix="/orchestrator")
+
+    @app.get("/health")
+    async def health() -> dict[str, str]:
+        return {"status": "ok"}
+
     return app

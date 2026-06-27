@@ -91,6 +91,15 @@ class TestSendTaskEndpoints:
         assert resp.status_code == 422
 
 
+class TestHealthEndpoint:
+    def test_returns_200(self) -> None:
+        app = create_app(_make_settings())
+        with TestClient(app) as client:
+            resp = client.get("/health")
+        assert resp.status_code == 200
+        assert resp.json() == {"status": "ok"}
+
+
 class TestGetTaskEndpoints:
     @pytest.mark.parametrize(
         "prefix",

@@ -1,0 +1,23 @@
+# code-review-agent ConfigMap — 非機密設定値
+#
+# 機密値（GITHUB_TOKEN, OPENAI_API_KEY）は deploy/secrets.yaml に記載すること。
+# pod.yaml は envFrom でこの ConfigMap を丸ごと読み込む。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: code-review-agent
+data:
+  # --- HTTP サーバー ---
+  CODE_REVIEW_HOST: "0.0.0.0"
+  CODE_REVIEW_PORT: "8000"
+  CODE_REVIEW_LOG_LEVEL: "info"
+
+  # --- LLM ---
+  CODE_REVIEW_MODEL_ID: "gpt-4o"
+  # CODE_REVIEW_LLM_BASE_URL: ""          # OpenAI 互換エンドポイント（省略時は api.openai.com）
+  CODE_REVIEW_MAX_AGENT_TURNS: "30"
+  # CODE_REVIEW_REVIEWER_TIMEOUT_SECONDS: ""   # レビュアータイムアウト（省略時は無制限）
+
+  # --- エージェント URL（省略時は CODE_REVIEW_AGENT_BASE_URL から自動解決） ---
+  CODE_REVIEW_AGENT_BASE_URL: "http://localhost:8000"
+
