@@ -1,0 +1,22 @@
+# code-review-agent Service
+#
+# 使い方:
+#   podman kube play deploy/pod.yaml deploy/service.yaml
+#
+# ローカル podman 環境での外部アクセス:
+#   ClusterIP のままだと Pod ネットワーク内からのみ到達可能。
+#   ホストからアクセスするには NodePort に変更するか、
+#   podman port-forward を使う:
+#     podman port code-review-agent-pod 8000
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-review-agent
+spec:
+  selector:
+    app: code-review-agent
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: ClusterIP

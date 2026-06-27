@@ -1,0 +1,76 @@
+# code-review-agent Pod
+#
+# 使い方:
+#   podman kube play deploy/pod.yaml
+#   podman kube play deploy/pod.yaml deploy/service.yaml
+#
+# 事前準備 — GITHUB_TOKEN Secret の作成:
+#   podman secret create github-token <(echo -n "ghp_xxxx")
+#   # あるいは kubectl を使う場合:
+#   kubectl create secret generic code-review-agent \
+#     --from-literal=github-token=ghp_xxxx
+#
+# NOTE: livenessProbe / readinessProbe はイメージフォーマット（OCI/Docker）に
+#       依存しない K8s ネイティブのヘルスチェック機構であり、
+#       Dockerfile の HEALTHCHECK の代替として機能する。
+apiVersion: v1
+kind: Pod
+metadata:
+  name: code-review-agent
+  labels:
+    app: code-review-agent
+spec:
+  containers:
+    - name: code-review-agent
+      image: quay.io/kuju63/code-review-agent:latest
+      ports:
+        - containerPort: 8000
+          protocol: TCP
+      env:
+        - name: CODE_REVIEW_MODEL_ID
+          value: gpt-4o
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: code-review-agent
+              key: github-token
+      # Dockerfile HEALTHCHECK と同一パラメータで揃える:
+      #   --start-period=10s → initialDelaySeconds: 10
+      #   --interval=30s     → periodSeconds: 30
+      #   --timeout=5s       → timeoutSeconds: 5
+      #   --retries=3        → failureThreshold: 3
+      #
+      # NOTE: httpGet ではなく exec プローブを使用する。
+      #   podman kube play は httpGet を "curl -f URL" に変換するが、
+      #   Chainguard イメージにはシェルも curl も存在しないため失敗する。
+      #   exec プローブは CMD-SHELL を経由せず Python を直接実行するため動作する。
+      livenessProbe:
+        exec:
+          command:
+            - /usr/bin/python
+            - -c
+            - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+        initialDelaySeconds: 10
+        periodSeconds: 30
+        timeoutSeconds: 5
+        failureThreshold: 3
+      readinessProbe:
+        exec:
+          command:
+            - /usr/bin/python
+            - -c
+            - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532   # Chainguard nonroot (Dockerfile USER nonroot)
+        allowPrivilegeEscalation: false
+        seccompProfile:
+          type: RuntimeDefault
+        capabilities:
+          drop:
+            - ALL
+  restartPolicy: Always
