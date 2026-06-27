@@ -339,4 +339,4 @@ evaluation/data/
 .idea/
 
 # Kubernetes/Podman シークレット（実際の認証情報を含む可能性があるため除外）
-deploy/secret.yaml
+deploy/secrets.yaml

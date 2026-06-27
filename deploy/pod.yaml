@@ -1,11 +1,11 @@
 # code-review-agent Pod
 #
 # 使い方:
-#   podman kube play deploy/configmap.yaml deploy/secret.yaml \
+#   podman kube play deploy/configmap.yaml deploy/secrets.yaml \
 #                    deploy/pod.yaml deploy/service.yaml
 #
 # 事前準備:
-#   deploy/secret.yaml.example をコピーして deploy/secret.yaml を作成し、
+#   deploy/secrets.example.yaml をコピーして deploy/secrets.yaml を作成し、
 #   github-token と openai-api-key を base64 エンコード済みの値に置換すること。
 #
 # NOTE: livenessProbe / readinessProbe はイメージフォーマット（OCI/Docker）に

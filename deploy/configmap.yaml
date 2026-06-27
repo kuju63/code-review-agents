@@ -1,6 +1,6 @@
 # code-review-agent ConfigMap — 非機密設定値
 #
-# 機密値（GITHUB_TOKEN, OPENAI_API_KEY）は deploy/secret.yaml に記載すること。
+# 機密値（GITHUB_TOKEN, OPENAI_API_KEY）は deploy/secrets.yaml に記載すること。
 # pod.yaml は envFrom でこの ConfigMap を丸ごと読み込む。
 apiVersion: v1
 kind: ConfigMap
