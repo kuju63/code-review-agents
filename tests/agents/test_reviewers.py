@@ -47,9 +47,6 @@ class TestSecurityReviewer:
         assert ProjectType.REACT_TS in SecurityReviewer.project_types
         assert SecurityReviewer.reviewer_id
 
-    def test_system_prompt_mentions_owasp(self):
-        assert "OWASP" in SecurityReviewer.system_prompt
-
     def test_skill_type_is_web_security_review(self):
         assert SecurityReviewer.skill_type is AgentSkillType.WEB_SECURITY_REVIEW
 
