@@ -181,6 +181,15 @@ Soft targets:
 
 ## 5. Evaluation Workflow
 
+**評価パスの前提（2026-06-27 更新）**:
+
+Gold set は `evaluate_gold_item()` を通じてオーケストレータ経由でパイプライン全体を実行する。
+Seeded set は `evaluate_seeded_item()` でセード変異を注入するため個別エンドポイントを呼ぶ。
+PR の diff が閾値（`CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` chars・`CODE_REVIEW_PATCH_MAX_FILES` ファイル、
+デフォルト 30,000 chars・30 ファイル）以内の場合、両評価パスのレビュアーは
+`PRInfoResult.file_changes` に含まれる patch を参照する（GitHub MCP フェッチは発生しない）。
+閾値超過の PR は引き続き `patch=None` にフォールバックし、レビュアーが MCP フェッチを行う。
+
 ### 5.1 Offline Weekly Run
 
 1. Rebuild Gold snapshots from selected PRs
