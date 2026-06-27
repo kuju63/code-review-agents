@@ -1,14 +1,12 @@
 # code-review-agent Pod
 #
 # 使い方:
-#   podman kube play deploy/pod.yaml
-#   podman kube play deploy/pod.yaml deploy/service.yaml
+#   podman kube play deploy/configmap.yaml deploy/secret.yaml \
+#                    deploy/pod.yaml deploy/service.yaml
 #
-# 事前準備 — GITHUB_TOKEN Secret の作成:
-#   podman secret create github-token <(echo -n "ghp_xxxx")
-#   # あるいは kubectl を使う場合:
-#   kubectl create secret generic code-review-agent \
-#     --from-literal=github-token=ghp_xxxx
+# 事前準備:
+#   deploy/secret.yaml.example をコピーして deploy/secret.yaml を作成し、
+#   github-token と openai-api-key を base64 エンコード済みの値に置換すること。
 #
 # NOTE: livenessProbe / readinessProbe はイメージフォーマット（OCI/Docker）に
 #       依存しない K8s ネイティブのヘルスチェック機構であり、
@@ -26,14 +24,20 @@ spec:
       ports:
         - containerPort: 8000
           protocol: TCP
+      envFrom:
+        - configMapRef:
+            name: code-review-agent
       env:
-        - name: CODE_REVIEW_MODEL_ID
-          value: gpt-4o
         - name: GITHUB_TOKEN
           valueFrom:
             secretKeyRef:
               name: code-review-agent
               key: github-token
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: code-review-agent
+              key: openai-api-key
       # Dockerfile HEALTHCHECK と同一パラメータで揃える:
       #   --start-period=10s → initialDelaySeconds: 10
       #   --interval=30s     → periodSeconds: 30
