@@ -190,6 +190,13 @@ PR の diff が閾値（`CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` chars・`CODE_REVIE
 `PRInfoResult.file_changes` に含まれる patch を参照する（GitHub MCP フェッチは発生しない）。
 閾値超過の PR は引き続き `patch=None` にフォールバックし、レビュアーが MCP フェッチを行う。
 
+**設計上の既知の制限（行番号精度）**: `_build_prompt` が付与する行番号アノテーション（`+L{N}:` 形式）は
+`PRInfoResult.file_changes` に含まれる patch にのみ適用される。
+レビュアーが実行中に GitHub MCP 経由でオンデマンド取得したパッチはアノテーション対象外のため、
+エージェントが報告する行番号が実ファイル行番号と一致しない場合がある。
+この問題は `patch=None` フォールバック時（閾値超過 PR）でのみ発生する。
+評価上の影響: line tolerance (±5) を超える行番号ズレが生じ、Gold set のマッチングが失敗しうる。
+
 ### 5.1 Offline Weekly Run
 
 1. Rebuild Gold snapshots from selected PRs

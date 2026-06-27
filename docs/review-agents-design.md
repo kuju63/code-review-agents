@@ -74,6 +74,12 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
   プラグインと `file_read` ツール（`strands-agents-tools`）が Agent に追加され、
   プログレッシブ・ディスクロージャーによるスキルの段階的ロードが有効になる。
   `shell` ツールは注入しない（スキルのリファレンスファイルは `file_read` で十分、かつ任意コマンド実行は最小権限の原則に反する）。
+- `_build_prompt()` はプロンプト内のパッチ各行に実ファイル行番号を付与する（`+L{N}:` 形式）。
+  ただし、この付与は `PRInfoResult.file_changes` に事前収録されたパッチのみに適用される。
+  **現時点の設計上の制限**: エージェントが実行中に GitHub MCP 経由でオンデマンド取得したパッチは
+  アノテーション対象外となるため、その場合のエージェントが報告する行番号は `@@` ヘッダーの
+  開始行をそのまま使用する等、実ファイル行番号と一致しない場合がある
+  （patch サイズが閾値を超えて `patch=None` にフォールバックした PR で発生しうる）。
 - 各レビュアーの `review()` は**同期**実装で、`PRInfoCollector.collect()` と同じく
   `create_github_mcp_client` を `with` で開いて使う（MCP の同期コンテキストマネージャを
   そのまま扱える）。

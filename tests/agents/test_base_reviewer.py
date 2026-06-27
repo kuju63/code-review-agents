@@ -8,6 +8,7 @@ from code_review_agent.agents.base_reviewer import (
     LLMReviewAgent,
     ReviewAgent,
     ReviewerConfig,
+    _annotate_patch,
 )
 from code_review_agent.skills.agent_skills_factory import AgentSkillType
 from code_review_agent.models.pr_info import (
@@ -117,6 +118,76 @@ class TestReviewerMetadata:
         assert ProjectType.REACT_TS in _StubReviewer.project_types
 
 
+class TestAnnotatePatch:
+    """_annotate_patch adds file line numbers to unified diff lines."""
+
+    def test_context_line_annotated_with_new_file_line(self):
+        patch = "@@ -1,2 +1,2 @@\n context\n context2"
+        lines = _annotate_patch(patch).splitlines()
+        assert lines[1] == " L1:context"
+        assert lines[2] == " L2:context2"
+
+    def test_added_line_annotated_with_new_file_line(self):
+        patch = "@@ -1,1 +1,2 @@\n context\n+added"
+        lines = _annotate_patch(patch).splitlines()
+        assert lines[1] == " L1:context"
+        assert lines[2] == "+L2:added"
+
+    def test_removed_line_annotated_with_old_file_line(self):
+        patch = "@@ -5,2 +5,1 @@\n context\n-removed"
+        lines = _annotate_patch(patch).splitlines()
+        assert lines[1] == " L5:context"
+        assert lines[2] == "-L6:removed"
+
+    def test_removal_does_not_increment_new_line_counter(self):
+        patch = "@@ -1,3 +1,2 @@\n ctx\n-removed\n ctx2"
+        lines = _annotate_patch(patch).splitlines()
+        # ctx  → L1 (new), removed → old L2, ctx2 → L2 (new, unchanged)
+        assert lines[1] == " L1:ctx"
+        assert lines[2] == "-L2:removed"
+        assert lines[3] == " L2:ctx2"
+
+    def test_addition_does_not_increment_old_line_counter(self):
+        patch = "@@ -1,2 +1,3 @@\n ctx\n+added\n ctx2"
+        lines = _annotate_patch(patch).splitlines()
+        assert lines[1] == " L1:ctx"
+        assert lines[2] == "+L2:added"
+        assert lines[3] == " L3:ctx2"
+
+    def test_hunk_header_preserved_verbatim(self):
+        patch = "@@ -10,3 +10,3 @@\n line"
+        lines = _annotate_patch(patch).splitlines()
+        assert lines[0] == "@@ -10,3 +10,3 @@"
+
+    def test_hunk_header_with_trailing_context(self):
+        patch = "@@ -10,2 +10,2 @@ function foo() {\n line"
+        lines = _annotate_patch(patch).splitlines()
+        assert lines[0].startswith("@@ -10,2 +10,2 @@")
+        assert lines[1] == " L10:line"
+
+    def test_multiple_hunks_reset_line_counters(self):
+        patch = "@@ -1,1 +1,1 @@\n line1\n@@ -10,1 +10,1 @@\n line10"
+        lines = _annotate_patch(patch).splitlines()
+        assert lines[1] == " L1:line1"
+        assert lines[2] == "@@ -10,1 +10,1 @@"
+        assert lines[3] == " L10:line10"
+
+    def test_no_newline_marker_passed_through(self):
+        patch = "@@ -1,1 +1,1 @@\n-old\n+new\n\\ No newline at end of file"
+        result = _annotate_patch(patch)
+        assert "\\ No newline at end of file" in result
+
+    def test_empty_patch_returns_empty_string(self):
+        assert _annotate_patch("") == ""
+
+    def test_hunk_without_count_suffix(self):
+        # @@ -1 +1 @@ is valid (count omitted when it equals 1)
+        patch = "@@ -1 +1 @@\n-a\n+b"
+        lines = _annotate_patch(patch).splitlines()
+        assert lines[1] == "-L1:a"
+        assert lines[2] == "+L1:b"
+
+
 class TestBuildPrompt:
     """_build_prompt serialises the relevant PR info."""
 
@@ -127,6 +198,18 @@ class TestBuildPrompt:
         assert "A sample project." in prompt
         assert "src/App.tsx" in prompt
         assert "package.json" in prompt
+
+    def test_prompt_annotates_patch_lines(self):
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        prompt = reviewer._build_prompt(_make_context())
+        # _make_context has patch "@@ -1 +1 @@\n-a\n+b"
+        assert "-L1:a" in prompt
+        assert "+L1:b" in prompt
+
+    def test_prompt_includes_annotation_key(self):
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        prompt = reviewer._build_prompt(_make_context())
+        assert "+L{N}" in prompt or "L{N}" in prompt
 
 
 class TestReview:
