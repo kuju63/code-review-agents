@@ -5,6 +5,7 @@
       "category": "security",
       "severity": "critical",
       "languages": ["js", "jsx", "ts", "tsx", "vue", "svelte"],
+      "context_lines": ["const userInput = new URLSearchParams(window.location.search).get('q');"],
       "line_snippet": "const result = eval(userInput);",
       "summary": "Unsanitized eval usage may lead to arbitrary code execution."
     },
@@ -92,8 +93,16 @@
       "rule_id": "b2b2c_idor_hint",
       "category": "security",
       "severity": "high",
-      "languages": ["rb", "java", "kt", "js", "ts", "vue", "svelte"],
+      "languages": ["rb", "java", "kt", "js", "ts", "jsx", "tsx", "vue", "svelte"],
       "line_snippet": "return repository.findById(request.getCustomerId());",
+      "language_snippets": {
+        "js":     "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
+        "jsx":    "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
+        "ts":     "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
+        "tsx":    "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
+        "vue":    "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
+        "svelte": "const resource = await fetch('/api/items/' + params.id).then(r => r.json());"
+      },
       "summary": "Direct object access without tenant or ownership validation may cause IDOR."
     }
   ]

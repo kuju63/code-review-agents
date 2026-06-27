@@ -67,22 +67,49 @@ def detect_lang(path: str) -> str:
     return "unknown"
 
 
-def inject_patch(original_patch: str, line_snippet: str) -> tuple[str, int]:
+_TEST_PATH_PATTERNS = (
+    "/__tests__/",
+    "/__test__/",
+    ".test.js",
+    ".test.ts",
+    ".test.jsx",
+    ".test.tsx",
+    ".spec.js",
+    ".spec.ts",
+    ".spec.jsx",
+    ".spec.tsx",
+)
+
+
+def is_test_file(path: str) -> bool:
+    return any(pat in path for pat in _TEST_PATH_PATTERNS)
+
+
+def inject_patch(
+    original_patch: str,
+    line_snippet: str,
+    context_lines: list[str] | None = None,
+) -> tuple[str, int]:
     patch_lines = original_patch.splitlines()
     if not patch_lines:
         return original_patch, 1
 
     # Find a reasonable injection point after first hunk header.
     insert_idx = 1 if patch_lines[0].startswith("@@") else 0
+    prefix = [f"+{cl}" for cl in (context_lines or [])]
     injected = (
-        patch_lines[:insert_idx] + [f"+{line_snippet}"] + patch_lines[insert_idx:]
+        patch_lines[:insert_idx]
+        + prefix
+        + [f"+{line_snippet}"]
+        + patch_lines[insert_idx:]
     )
 
     # Best-effort line extraction from hunk header.
     header = patch_lines[0] if patch_lines else ""
     m = re.search(r"\+(\d+)", header)
     base_line = int(m.group(1)) if m else 1
-    injected_line = base_line
+    # must_find points to the vulnerability line, after any context prefix lines
+    injected_line = base_line + len(context_lines or [])
     return "\n".join(injected), injected_line
 
 
@@ -95,6 +122,10 @@ def choose_rule(
     return rnd.choice(candidates)
 
 
+def get_snippet_for_lang(rule: dict[str, Any], lang: str) -> str:
+    return rule.get("language_snippets", {}).get(lang, rule["line_snippet"])
+
+
 def build_seeded_item(
     gold_item: dict[str, Any],
     rules: list[dict[str, Any]],
@@ -104,7 +135,15 @@ def build_seeded_item(
     if not file_changes:
         return None
 
-    target = rnd.choice(file_changes)
+    # Prefer production files over test files so agents see realistic vulnerabilities
+    prod_candidates = [
+        fc
+        for fc in file_changes
+        if fc.get("patch") and not is_test_file(fc.get("path", ""))
+    ]
+    candidates = prod_candidates if prod_candidates else file_changes
+
+    target = rnd.choice(candidates)
     path = target.get("path", "")
     patch = target.get("patch", "")
     lang = detect_lang(path)
@@ -112,11 +151,13 @@ def build_seeded_item(
     if not rule:
         return None
 
-    seeded_patch, seeded_line = inject_patch(patch, rule["line_snippet"])
+    snippet = get_snippet_for_lang(rule, lang)
+    context_lines = rule.get("context_lines")
+    seeded_patch, seeded_line = inject_patch(patch, snippet, context_lines)
 
     seeded_changes = []
     for fc in file_changes:
-        if fc.get("path") == path and fc.get("patch") == patch:
+        if fc.get("path") == path and fc.get("patch") == target.get("patch"):
             seeded_changes.append({"path": path, "patch": seeded_patch})
         else:
             seeded_changes.append(fc)
