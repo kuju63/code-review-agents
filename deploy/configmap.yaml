@@ -18,6 +18,10 @@ data:
   CODE_REVIEW_MAX_AGENT_TURNS: "30"
   # CODE_REVIEW_REVIEWER_TIMEOUT_SECONDS: ""   # レビュアータイムアウト（省略時は無制限）
 
+  # --- PR Diff 同梱閾値（省略時はデフォルト値を使用） ---
+  # CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT: "30000"
+  # CODE_REVIEW_PATCH_MAX_FILES: "30"
+
   # --- エージェント URL（省略時は CODE_REVIEW_AGENT_BASE_URL から自動解決） ---
   CODE_REVIEW_AGENT_BASE_URL: "http://localhost:8000"
 

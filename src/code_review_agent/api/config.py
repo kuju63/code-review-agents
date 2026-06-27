@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     llm_base_url: str | None = None
     max_agent_turns: int = 30
     reviewer_timeout_seconds: float | None = None
+    patch_total_char_limit: int = 30_000
+    patch_max_files: int = 30
 
     agent_base_url: str = "http://localhost:8000"
     agent_pr_info_collector_url: str | None = None

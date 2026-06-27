@@ -271,8 +271,9 @@ class TestPRInfoCollectorCollect:
         # src/index.ts and package.json are targets; src/main.py and
         # requirements.txt are not review targets.
         assert paths == ["src/index.ts", "package.json"]
-        # Patch content is omitted by pr_info_collector; reviewers fetch via GitHub MCP.
-        assert result.pr_info.file_changes[0].patch is None
+        # Patch is included when within context limits (default 30,000 chars / 30 files).
+        assert result.pr_info.file_changes[0].patch == "@@ -1 +1 @@\n-a\n+b"
+        assert result.pr_info.file_changes[1].patch == "@@ -1 +1 @@\n-p\n+q"
 
     def test_dependency_files_from_repo_root_not_changed_files(self):
         """dependency_files reflect the repo's manifests at the PR head ref,
@@ -582,3 +583,59 @@ class TestPRInfoCollectorCollect:
 
         _, kwargs = mock_agent.call_args
         assert kwargs.get("limits") == {"turns": 5}
+
+    def test_patches_included_within_limit(self):
+        """Patches are included in FileChange when total size is within limits."""
+        result = self._run(_make_mcp())
+        for fc in result.pr_info.file_changes:
+            assert fc.patch is not None
+
+    def test_patches_fallback_when_total_chars_exceed_limit(self, caplog):
+        """patch=None for all files when total patch chars exceed the limit."""
+        # Build files where combined patch exceeds a tiny limit.
+        big_files = [
+            {"filename": "src/a.ts", "patch": "x" * 50},
+            {"filename": "src/b.ts", "patch": "y" * 50},
+        ]
+        collector = PRInfoCollector(
+            github_token="tok",
+            patch_total_char_limit=99,  # less than 100 chars total
+            patch_max_files=30,
+        )
+        mock_agent = MagicMock(return_value="summary")
+        mcp = _make_mcp(pr_files=big_files)
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel"),
+            caplog.at_level(
+                logging.WARNING, logger="code_review_agent.agents.pr_info_collector"
+            ),
+        ):
+            result = collector.collect("mui", "material-ui", 48591)
+        for fc in result.pr_info.file_changes:
+            assert fc.patch is None
+        assert any("falling back to patch=None" in r.message for r in caplog.records)
+
+    def test_patches_fallback_when_file_count_exceeds_limit(self, caplog):
+        """patch=None for all files when target-file count exceeds the limit."""
+        many_files = [{"filename": f"src/f{i}.ts", "patch": "p"} for i in range(5)]
+        collector = PRInfoCollector(
+            github_token="tok",
+            patch_total_char_limit=30_000,
+            patch_max_files=4,  # 5 files > limit of 4
+        )
+        mock_agent = MagicMock(return_value="summary")
+        mcp = _make_mcp(pr_files=many_files)
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel"),
+            caplog.at_level(
+                logging.WARNING, logger="code_review_agent.agents.pr_info_collector"
+            ),
+        ):
+            result = collector.collect("mui", "material-ui", 48591)
+        for fc in result.pr_info.file_changes:
+            assert fc.patch is None
+        assert any("falling back to patch=None" in r.message for r in caplog.records)

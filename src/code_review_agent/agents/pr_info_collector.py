@@ -164,12 +164,16 @@ class PRInfoCollector:
         mcp_url: str = GITHUB_MCP_URL,
         llm_base_url: str | None = None,
         max_agent_turns: int = 30,
+        patch_total_char_limit: int = 30_000,
+        patch_max_files: int = 30,
     ) -> None:
         self._github_token = github_token
         self._model_id = model_id
         self._mcp_url = mcp_url
         self._llm_base_url = llm_base_url
         self._max_agent_turns = max_agent_turns
+        self._patch_total_char_limit = patch_total_char_limit
+        self._patch_max_files = patch_max_files
 
     def collect(self, owner: str, repo: str, pr_number: int) -> PRInfoResult:
         """Collect PR information from GitHub and return structured data.
@@ -224,15 +228,33 @@ class PRInfoCollector:
             except Exception:
                 project_summary = ""
 
-        # Extract the filename once and use it for both the predicate and
-        # construction, so the two never disagree on the key/default.
-        # Patch content is intentionally omitted here: each downstream reviewer
-        # fetches only the diffs it needs via GitHub MCP, avoiding the large
-        # context payloads that caused reviewer timeouts on PRs like #48325.
+        # Include patch in FileChange when the total diff size is within limits.
+        # Providing patches upfront lets reviewers skip GitHub MCP fetches, which
+        # avoids the context-accumulation overflow seen with patch=None (#48325 fix
+        # introduced the omission; this reinstates patches for normal-sized PRs).
+        # When total diff exceeds limits, fall back to patch=None so reviewers can
+        # still fetch diffs via MCP (context overflow risk remains for large PRs).
+        target_files = [
+            f for f in changed_files if is_target_file(f.get("filename", ""))
+        ]
+        total_patch_chars = sum(len(f.get("patch") or "") for f in target_files)
+        include_patches = (
+            len(target_files) <= self._patch_max_files
+            and total_patch_chars <= self._patch_total_char_limit
+        )
+        if not include_patches:
+            logger.warning(
+                "PR diff exceeds context limit (%d chars across %d files): "
+                "falling back to patch=None. Reviewers will fetch diffs via GitHub MCP.",
+                total_patch_chars,
+                len(target_files),
+            )
         file_changes = [
-            FileChange(filePath=name, patch=None)
-            for f in changed_files
-            if is_target_file(name := f.get("filename", ""))
+            FileChange(
+                filePath=f.get("filename", ""),
+                patch=f.get("patch") if include_patches else None,
+            )
+            for f in target_files
         ]
 
         result = PRInfoResult(
