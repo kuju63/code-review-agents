@@ -1,14 +1,15 @@
 # 01 Injection (Confusing Data with Instructions)
 
 ## Contents
-- Root cause
-- XSS: injecting into a trusted document
-- SQLi / NoSQLi: query language injection
-- Command injection: shell injection
-- SSTI: template engine injection
-- XXE: XML external entity injection
-- Questions to use during review
-- References
+
+- [Root cause](#root-cause)
+- [XSS: injecting into a trusted document](#xss-injecting-into-a-trusted-document)
+- [SQLi / NoSQLi: query language injection](#sqli--nosqli-injecting-instructions-into-a-query-language)
+- [Command injection: shell injection](#command-injection-injecting-instructions-into-a-shell)
+- [SSTI: template engine injection](#ssti-injecting-instructions-into-a-template-engine)
+- [XXE: XML external entity injection](#xxe-injecting-external-references-into-an-xml-parser)
+- [Questions to use during review](#questions-to-use-during-review)
+- [References](#references)
 
 ## Root Cause
 

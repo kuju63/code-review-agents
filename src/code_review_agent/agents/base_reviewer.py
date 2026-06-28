@@ -6,6 +6,7 @@ security, future stacks/perspectives) subclass these and supply only their
 metadata and system prompt, so behavior is configured rather than re-coded.
 """
 
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import ClassVar, cast
@@ -24,6 +25,51 @@ from ..models.review import (
 )
 from ..skills.agent_skills_factory import AgentSkillType, create_agent_skills
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
+
+
+_HUNK_RE = re.compile(r"@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+
+
+def _annotate_patch(patch: str) -> str:
+    """Annotate each line of a unified diff with its actual file line number.
+
+    Transforms raw unified diff lines into annotated form so the LLM can
+    report accurate file-absolute line numbers in its findings:
+
+        @@ -228,3 +224,4 @@       →  @@ -228,3 +224,4 @@
+        -old line                  →  -L228:old line
+        +new line                  →  +L224:new line
+         context                   →   L225:context
+
+    Legend:
+      "+L{N}:" — line N added in the new file.
+      " L{N}:" — line N unchanged (context) in the new file.
+      "-L{N}:" — line N removed from the old file (absent in new file).
+    """
+    result: list[str] = []
+    new_line = 0
+    old_line = 0
+
+    for raw in patch.splitlines():
+        m = _HUNK_RE.match(raw)
+        if m:
+            old_line = int(m.group(1))
+            new_line = int(m.group(2))
+            result.append(raw)
+        elif raw.startswith("+"):
+            result.append(f"+L{new_line}:{raw[1:]}")
+            new_line += 1
+        elif raw.startswith("-"):
+            result.append(f"-L{old_line}:{raw[1:]}")
+            old_line += 1
+        elif raw.startswith(" "):
+            result.append(f" L{new_line}:{raw[1:]}")
+            new_line += 1
+            old_line += 1
+        else:
+            result.append(raw)
+
+    return "\n".join(result)
 
 
 @dataclass(frozen=True)
@@ -203,9 +249,24 @@ class LLMReviewAgent(ReviewAgent):
             "",
             "Changed files (diff patches):",
         ]
+        has_annotated = any(c.patch for c in pr.pr_info.file_changes)
+        if has_annotated:
+            lines += [
+                "Each diff line is prefixed with its actual file line number:",
+                "  +L{N}: line N added in the new file",
+                "  -L{N}: line N removed from the old file (absent in the new file)",
+                "   L{N}: line N unchanged (context) in the new file",
+                "When reporting a finding, use the L{N} value as the line number.",
+                "",
+            ]
         for change in pr.pr_info.file_changes:
             lines.append(f"--- {change.filePath} ---")
-            lines.append(change.patch or "(patch unavailable; fetch via GitHub)")
+            if change.patch:
+                lines.append(_annotate_patch(change.patch))
+            else:
+                lines.append("(patch unavailable; fetch via GitHub)")
+        # Known limitation: patches fetched on-demand via GitHub MCP during
+        # agent execution are not annotated and may yield inaccurate line numbers.
         lines.append("")
         lines.append(
             "Only the modified sections are provided. Retrieve full files from "
