@@ -1,12 +1,13 @@
 # 05 Secrets Exposure (Underestimating Where Data Can Reach)
 
 ## Contents
-- Root cause
-- Hardcoded secrets
-- Secrets in logs
-- Error responses
-- Questions to use during review
-- References
+
+- [Root cause](#root-cause)
+- [Hardcoded secrets](#hardcoded-secrets-code-is-read-more-widely-than-you-think)
+- [Secrets in logs](#secrets-in-logs-who-actually-has-access-to-logs)
+- [Error responses](#error-responses-development-detail-leaking-to-production-users)
+- [Questions to use during review](#questions-to-use-during-review)
+- [References](#references)
 
 ## Root Cause
 
