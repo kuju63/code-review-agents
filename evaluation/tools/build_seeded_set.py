@@ -78,6 +78,9 @@ _TEST_PATH_PATTERNS = (
     ".spec.ts",
     ".spec.jsx",
     ".spec.tsx",
+    "/test_",
+    "_test.py",
+    "/tests/",
 )
 
 
@@ -123,7 +126,8 @@ def choose_rule(
 
 
 def get_snippet_for_lang(rule: dict[str, Any], lang: str) -> str:
-    return rule.get("language_snippets", {}).get(lang, rule["line_snippet"])
+    lang_snippets = rule.get("language_snippets", {})
+    return lang_snippets.get(lang) or rule["line_snippet"]
 
 
 def build_seeded_item(
@@ -145,7 +149,7 @@ def build_seeded_item(
 
     target = rnd.choice(candidates)
     path = target.get("path", "")
-    patch = target.get("patch", "")
+    patch = target.get("patch") or ""
     lang = detect_lang(path)
     rule = choose_rule(rules, lang, rnd)
     if not rule:
@@ -157,7 +161,7 @@ def build_seeded_item(
 
     seeded_changes = []
     for fc in file_changes:
-        if fc.get("path") == path and fc.get("patch") == target.get("patch"):
+        if fc is target:
             seeded_changes.append({"path": path, "patch": seeded_patch})
         else:
             seeded_changes.append(fc)

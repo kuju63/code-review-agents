@@ -248,13 +248,17 @@ class LLMReviewAgent(ReviewAgent):
             f"Dependency files: {', '.join(pr.dependency_files) or '(none)'}",
             "",
             "Changed files (diff patches):",
-            "Each diff line is prefixed with its actual file line number:",
-            "  +L{N}: line N added in the new file",
-            "  -L{N}: line N removed from the old file (absent in the new file)",
-            "   L{N}: line N unchanged (context) in the new file",
-            "When reporting a finding, use the L{N} value as the line number.",
-            "",
         ]
+        has_annotated = any(c.patch for c in pr.pr_info.file_changes)
+        if has_annotated:
+            lines += [
+                "Each diff line is prefixed with its actual file line number:",
+                "  +L{N}: line N added in the new file",
+                "  -L{N}: line N removed from the old file (absent in the new file)",
+                "   L{N}: line N unchanged (context) in the new file",
+                "When reporting a finding, use the L{N} value as the line number.",
+                "",
+            ]
         for change in pr.pr_info.file_changes:
             lines.append(f"--- {change.filePath} ---")
             if change.patch:
