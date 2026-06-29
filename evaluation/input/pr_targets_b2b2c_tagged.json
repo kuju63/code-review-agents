@@ -1,282 +1,353 @@
 [
   {
-    "repository": "rails/rails",
-    "pr_number": 57110,
-    "stack": "rails",
-    "priority_themes": ["data_access", "performance", "stability"],
-    "risk_priority": "medium",
-    "selection_note": "DB introspection query optimization"
-  },
-  {
-    "repository": "rails/rails",
-    "pr_number": 57490,
-    "stack": "rails",
-    "priority_themes": ["input_validation", "security", "api_boundary"],
-    "risk_priority": "high",
-    "selection_note": "parameter filtering behavior"
-  },
-  {
-    "repository": "rails/rails",
-    "pr_number": 48128,
-    "stack": "rails",
-    "priority_themes": ["business_logic", "consistency"],
-    "risk_priority": "medium",
-    "selection_note": "counter update API behavior"
-  },
-  {
-    "repository": "rails/rails",
-    "pr_number": 56340,
-    "stack": "rails",
-    "priority_themes": ["storage", "operations"],
-    "risk_priority": "low",
-    "selection_note": "active storage guide/docs context"
-  },
-  {
-    "repository": "rails/rails",
-    "pr_number": 55638,
-    "stack": "rails",
-    "priority_themes": ["api_boundary", "maintainability"],
-    "risk_priority": "low",
-    "selection_note": "docs wording correction"
-  },
-  {
-    "repository": "rails/rails",
-    "pr_number": 55156,
-    "stack": "rails",
-    "priority_themes": ["file_handling", "stability"],
-    "risk_priority": "medium",
-    "selection_note": "attach blob crash fix"
-  },
-  {
-    "repository": "spring-projects/spring-boot",
-    "pr_number": 50456,
-    "stack": "spring-boot",
-    "priority_themes": ["null_safety", "stability"],
-    "risk_priority": "medium",
-    "selection_note": "null check for assert provider"
-  },
-  {
-    "repository": "spring-projects/spring-boot",
-    "pr_number": 50473,
-    "stack": "spring-boot",
-    "priority_themes": ["session", "security", "configuration"],
-    "risk_priority": "high",
-    "selection_note": "session URI config support"
-  },
-  {
-    "repository": "spring-projects/spring-boot",
-    "pr_number": 50446,
-    "stack": "spring-boot",
-    "priority_themes": ["testability", "maintainability"],
-    "risk_priority": "low",
-    "selection_note": "application context assert API"
-  },
-  {
-    "repository": "spring-projects/spring-boot",
-    "pr_number": 50383,
-    "stack": "spring-boot",
-    "priority_themes": ["dependency", "operations"],
-    "risk_priority": "medium",
-    "selection_note": "remove legacy compatibility code"
-  },
-  {
-    "repository": "spring-projects/spring-boot",
-    "pr_number": 50419,
-    "stack": "spring-boot",
-    "priority_themes": ["code_quality", "maintainability"],
-    "risk_priority": "low",
-    "selection_note": "pattern matching polish"
-  },
-  {
-    "repository": "spring-projects/spring-boot",
-    "pr_number": 50273,
-    "stack": "spring-boot",
-    "priority_themes": ["aop", "data_exposure", "security"],
-    "risk_priority": "high",
-    "selection_note": "endpoint exposing internals"
-  },
-  {
-    "repository": "facebook/react",
-    "pr_number": 36558,
+    "repository": "makeplane/plane",
+    "pr_number": 9212,
     "stack": "react",
-    "priority_themes": ["supply_chain", "ci_cd", "security"],
+    "repo_type": "application",
+    "priority_themes": ["idor", "auth", "security"],
     "risk_priority": "high",
-    "selection_note": "artifact attestation"
+    "selection_note": "cross-workspace IDOR in GenericAssetEndpoint allows access to other workspaces' assets"
   },
   {
-    "repository": "facebook/react",
-    "pr_number": 36555,
+    "repository": "makeplane/plane",
+    "pr_number": 9225,
     "stack": "react",
-    "priority_themes": ["release", "operations"],
+    "repo_type": "application",
+    "priority_themes": ["auth", "security"],
+    "risk_priority": "high",
+    "selection_note": "API key auth not rejected for deactivated user accounts — authentication bypass"
+  },
+  {
+    "repository": "makeplane/plane",
+    "pr_number": 9224,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["injection", "security", "data_export"],
+    "risk_priority": "high",
+    "selection_note": "formula injection in XLSX/CSV spreadsheet exports"
+  },
+  {
+    "repository": "makeplane/plane",
+    "pr_number": 9297,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["disclosure", "security", "auth"],
+    "risk_priority": "high",
+    "selection_note": "workspace invite token disclosed via unauthenticated endpoint URL"
+  },
+  {
+    "repository": "makeplane/plane",
+    "pr_number": 9269,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["idor", "security", "validation"],
+    "risk_priority": "high",
+    "selection_note": "issue ID validation not scoped to workspace enables cross-workspace IDOR"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 12769,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["auth", "disclosure", "security"],
+    "risk_priority": "high",
+    "selection_note": "viewer role can disclose existence of shared document URLs"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 12770,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["auth", "data_exposure", "correctness"],
+    "risk_priority": "high",
+    "selection_note": "undefined ctx treated as permission — integration settings exposed to unauthorized users"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 12719,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["auth", "policy", "correctness"],
     "risk_priority": "medium",
-    "selection_note": "CI enablement on maintenance branch"
+    "selection_note": "collection authorization policy incorrectly extended template management to viewers"
   },
   {
-    "repository": "facebook/react",
-    "pr_number": 36516,
+    "repository": "outline/outline",
+    "pr_number": 12804,
     "stack": "react",
-    "priority_themes": ["streaming", "rendering", "correctness"],
-    "risk_priority": "high",
-    "selection_note": "flight stream backpressure fix"
-  },
-  {
-    "repository": "facebook/react",
-    "pr_number": 36482,
-    "stack": "react",
-    "priority_themes": ["performance", "devtools"],
+    "repo_type": "application",
+    "priority_themes": ["auth", "oidc", "correctness"],
     "risk_priority": "medium",
-    "selection_note": "overhead reduction"
+    "selection_note": "OIDC logout missing id_token_hint causing non-spec-compliant logout flow"
   },
   {
-    "repository": "facebook/react",
-    "pr_number": 35890,
+    "repository": "outline/outline",
+    "pr_number": 12834,
     "stack": "react",
-    "priority_themes": ["ssr", "asset_loading", "correctness"],
+    "repo_type": "application",
+    "priority_themes": ["auth", "http_security", "side_effect"],
+    "risk_priority": "medium",
+    "selection_note": "WWW-Authenticate header missing from /mcp 401 responses breaking MCP client compatibility"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 12740,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["correctness", "side_effect", "serialization"],
+    "risk_priority": "medium",
+    "selection_note": "newlines in table cell block fences break markdown round-trip serialization"
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41790,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["path_traversal", "security"],
     "risk_priority": "high",
-    "selection_note": "font preload duplication case"
+    "selection_note": "path traversal CVE (GHSA-m4hv-9p7g-56vm)"
   },
   {
-    "repository": "facebook/react",
-    "pr_number": 35568,
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41803,
     "stack": "react",
-    "priority_themes": ["documentation", "maintainability"],
-    "risk_priority": "low",
-    "selection_note": "docs terminology update"
+    "repo_type": "application",
+    "priority_themes": ["auth", "security", "disclosure"],
+    "risk_priority": "high",
+    "selection_note": "OpenAPI documentation fully accessible without authentication"
   },
   {
-    "repository": "vuejs/core",
-    "pr_number": 14889,
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41827,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["credential_exposure", "security", "side_effect"],
+    "risk_priority": "high",
+    "selection_note": "Redis credentials silently dropped during appsmithctl restore operation"
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41834,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["path_traversal", "security", "validation"],
+    "risk_priority": "high",
+    "selection_note": "path traversal validation absent from widget save endpoint"
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41764,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["auth", "security", "disclosure"],
+    "risk_priority": "high",
+    "selection_note": "App Viewer role can read datasource connection configuration"
+  },
+  {
+    "repository": "calcom/cal.com",
+    "pr_number": 29519,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["error_handling", "side_effect", "api"],
+    "risk_priority": "medium",
+    "selection_note": "unexpected errors silently swallowed in deleteSelected — no feedback to caller"
+  },
+  {
+    "repository": "calcom/cal.com",
+    "pr_number": 29544,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["security", "auth", "password"],
+    "risk_priority": "medium",
+    "selection_note": "password update form allows change without verifying current password on client"
+  },
+  {
+    "repository": "calcom/cal.com",
+    "pr_number": 29561,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["correctness", "side_effect", "di"],
+    "risk_priority": "medium",
+    "selection_note": "direct userRepository instantiation bypasses DI container causing inconsistent transaction scope"
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6171,
     "stack": "vue",
-    "priority_themes": ["runtime", "rendering", "correctness"],
+    "repo_type": "application",
+    "priority_themes": ["security", "mass_assignment", "auth"],
     "risk_priority": "high",
-    "selection_note": "component v-for remove behavior"
+    "selection_note": "onboarding endpoint susceptible to mass assignment — JWT_SECRET overridable via API"
   },
   {
-    "repository": "vuejs/core",
-    "pr_number": 14888,
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6409,
     "stack": "vue",
-    "priority_themes": ["key_management", "rendering"],
+    "repo_type": "application",
+    "priority_themes": ["auth", "idor", "security"],
     "risk_priority": "high",
-    "selection_note": "v-for key preservation"
+    "selection_note": "ownership check absent on user history and private collection endpoints"
   },
   {
-    "repository": "vuejs/core",
-    "pr_number": 14821,
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6413,
     "stack": "vue",
-    "priority_themes": ["ssr", "performance"],
+    "repo_type": "application",
+    "priority_themes": ["security", "validation", "url_parsing"],
     "risk_priority": "medium",
-    "selection_note": "iterable materialization optimization"
+    "selection_note": "SMTP URL validation bypassed via URL normalization edge case in new URL()"
   },
   {
-    "repository": "vuejs/core",
-    "pr_number": 14877,
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6376,
     "stack": "vue",
-    "priority_themes": ["lifecycle", "correctness"],
+    "repo_type": "application",
+    "priority_themes": ["correctness", "side_effect", "data_loss"],
     "risk_priority": "medium",
-    "selection_note": "teleport unmount condition"
+    "selection_note": "collection tree silently overwritten on OpenAPI re-import destroying existing structure"
   },
   {
-    "repository": "vuejs/core",
-    "pr_number": 14865,
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6447,
     "stack": "vue",
-    "priority_themes": ["transition", "keep_alive", "correctness"],
+    "repo_type": "application",
+    "priority_themes": ["correctness", "reactivity", "side_effect"],
     "risk_priority": "medium",
-    "selection_note": "persisted transition hooks"
+    "selection_note": "switching to arrow-function prop source causes stale environment variable resolution"
   },
   {
-    "repository": "vuejs/core",
-    "pr_number": 14861,
-    "stack": "vue",
-    "priority_themes": ["compiler", "memoization", "correctness"],
-    "risk_priority": "medium",
-    "selection_note": "v-for key processing"
-  },
-  {
-    "repository": "sveltejs/svelte",
-    "pr_number": 18278,
-    "stack": "svelte",
-    "priority_themes": ["performance", "runtime"],
-    "risk_priority": "medium",
-    "selection_note": "set membership optimization"
-  },
-  {
-    "repository": "sveltejs/svelte",
-    "pr_number": 18233,
-    "stack": "svelte",
-    "priority_themes": ["compiler", "correctness"],
-    "risk_priority": "medium",
-    "selection_note": "consecutive if optimization"
-  },
-  {
-    "repository": "sveltejs/svelte",
-    "pr_number": 18255,
-    "stack": "svelte",
-    "priority_themes": ["release", "operations"],
-    "risk_priority": "low",
-    "selection_note": "version package update"
-  },
-  {
-    "repository": "sveltejs/svelte",
-    "pr_number": 18311,
-    "stack": "svelte",
-    "priority_themes": ["sandbox", "stability"],
-    "risk_priority": "low",
-    "selection_note": "sandbox printing fix"
-  },
-  {
-    "repository": "sveltejs/svelte",
-    "pr_number": 18307,
-    "stack": "svelte",
-    "priority_themes": ["maintainability", "cleanup"],
-    "risk_priority": "low",
-    "selection_note": "unused property removal"
-  },
-  {
-    "repository": "sveltejs/svelte",
-    "pr_number": 18303,
-    "stack": "svelte",
-    "priority_themes": ["batching", "correctness"],
-    "risk_priority": "medium",
-    "selection_note": "double unlink prevention"
-  },
-  {
-    "repository": "mui/material-ui",
-    "pr_number": 48325,
-    "stack": "react",
-    "priority_themes": ["transitions", "rendering", "correctness"],
+    "repository": "bitwarden/clients",
+    "pr_number": 20848,
+    "stack": "angular",
+    "repo_type": "application",
+    "priority_themes": ["security", "ipc", "side_effect"],
     "risk_priority": "high",
-    "selection_note": "custom Transition component support (18 review comments)"
+    "selection_note": "browser IPC re-injected on every config emission not only on process reload — double injection"
   },
   {
-    "repository": "mui/material-ui",
-    "pr_number": 48591,
-    "stack": "react",
-    "priority_themes": ["correctness", "error_handling"],
+    "repository": "bitwarden/clients",
+    "pr_number": 21237,
+    "stack": "angular",
+    "repo_type": "application",
+    "priority_themes": ["correctness", "type_safety", "security"],
+    "risk_priority": "medium",
+    "selection_note": "CipherResponse/CipherData type confusion in auth path may cause incorrect cipher handling"
+  },
+  {
+    "repository": "bitwarden/clients",
+    "pr_number": 21092,
+    "stack": "angular",
+    "repo_type": "application",
+    "priority_themes": ["security", "ui", "side_effect"],
+    "risk_priority": "medium",
+    "selection_note": "removing warning callout from two-factor settings unintentionally hides security guidance"
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "pr_number": 14481,
+    "stack": "svelte",
+    "repo_type": "application",
+    "priority_themes": ["security", "url_scheme", "validation"],
     "risk_priority": "high",
-    "selection_note": "CircularProgress/LinearProgress runtime error dedup (10 review comments)"
+    "selection_note": "openInWebBrowser allows non-http(s) schemes enabling arbitrary protocol handler execution"
   },
   {
-    "repository": "mui/material-ui",
-    "pr_number": 48616,
-    "stack": "react",
-    "priority_themes": ["types", "code_infra"],
+    "repository": "gitbutlerapp/gitbutler",
+    "pr_number": 14424,
+    "stack": "svelte",
+    "repo_type": "application",
+    "priority_themes": ["correctness", "side_effect", "filesystem"],
     "risk_priority": "medium",
-    "selection_note": "tsgo migration (4 review comments)"
+    "selection_note": "checkout deletes directories when file expected at path — worktree corruption on collision"
   },
   {
-    "repository": "mui/material-ui",
-    "pr_number": 48650,
+    "repository": "storybookjs/storybook",
+    "pr_number": 35090,
     "stack": "react",
-    "priority_themes": ["correctness", "ui_behavior"],
+    "repo_type": "ui-library",
+    "priority_themes": ["security", "shell_injection", "build_tool"],
+    "risk_priority": "high",
+    "selection_note": "package manager input interpolated into shell command without sanitization — RCE risk"
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "pr_number": 35269,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "priority_themes": ["correctness", "api_stability", "side_effect"],
     "risk_priority": "medium",
-    "selection_note": "ButtonBase focus ripple lingering fix (2 review comments)"
+    "selection_note": "ESLint plugin uses unstable internal API path that breaks silently on ESLint version changes"
   },
   {
-    "repository": "mui/material-ui",
-    "pr_number": 48626,
+    "repository": "storybookjs/storybook",
+    "pr_number": 35228,
     "stack": "react",
-    "priority_themes": ["api_correctness", "documentation"],
+    "repo_type": "ui-library",
+    "priority_themes": ["correctness", "angular", "api"],
+    "risk_priority": "medium",
+    "selection_note": "deprecated Angular reflection API used for component type resolution causing incorrect behavior"
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "pr_number": 35214,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "priority_themes": ["correctness", "state", "side_effect"],
+    "risk_priority": "medium",
+    "selection_note": "query loading/error state not propagated to parent leaving UI in stale display"
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "pr_number": 58008,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "priority_themes": ["correctness", "side_effect", "sorting"],
+    "risk_priority": "medium",
+    "selection_note": "defaultSortOrder ignored on responsive columns causing inconsistent initial sort state"
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "pr_number": 57915,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "priority_themes": ["correctness", "css", "side_effect"],
     "risk_priority": "low",
-    "selection_note": "Autocomplete fullWidth prop docs update (2 review comments)"
+    "selection_note": "CSS specificity conflict causes icon visibility regression in Alert component variants"
+  },
+  {
+    "repository": "shadcn-ui/ui",
+    "pr_number": 11022,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "priority_themes": ["security", "cicd", "permissions"],
+    "risk_priority": "medium",
+    "selection_note": "GitHub Actions workflow missing explicit permission scopes — implicit write-all exposes token"
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "pr_number": 19675,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "priority_themes": ["correctness", "controlled_component", "side_effect"],
+    "risk_priority": "medium",
+    "selection_note": "tour component closes but inner current prop desync causes wrong step on next open"
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "pr_number": 24385,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "priority_themes": ["correctness", "validation", "side_effect"],
+    "risk_priority": "low",
+    "selection_note": "switch component fires spurious invalid-value warning for null/undefined breaking null-coercion patterns"
+  },
+  {
+    "repository": "vuetifyjs/vuetify",
+    "pr_number": 22788,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "priority_themes": ["correctness", "side_effect", "breaking_change"],
+    "risk_priority": "medium",
+    "selection_note": "VPagination last-page button hidden by default — breaks VDataTableFooter existing UI behavior"
   }
 ]

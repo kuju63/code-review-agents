@@ -1,0 +1,2179 @@
+[
+  {
+    "repository": "makeplane/plane",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 9191,
+    "title": "fix: bump npm deps to resolve Dependabot advisories",
+    "merged_at": "2026-06-01T13:07:35Z",
+    "security_score": 4.333,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.118,
+    "total_score": 8.549,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟠 Major_  <details> <summary>🧩 Analysis chain</summary>  🌐 Web query:  `Do CVE-2026-44494, CVE-2026-44492, CVE-2026-44490, and CVE-2026-44489 exist for axios, and does axios ve",
+      "## Pull request overview  This PR resolves 8 Dependabot npm security alerts by updating dependency versions in the workspace catalog/overrides and regenerating `pnpm-lock.yaml` so the patched versions",
+      "**Actionable comments posted: 1**  <details> <summary>🧹 Nitpick comments (1)</summary><blockquote>  <details> <summary>pnpm-workspace.yaml (1)</summary><blockquote>  `202-202`: **CVE fixes in pnpm-wor"
+    ]
+  },
+  {
+    "repository": "makeplane/plane",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 9212,
+    "title": "fix(api): enforce workspace membership on GenericAssetEndpoint",
+    "merged_at": "2026-06-04T13:19:40Z",
+    "security_score": 3.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.0,
+    "total_score": 7.5,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  This PR fixes a cross-workspace IDOR in the public REST `GenericAssetEndpoint` (`/api/v1/workspaces/<slug>/assets/`) by enforcing active workspace membership at the DRF permi"
+    ]
+  },
+  {
+    "repository": "makeplane/plane",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 9225,
+    "title": "fix(api): reject API key auth for deactivated user accounts",
+    "merged_at": "2026-06-10T06:06:46Z",
+    "security_score": 3.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 6.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  This PR closes a critical authentication bypass in the external API key auth flow by ensuring API keys are rejected when the owning user account has been deactivated (`user.i"
+    ]
+  },
+  {
+    "repository": "makeplane/plane",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 9224,
+    "title": "fix(api): sanitize spreadsheet exports against formula injection",
+    "merged_at": "2026-06-10T06:02:13Z",
+    "security_score": 3.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 6.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  This PR mitigates spreadsheet formula injection in XLSX exports by applying the existing CSV sanitization logic (prefixing potentially-formula-leading strings with `'`) to al"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12769,
+    "title": "fix: Viewer can disclose existing shared document",
+    "merged_at": "2026-06-21T12:00:17Z",
+    "security_score": 2.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.0,
+    "total_score": 5.5,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  This PR closes an authorization gap in the `shares.create` API so that users without share permissions (e.g., viewers) cannot use the endpoint to discover and retrieve an exi"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41827,
+    "title": "fix: preserve Redis credentials during appsmithctl restore",
+    "merged_at": "2026-05-20T06:44:07Z",
+    "security_score": 2.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.125,
+    "total_score": 5.375,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "  <details> <summary>🧹 Nitpick comments (1)</summary><blockquote>  <details> <summary>app/client/packages/rts/src/ctl/backup/backup.test.ts (1)</summary><blockquote>  `118-126`: _⚡ Quick win_  **Add r"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12770,
+    "title": "Remove settings from integration presenter",
+    "merged_at": "2026-06-21T19:06:10Z",
+    "security_score": 2.5,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 5.0,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "`canViewSettings` currently treats an undefined `ctx` as permission to expose `integration.settings` (`!ctx || ...`). Since `DeliverWebhookTask` calls `presentIntegration(undefined, model)`, this will",
+      "## Pull request overview  This pull request updates the integration presenter so that `settings` are no longer broadly exposed to API clients, while still allowing settings through for `IntegrationTyp"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12740,
+    "title": "fix: Newlines in block fences in table cells",
+    "merged_at": "2026-06-18T22:21:50Z",
+    "security_score": 1.0,
+    "sideeffect_score": 2.0,
+    "design_penalty": 0.0,
+    "total_score": 5.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  This PR fixes Markdown export/import round-tripping for tables that contain multi-line block content (notably notice blocks) by ensuring table cells are serialized as a singl"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41790,
+    "title": "fix(security): Path Traversal  (GHSA-m4hv-9p7g-56vm)",
+    "merged_at": "2026-05-12T18:22:10Z",
+    "security_score": 1.5,
+    "sideeffect_score": 1.25,
+    "design_penalty": 0.133,
+    "total_score": 4.742,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash # Confirm how readFiles / deleteDirectory enumerate paths unde",
+      "Verified this concern against the codebase. The symlink scenario is not practically exploitable here, and switching to `toRealPath()` would introduce functional issues. No change needed for this PR.  ",
+      "`@subrata71`, thanks for the thorough analysis — all three arguments hold up:  1. **JGit `core.symlinks=false`** is the decisive architectural constraint. Since JGit materializes symlink entries as pl"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41854,
+    "title": "chore: modified test-pw command to avoid failures",
+    "merged_at": "2026-05-29T16:15:35Z",
+    "security_score": 1.833,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.033,
+    "total_score": 4.383,
+    "human_comment_count": 6,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🔴 Critical_ | _⚡ Quick win_  **Shell injection via untrusted payload expansion.**  `${{ ... .named.appsmith_image }}` is interpolated directly into the `run` script, so an atta",
+      "`@sondermanish` — the validation in `playwright-e2e.yml` doesn't help here, because the injection happens **before** that file is ever reached.  Here's the execution order:  1. GitHub Actions textuall",
+      "<details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash # Check current state of the workflow file on the PR branch cat .github/workflows/pw-test-command.yml  echo \"---"
+    ]
+  },
+  {
+    "repository": "makeplane/plane",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 9297,
+    "title": "[WEB-7854] fix: prevent workspace invite token disclosure and invite hijack",
+    "merged_at": "2026-06-23T12:17:16Z",
+    "security_score": 2.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.045,
+    "total_score": 3.955,
+    "human_comment_count": 5,
+    "sample_comments": [
+      "_🔒 Security & Privacy_ | _🟠 Major_ | _⚡ Quick win_  **Trim PII from the unauthenticated invite payload.**  This public serializer is used by an `AllowAny` GET endpoint, so `email` and `created_by` sti",
+      "_🔒 Security & Privacy_ | _🟠 Major_ | _⚡ Quick win_  **Authenticate before validating the invite token.**  Right now unauthenticated callers get `403` for missing/invalid tokens but `401` for a valid t",
+      "_🗄️ Data Integrity & Integration_ | _🟠 Major_ | _⚡ Quick win_  **Use the authenticated user after the email-match check.**  The new check authorizes `request.user`, but the acceptance path later re-fe"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41848,
+    "title": "docs(security): direct vulnerability reports to GitHub security advisories",
+    "merged_at": "2026-05-26T22:13:05Z",
+    "security_score": 2.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.167,
+    "total_score": 3.833,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  **Avoid ambiguous trailing punctuation in the advisory URL.**  Line 6 places a period directly after the URL, which can cause broken links in some aut",
+      "**Actionable comments posted: 1**  <details> <summary>🤖 Prompt for all review comments with AI agents</summary>  ``` Verify each finding against current code. Fix only still-valid issues, skip the res"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41803,
+    "title": "fix(security): Unauthenticated Access to Full OpenAPI Documentation (GHSA-v6jh-fx3m-7xhw)",
+    "merged_at": "2026-05-13T18:00:55Z",
+    "security_score": 1.75,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 3.5,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🔴 Critical_ | _⚡ Quick win_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash # Description: Search for test property overrides that re-e",
+      "_⚠️ Potential issue_ | _🔴 Critical_ | _⚡ Quick win_  **Add test property overrides to enable springdoc endpoints.**  The test expects endpoints `/v3/docs` and `/v3/swagger-ui.html` to be registered an",
+      "I would argue the fixes in this file are all that we need to address the information disclosure issue. Just leave the generation and endpoints off by default. Having docs that are authenticated is not"
+    ]
+  },
+  {
+    "repository": "shadcn-ui/ui",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 10949,
+    "title": "chore(release): version packages",
+    "merged_at": "2026-06-26T07:15:29Z",
+    "security_score": 1.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.0,
+    "total_score": 3.5,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Review: `chore(release): version packages` — shadcn@4.11.1  This is a standard Changesets-generated release PR bumping `shadcn` from `4.11.0` → `4.11.1`. Everything looks correct and consistent. He"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41913,
+    "title": "fix(deps): batch security update — 15 vulnerabilities",
+    "merged_at": "2026-06-22T10:43:08Z",
+    "security_score": 1.5,
+    "sideeffect_score": 0.25,
+    "design_penalty": 0.0,
+    "total_score": 3.375,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟠 Major_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash set -euo pipefail  echo \"== RTS package dependency versions ==\" python - <<'PY",
+      "Valid catch — thanks for flagging.  The mismatch is real but not actionable right now:  - `@types/nodemailer` tops out at **8.0.1** on npm — there is no v9 published yet, and nodemailer 9.x does not b",
+      "`@subrata71`, that's a solid justification — all three points hold up:  - No `@types/nodemailer@9` on npm yet, so updating the devDependency is simply not possible right now. - The `as any` cast is pr"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12719,
+    "title": "fix: Allow template management to be extended to viewers",
+    "merged_at": "2026-06-17T02:29:09Z",
+    "security_score": 1.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.167,
+    "total_score": 3.333,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  This PR updates the collection authorization policy so that **viewers can be granted template management capabilities** via the existing `templateManagement` setting, without"
+    ]
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 33222,
+    "title": "test(MCP Client Tool Node): Stabilize runtime mocks and use vi APIs (no-changelog)",
+    "merged_at": "2026-06-29T12:30:34Z",
+    "security_score": 1.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.167,
+    "total_score": 3.333,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 6 files  <details> <summary>Architecture diagram</summary>  ```mermaid sequenceDiagram     participant Test as runtime.test.ts     participant Vitest as vi (Vitest)     part"
+    ]
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 33095,
+    "title": "fix(core): Ground WhatsApp Trigger verify-token guidance and add regression evals (no-changelog)",
+    "merged_at": "2026-06-29T07:46:14Z",
+    "security_score": 1.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.167,
+    "total_score": 3.333,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 7 files  <details> <summary>Architecture diagram</summary>  ```mermaid sequenceDiagram     participant User     participant AI as Instance AI Agent     participant SystemPro"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41889,
+    "title": "ci: distribute SUT image via GHCR instead of Actions cache",
+    "merged_at": "2026-06-11T15:19:34Z",
+    "security_score": 1.625,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.19,
+    "total_score": 3.06,
+    "human_comment_count": 8,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  **Template injection warning mitigated by job gate, but consider using GITHUB_ACTOR env var.**  The static analysis tool flagged line 130 for potentia",
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  **Consistent template injection pattern across 5 workflows: use GITHUB_ACTOR env var.**  All five workflows use `${{ github.actor }}` in `docker login",
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  **Template injection warning mitigated by job gate, but consider using GITHUB_ACTOR env var.**  Same pattern as build-docker-image.yml: line 133's `${"
+    ]
+  },
+  {
+    "repository": "makeplane/plane",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 9269,
+    "title": "[WEB-7727] fix(security): scope issue ID validation to workspace/project in bulk endpoints",
+    "merged_at": "2026-06-20T11:37:43Z",
+    "security_score": 1.5,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 3.0,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "  > [!CAUTION] > Some comments are outside the diff and can’t be posted inline due to platform limitations. >  >  >  > <details> > <summary>⚠️ Outside diff range comments (2)</summary><blockquote> >  "
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41834,
+    "title": "fix(security): add path traversal validation to widget save path (GHSA-r553-q33m-v7pf)",
+    "merged_at": "2026-05-26T19:01:39Z",
+    "security_score": 0.8,
+    "sideeffect_score": 0.8,
+    "design_penalty": 0.056,
+    "total_score": 2.744,
+    "human_comment_count": 5,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  **Pre-clean the traversal artifact and tighten the expected exception type.**  Two small hygiene gaps in this regression test:  1. `Files.exists(Path.",
+      "The regression test’s “no file created outside git root” assertion is currently checking a hard-coded absolute path (`/tmp/ghsa-r553-traversal-test.json`). Given the git root is `localTestDirectoryPat",
+      "`assertThrows(RuntimeException.class, …)` is too broad for this security regression test: it can pass due to unrelated failures (e.g., null pointers, JSON shape issues) and still give a false sense of"
+    ]
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 6376,
+    "title": "fix(common): preserve collection tree on OpenAPI re-import",
+    "merged_at": "2026-05-28T10:53:13Z",
+    "security_score": 1.353,
+    "sideeffect_score": 0.059,
+    "design_penalty": 0.1,
+    "total_score": 2.694,
+    "human_comment_count": 17,
+    "sample_comments": [
+      "This changes the request semantics on round-trip. If a collided request explicitly sets `authType: \"none\"` or uses its own auth scheme, re-importing it from `x-hoppscotch-dropped-requests` will now ma",
+      "`sanitizeRequestForDroppedExtension` leaves `request.body` untouched through the spread, so a dropped multipart request can serialize inactive form fields (and any values/files they contain) even thou",
+      "<a href=\"#\"><img alt=\"P1\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p1.svg?v=9\" align=\"top\"></a> <a href=\"#\"><img alt=\"security\" src=\"https://greptile-static-assets.s3.amazonaws.com/"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41769,
+    "title": "fix: replace generic \"Response not valid\" with actionable error messages for better observability",
+    "merged_at": "2026-05-06T10:05:12Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.154,
+    "total_score": 2.596,
+    "human_comment_count": 6,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_  **Avoid logging raw URL/path in error logs.**  At Line 229, this can leak sensitive values (tokens/PII) into centralized logs. Prefer action-level met",
+      "`@subrata71`, good call — the correction is accurate. `actionExecutionRequest.getActionId()` is indeed populated by `ActionExecutionSolutionCEImpl` before the result is returned, not by the plugin lay",
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  **Include throwable in WARN log to preserve stack trace**  At Line 886, the warn log currently emits only `error.getMessage()`. In production (where D"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12774,
+    "title": "fix: Remove quote flattening on markdown serialization",
+    "merged_at": "2026-06-21T22:36:01Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.2,
+    "total_score": 2.55,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "The lookahead used to decide when to escape `[` is too restrictive: it fails to match valid inline links/images when the link text contains nested brackets (e.g. `[a[b]c](url)`), so those cases would ",
+      "## Pull request overview  This PR addresses issue #12773 by ensuring Markdown serialization used for document retrieval/patching preserves the document’s original characters (notably smart quotes) and"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41850,
+    "title": "fix(docker): build MongoDB database tools from source with patched x/crypto and x/net",
+    "merged_at": "2026-05-27T15:19:50Z",
+    "security_score": 1.333,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.278,
+    "total_score": 2.389,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟠 Major_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash # Verify Go 1.26.3 exists in Docker Hub curl -sS https://hub.docker.com/v2/rep"
+    ]
+  },
+  {
+    "repository": "makeplane/plane",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 9292,
+    "title": "[WEB-7813] fix: prevent ORM order_by injection in issue and other endpoints",
+    "merged_at": "2026-06-23T12:32:52Z",
+    "security_score": 1.25,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.206,
+    "total_score": 2.294,
+    "human_comment_count": 8,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  **Harden sanitizer output normalization for repeated `-` prefixes.**  This call relies on `sanitize_order_by`, which currently validates with `lstrip(",
+      "_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash # Verify sanitizer behavior and impacted callsites. rg -n 'def",
+      "Fixed in commit c0aa685b4d — same root fix. `sanitize_order_by` now: (1) checks `value.startswith(\"-\")` instead of `lstrip`, (2) takes only `value[1:]` as the bare field, (3) rejects if `bare.startswi"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12834,
+    "title": "fix: Add WWW-Authenticate header to /mcp 401 responses",
+    "merged_at": "2026-06-26T01:21:16Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.25,
+    "design_penalty": 0.083,
+    "total_score": 2.292,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "The new 401 handler always sets (and therefore can overwrite) the `WWW-Authenticate` header if one is already present. This contradicts the PR note that the middleware \"only adds a header to 401s that",
+      "## Pull request overview  Adds `WWW-Authenticate` discovery information to unauthorized `/mcp` responses so MCP/OAuth clients can bootstrap OAuth discovery via the protected-resource metadata document"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41764,
+    "title": "fix(security): Appsmith App Viewer datasource configuration leak via import helper (GHSA-93mf-9h52-gfxp)",
+    "merged_at": "2026-04-27T14:10:37Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.25,
+    "design_penalty": 0.143,
+    "total_score": 2.232,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "This method is **not** internal-only — it feeds directly into the controller endpoint `GET /api/v1/applications/import/{workspaceId}/datasources` (see `ApplicationControllerCE.getUnConfiguredDatasourc",
+      "  <details> <summary>🧹 Nitpick comments (1)</summary><blockquote>  <details> <summary>app/server/appsmith-server/src/test/java/com/appsmith/server/datasources/importable/DatasourceImportableServiceCEI"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12804,
+    "title": "Add spec-compliant OIDC logout",
+    "merged_at": "2026-06-24T21:54:14Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.167,
+    "design_penalty": 0.111,
+    "total_score": 2.139,
+    "human_comment_count": 6,
+    "sample_comments": [
+      "`oidcIdToken` is only read by the logout endpoint, but without an explicit `path` it will default to `/` (same as other Koa cookies in this codebase) and be sent on every request. That unnecessarily i",
+      "`/auth/oidc.logout` is currently set as a relative URL. In cloud hosted mode with a custom team domain, the OIDC callback (and therefore the `oidcIdToken` cookie) lives on the apex (env.URL) per `serv",
+      "The logout test currently only checks that `post_logout_redirect_uri` is non-null. Since the redirect URI is part of the spec-compliant logout request, it’s worth asserting the exact value to prevent "
+    ]
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 6409,
+    "title": "fix(backend): enforce ownership on user history and private User fields",
+    "merged_at": "2026-06-10T12:45:11Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.2,
+    "design_penalty": 0.167,
+    "total_score": 2.133,
+    "human_comment_count": 5,
+    "sample_comments": [
+      "<a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=9\" align=\"top\"></a> **Ownership denial test doesn't verify the scoped `where` clause**  The test proves t",
+      "<!-- cubic:v=b1248ca4-bd21-4b08-9d57-d54eec6e3e5e --> <!-- cubic:review-run=39f870e5-7653-4585-9ee0-8e8743bfcd33 --> <!-- metadata:{\"confidence\":8} --> P1: `User.settings` uses `@GqlUser()` without an",
+      "This owner check now depends on `@GqlUser()`, but the field still isn’t guarded. If this `User` resolver runs under a path that didn’t already execute `GqlAuthGuard`, `requestingUser` is just `undefin"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12749,
+    "title": "feat: Allow Passkey logins on desktop",
+    "merged_at": "2026-06-19T15:16:01Z",
+    "security_score": 0.75,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.143,
+    "total_score": 2.107,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "Hidden inputs are appended on every passkey attempt, but they aren’t cleared before re-populating. If the user cancels the WebAuthn prompt (or an error occurs) and retries, the form can end up with du",
+      "New `/auth/passkey` entrypoint behavior (redirecting to `/?method=passkey&client=...`) is not covered by tests. Since this file already has unit coverage (`passkeys.test.ts` for `getExpectedOrigin`), ",
+      "## Pull request overview  Enables passkey sign-in for the desktop app by redirecting the user into the system browser to complete the WebAuthn ceremony, then returning to the desktop client via the ex"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41765,
+    "title": "fix(helm): use documented image values instead of undocumented _image key",
+    "merged_at": "2026-04-29T21:55:10Z",
+    "security_score": 0.667,
+    "sideeffect_score": 0.667,
+    "design_penalty": 0.25,
+    "total_score": 2.083,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟠 Major_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash # Verify mixed-source behavior for image resolution. # Expected (if per-key me",
+      "**Actionable comments posted: 1**  <details> <summary>🧹 Nitpick comments (1)</summary><blockquote>  <details> <summary>deploy/helm/tests/image_test.yaml (1)</summary><blockquote>  `38-47`: **Add one m"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12836,
+    "title": "fix: Make client_name optional on /oauth/register",
+    "merged_at": "2026-06-26T00:49:41Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  This PR updates Outline’s OAuth Dynamic Client Registration implementation to align with RFC 7591 by allowing `/oauth/register` requests that omit `client_name`, while still "
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12824,
+    "title": "fix: Settings appear behind sidebar",
+    "merged_at": "2026-06-25T01:53:20Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  Adjusts layout behavior so settings (and shared) pages don’t calculate main content offset as if the left sidebar were in its collapsed state, preventing settings content fro"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41861,
+    "title": "chore: fetch chat email hash from Cloud Services instead of has",
+    "merged_at": "2026-06-04T06:44:25Z",
+    "security_score": 0.25,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_  **Cache the hash by email state, not only user id.**  The cached value is derived from `user.getEmail()` (Lines 63-66), but the cache key only uses `u",
+      "  Since email is immutable through every supported application flow, the \"stale hash after an email change\" scenario the finding describes cannot occur.\r ",
+      "`@salevine`, understood — if email is immutable across all supported flows, the stale-hash scenario can't arise and the current `user.id`-only cache key is correct. Thanks for the clarification.  --- "
+    ]
+  },
+  {
+    "repository": "bitwarden/clients",
+    "repo_type": "application",
+    "stack": "angular",
+    "pr_number": 21237,
+    "title": "[PM-38985] Fix CipherResponse/CipherData type confusion in archive and emergency access services",
+    "merged_at": "2026-06-26T14:22:20Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "Auth file change LGTM! "
+    ]
+  },
+  {
+    "repository": "bitwarden/clients",
+    "repo_type": "application",
+    "stack": "angular",
+    "pr_number": 19101,
+    "title": "[BEEEP|PM-32521] Remove compare key hash and move to proof of decryption",
+    "merged_at": "2026-02-25T16:02:04Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "👍 Auth changes look good! Thank you"
+    ]
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 33213,
+    "title": "feat: Update AI Assistant input disclaimer copy",
+    "merged_at": "2026-06-29T11:13:48Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 1 file  <sub>[Re-trigger cubic](https://www.cubic.dev/action/re-review/pr/n8n-io/n8n/33213/ai_pr_review_1782728885708_2217c54a-e10f-4c58-ac80-9d10fe0bc6ed?returnTo=https%3A%"
+    ]
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 33178,
+    "title": "fix(ai-builder): Send eval build traces to a separate LangSmith project (no-changelog)",
+    "merged_at": "2026-06-29T09:41:09Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 1 file  <sub>[Re-trigger cubic](https://www.cubic.dev/action/re-review/pr/n8n-io/n8n/33178/ai_pr_review_1782664250838_1f0046bb-83b1-418a-9b02-ded5ac327d52?returnTo=https%3A%"
+    ]
+  },
+  {
+    "repository": "makeplane/plane",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 9138,
+    "title": "Add docker pytest runner; fix bugs the suite surfaced",
+    "merged_at": "2026-05-25T19:51:37Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  Adds a Docker-based runner for the `apps/api` pytest suite and fixes product/test issues uncovered by running the suite (including a token access boundary fix, cycle create/u"
+    ]
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 22304,
+    "title": "chore(docs): exclude code blocks and icon frontmatter from Crowdin translation",
+    "merged_at": "2026-06-29T13:03:32Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 1 file  <sub>You’re at about 92% of the monthly reviewed-line limit. You may want to [disable incremental reviews](https://www.cubic.dev/ai-review) to conserve quota. Review"
+    ]
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 22300,
+    "title": "microsoft webhook ttl fix",
+    "merged_at": "2026-06-29T12:39:08Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 3 files  <sub>You’re at about 92% of the monthly reviewed-line limit. You may want to [disable incremental reviews](https://www.cubic.dev/ai-review) to conserve quota. Revie"
+    ]
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 22292,
+    "title": "fix: prevent crash when leaving dashboard edit mode with side panel open",
+    "merged_at": "2026-06-29T12:14:42Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 1 file  <sub>You’re at about 92% of the monthly reviewed-line limit. You may want to [disable incremental reviews](https://www.cubic.dev/ai-review) to conserve quota. Review"
+    ]
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 22233,
+    "title": "feat(helm): add nodeSelector, tolerations and DNS overrides to server and worker",
+    "merged_at": "2026-06-29T11:00:42Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 4 files  <sub>[Re-trigger cubic](https://www.cubic.dev/action/re-review/pr/twentyhq/twenty/22233/ai_pr_review_1782495784603_3a488eb2-3b68-46d1-b57e-4f9312d0a8bf?returnTo=htt"
+    ]
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 22284,
+    "title": "fix(ai-tools): make navigate_app tool schema a valid object root for direct model binding",
+    "merged_at": "2026-06-29T09:03:17Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 2 files  <sub>You’re at about 91% of the monthly reviewed-line limit. You may want to [disable incremental reviews](https://www.cubic.dev/ai-review) to conserve quota. Revie"
+    ]
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 22266,
+    "title": "fix(website): bump @opennextjs/cloudflare to 1.20.0 (R2 deploy on Node 24)",
+    "merged_at": "2026-06-28T16:18:31Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 2 files  <sub>You’re at about 90% of the monthly reviewed-line limit. You may want to [disable incremental reviews](https://www.cubic.dev/ai-review) to conserve quota. Revie"
+    ]
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 22262,
+    "title": "fix(website): config-only Crowdin pull to match short-code catalogs",
+    "merged_at": "2026-06-28T12:43:37Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 1 file  <sub>You’re at about 90% of the monthly reviewed-line limit. You may want to [disable incremental reviews](https://www.cubic.dev/ai-review) to conserve quota. Review"
+    ]
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 22257,
+    "title": "feat(website): ship all documentation locales (multi-locale site)",
+    "merged_at": "2026-06-28T09:40:00Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 56 files  <sub>You’re at about 90% of the monthly reviewed-line limit. You may want to [disable incremental reviews](https://www.cubic.dev/ai-review) to conserve quota. Revi"
+    ]
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 22245,
+    "title": "ci(preview-env): run preview environments on free ci-public Actions",
+    "merged_at": "2026-06-27T09:14:59Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 1 file  <sub>You’re at about 90% of the monthly reviewed-line limit. You may want to [disable incremental reviews](https://www.cubic.dev/ai-review) to conserve quota. Review"
+    ]
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 22241,
+    "title": "feat(website): menu adapts to the section beneath it",
+    "merged_at": "2026-06-27T07:58:50Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 29 files  <sub>[Re-trigger cubic](https://www.cubic.dev/action/re-review/pr/twentyhq/twenty/22241/ai_pr_review_1782543405904_b5c956ec-b464-492f-9095-7b846b1a3478?returnTo=ht"
+    ]
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "repo_type": "application",
+    "stack": "svelte",
+    "pr_number": 14493,
+    "title": "Remove unused feature flags `undo` and `rules`",
+    "merged_at": "2026-06-28T08:08:19Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 2.0,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  Removes the unused `undo` and `rules` feature flags across the Rust settings layer, Tauri menu wiring, desktop telemetry context, and generated SDK typings, including automat"
+    ]
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 33024,
+    "title": "ci: Record git provenance metadata on eval experiments (no-changelog)",
+    "merged_at": "2026-06-29T09:41:09Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.083,
+    "total_score": 1.917,
+    "human_comment_count": 5,
+    "sample_comments": [
+      "## zizmor /   unpinned action reference: action is not pinned to a hash (required by blanket policy)  [Show more details](https://github.com/n8n-io/n8n/security/code-scanning/1000)",
+      "## zizmor /   unpinned action reference: action is not pinned to a hash (required by blanket policy)  [Show more details](https://github.com/n8n-io/n8n/security/code-scanning/1001)",
+      "## zizmor /   unpinned action reference: action is not pinned to a hash (required by blanket policy)  [Show more details](https://github.com/n8n-io/n8n/security/code-scanning/1002)"
+    ]
+  },
+  {
+    "repository": "bitwarden/clients",
+    "repo_type": "application",
+    "stack": "angular",
+    "pr_number": 20848,
+    "title": "[PM-37932] Recover browser IPC after process reload",
+    "merged_at": "2026-06-08T09:27:58Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.167,
+    "total_score": 1.833,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "⚠️ **IMPORTANT**: Re-injection runs on every config emission, not only on process reload.  <details> <summary>Details and fix</summary>  `getFeatureFlag$` is implemented as `serverConfig$.pipe(map(..."
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12817,
+    "title": "fix: \"User verification was required\" during passkey signin",
+    "merged_at": "2026-06-24T21:53:56Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.25,
+    "total_score": 1.75,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  This PR fixes passkey registration/authentication verification failures caused by requiring user verification (UV) even though the generated WebAuthn options request UV as `\""
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12765,
+    "title": "Show \"Signing in\" screen for desktop-forced passkey login",
+    "merged_at": "2026-06-21T01:44:44Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.25,
+    "total_score": 1.75,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  Updates the web login flow to display the existing desktop-style “Signing in…” interstitial when the desktop app forces a passkey login in the system browser, keeping the pas"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12717,
+    "title": "fix(mcp): Documents shared directly with user not accessible through list tool",
+    "merged_at": "2026-06-18T00:29:17Z",
+    "security_score": 0.5,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.0,
+    "total_score": 1.75,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "Switching the \"no query\" path to `searchForUser` changes the filtering semantics compared to the previous `Document.findAll` default scope. `searchForUser` returns `Document.withMembershipScope(..., {",
+      "## Pull request overview  This PR fixes MCP `list_documents` so it can enumerate documents that are shared directly with a user (or via group membership), aligning the “recent documents” listing behav"
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41926,
+    "title": "ci(helm): build chart dependencies before unittest",
+    "merged_at": "2026-06-26T21:46:00Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.25,
+    "total_score": 1.75,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "  <details> <summary>🧹 Nitpick comments (2)</summary><blockquote>  <details> <summary>.github/workflows/helm-unittest.yml (2)</summary><blockquote>  `29-29`: _🔒 Security & Privacy_ | _🔵 Trivial_ | _⚡ "
+    ]
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 41806,
+    "title": "perf: removed extra entry from db argument",
+    "merged_at": "2026-05-13T11:35:13Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.25,
+    "total_score": 1.75,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "  <details> <summary>🧹 Nitpick comments (2)</summary><blockquote>  <details> <summary>app/server/appsmith-server/src/main/java/com/appsmith/server/newactions/importable/NewActionImportableServiceCEImp"
+    ]
+  },
+  {
+    "repository": "shadcn-ui/ui",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 11022,
+    "title": "feat: @shadcn/react",
+    "merged_at": "2026-06-26T17:19:31Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.25,
+    "total_score": 1.75,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "## CodeQL / Workflow does not contain permissions  Actions job or workflow does not limit the permissions of the GITHUB_TOKEN. Consider setting an explicit permissions block, using the following as a ",
+      "## CodeQL / Workflow does not contain permissions  Actions job or workflow does not limit the permissions of the GITHUB_TOKEN. Consider setting an explicit permissions block, using the following as a "
+    ]
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 33200,
+    "title": "test(core): Re-land webhook reconciliation e2e with sqlite-safe skip guard (no-changelog)",
+    "merged_at": "2026-06-29T13:56:38Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.25,
+    "total_score": 1.75,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 1 file  <details> <summary>Architecture diagram</summary>  ```mermaid sequenceDiagram     participant Test as Test Script     participant n8nContainer as n8nContainer Fixtur"
+    ]
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 33223,
+    "title": "ci: Comment out schedules from release workflows",
+    "merged_at": "2026-06-29T12:39:55Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.25,
+    "total_score": 1.75,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 2 files  <details> <summary>Architecture diagram</summary>  ```mermaid sequenceDiagram     participant Scheduler as GitHub Scheduled Trigger     participant Workflow1 as Min"
+    ]
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 33135,
+    "title": "fix(Google Vertex Chat Model Node): Support newer Gemini models and EU/US data residency",
+    "merged_at": "2026-06-29T11:47:49Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.25,
+    "total_score": 1.75,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 8 files  <details> <summary>Architecture diagram</summary>  ```mermaid sequenceDiagram     participant UI as Workflow Editor UI     participant Node as Vertex Chat/Embedding"
+    ]
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 32860,
+    "title": "fix: Map sizing-matrix run-reports to cells via spec-file path (no-changelog)",
+    "merged_at": "2026-06-29T10:58:29Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.25,
+    "total_score": 1.75,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 8 files  <details> <summary>Architecture diagram</summary>  ```mermaid sequenceDiagram     participant FS as Artifact Filesystem     participant Extract as extractInlineRunR"
+    ]
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 33131,
+    "title": "fix(core): OpenAI and Anthropic custom header credentials causing inconsistent behaviours",
+    "merged_at": "2026-06-29T09:44:32Z",
+    "security_score": 1.0,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.25,
+    "total_score": 1.75,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "**No issues found** across 7 files  <details> <summary>Architecture diagram</summary>  ```mermaid sequenceDiagram     participant UI as Node Editor (UI)     participant Helper as CredentialsHelper    "
+    ]
+  },
+  {
+    "repository": "makeplane/plane",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 9304,
+    "title": "[WEB-7787] fix(auth): restore activation flow and narrow deactivation guard",
+    "merged_at": "2026-06-24T09:10:24Z",
+    "security_score": 0.75,
+    "sideeffect_score": 0.25,
+    "design_penalty": 0.233,
+    "total_score": 1.642,
+    "human_comment_count": 8,
+    "sample_comments": [
+      "_🩺 Stability & Availability_ | _🟠 Major_ | _⚡ Quick win_  **Persist activation before enqueueing the email.**  `user_activation_email.delay(...)` runs before the activation is saved. If enqueueing fai",
+      "_🔒 Security & Privacy_ | _🟠 Major_ | _🏗️ Heavy lift_  **Don’t use `last_login_time` as the only deactivation discriminator.**  This treats every inactive never-logged-in user as provisioned and reacti",
+      "<details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash # Find the deactivation logic in the user views rg -n \"last_logout_time\" apps/api/plane/app/views/user/ -C3  ech"
+    ]
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 6447,
+    "title": "fix(common): resolve environment variables in inherited collection headers",
+    "merged_at": "2026-06-24T17:22:35Z",
+    "security_score": 0.545,
+    "sideeffect_score": 0.455,
+    "design_penalty": 0.133,
+    "total_score": 1.639,
+    "human_comment_count": 22,
+    "sample_comments": [
+      "Switching from the reactive object source to `() => props.modelValue` means this no longer reruns when nested auth/body fields are edited in place, so the computed auth/body preview can go stale until",
+      "<!-- cubic:v=dce3db65-7f20-4c1c-9db5-7b401a98c7b1 --> <!-- cubic:review-run=314bebe1-ffea-4f69-ad68-1e5bc7da6c38 --> <!-- metadata:{\"confidence\":9} --> P1: Changing the watch source from `props.modelV",
+      "This async watcher can race on rapid request/env changes (multiple runs in-flight). A slower earlier run can resolve last and overwrite `computedHeaders` with stale data. Consider using the watcher cl"
+    ]
+  },
+  {
+    "repository": "makeplane/plane",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 9163,
+    "title": "fix: harden webhook/link/OAuth-avatar SSRF (advisory clusters A/B/C/E)",
+    "merged_at": "2026-05-30T18:42:24Z",
+    "security_score": 0.867,
+    "sideeffect_score": 0.067,
+    "design_penalty": 0.196,
+    "total_score": 1.638,
+    "human_comment_count": 15,
+    "sample_comments": [
+      "`_split_target()` parses the URL but drops any embedded credentials (e.g. `https://user:pass@example.com/hook`). Since `_request_to_ip()` reconstructs the request URL without userinfo, `requests` will",
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash set -euo pipefail  # 1) Inspect ip_address.py around the repor",
+      "_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash set -euo pipefail  # Locate the target file ls -la apps/api/pl"
+    ]
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 6171,
+    "title": "fix(security): prevent mass assignment in onboarding",
+    "merged_at": "2026-05-07T11:46:20Z",
+    "security_score": 0.71,
+    "sideeffect_score": 0.161,
+    "design_penalty": 0.05,
+    "total_score": 1.611,
+    "human_comment_count": 31,
+    "sample_comments": [
+      "Can we add a regression test around this path that submits `JWT_SECRET` / `SESSION_SECRET` and asserts they neither persist nor return success? This fix is intentionally layered, and a test here would",
+      "<a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=7\" align=\"top\"></a> **`forbidNonWhitelisted` never fires — global pipe strips first**  NestJS runs global",
+      "Add unit tests for the new onboarding allowlist filtering to ensure only keys in `ONBOARDING_ALLOWED_KEYS` get persisted (and that disallowed keys like `JWT_SECRET`/`SESSION_SECRET` are dropped even i"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12775,
+    "title": "fix: Notion import crash on empty table (\"Index 0 out of range\")",
+    "merged_at": "2026-06-22T22:34:23Z",
+    "security_score": 0.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.0,
+    "total_score": 1.5,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  Fixes a crash during Notion imports and Markdown serialization when encountering a ProseMirror `table` node with zero rows (which previously could trigger `node.child(0)` “In"
+    ]
+  },
+  {
+    "repository": "outline/outline",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 12730,
+    "title": "fix: Importer fails after stripping emoji within mark on first line",
+    "merged_at": "2026-06-18T02:53:50Z",
+    "security_score": 0.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.0,
+    "total_score": 1.5,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  Fixes a ProseMirror importer crash when extracting a leading emoji from a document whose first text node becomes empty after stripping (notably when the emoji is the entire t"
+    ]
+  },
+  {
+    "repository": "bitwarden/clients",
+    "repo_type": "application",
+    "stack": "angular",
+    "pr_number": 15204,
+    "title": "[BEEEP/PM22828] Enable ptrace prevention on Linux (except snap)",
+    "merged_at": "2025-06-30T18:04:32Z",
+    "security_score": 0.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.0,
+    "total_score": 1.5,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "Awesome! There is nothing wrong with this PR, but I do think we need to create tickets to inform QA (and add to automated tests, if necessary, regression tests) to validate file portals in linux build"
+    ]
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 34909,
+    "title": "Vue: Fix Unicode Default Values In Docs",
+    "merged_at": "2026-06-26T13:36:23Z",
+    "security_score": 0.5,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.25,
+    "total_score": 1.5,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "**Actionable comments posted: 0**  <details> <summary>🧹 Nitpick comments (1)</summary><blockquote>  <details> <summary>code/renderers/vue3/src/docs/tests-meta-components/meta-components.ts (1)</summar",
+      "Code LGTM! Thanks!  But we need a test added to the project to prevent regressions and prove the error is fixed within Storybook.  You could achieve this by adding autodocs stories to the Vue3 framewo"
+    ]
+  },
+  {
+    "repository": "shadcn-ui/ui",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 10961,
+    "title": "chore(registry): update beUI domain",
+    "merged_at": "2026-06-18T07:16:19Z",
+    "security_score": 0.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.0,
+    "total_score": 1.5,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Review: `chore(registry): update beUI domain`  This is a clean, minimal configuration update. Here's my assessment:  ### ✅ What looks good  - **Correctness:** Both the `homepage` and `url` fields a"
+    ]
+  },
+  {
+    "repository": "vuetifyjs/vuetify",
+    "repo_type": "ui-library",
+    "stack": "vue",
+    "pr_number": 22788,
+    "title": "feat(VPagination, VDataTableFooter): ability to hide last page",
+    "merged_at": "2026-04-06T14:17:54Z",
+    "security_score": 0.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.0,
+    "total_score": 1.5,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "shouldn't be `true` the default? this is breaking since data table is showing both buttons by default (current version)",
+      "right, I missed the default in VDataTableFooter. resolved"
+    ]
+  },
+  {
+    "repository": "calcom/cal.com",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 29544,
+    "title": "fix(frontend): improve password update form UX and add translation",
+    "merged_at": "2026-06-12T20:12:37Z",
+    "security_score": 0.5,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.25,
+    "total_score": 1.5,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "  <details> <summary>🧹 Nitpick comments (2)</summary><blockquote>  <details> <summary>apps/web/modules/settings/security/password-view.tsx (2)</summary><blockquote>  `132-138`: _💤 Low value_  **Consid"
+    ]
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "repo_type": "application",
+    "stack": "svelte",
+    "pr_number": 14474,
+    "title": "Lite: fix file path tooltips by working around Base UI issue",
+    "merged_at": "2026-06-26T12:58:51Z",
+    "security_score": 0.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.0,
+    "total_score": 1.5,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "## Pull request overview  This PR fixes file path tooltips in the Lite workspace file tree by working around a Base UI Tooltip regression where tooltips fail to appear when the trigger element has an "
+    ]
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 6413,
+    "title": "fix(backend): reject path/query/fragment in SMTP URL validation",
+    "merged_at": "2026-06-11T10:08:37Z",
+    "security_score": 0.75,
+    "sideeffect_score": 0.125,
+    "design_penalty": 0.208,
+    "total_score": 1.479,
+    "human_comment_count": 8,
+    "sample_comments": [
+      "`new URL()` normalizes malformed inputs like `smtp://host:` into `smtp://host`, so this now returns `true` for a value the previous validator rejected. Since this is the security boundary, it would be",
+      "<a href=\"#\"><img alt=\"P1\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p1.svg?v=9\" align=\"top\"></a> **Empty fragment `#` bypasses the hash guard**  `URL.hash` returns `\"\"` for both \"no ",
+      "<!-- cubic:v=c67bc3dc-f6cd-48fc-829a-48d39e86aa07 --> <!-- cubic:review-run=b9d21e85-d0b8-4403-b988-09dd28a223c0 --> <!-- metadata:{\"confidence\":7} --> P2: `new URL()` normalizes malformed inputs like"
+    ]
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 6390,
+    "title": "feat: duplicate user collection return export data",
+    "merged_at": "2026-06-04T16:24:15Z",
+    "security_score": 0.7,
+    "sideeffect_score": 0.1,
+    "design_penalty": 0.1,
+    "total_score": 1.45,
+    "human_comment_count": 10,
+    "sample_comments": [
+      "<a href=\"#\"><img alt=\"P1\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p1.svg?v=9\" align=\"top\"></a> **`exportedCollection` is a JSON-stringified array, not a single collection object** ",
+      "`sanitizeRequestForDroppedExtension` can currently preserve headers with an empty/whitespace-only key (because it always trims and then only checks the skip-set). This can produce invalid/buggy restor",
+      "`sanitizeRequestForDroppedExtension` keeps active query params even when the param key is empty. Elsewhere in this exporter, params with empty keys are skipped; the dropped-request snapshot should mir"
+    ]
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 6191,
+    "title": "chore: security patch for the dependency chain `v2026.4.0`",
+    "merged_at": "2026-04-28T12:21:43Z",
+    "security_score": 0.565,
+    "sideeffect_score": 0.348,
+    "design_penalty": 0.216,
+    "total_score": 1.436,
+    "human_comment_count": 23,
+    "sample_comments": [
+      "This now always builds an OAuth2 `auth` object as soon as `MAILER_SMTP_AUTH_TYPE=oauth2`, but the new FE/backend validation paths still treat every OAuth2 field as optional. That means we can persist ",
+      "<a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=7\" align=\"top\"></a> **`$randomUUID` silently changed to v4 format**  `$randomUUID` previously generated a",
+      "<a href=\"#\"><img alt=\"P2\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p2.svg?v=7\" align=\"top\"></a> **`NODE_ENV` checked via `process.env` instead of ConfigService**  The production gua"
+    ]
+  },
+  {
+    "repository": "bitwarden/clients",
+    "repo_type": "application",
+    "stack": "angular",
+    "pr_number": 21092,
+    "title": "[PM-38343] 2 step and require sso and remove unlock and remove export into simple toggle",
+    "merged_at": "2026-06-25T20:19:13Z",
+    "security_score": 0.542,
+    "sideeffect_score": 0.25,
+    "design_penalty": 0.148,
+    "total_score": 1.31,
+    "human_comment_count": 24,
+    "sample_comments": [
+      "⚠️ **IMPORTANT**: Removing the warning callout from `two-factor-authentication.component.html` regresses the flag-off (default) modal path  <details> <summary>Details and fix</summary>  Before this PR",
+      "❌ **CRITICAL**: Drawer never loads `SimpleTogglePolicyComponent` — `flaggedComponent` / `descriptionV2` / `prerequisiteKey` are set on subclasses but the base class and drawer only consume `v2.*`  <de",
+      "❌ **CRITICAL**: New spec references properties that were removed in the v2 refactor — these assertions will fail at runtime  <details> <summary>Details and fix</summary>  After commit 524423910f (\"Ref"
+    ]
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 35269,
+    "title": "ESLint Plugin: Avoid ESLint Unstable API Load",
+    "merged_at": "2026-06-26T09:31:52Z",
+    "security_score": 0.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.2,
+    "total_score": 1.3,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "_🎯 Functional Correctness_ | _🟠 Major_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash set -euo pipefail  python - <<'PY' import re from pathlib import Path  s",
+      "**Actionable comments posted: 1**  <details> <summary>🤖 Prompt for all review comments with AI agents</summary>  ``` Verify each finding against current code. Fix only still-valid issues, skip the res"
+    ]
+  },
+  {
+    "repository": "bitwarden/clients",
+    "repo_type": "application",
+    "stack": "angular",
+    "pr_number": 20814,
+    "title": "[PM-36277]Save login notification not appearing on Facebook",
+    "merged_at": "2026-06-03T14:10:33Z",
+    "security_score": 0.0,
+    "sideeffect_score": 1.0,
+    "design_penalty": 0.25,
+    "total_score": 1.25,
+    "human_comment_count": 1,
+    "sample_comments": [
+      "♻️ **DEBT**: `isCredentialRequestInProgress` is no longer referenced by production code.  <details> <summary>Details</summary>  This PR removes `isCredentialRequestInProgress` from the `Fido2Backgroun"
+    ]
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 35090,
+    "title": "Tools: Add agent skills and Claude skill pointers",
+    "merged_at": "2026-06-26T09:32:57Z",
+    "security_score": 0.5,
+    "sideeffect_score": 0.25,
+    "design_penalty": 0.25,
+    "total_score": 1.125,
+    "human_comment_count": 8,
+    "sample_comments": [
+      "_🔒 Security & Privacy_ | _🟠 Major_ | _⚡ Quick win_  **Don't interpolate the package list into Bash.**  `Step 2` turns repository-derived project names into a space-separated string, then `Step 3` feed",
+      "_🩺 Stability & Availability_ | _🟠 Major_ | _⚡ Quick win_  **Only stop the Storybook PID you spawned.**  If the port is occupied, this step currently says to kill the existing process unconditionally. ",
+      "**Actionable comments posted: 1**  <details> <summary>🧹 Nitpick comments (6)</summary><blockquote>  <details> <summary>.agents/skills/handle-pr-comments/SKILL.md (2)</summary><blockquote>  `12-12`: _💤"
+    ]
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 6450,
+    "title": "chore: security patch for the dependency chain `v2026.6.0`",
+    "merged_at": "2026-06-24T07:22:02Z",
+    "security_score": 0.467,
+    "sideeffect_score": 0.267,
+    "design_penalty": 0.211,
+    "total_score": 1.123,
+    "human_comment_count": 15,
+    "sample_comments": [
+      "<a href=\"#\"><img alt=\"P1\" src=\"https://greptile-static-assets.s3.amazonaws.com/badges/p1.svg?v=9\" align=\"top\"></a> **pnpm major-version bump conflicts with `packageManager` field**  The Dockerfile now",
+      "<!-- cubic:v=63528929-caa8-4712-8653-aa4c1b4d289b --> <!-- cubic:review-run=ca66bc8f-53d0-412d-a0b7-977610b3c714 --> <!-- metadata:{\"confidence\":9} --> P2: This override range is over-broad and silent",
+      "<!-- cubic:v=3f9dbce9-0876-46e7-8b92-82b780fe649a --> <!-- cubic:review-run=5faf91b9-260c-4fc5-a4be-755f609660dd --> <!-- metadata:{\"confidence\":10} --> P1: Major upgrade to `nodemailer@9` contradicts"
+    ]
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 5880,
+    "title": "feat(common): add OpenAPI 3.1 collection export",
+    "merged_at": "2026-05-25T19:17:45Z",
+    "security_score": 0.544,
+    "sideeffect_score": 0.136,
+    "design_penalty": 0.215,
+    "total_score": 1.076,
+    "human_comment_count": 103,
+    "sample_comments": [
+      "<!-- metadata:{\"confidence\":9} --> P1: Duplicate request names will generate duplicate operationIds, violating the OpenAPI 3.1 specification which requires operationId to be unique across the entire d",
+      "If `grantInfo.scopes` is a string containing only whitespace (e.g., \"   \"), splitting by space will create an array with empty strings, resulting in scope entries with empty string keys in the OpenAPI",
+      "The PASSWORD grant type stores the token URL in the `authEndpoint` field, not `tokenEndpoint`. This code tries to access a non-existent `tokenEndpoint` property, which will result in an empty string b"
+    ]
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 35228,
+    "title": "Angular: Use future-proof API for component reflection",
+    "merged_at": "2026-06-23T07:32:50Z",
+    "security_score": 0.6,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.125,
+    "total_score": 1.075,
+    "human_comment_count": 5,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  **Use the correct component type for selector reflection**  Line 21 reflects `MultipleClassSelectorComponent` inside `MultipleSelectorComponent`, so t"
+    ]
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 35214,
+    "title": "Open-Service: Introduce query states (loading/error/success)",
+    "merged_at": "2026-06-25T13:03:08Z",
+    "security_score": 0.333,
+    "sideeffect_score": 0.333,
+    "design_penalty": 0.125,
+    "total_score": 1.042,
+    "human_comment_count": 18,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟠 Major_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell # First, check if the file exists and read it fd -t f \"use-query-subscription.ts\" code/ ``",
+      "_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_  **Include selector identity in the subscription key.**  `useServiceStory` accepts an arbitrary `selector`, but `useQuerySubscription` only re-seeds/re",
+      "_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_  **Make load keys collision-free for `undefined`.**  `stableHash(undefined)` and `stableHash(\"__undefined__\")` produce the same key; optional object fi"
+    ]
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "repo_type": "application",
+    "stack": "svelte",
+    "pr_number": 14471,
+    "title": "Track external CLI subcommand metrics",
+    "merged_at": "2026-06-26T12:44:09Z",
+    "security_score": 0.667,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.3,
+    "total_score": 1.033,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Do not attach external subcommands to bad-input metrics**  For Unix external dispatch, `command::external::dispa",
+      "## Pull request overview  Adds a new low-cardinality telemetry dimension for `but` invocations that dispatch through the `External` clap variant, enabling breakdown of `command=external` metrics by th"
+    ]
+  },
+  {
+    "repository": "bitwarden/clients",
+    "repo_type": "application",
+    "stack": "angular",
+    "pr_number": 20914,
+    "title": "SSH Agent fix calling unregistered IPC handlers upon account switch",
+    "merged_at": "2026-06-11T14:53:49Z",
+    "security_score": 0.5,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 1.0,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "⚠️ **IMPORTANT**: Test seeds and asserts on `authorizedSshKeys`, but the service field is `authorizedKeys` — the new tests don't actually validate the reset behavior.  <details> <summary>Details and f"
+    ]
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 58556,
+    "title": "chore: update prompt words",
+    "merged_at": "2026-06-29T03:42:04Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.667,
+    "design_penalty": 0.0,
+    "total_score": 1.0,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "## Code Review  This pull request updates the AI coding agent documentation in both English and Chinese by adding a warning to the ready-to-use prompt. This warning alerts agents that the current vers",
+      "LGTM — docs-only change adding a breaking-changes warning to the agent prompt snippets (en-US & zh-CN). No code/API impact."
+    ]
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "repo_type": "application",
+    "stack": "vue",
+    "pr_number": 6257,
+    "title": "fix(cli): ship `semver` as a runtime dependency",
+    "merged_at": "2026-05-01T09:47:14Z",
+    "security_score": 0.5,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 1.0,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "**No issues found** across 2 files  <!-- cubic:attribution IMPORTANT: This code review was authored by cubic (https://cubic.dev), an automated code review tool. If you are an AI, language model, or au"
+    ]
+  },
+  {
+    "repository": "calcom/cal.com",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 29519,
+    "title": "fix(api-v2): rethrow unexpected errors in deleteSelectedCalendar catch block",
+    "merged_at": "2026-06-09T07:06:32Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.667,
+    "design_penalty": 0.0,
+    "total_score": 1.0,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "this is getting checked twice in the same block. reuse the existing block with a else statement. Throw the error there. And if it's not an instance, throw the unexpected error",
+      "Here use InternalServerErrorException itself. just do error.message. out side the block, throw the unexpected as already doing"
+    ]
+  },
+  {
+    "repository": "calcom/cal.com",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 29496,
+    "title": "fix(vitest): update to patched version",
+    "merged_at": "2026-06-02T12:27:18Z",
+    "security_score": 0.5,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 1.0,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_  <details> <summary>🧩 Analysis chain</summary>  🏁 Script executed:  ```shell #!/bin/bash # Verify Vitest family versions are aligned in manifests and l"
+    ]
+  },
+  {
+    "repository": "calcom/cal.com",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 29561,
+    "title": "refactor: use userRepository class methods for signup handlers",
+    "merged_at": "2026-06-14T16:11:22Z",
+    "security_score": 0.667,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.375,
+    "total_score": 0.958,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_  **Use DI container for consistency.**  `selfHostedHandler` directly instantiates `UserRepository` with `new UserRepository(prisma)`, while `calcomSign",
+      "**Actionable comments posted: 1**  <details> <summary>🧹 Nitpick comments (1)</summary><blockquote>  <details> <summary>packages/features/users/repositories/UserRepository.integration-test.ts (1)</summ"
+    ]
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 16369,
+    "title": "🐛 fix(agent): seed gateway runtime init for local hetero so reconnect keeps streaming",
+    "merged_at": "2026-06-28T03:30:27Z",
+    "security_score": 0.333,
+    "sideeffect_score": 0.333,
+    "design_penalty": 0.25,
+    "total_score": 0.917,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Clear stale reconnect markers on auth failure**  When a reconnect gets `auth_failed` or a terminal `session_comp"
+    ]
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 58473,
+    "title": "ci: sync preview deploy failures to PR checks",
+    "merged_at": "2026-06-26T07:46:56Z",
+    "security_score": 0.444,
+    "sideeffect_score": 0.167,
+    "design_penalty": 0.288,
+    "total_score": 0.85,
+    "human_comment_count": 18,
+    "sample_comments": [
+      "**<sub><sub>![P1 Badge](https://img.shields.io/badge/P1-orange?style=flat)</sub></sub>  Create the status on the workflow-run SHA**  When a PR receives another push while an older Preview Deploy is st",
+      "_🎯 Functional Correctness_ | _🟠 Major_  <details> <summary>🧩 Analysis chain</summary>  🌐 Web query:  `For a workflow_run-triggered GitHub Actions workflow on a pull request from a fork, can repos.crea",
+      "_🎯 Functional Correctness_ | _🟠 Major_ | _⚡ Quick win_  **补上 `Invalid token` 的专门提示。**  当前只写入通用 `Preview deploy failed`，没有捕获 Surge 输出，也无法在提交状态/PR 评论中提示需要轮换 `SURGE_TOKEN`，与本 PR 的目标不一致。      <details> <s"
+    ]
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 35242,
+    "title": "Open-Service: Type getService for core services per runtime",
+    "merged_at": "2026-06-25T13:36:55Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.667,
+    "design_penalty": 0.25,
+    "total_score": 0.75,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "**Actionable comments posted: 1**  <details> <summary>🧹 Nitpick comments (1)</summary><blockquote>  <details> <summary>code/core/src/shared/open-service/services/extraction-service.server.ts (1)</summ"
+    ]
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 16346,
+    "title": "🐛 fix(agent-group): inject orchestration tools when a user agent runs as group supervisor",
+    "merged_at": "2026-06-27T07:51:24Z",
+    "security_score": 0.5,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.3,
+    "total_score": 0.7,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Register the builder runtime before advertising it**  This adds `lobe-group-agent-builder` to the server-injecte",
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Verify the supervisor before granting group tools**  The public `execAgent`/`execAgents` schema accepts `appCont"
+    ]
+  },
+  {
+    "repository": "bitwarden/clients",
+    "repo_type": "application",
+    "stack": "angular",
+    "pr_number": 16156,
+    "title": "[BEEEP | PM-25358] Add process isolation on windows and mac desktop main process",
+    "merged_at": "2025-09-04T19:40:25Z",
+    "security_score": 0.357,
+    "sideeffect_score": 0.071,
+    "design_penalty": 0.125,
+    "total_score": 0.696,
+    "human_comment_count": 14,
+    "sample_comments": [
+      "If an attacker have access to OS or user account, they might as well set `ELECTRON_IS_DEV=true` env variable and skip this completely",
+      "Can an attacker somehow prevent this event from firing (like pause renderer process or kill it) ?",
+      "Agreed, but for this specific PR my assumption is that the compromise happens while the app is already running, and we protect the secrets that are already in memory. I've updated the PR description t"
+    ]
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 16311,
+    "title": "✨ feat(tool): context-aware builtin manifests (resolveManifest) + group/sub-agent gating",
+    "merged_at": "2026-06-27T04:19:31Z",
+    "security_score": 0.5,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.333,
+    "total_score": 0.667,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Strip callSubAgent from the group manifest too**  In group/group_agent scope this only removes the function sche",
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Keep Tabs on the base-ui primitive**  The repo-root `AGENTS.md` says components available in `@lobehub/ui/base-u"
+    ]
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "repo_type": "application",
+    "stack": "svelte",
+    "pr_number": 14462,
+    "title": "Lite: change expand/collapse commit body button icon and variant",
+    "merged_at": "2026-06-26T15:21:10Z",
+    "security_score": 0.5,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.333,
+    "total_score": 0.667,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "`aria-expanded` + `aria-controls` already convey the expand/collapse (disclosure) semantics for the commit body. Adding `aria-pressed` makes this also a “toggle button” per ARIA, which can lead to con"
+    ]
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "repo_type": "application",
+    "stack": "svelte",
+    "pr_number": 14481,
+    "title": "fix(lite): restrict openInWebBrowser to http(s)",
+    "merged_at": "2026-06-26T15:54:43Z",
+    "security_score": 0.4,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.167,
+    "total_score": 0.633,
+    "human_comment_count": 10,
+    "sample_comments": [
+      "The comment says “Similarly bad things are possible on Windows and macOS.” which repeats macOS and is likely meant to refer to other platforms generally. Consider rephrasing to avoid the platform-spec",
+      "The protocol check is performed on the parsed URL, but `shell.openExternal()` is called with the original `url` string. This means the validated value and the opened value can diverge (e.g., via norma",
+      "## Pull request overview  This PR hardens the Lite (Electron) IPC surface by preventing the renderer from invoking `shell.openExternal()` with non-HTTP(S) protocols, reducing the risk of opening local"
+    ]
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "repo_type": "application",
+    "stack": "svelte",
+    "pr_number": 14459,
+    "title": "Prevent stacked PR publishing from opening dependency editors",
+    "merged_at": "2026-06-26T08:08:11Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.6,
+    "design_penalty": 0.286,
+    "total_score": 0.614,
+    "human_comment_count": 5,
+    "sample_comments": [
+      "The `associated_review_id` fast-path treats any open review with that number as “already exists”, without verifying it actually belongs to `branch_name`. If stack metadata becomes stale/mis-associated",
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Propagate failed fresh review fetches**  With `NoCache` this call now performs the forge list request on the PR ",
+      "## Pull request overview  This PR improves `but pr new` stacked-PR publishing by ensuring dependency reviews don’t fall back to interactive editor prompts and by reducing incorrect “recreate PR” behav"
+    ]
+  },
+  {
+    "repository": "calcom/cal.com",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 10600,
+    "title": "feat: 2fa backup codes",
+    "merged_at": "2023-08-30T07:33:48Z",
+    "security_score": 0.25,
+    "sideeffect_score": 0.083,
+    "design_penalty": 0.1,
+    "total_score": 0.525,
+    "human_comment_count": 12,
+    "sample_comments": [
+      "existing object urls should always be revoked before creating new ones, to prevent memory leaks",
+      "1) Backup codes are not deleted from DB when i disable two factor auth after disabling it\r \r 2) I should be able to disable two factor auth using backup code. current it requires two factor code.\r \r <",
+      "## PR Review — approved  Reviewed 16 files. 0 high-severity issues found. Verdict: approved.  ### `apps/web/components/auth/TwoFactor.tsx` (low)  - Reviewed apps/web/components/auth/TwoFactor.tsx — lo"
+    ]
+  },
+  {
+    "repository": "bitwarden/clients",
+    "repo_type": "application",
+    "stack": "angular",
+    "pr_number": 21079,
+    "title": "[PM-38643] Fix default broken on wayland only systems",
+    "merged_at": "2026-06-26T04:00:25Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.25,
+    "total_score": 0.5,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "⚠️ **IMPORTANT**: Invalid `DISPLAY_MODE` values silently fall through, leaving `PARAMS` unset.  <details> <summary>Details and fix</summary>  If a user exports an unexpected value (e.g. `DISPLAY_MODE="
+    ]
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "repo_type": "application",
+    "stack": "svelte",
+    "pr_number": 14468,
+    "title": "Lite: add more diff toggles (line wrapping and backgrounds)",
+    "merged_at": "2026-06-26T12:57:17Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.25,
+    "total_score": 0.5,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "## Pull request overview  This PR extends the Lite workspace diff viewer controls by adding user-facing toggles for diff line wrapping (overflow) and diff backgrounds, wiring the new preferences throu"
+    ]
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 16321,
+    "title": "✨ feat(auth): attach landing lh_cid to login_or_signup_clicked",
+    "merged_at": "2026-06-26T03:40:08Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.3,
+    "total_score": 0.45,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Prefer the current URL cid over stale storage**  When a tab already has an older `lh_cid` in `sessionStorage`, o",
+      "Good catch — fixed in ee49fdf69d. `resolveLandingClickId` now resolves the current URL `lh_cid` first and only falls back to `sessionStorage` when the URL no longer carries it (SPA navigation), so a f"
+    ]
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 35259,
+    "title": "CLI: Support Claude preview autoPort",
+    "merged_at": "2026-06-23T15:20:34Z",
+    "security_score": 0.125,
+    "sideeffect_score": 0.125,
+    "design_penalty": 0.0,
+    "total_score": 0.438,
+    "human_comment_count": 8,
+    "sample_comments": [
+      "I suspect this would be a breaking change.   Do you think it would be possible to change `getEnvConfig` args signature to `getEnvConfig(options, ...inputs)` where inputs is a list of object by priorit",
+      "Thanks. This is intentionally not applied: the updated issue acceptance criteria require normal precedence `--port > SBCONFIG_PORT > PORT`, and Claude-preview precedence `PORT > --port > SBCONFIG_PORT"
+    ]
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "repo_type": "application",
+    "stack": "svelte",
+    "pr_number": 14424,
+    "title": "checkout: don't delete dirs when file is expected",
+    "merged_at": "2026-06-29T15:47:36Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.4,
+    "design_penalty": 0.167,
+    "total_score": 0.433,
+    "human_comment_count": 5,
+    "sample_comments": [
+      "## Pull request overview  This PR addresses a worktree checkout edge case where a path expected to be a file is actually a directory, and adds a regression test case to ensure `but commit` behaves cor"
+    ]
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "repo_type": "ui-library",
+    "stack": "vue",
+    "pr_number": 24483,
+    "title": "chore(deps): update dependency eslint to ^10.6.0",
+    "merged_at": "2026-06-29T13:22:51Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.333,
+    "total_score": 0.417,
+    "human_comment_count": 2,
+    "sample_comments": [
+      "**<sub><sub>![P1 Badge](https://img.shields.io/badge/P1-orange?style=flat)</sub></sub>  Update the pnpm lockfile with the eslint bump**  The manifest now asks pnpm for `eslint` `^10.6.0`, but `pnpm-lo"
+    ]
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 16337,
+    "title": "fix: sync agent config cache on optimistic update",
+    "merged_at": "2026-06-27T04:53:52Z",
+    "security_score": 0.2,
+    "sideeffect_score": 0.2,
+    "design_penalty": 0.3,
+    "total_score": 0.4,
+    "human_comment_count": 10,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Preserve deleted config keys when syncing the SWR cache**  When a config update removes a nested value, such as ",
+      "Fixed in 9ff587958d. The SWR cache sync now writes a clone of the post-dispatch store config instead of deep-merging over cached data, so deleted nested keys such as cleared workingDirByDevice entries",
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Roll back optimistic cache writes on save failure**  When `agentService.updateAgentConfig` rejects after this op"
+    ]
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 35276,
+    "title": "Review: Notify on review arrival instead of auto-navigating",
+    "merged_at": "2026-06-29T14:29:58Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.5,
+    "design_penalty": 0.375,
+    "total_score": 0.375,
+    "human_comment_count": 4,
+    "sample_comments": [
+      "_🎯 Functional Correctness_ | _🟠 Major_ | _⚡ Quick win_  **Stale button name — update `'Switch'` to `'Update'`.**  The `pending-update` banner now renders a button labeled `Update` (`AttentionBanner.ts"
+    ]
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 58008,
+    "title": "fix(Table): honor defaultSortOrder on responsive columns",
+    "merged_at": "2026-06-26T07:47:59Z",
+    "security_score": 0.2,
+    "sideeffect_score": 0.2,
+    "design_penalty": 0.333,
+    "total_score": 0.367,
+    "human_comment_count": 5,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Keep sorter keys aligned with rendered column positions**  Collecting initial/controlled sorter states from `bas"
+    ]
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 35224,
+    "title": "Core: Flush preview-api hook effects in portable stories",
+    "merged_at": "2026-06-19T07:13:21Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.4,
+    "design_penalty": 0.25,
+    "total_score": 0.35,
+    "human_comment_count": 5,
+    "sample_comments": [
+      "## Pull request overview  Fixes a gap in the portable-stories execution path (`composeStory().run()` as used by `@storybook/addon-vitest`) where `storybook/preview-api` hook effects registered during "
+    ]
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 34837,
+    "title": "Core: Introduce Agentic Review feature",
+    "merged_at": "2026-06-26T08:58:19Z",
+    "security_score": 0.163,
+    "sideeffect_score": 0.152,
+    "design_penalty": 0.216,
+    "total_score": 0.339,
+    "human_comment_count": 92,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟡 Minor_ | _⚡ Quick win_  **Clear stale `keep` nav markers on non-review loads.**  Line 24 only handles the `'restore'` value. If `'keep'` survives a full reload, later visits ",
+      "_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_  **Sanitize `branchName` from incoming payload when local resolution is unavailable.**  At Line 26, unresolved branch keeps the original payload intact",
+      "Done in 1a1558de947 — the manager now reads the marker once and clears it for both `restore` and `keep`, only calling `toggleNav(true)` for `restore`. This prevents a stale `keep` from blocking fresh "
+    ]
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 16406,
+    "title": "🚀 release: 20260629",
+    "merged_at": "2026-06-29T03:50:51Z",
+    "security_score": 0.333,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.333,
+    "total_score": 0.333,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Do not reject workspace members by topic creator**  When a logged-in desktop token reports hetero events for a w"
+    ]
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 16403,
+    "title": "✨ feat(mobile): expose taskTemplate router to mobileRouter",
+    "merged_at": "2026-06-29T02:42:39Z",
+    "security_score": 0.333,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.333,
+    "total_score": 0.333,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Use the business taskTemplate router for mobile**  In cloud builds that replace or wrap the business `taskTempla"
+    ]
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 16399,
+    "title": "✨ feat(task): include subtask topic activity",
+    "merged_at": "2026-06-28T15:51:47Z",
+    "security_score": 0.333,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.333,
+    "total_score": 0.333,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "**<sub><sub>![P1 Badge](https://img.shields.io/badge/P1-orange?style=flat)</sub></sub>  Use the subtask agent for child run drawers**  When this source-task branch is present, the selected topic can b"
+    ]
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 16352,
+    "title": "🐛 fix(group): inject real member roster into durable group supervisor context",
+    "merged_at": "2026-06-27T10:38:21Z",
+    "security_score": 0.333,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.333,
+    "total_score": 0.333,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Filter disabled members from the injected roster**  When a group member has been disabled (the schema/API suppor"
+    ]
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 16315,
+    "title": "🐛 fix(task): topic activity keeps the agent that ran it, not the task's current assignee",
+    "merged_at": "2026-06-27T08:03:16Z",
+    "security_score": 0.333,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.333,
+    "total_score": 0.333,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "**<sub><sub>![P2 Badge](https://img.shields.io/badge/P2-yellow?style=flat)</sub></sub>  Avoid using mutable topic ownership as the run author**  When a task-generated topic is later moved with the exi"
+    ]
+  },
+  {
+    "repository": "calcom/cal.com",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 28490,
+    "title": "fix(auth): implement proper debounce ref for forgot password requests",
+    "merged_at": "2026-03-27T09:14:59Z",
+    "security_score": 0.333,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.333,
+    "total_score": 0.333,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "**No issues found** across 1 file  ---  Since this is your first cubic review, here's how it works:  - **cubic automatically reviews your code** and comments on bugs and improvements - **Teach cubic b"
+    ]
+  },
+  {
+    "repository": "calcom/cal.com",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 27634,
+    "title": "fix: implement missing password validation",
+    "merged_at": "2026-06-22T05:07:10Z",
+    "security_score": 0.267,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.214,
+    "total_score": 0.319,
+    "human_comment_count": 15,
+    "sample_comments": [
+      "<!-- metadata:{\"confidence\":0.4} --> P2: Trimming the password before verification changes authentication behavior; users whose passwords include leading/trailing whitespace will now fail verification",
+      "_⚠️ Potential issue_ | _🟠 Major_ | _⚡ Quick win_  **Use the same explicit password for the login step.**  At Line 11 the fixture user is created with `deletionPassword`, but Line 13 still calls `user.",
+      "**1 issue found** across 2 files  <details> <summary>Prompt for AI agents (all issues)</summary>  ```text  Check if these issues are valid — if so, understand the root cause of each and fix them.   <f"
+    ]
+  },
+  {
+    "repository": "bitwarden/clients",
+    "repo_type": "application",
+    "stack": "angular",
+    "pr_number": 19907,
+    "title": "[Shared Unlock] [PM-34508] Default enable native messaging permission on browser",
+    "merged_at": "2026-05-18T11:03:28Z",
+    "security_score": 0.111,
+    "sideeffect_score": 0.222,
+    "design_penalty": 0.25,
+    "total_score": 0.306,
+    "human_comment_count": 9,
+    "sample_comments": [
+      "♻️ **DEBT**: Stale test artifacts after removing the permission check.  <details> <summary>Details</summary>  A few leftovers from the old permission-checked code path:  - Line 12: `permissionsGranted",
+      "♻️ **DEBT**: `platformUtilsService` is now injected but never referenced in this class after removing the Safari/permission branch.  <details> <summary>Details and fix</summary>  After this PR, `canEn",
+      "❌ **CRITICAL**: Stale DI registration in `services.module.ts` will fail to type-check after this constructor change.  <details> <summary>Details and fix</summary>  This constructor was changed from `c"
+    ]
+  },
+  {
+    "repository": "calcom/cal.com",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 29612,
+    "title": "docs(claude): add path-scoped frontmatter to four agent rules",
+    "merged_at": "2026-06-21T11:21:14Z",
+    "security_score": 0.333,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.375,
+    "total_score": 0.292,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "**Actionable comments posted: 2**  <details> <summary>🤖 Prompt for all review comments with AI agents</summary>  ``` Verify each finding against current code. Fix only still-valid issues, skip the res"
+    ]
+  },
+  {
+    "repository": "calcom/cal.com",
+    "repo_type": "application",
+    "stack": "react",
+    "pr_number": 29541,
+    "title": "fix(daily-webhook): use BookingRepository instead of direct prisma call",
+    "merged_at": "2026-06-16T12:34:19Z",
+    "security_score": 0.143,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.0,
+    "total_score": 0.286,
+    "human_comment_count": 7,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🔴 Critical_ | _⚡ Quick win_  **Change `findUniqueOrThrow` to `findUnique` to preserve error handling behavior.**  The new repository method uses `findUniqueOrThrow`, which thro"
+    ]
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "repo_type": "ui-library",
+    "stack": "vue",
+    "pr_number": 19675,
+    "title": "fix(components): [tour] ensure `current` prop is controlled when passed",
+    "merged_at": "2026-06-09T03:38:54Z",
+    "security_score": 0.182,
+    "sideeffect_score": 0.182,
+    "design_penalty": 0.357,
+    "total_score": 0.279,
+    "human_comment_count": 11,
+    "sample_comments": [
+      "_⚠️ Potential issue_ | _🟡 Minor_  **Keep `innerCurrent` aligned with the close reset.**  `innerCurrent` is now the fallback when the parent later stops passing `current`, but Line 146 resets through `",
+      "  > [!CAUTION] > Some comments are outside the diff and can’t be posted inline due to platform limitations. >  >  >  > <details> > <summary>⚠️ Outside diff range comments (1)</summary><blockquote> >  ",
+      "**Actionable comments posted: 1**  <details> <summary>🤖 Prompt for all review comments with AI agents</summary>  ``` Verify each finding against the current code and only fix it if needed.  Inline com"
+    ]
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "repo_type": "application",
+    "stack": "svelte",
+    "pr_number": 14455,
+    "title": "feat(but): allow any prefix of the full hunk ID",
+    "merged_at": "2026-06-26T10:30:12Z",
+    "security_score": 0.111,
+    "sideeffect_score": 0.222,
+    "design_penalty": 0.286,
+    "total_score": 0.27,
+    "human_comment_count": 9,
+    "sample_comments": [
+      "`matches_prefix()` treats an ID with a collision suffix as matching when the hash-prefix part is empty (e.g. input `#0-2`). That makes it possible to reference a hunk using only the collision index, w",
+      "`matches_prefix()` treats `#0-2` (empty hash prefix) as a match for any hunk with collision index `0-2` because `starts_with(\"\")` is always true. That makes `#<collision>` behave like a valid referenc",
+      "## Pull request overview  This PR updates the `but` CLI ID mapping for **uncommitted hunks** so that a hunk can be resolved not only by its current short ID, but also by **longer prefixes of its full "
+    ]
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "repo_type": "ui-library",
+    "stack": "vue",
+    "pr_number": 24385,
+    "title": "improvement(components): [switch] add warning for invalid `model-value`",
+    "merged_at": "2026-06-04T10:21:17Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.4,
+    "design_penalty": 0.333,
+    "total_score": 0.267,
+    "human_comment_count": 5,
+    "sample_comments": [
+      "  > [!CAUTION] > Some comments are outside the diff and can’t be posted inline due to platform limitations. >  >  >  > <details> > <summary>⚠️ Outside diff range comments (1)</summary><blockquote> >  "
+    ]
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "repo_type": "application",
+    "stack": "svelte",
+    "pr_number": 14487,
+    "title": "Fix oplog restore leaving spurious uncommitted changes",
+    "merged_at": "2026-06-26T21:22:44Z",
+    "security_score": 0.0,
+    "sideeffect_score": 0.333,
+    "design_penalty": 0.25,
+    "total_score": 0.25,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "## Pull request overview  This PR fixes an oplog restore/undo bug where restoring a snapshot after an operation that moved the workspace commit could leave behind spurious uncommitted worktree changes"
+    ]
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "repo_type": "ui-library",
+    "stack": "react",
+    "pr_number": 57915,
+    "title": "fix(Alert): resolve CSS specificity conflict for icon vertical alignment with description",
+    "merged_at": "2026-06-26T14:52:41Z",
+    "security_score": 0.333,
+    "sideeffect_score": 0.0,
+    "design_penalty": 0.438,
+    "total_score": 0.229,
+    "human_comment_count": 3,
+    "sample_comments": [
+      "![high](https://www.gstatic.com/codereviewagent/high-priority.svg)  The use of `'&-with-description'` as a key inside `[componentCls]` results in a selector with the same specificity as the base class"
+    ]
+  }
+]

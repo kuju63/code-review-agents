@@ -55,27 +55,50 @@ Execution link for agents:
 
 Target repository families for this project:
 
-- Ruby on Rails application repositories
-- Front-end primary repositories (React/Vue/Svelte)
-- Spring Boot based repositories (including enterprise templates such as TERASOLUNA-like stacks)
+- UI Component Library repositories (React/Vue/Angular/Svelte, 5K+ stars, non-bot update within last 30 days)
+- Application repositories built with React, Vue, Angular, or Svelte (1K+ stars, continuous updates within last 6 months, non-bot update within last 90 days)
 
 Target product domain:
 
-- Business applications and B2B2C services
+- Web applications and developer tools using major UI frameworks
 
 ### 2.0 Domain Coverage Policy
 
 Maintain balanced coverage in both Gold and Seeded sets:
 
-- 30% Rails
-- 30% Spring Boot
-- 40% Front-end (React/Vue/Svelte combined)
+- 50% UI Component Libraries (React ≥50%, Vue ≥30%, Angular/Svelte remainder)
+- 50% Applications built with UI frameworks (React ≥40%, Vue ≥30%, Svelte ≥15%, Angular ≥15%)
 
-Within each stack, include at least:
+Within each category, include at least:
 
 - 40% security-relevant PRs
-- 30% correctness or transaction consistency PRs
+- 30% correctness or unintended side-effect PRs
 - 30% performance or maintainability PRs
+
+### 2.0.1 Repository Selection Criteria
+
+UI Component Libraries must satisfy:
+
+- Stars ≥ 5,000
+- At least one non-bot commit within the last 30 days
+
+Applications must satisfy:
+
+- Stars ≥ 1,000
+- Continuous updates (≥5 non-bot commits) within the last 6 months
+- At least one non-bot commit within the last 90 days
+
+In all cases, prefer repositories with higher star counts and more continuous update activity.
+
+### 2.0.2 PR Quality Selection Criteria
+
+PR selection must satisfy all of the following:
+
+- PR is merged
+- Has at least one non-bot human review comment
+- At least one review comment focuses on **security** (XSS, injection, auth bypass, IDOR, CSRF, sensitive data exposure, etc.) or **unintended side effects** (regression, breaking change, race condition, memory leak, N+1, stale state, infinite loop, etc.)
+- PRs where all review comments are solely design or style discussions (architecture, naming, refactoring approach, aesthetic preferences) are excluded
+- Bot accounts (GitHub Actions Bot, Renovate, Dependabot, Codecov, etc.) are excluded from the review comment count
 
 ### 2.1 Gold PR Set
 
@@ -89,9 +112,9 @@ Purpose:
 - Approximation to real review behavior
 - Measure precision/recall and severity alignment
 
-Additional recommendation for B2B2C:
+Additional recommendation:
 
-- Prefer PRs touching authn/authz, tenant isolation, billing, PII handling, audit logging, and workflow state transitions.
+- Prefer PRs touching authentication/authorization, input validation, XSS vectors, data exposure, performance-impacting patterns, and unintended behavioral regressions.
 
 ### 2.2 Seeded Set
 
@@ -107,10 +130,9 @@ Purpose:
 
 Must include stack-specific traps:
 
-- Rails: mass assignment, SQL interpolation, N+1 queries
-- Spring Boot: missing authorization annotations, missing transaction boundaries, sensitive logging
-- Front-end: XSS vectors, unsafe dynamic HTML, heavy sequential API calls
-- B2B2C common: IDOR/tenant boundary bypass patterns
+- React/Vue/Svelte/Angular: XSS vectors (innerHTML, dangerouslySetInnerHTML), eval injection, unsafe dynamic HTML, heavy sequential API calls (N+1)
+- React-specific: useEffect missing dependency causing stale state, uncontrolled component to controlled transition
+- Common frontend: CSRF on state-mutating requests, sensitive data in localStorage, exposed secrets in client bundle
 
 ## 3. Metrics
 
@@ -169,8 +191,8 @@ Hard gates:
 
 Domain hard gates:
 
-- Security Must-Find Recall >= 0.98 for critical/high in Rails and Spring Boot subsets
-- Tenant-isolation related misses must be 0 in B2B2C-tagged samples
+- Security Must-Find Recall >= 0.98 for critical/high in ui-library and application subsets
+- XSS/injection must-find misses must be 0 in frontend application samples
 
 Soft targets:
 

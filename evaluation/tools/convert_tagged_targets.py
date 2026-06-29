@@ -6,7 +6,7 @@ Input format:
   {
     "repository": "owner/repo",
     "pr_number": 123,
-    "stack": "rails|spring-boot|react|vue|svelte",
+    "stack": "react|vue|svelte|angular",
     "priority_themes": ["security", "tenant"],
     "risk_priority": "high|medium|low"
   }
