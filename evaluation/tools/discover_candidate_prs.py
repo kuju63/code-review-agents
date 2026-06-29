@@ -101,13 +101,6 @@ BOT_LOGINS = {
     "semantic-release-bot",
     "imgbot[bot]",
     "allcontributors[bot]",
-    "coderabbitai[bot]",
-    "cubic[bot]",
-    "greptile-apps[bot]",
-    "sourcery-ai[bot]",
-    "deepsource-autofix[bot]",
-    "sweep-ai[bot]",
-    "zizmor[bot]",
 }
 
 
@@ -319,8 +312,13 @@ def score_pr(
     pr_number = pr["number"]
     repo = candidate.repository
 
-    # Collect review comments (inline) + review bodies
+    # Collect review comments (inline) + review bodies.
+    # PRs without inline comments are excluded: inline comments carry file path
+    # and line number, which are required for location-based accuracy evaluation.
     inline = client.list_review_comments(repo, pr_number)
+    if not inline:
+        return None
+
     reviews = client.list_pr_reviews(repo, pr_number)
 
     all_comments: list[tuple[str, str]] = []

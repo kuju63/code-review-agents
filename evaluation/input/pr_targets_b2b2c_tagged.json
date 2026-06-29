@@ -1,33 +1,6 @@
 [
   {
     "repository": "makeplane/plane",
-    "pr_number": 9212,
-    "stack": "react",
-    "repo_type": "application",
-    "priority_themes": ["idor", "auth", "security"],
-    "risk_priority": "high",
-    "selection_note": "cross-workspace IDOR in GenericAssetEndpoint allows access to other workspaces' assets"
-  },
-  {
-    "repository": "makeplane/plane",
-    "pr_number": 9225,
-    "stack": "react",
-    "repo_type": "application",
-    "priority_themes": ["auth", "security"],
-    "risk_priority": "high",
-    "selection_note": "API key auth not rejected for deactivated user accounts — authentication bypass"
-  },
-  {
-    "repository": "makeplane/plane",
-    "pr_number": 9224,
-    "stack": "react",
-    "repo_type": "application",
-    "priority_themes": ["injection", "security", "data_export"],
-    "risk_priority": "high",
-    "selection_note": "formula injection in XLSX/CSV spreadsheet exports"
-  },
-  {
-    "repository": "makeplane/plane",
     "pr_number": 9297,
     "stack": "react",
     "repo_type": "application",
@@ -37,21 +10,30 @@
   },
   {
     "repository": "makeplane/plane",
-    "pr_number": 9269,
+    "pr_number": 9292,
     "stack": "react",
     "repo_type": "application",
-    "priority_themes": ["idor", "security", "validation"],
+    "priority_themes": ["injection", "security", "validation"],
     "risk_priority": "high",
-    "selection_note": "issue ID validation not scoped to workspace enables cross-workspace IDOR"
+    "selection_note": "unsanitized order_by parameter in bulk issue endpoints allows ORM-level injection — sanitize_order_by bypass via repeated - prefix"
   },
   {
-    "repository": "outline/outline",
-    "pr_number": 12769,
+    "repository": "makeplane/plane",
+    "pr_number": 9163,
     "stack": "react",
     "repo_type": "application",
-    "priority_themes": ["auth", "disclosure", "security"],
+    "priority_themes": ["ssrf", "security", "url_validation"],
     "risk_priority": "high",
-    "selection_note": "viewer role can disclose existence of shared document URLs"
+    "selection_note": "SSRF hardening across webhook URL, OAuth avatar, and link preview endpoints — credential stripping and IP-block bypass gaps found by reviewer"
+  },
+  {
+    "repository": "makeplane/plane",
+    "pr_number": 9304,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["auth", "security", "side_effect"],
+    "risk_priority": "high",
+    "selection_note": "activation email queued before save creates race condition; deactivation guard uses last_login_time as sole discriminator incorrectly treating never-logged-in provisioned users"
   },
   {
     "repository": "outline/outline",
@@ -61,15 +43,6 @@
     "priority_themes": ["auth", "data_exposure", "correctness"],
     "risk_priority": "high",
     "selection_note": "undefined ctx treated as permission — integration settings exposed to unauthorized users"
-  },
-  {
-    "repository": "outline/outline",
-    "pr_number": 12719,
-    "stack": "react",
-    "repo_type": "application",
-    "priority_themes": ["auth", "policy", "correctness"],
-    "risk_priority": "medium",
-    "selection_note": "collection authorization policy incorrectly extended template management to viewers"
   },
   {
     "repository": "outline/outline",
@@ -91,12 +64,21 @@
   },
   {
     "repository": "outline/outline",
-    "pr_number": 12740,
+    "pr_number": 12774,
     "stack": "react",
     "repo_type": "application",
     "priority_themes": ["correctness", "side_effect", "serialization"],
     "risk_priority": "medium",
-    "selection_note": "newlines in table cell block fences break markdown round-trip serialization"
+    "selection_note": "regex lookahead for [ escaping too restrictive — fails to match valid inline links with nested brackets causing incorrect serialization side effect"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 12749,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["security", "auth", "side_effect"],
+    "risk_priority": "medium",
+    "selection_note": "passkey retry accumulates duplicate hidden inputs without clearing; new /auth/passkey entrypoint lacks test coverage for failure/retry paths"
   },
   {
     "repository": "appsmithorg/appsmith",
@@ -118,15 +100,6 @@
   },
   {
     "repository": "appsmithorg/appsmith",
-    "pr_number": 41827,
-    "stack": "react",
-    "repo_type": "application",
-    "priority_themes": ["credential_exposure", "security", "side_effect"],
-    "risk_priority": "high",
-    "selection_note": "Redis credentials silently dropped during appsmithctl restore operation"
-  },
-  {
-    "repository": "appsmithorg/appsmith",
     "pr_number": 41834,
     "stack": "react",
     "repo_type": "application",
@@ -144,6 +117,24 @@
     "selection_note": "App Viewer role can read datasource connection configuration"
   },
   {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41854,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["security", "cicd", "injection"],
+    "risk_priority": "high",
+    "selection_note": "GitHub Actions workflow interpolates PR context value directly into shell run step without env-var indirection — shell injection risk for fork PRs"
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41769,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["security", "logging", "pii_exposure"],
+    "risk_priority": "medium",
+    "selection_note": "raw URL/path including tokens and PII logged to centralized logs — reviewer caught exposure risk and missing stack trace in WARN log"
+  },
+  {
     "repository": "calcom/cal.com",
     "pr_number": 29519,
     "stack": "react",
@@ -154,21 +145,21 @@
   },
   {
     "repository": "calcom/cal.com",
-    "pr_number": 29544,
-    "stack": "react",
-    "repo_type": "application",
-    "priority_themes": ["security", "auth", "password"],
-    "risk_priority": "medium",
-    "selection_note": "password update form allows change without verifying current password on client"
-  },
-  {
-    "repository": "calcom/cal.com",
     "pr_number": 29561,
     "stack": "react",
     "repo_type": "application",
     "priority_themes": ["correctness", "side_effect", "di"],
     "risk_priority": "medium",
     "selection_note": "direct userRepository instantiation bypasses DI container causing inconsistent transaction scope"
+  },
+  {
+    "repository": "calcom/cal.com",
+    "pr_number": 27634,
+    "stack": "react",
+    "repo_type": "application",
+    "priority_themes": ["security", "auth", "validation"],
+    "risk_priority": "medium",
+    "selection_note": "password trimmed before verification changes semantics for passwords with leading/trailing whitespace — reviewer caught behavioral change affecting existing users"
   },
   {
     "repository": "hoppscotch/hoppscotch",
@@ -216,6 +207,15 @@
     "selection_note": "switching to arrow-function prop source causes stale environment variable resolution"
   },
   {
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6191,
+    "stack": "vue",
+    "repo_type": "application",
+    "priority_themes": ["security", "dependency", "side_effect"],
+    "risk_priority": "medium",
+    "selection_note": "dependency update review caught: OAuth2 token object built before FE validation allows partial config persistence; $randomUUID silently changed format from custom to v4"
+  },
+  {
     "repository": "bitwarden/clients",
     "pr_number": 20848,
     "stack": "angular",
@@ -226,21 +226,21 @@
   },
   {
     "repository": "bitwarden/clients",
-    "pr_number": 21237,
-    "stack": "angular",
-    "repo_type": "application",
-    "priority_themes": ["correctness", "type_safety", "security"],
-    "risk_priority": "medium",
-    "selection_note": "CipherResponse/CipherData type confusion in auth path may cause incorrect cipher handling"
-  },
-  {
-    "repository": "bitwarden/clients",
     "pr_number": 21092,
     "stack": "angular",
     "repo_type": "application",
     "priority_themes": ["security", "ui", "side_effect"],
     "risk_priority": "medium",
     "selection_note": "removing warning callout from two-factor settings unintentionally hides security guidance"
+  },
+  {
+    "repository": "bitwarden/clients",
+    "pr_number": 16156,
+    "stack": "angular",
+    "repo_type": "application",
+    "priority_themes": ["security", "process_isolation", "side_effect"],
+    "risk_priority": "high",
+    "selection_note": "process isolation review caught: ELECTRON_IS_DEV env bypass threat; renderer process kill preventing isolation event from firing — reviewer questioned threat model assumptions"
   },
   {
     "repository": "gitbutlerapp/gitbutler",

@@ -95,10 +95,10 @@ In all cases, prefer repositories with higher star counts and more continuous up
 PR selection must satisfy all of the following:
 
 - PR is merged
-- Has at least one non-bot human review comment
+- Has at least one **inline** review comment (file path + line number via `/pulls/{pr}/comments` API) — PRs with only review body comments (no file/line association) are excluded because location accuracy cannot be evaluated without inline comments
 - At least one review comment focuses on **security** (XSS, injection, auth bypass, IDOR, CSRF, sensitive data exposure, etc.) or **unintended side effects** (regression, breaking change, race condition, memory leak, N+1, stale state, infinite loop, etc.)
 - PRs where all review comments are solely design or style discussions (architecture, naming, refactoring approach, aesthetic preferences) are excluded
-- Bot accounts (GitHub Actions Bot, Renovate, Dependabot, Codecov, etc.) are excluded from the review comment count
+- Infrastructure bot accounts (GitHub Actions Bot, Renovate, Dependabot, Codecov, etc.) are excluded from the review comment count; AI code review bots (CodeRabbit, cubic, greptile, etc.) are NOT excluded and count as reviewers
 
 ### 2.1 Gold PR Set
 
