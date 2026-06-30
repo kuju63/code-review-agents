@@ -1,0 +1,23 @@
+[
+  {"repository": "ant-design/ant-design",     "repo_type": "ui-library",  "stack": "react"},
+  {"repository": "mui/material-ui",           "repo_type": "ui-library",  "stack": "react"},
+  {"repository": "storybookjs/storybook",     "repo_type": "ui-library",  "stack": "react"},
+  {"repository": "shadcn-ui/ui",              "repo_type": "ui-library",  "stack": "react"},
+  {"repository": "chakra-ui/chakra-ui",       "repo_type": "ui-library",  "stack": "react"},
+  {"repository": "radix-ui/primitives",       "repo_type": "ui-library",  "stack": "react"},
+  {"repository": "tailwindlabs/headlessui",   "repo_type": "ui-library",  "stack": "react"},
+  {"repository": "vuetifyjs/vuetify",         "repo_type": "ui-library",  "stack": "vue"},
+  {"repository": "element-plus/element-plus", "repo_type": "ui-library",  "stack": "vue"},
+  {"repository": "hoppscotch/hoppscotch",     "repo_type": "application", "stack": "vue"},
+  {"repository": "n8n-io/n8n",               "repo_type": "application", "stack": "vue"},
+  {"repository": "calcom/cal.com",            "repo_type": "application", "stack": "react"},
+  {"repository": "makeplane/plane",           "repo_type": "application", "stack": "react"},
+  {"repository": "twentyhq/twenty",           "repo_type": "application", "stack": "react"},
+  {"repository": "lobehub/lobe-chat",         "repo_type": "application", "stack": "react"},
+  {"repository": "outline/outline",           "repo_type": "application", "stack": "react"},
+  {"repository": "appsmithorg/appsmith",      "repo_type": "application", "stack": "react"},
+  {"repository": "nocodb/nocodb",             "repo_type": "application", "stack": "react"},
+  {"repository": "gitbutlerapp/gitbutler",    "repo_type": "application", "stack": "svelte"},
+  {"repository": "imputnet/cobalt",           "repo_type": "application", "stack": "svelte"},
+  {"repository": "bitwarden/clients",         "repo_type": "application", "stack": "angular"}
+]
