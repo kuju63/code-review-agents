@@ -20,7 +20,7 @@ FROM ghcr.io/astral-sh/uv:0.11.25@sha256:1e3808aa9023d0980e7c15b1fa7c1ac16ff3592
 # - ABI 互換: cryptography / cffi / uvloop 等のバイナリ拡張の互換を保証
 # - ダイジェスト固定: タグ更新による意図しない Python バージョン変更を防止
 ###############################################################################
-FROM cgr.dev/chainguard/python:latest-dev@sha256:7b01a3977ec7058ae767ab856a4501a0c84342f00fc63c6c51dc298eccb03894 AS builder
+FROM cgr.dev/chainguard/python:latest-dev@sha256:43754593298465877148499d1bfc40433a3250350d6c184ef1a06e3c61549396 AS builder
 
 USER root
 
