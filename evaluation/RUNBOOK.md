@@ -109,7 +109,7 @@ Check against [evaluation/EVALUATION_PLAN.md](evaluation/EVALUATION_PLAN.md) gat
 1. Refresh 20-30% of target PRs
 2. Rebuild Gold and Seeded
 3. Re-run scoring
-4. Track trend by stack (Rails/Spring/Frontend)
+4. Track trend by stack (React/Vue/Angular/Svelte)
 
 ## Troubleshooting
 

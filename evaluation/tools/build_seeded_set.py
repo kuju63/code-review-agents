@@ -50,20 +50,6 @@ def detect_lang(path: str) -> str:
         return "css"
     if path.endswith(".scss"):
         return "scss"
-    if path.endswith(".rb") or path.endswith(".rake"):
-        return "rb"
-    if path.endswith(".erb"):
-        return "erb"
-    if path.endswith(".java"):
-        return "java"
-    if path.endswith(".kt") or path.endswith(".kts"):
-        return "kt"
-    if path.endswith(".xml"):
-        return "xml"
-    if path.endswith(".yml") or path.endswith(".yaml"):
-        return "yaml"
-    if path.endswith(".properties"):
-        return "properties"
     return "unknown"
 
 
