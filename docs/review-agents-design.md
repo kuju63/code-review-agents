@@ -154,5 +154,6 @@ Lead Engineer 自体は本リリースの対象外です。
 ## 6. 関連ドキュメント
 
 - 由来の記録: [docs/review-agent-workflow-spec.md](review-agent-workflow-spec.md)
+- レビュー知識(Agent Skills)提供方式の比較検討: [docs/review-knowledge-provisioning-options.md](review-knowledge-provisioning-options.md)
 - 要件検証基準: [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md)
 - 評価実行手順: [evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md)
