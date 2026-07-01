@@ -12,7 +12,7 @@ ARG PYTHON_VERSION=3.14
 # ghcr.io/astral-sh/uv:0.11.19 — バージョン+ダイジェスト固定で再現性を確保
 # Renovate が FROM 行を自動更新する (renovate.json config:recommended)
 ###############################################################################
-FROM ghcr.io/astral-sh/uv:0.11.25@sha256:1e3808aa9023d0980e7c15b1fa7c1ac16ff35925780cf5c459858b2d693f01a9 AS uv-binary
+FROM ghcr.io/astral-sh/uv:0.11.26@sha256:3d868e555f8f1dbc324afa005066cd11e1053fc4743b9808ca8025283e65efa5 AS uv-binary
 
 ###############################################################################
 # Stage 1: builder
