@@ -134,6 +134,11 @@ Must include stack-specific traps:
 - React-specific: useEffect missing dependency causing stale state, uncontrolled component to controlled transition
 - Common frontend: CSRF on state-mutating requests, sensitive data in localStorage, exposed secrets in client bundle
 
+Backend-stack mutation rules (Rails, Spring Boot) were removed from
+`seeded_mutations.json`: with current review resources it isn't realistic to
+cover every stack, so Seeded-set generation is scoped to frontend-only traps
+for now to focus on improving frontend review accuracy.
+
 ## 3. Metrics
 
 ## 3.1 Gold Metrics

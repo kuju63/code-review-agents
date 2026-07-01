@@ -43,29 +43,9 @@ ALLOWED_EXTENSIONS = {
     ".css",
     ".scss",
     ".html",
-    ".rb",
-    ".erb",
-    ".rake",
-    ".java",
-    ".kt",
-    ".kts",
-    ".xml",
-    ".properties",
-    ".yml",
-    ".yaml",
-    ".sql",
 }
 SPECIAL_FILES = {
     "package.json",
-    "Gemfile",
-    "Gemfile.lock",
-    "build.gradle",
-    "build.gradle.kts",
-    "pom.xml",
-    "gradle.properties",
-    "application.yml",
-    "application.yaml",
-    "application.properties",
 }
 
 

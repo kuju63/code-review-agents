@@ -4,9 +4,11 @@ This directory contains a practical evaluation toolkit for a solo developer.
 
 Main target stacks for this toolkit:
 
-- Ruby on Rails application repositories
-- Front-end primary repositories (React/Vue/Svelte)
-- Spring Boot repositories (including enterprise template based apps)
+- Front-end primary repositories (React/Vue/Angular/Svelte)
+
+Backend stacks (Ruby on Rails, Spring Boot) are out of scope for now: with
+current review resources it isn't realistic to cover every stack, so
+evaluation focuses on improving frontend review accuracy first.
 
 Main business domain:
 
@@ -79,7 +81,8 @@ Tip:
 - Prefer PRs that include code review comments
 - Avoid gigantic PRs in early phase
 - You can copy from `evaluation/input/pr_targets.example.json`
-- Keep stack balance close to Rails 30%, Spring 30%, Front-end 40%
+- Keep stack balance across React/Vue/Angular/Svelte per the Domain Coverage
+  Policy in `EVALUATION_PLAN.md` §2.0
 - For B2B2C, prioritize auth, tenant, billing, PII, and workflow-related PRs
 
 Alternative: generate `pr_targets.json` from tagged candidates automatically.
@@ -209,4 +212,4 @@ Minimum recommended start point:
 
 - Gold extraction currently relies on review comments API and simple heuristics.
 - Severity/category normalization is keyword-based and should be calibrated with small manual checks.
-- Mutation injection now supports Front-end, Rails, and Spring Boot patterns, and can be extended further in `seeded_mutations.json`.
+- Mutation injection currently supports Front-end patterns only (React/Vue/Angular/Svelte); backend-specific traps (Rails, Spring Boot) are intentionally out of scope while resources are focused on frontend review accuracy, and can be reconsidered later in `seeded_mutations.json`.

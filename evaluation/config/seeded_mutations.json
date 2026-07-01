@@ -34,67 +34,11 @@
       "summary": "Sequential API calls in loop can cause major latency regressions."
     },
     {
-      "rule_id": "rails_mass_assignment",
-      "category": "security",
-      "severity": "critical",
-      "languages": ["rb"],
-      "line_snippet": "@user.update(params[:user])",
-      "summary": "Unfiltered mass assignment may allow privilege escalation."
-    },
-    {
-      "rule_id": "rails_raw_sql_interpolation",
-      "category": "security",
-      "severity": "critical",
-      "languages": ["rb"],
-      "line_snippet": "User.where(\"email = '#{params[:email]}'\")",
-      "summary": "String interpolation in SQL query can cause SQL injection."
-    },
-    {
-      "rule_id": "rails_n_plus_one",
-      "category": "performance",
-      "severity": "high",
-      "languages": ["rb"],
-      "line_snippet": "orders.each { |o| puts o.customer.name }",
-      "summary": "Association access in loop without eager loading can cause N+1 queries."
-    },
-    {
-      "rule_id": "spring_missing_pre_authorize",
-      "category": "security",
-      "severity": "critical",
-      "languages": ["java", "kt"],
-      "line_snippet": "@GetMapping('/admin/users') public List<UserDto> listUsers() { return svc.listAll(); }",
-      "summary": "Admin endpoint exposed without authorization annotation."
-    },
-    {
-      "rule_id": "spring_transaction_missing",
-      "category": "correctness",
-      "severity": "high",
-      "languages": ["java", "kt"],
-      "line_snippet": "public void transfer(Account a, Account b, BigDecimal amount) { debit(a, amount); credit(b, amount); }",
-      "summary": "Multi-step state update without transaction can break consistency."
-    },
-    {
-      "rule_id": "spring_sensitive_log",
-      "category": "security",
-      "severity": "high",
-      "languages": ["java", "kt", "properties", "yaml"],
-      "line_snippet": "log.info(\"login request: user={}, password={}\", username, password);",
-      "summary": "Sensitive credentials should not be logged in plain text."
-    },
-    {
-      "rule_id": "mybatis_dynamic_sql_injection",
-      "category": "security",
-      "severity": "critical",
-      "languages": ["xml"],
-      "line_snippet": "SELECT * FROM users WHERE email = '${email}'",
-      "summary": "Raw string substitution in SQL mapper can enable SQL injection."
-    },
-    {
       "rule_id": "b2b2c_idor_hint",
       "category": "security",
       "severity": "high",
-      "languages": ["rb", "java", "kt", "js", "ts", "jsx", "tsx", "vue", "svelte"],
-      "line_snippet": "return repository.findById(request.getCustomerId());",
+      "languages": ["js", "ts", "jsx", "tsx", "vue", "svelte"],
+      "line_snippet": "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
       "language_snippets": {
         "js":     "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
         "jsx":    "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
