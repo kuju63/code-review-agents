@@ -2,7 +2,10 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from code_review_agent.agents.base_reviewer import ReviewerConfig
+from code_review_agent.agents.exceptions import StructuredOutputMissingError
 from code_review_agent.models.review import (
     ReviewError,
     ReviewFinding,
@@ -500,6 +503,22 @@ class TestLeadEngineerAgentEvaluate:
         _, kwargs = mock_agent.call_args
         assert kwargs.get("limits") == {"turns": 5}
 
+    def test_raises_structured_output_missing_error_when_none(self):
+        """Strands returns ``structured_output=None`` without raising when the
+        model exhausts its turn limit without ever satisfying the schema.
+        evaluate() must surface this as an actionable error instead of
+        crashing on ``output.decisions`` with an opaque AttributeError."""
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = None
+        mock_agent.return_value.stop_reason = "limit_turns"
+
+        with (
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel"),
+        ):
+            with pytest.raises(StructuredOutputMissingError, match="LeadEngineer"):
+                self._agent().evaluate(_make_report())
+
     def test_returns_lead_engineer_report(self):
         from code_review_agent.models.lead_engineer import (
             LeadEngineerOutput,
@@ -584,7 +603,9 @@ class TestLeadEngineerAgentEvaluate:
             LeadEngineerAgent(config).evaluate(_make_report())
 
         mock_model_cls.assert_called_once_with(
-            model_id="gpt-4o", client_args={"base_url": "http://localhost:11434/v1"}
+            model_id="gpt-4o",
+            client_args={"base_url": "http://localhost:11434/v1"},
+            params={"temperature": 0.3},
         )
 
     def test_omits_base_url_from_openai_model_when_not_set(self):
