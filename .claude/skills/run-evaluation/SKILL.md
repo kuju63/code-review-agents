@@ -35,8 +35,8 @@ grep -q "GITHUB_TOKEN" .env || { echo "ERROR: GITHUB_TOKEN not set in .env"; exi
 echo ".env OK"
 
 # pr_targets.json（Gold setビルドの入力）の存在確認
-if [ ! -f evaluation/input/pr_targets.json ]; then
-  echo "ERROR: evaluation/input/pr_targets.json not found. Run convert_tagged_targets.py first."
+if [ ! -f evaluation/input/pr_targets_b2b2c_tagged.json ]; then
+  echo "ERROR: evaluation/input/pr_targets_b2b2c_tagged.json not found. Run convert_tagged_targets.py first."
   exit 1
 fi
 echo "pr_targets.json OK"
@@ -52,7 +52,7 @@ echo "pr_targets.json OK"
 if [ ! -s evaluation/data/gold_pr_set.jsonl ]; then
   source .venv/bin/activate
   python evaluation/tools/build_gold_set.py \
-    --input evaluation/input/pr_targets.json \
+    --input evaluation/input/pr_targets_b2b2c_tagged.json \
     --output evaluation/data/gold_pr_set.jsonl
 else
   echo "Gold set already exists, skipping build."
