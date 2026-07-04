@@ -20,9 +20,10 @@ import os
 import signal
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import httpx
 from dotenv import load_dotenv
@@ -34,6 +35,7 @@ load_dotenv()
 _DEFAULT_BASE_URL = "http://localhost:8000"
 _DEFAULT_POLL_INTERVAL = 3
 _DEFAULT_TIMEOUT = 1800
+_DEFAULT_CONCURRENCY = 2
 
 
 def _run_a2a(
@@ -118,21 +120,28 @@ def evaluate_seeded_item(
     ]
     pr_info_data["pr_info"]["file_changes"] = seeded_file_changes
 
-    # Step 3: Run Frontend reviewer and Security reviewer in parallel (sequential here for simplicity)
-    frontend_result = _run_a2a(
-        client,
-        f"{base_url}/frontend-reviewer",
-        {"pr_info": pr_info_data, "model_id": model_id},
-        poll_interval,
-        timeout,
-    )
-    security_result = _run_a2a(
-        client,
-        f"{base_url}/security-reviewer",
-        {"pr_info": pr_info_data, "model_id": model_id},
-        poll_interval,
-        timeout,
-    )
+    # Step 3: Run Frontend reviewer and Security reviewer in parallel.
+    # They are independent of each other's output, so running them
+    # concurrently only affects wall-clock time, not what is found.
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        frontend_future = executor.submit(
+            _run_a2a,
+            client,
+            f"{base_url}/frontend-reviewer",
+            {"pr_info": pr_info_data, "model_id": model_id},
+            poll_interval,
+            timeout,
+        )
+        security_future = executor.submit(
+            _run_a2a,
+            client,
+            f"{base_url}/security-reviewer",
+            {"pr_info": pr_info_data, "model_id": model_id},
+            poll_interval,
+            timeout,
+        )
+        frontend_result = frontend_future.result()
+        security_result = security_future.result()
 
     # Step 4: Lead engineer synthesis
     review_report = {"results": [frontend_result, security_result], "errors": []}
@@ -145,6 +154,42 @@ def evaluate_seeded_item(
     )
 
     return _to_predictions(lead_data, item["id"])
+
+
+def _evaluate_concurrently(
+    items: list[dict[str, Any]],
+    evaluate_fn: Callable[[dict[str, Any]], dict[str, Any]],
+    concurrency: int,
+    label_fn: Callable[[dict[str, Any]], str] = lambda item: item["id"],
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Evaluate ``items`` with at most ``concurrency`` running at once.
+
+    Returns ``(predictions, failed_ids)``. Both preserve the original item
+    order regardless of completion order, so output files and scores stay
+    reproducible across runs and across --concurrency values.
+    """
+    results: list[dict[str, Any] | None] = [None] * len(items)
+    failed_flags: list[bool] = [False] * len(items)
+
+    def _run_one(index: int, item: dict[str, Any]) -> None:
+        label = label_fn(item)[:60]
+        print(f"  [{label}] ... ", end="", flush=True)
+        try:
+            pred = evaluate_fn(item)
+            results[index] = pred
+            print(f"done ({len(pred['agent_findings'])} findings)")
+        except Exception as e:
+            failed_flags[index] = True
+            print(f"WARN: {e}")
+
+    with ThreadPoolExecutor(max_workers=max(1, concurrency)) as executor:
+        futures = [executor.submit(_run_one, i, item) for i, item in enumerate(items)]
+        for future in as_completed(futures):
+            future.result()
+
+    predictions = [r for r in results if r is not None]
+    failed_ids = [items[i]["id"] for i, flag in enumerate(failed_flags) if flag]
+    return predictions, failed_ids
 
 
 def _get_commit_hash() -> str:
@@ -305,6 +350,16 @@ def main() -> int:
     parser.add_argument("--poll-interval", type=float, default=_DEFAULT_POLL_INTERVAL)
     parser.add_argument("--timeout", type=float, default=_DEFAULT_TIMEOUT)
     parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=_DEFAULT_CONCURRENCY,
+        help=(
+            "Max number of Gold/Seeded items evaluated at once (default: 2). "
+            "A realistic ceiling is hardware- and rate-limit-dependent; raising "
+            "it increases the risk of hitting --timeout on individual items."
+        ),
+    )
+    parser.add_argument(
         "--server-pid-file",
         default=None,
         help="Path to a file containing the A2A server PID.  When set, the "
@@ -352,42 +407,27 @@ def _run_evaluation(args: argparse.Namespace) -> int:
             )
             return 3
 
-        print("\n--- Gold set evaluation ---")
-        for item in gold_items:
-            print(f"  [{item['id']}] ... ", end="", flush=True)
-            try:
-                pred = evaluate_gold_item(
-                    item,
-                    client,
-                    args.base_url,
-                    args.poll_interval,
-                    args.timeout,
-                    model_id,
-                )
-                predictions.append(pred)
-                print(f"done ({len(pred['agent_findings'])} findings)")
-            except Exception as e:
-                failed_ids.append(item["id"])
-                print(f"WARN: {e}")
+        print(f"\n--- Gold set evaluation (concurrency={args.concurrency}) ---")
+        gold_predictions, gold_failed = _evaluate_concurrently(
+            gold_items,
+            lambda item: evaluate_gold_item(
+                item, client, args.base_url, args.poll_interval, args.timeout, model_id
+            ),
+            args.concurrency,
+        )
+        predictions.extend(gold_predictions)
+        failed_ids.extend(gold_failed)
 
-        print("\n--- Seeded set evaluation ---")
-        for item in seeded_items:
-            short_id = item["id"][:60]
-            print(f"  [{short_id}] ... ", end="", flush=True)
-            try:
-                pred = evaluate_seeded_item(
-                    item,
-                    client,
-                    args.base_url,
-                    args.poll_interval,
-                    args.timeout,
-                    model_id,
-                )
-                predictions.append(pred)
-                print(f"done ({len(pred['agent_findings'])} findings)")
-            except Exception as e:
-                failed_ids.append(item["id"])
-                print(f"WARN: {e}")
+        print(f"\n--- Seeded set evaluation (concurrency={args.concurrency}) ---")
+        seeded_predictions, seeded_failed = _evaluate_concurrently(
+            seeded_items,
+            lambda item: evaluate_seeded_item(
+                item, client, args.base_url, args.poll_interval, args.timeout, model_id
+            ),
+            args.concurrency,
+        )
+        predictions.extend(seeded_predictions)
+        failed_ids.extend(seeded_failed)
 
     if failed_ids:
         print(
