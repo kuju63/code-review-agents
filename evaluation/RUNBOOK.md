@@ -14,9 +14,23 @@ export GITHUB_TOKEN=your_token
 
 ## Quick Start (recommended)
 
-Run all dataset preparation steps in one command:
+Run all dataset preparation steps in one command. By default this samples n=15
+targets at random (stratified ~50/50 by repo_type) instead of processing the
+whole tagged pool, which keeps day-to-day iteration fast:
 
 bash evaluation/tools/run_evaluation_pipeline.sh
+
+To use a smaller/larger fast sample:
+
+bash evaluation/tools/run_evaluation_pipeline.sh --sample-n 8
+
+For a full, deterministic run (weekly refresh / release-gate evaluation per
+[EVALUATION_PLAN.md](EVALUATION_PLAN.md) §5.1), use `--limit` instead of
+`--sample-n` (they are mutually exclusive):
+
+bash evaluation/tools/run_evaluation_pipeline.sh \
+  --limit 30 \
+  --min-risk medium
 
 For security-focused sample selection:
 
@@ -25,15 +39,29 @@ bash evaluation/tools/run_evaluation_pipeline.sh \
   --limit 30 \
   --min-risk medium
 
-This executes Step 1 to Step 3 below.
+This executes Step 1 to Step 3 below. See
+[docs/evaluation-pipeline-design.md](../docs/evaluation-pipeline-design.md)
+for the full data flow diagram and the `input/` vs `data/` directory split.
 
 ## 1. Build execution target list from tagged candidates
 
-Default command (recommended first run):
+Fast sampling (recommended for local iteration; n=15, stratified by repo_type):
 
 python evaluation/tools/convert_tagged_targets.py \
   --input evaluation/input/pr_targets_b2b2c_tagged.json \
-  --output evaluation/input/pr_targets.json \
+  --output evaluation/data/pr_targets.json \
+  --limit 15 \
+  --shuffle \
+  --stratify-repo-type \
+  --balanced \
+  --min-risk medium \
+  --print-summary
+
+Full/deterministic selection (weekly refresh / release-gate evaluation):
+
+python evaluation/tools/convert_tagged_targets.py \
+  --input evaluation/input/pr_targets_b2b2c_tagged.json \
+  --output evaluation/data/pr_targets.json \
   --limit 30 \
   --balanced \
   --min-risk medium \
@@ -41,13 +69,16 @@ python evaluation/tools/convert_tagged_targets.py \
 
 Checkpoint:
 
-- `evaluation/input/pr_targets.json` exists
+- `evaluation/data/pr_targets.json` exists
 - Stack distribution in summary is reasonable
+- Any `[COVERAGE-WARN]` lines on stderr are non-blocking; review them, don't
+  treat them as a failure (see EVALUATION_PLAN.md §2.0.3 for known population
+  constraints in the current tagged pool)
 
 ## 2. Build Gold set
 
 python evaluation/tools/build_gold_set.py \
-  --input evaluation/input/pr_targets.json \
+  --input evaluation/data/pr_targets.json \
   --output evaluation/data/gold_pr_set.jsonl
 
 Checkpoint:
@@ -70,7 +101,20 @@ Checkpoint:
 
 ## 4. Run review agent pipeline
 
-Run your existing review agent on both Gold and Seeded inputs and store:
+Run the review agent on both Gold and Seeded inputs via the A2A server
+(see [.claude/skills/run-evaluation/SKILL.md](../.claude/skills/run-evaluation/SKILL.md)
+for the full start/stop sequence):
+
+python evaluation/tools/run_agent_evaluation.py \
+  --gold evaluation/data/gold_pr_set.jsonl \
+  --seeded evaluation/data/seeded_set.jsonl \
+  --output evaluation/data/agent_predictions.jsonl \
+  --concurrency 2
+
+`--concurrency` (default 2) evaluates that many Gold/Seeded items at once
+instead of one at a time. A realistic ceiling is hardware- and rate-limit-
+dependent; raising it increases the risk of hitting `--timeout` (default
+1800s) on individual items. This produces:
 
 - `evaluation/data/agent_predictions.jsonl`
 
@@ -128,3 +172,20 @@ If stack balance is broken:
 
 - Use `--balanced` in converter
 - Increase candidate pool in underrepresented stack
+
+If `[COVERAGE-WARN]` keeps appearing:
+
+- This is non-blocking by design; the pipeline still completes
+- Angular/Svelte and performance/maintainability-tagged PRs are scarce in the
+  current tagged pool (see EVALUATION_PLAN.md §2.0.3), so some warnings are
+  structural and will not go away with a different `--seed`
+- For a release-gate decision, prefer `--limit` (full/deterministic) over
+  `--sample-n` so composition is not left to chance
+
+If evaluation runs are slow:
+
+- Reduce dataset size with `--sample-n` (fewer items reach the agent
+  execution step, which dominates wall-clock time)
+- Increase `--concurrency` on `run_agent_evaluation.py` cautiously (default 2);
+  watch for `--timeout` failures in the run's `[WARN]` output before raising it
+  further

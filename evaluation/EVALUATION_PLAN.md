@@ -75,6 +75,33 @@ Within each category, include at least:
 - 30% correctness or unintended side-effect PRs
 - 30% performance or maintainability PRs
 
+### 2.0.3 Known Population Constraints and Sampling Operation
+
+The current tagged candidate pool (`evaluation/input/pr_targets_b2b2c_tagged.json`,
+39 entries) has an absolute-count constraint: Angular (3 entries) and Svelte
+(2 entries) are scarce, so the Application-side Angular ≥15% / Svelte ≥15%
+minimums above cannot be guaranteed for every sample regardless of `--limit`
+or `--sample-n`. Similarly, no entry in the pool carries a `priority_themes`
+tag that directly names performance or maintainability, so the
+performance/maintainability ≥30% minimum is structurally unmet by the pool
+today (see `docs/evaluation-pipeline-design.md` for the theme-to-category
+mapping used to compute this).
+
+For this reason, `convert_tagged_targets.py` reports composition shortfalls
+against the ratios above as **warnings only** (`[COVERAGE-WARN]` on stderr,
+non-blocking); the pipeline never fails because of them.
+
+Sampling operation policy:
+
+- Day-to-day local iteration: use
+  `run_evaluation_pipeline.sh --sample-n <n>` (default 15), a randomized
+  selection stratified ~50/50 by `repo_type`.
+- §4 release-gate decisions / §5.1 weekly full run: use `--limit` (the
+  deterministic, risk-ranked selection). Do not use a `--sample-n` run as the
+  basis for a release-gate decision, since its composition is not guaranteed.
+- Durable fix (separate task): grow `pr_targets_b2b2c_tagged.json` with more
+  Angular/Svelte and performance/maintainability-themed PR candidates.
+
 ### 2.0.1 Repository Selection Criteria
 
 UI Component Libraries must satisfy:
