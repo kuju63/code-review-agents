@@ -83,6 +83,11 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
 - 各レビュアーの `review()` は**同期**実装で、`PRInfoCollector.collect()` と同じく
   `create_github_mcp_client` を `with` で開いて使う（MCP の同期コンテキストマネージャを
   そのまま扱える）。
+- `agent(...).structured_output` は `max_agent_turns` 使い切りで `None` になりうる
+  （strands はこの場合例外を送出しない）。`review()` はこれを明示チェックし
+  `StructuredOutputMissingError` を送出する。3.4 節の `ReviewError` 変換により、単一レビュアーの
+  この失敗が他のレビュアーを巻き込むことはない。詳細は
+  [docs/lead-engineer-agent-design.md §8.1](lead-engineer-agent-design.md#81-structured_output-が得られない場合のフェイルファスト)。
 
 ### 3.3 レジストリ — `registry`
 
