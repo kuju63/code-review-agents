@@ -146,13 +146,16 @@ class TestSendDiscordNotification:
         assert any("Discord notification failed" in r.message for r in caplog.records)
 
     def test_http_error_status_is_logged_and_not_raised(self, monkeypatch, caplog):
-        request = httpx.Request("POST", "https://discord.example/webhook")
+        webhook_url = "https://discord.example/api/webhooks/123/super-secret-token"
+        request = httpx.Request("POST", webhook_url)
         response = httpx.Response(400, request=request)
 
         class FakeResponse:
             def raise_for_status(self):
                 raise httpx.HTTPStatusError(
-                    "bad status", request=request, response=response
+                    f"bad status for url '{webhook_url}'",
+                    request=request,
+                    response=response,
                 )
 
         def fake_post(*args, **kwargs):
@@ -161,8 +164,11 @@ class TestSendDiscordNotification:
         monkeypatch.setattr(httpx, "post", fake_post)
 
         with caplog.at_level(logging.WARNING):
-            discord_notify.send_discord_notification(
-                "https://discord.example/webhook", {"embeds": []}
-            )
+            discord_notify.send_discord_notification(webhook_url, {"embeds": []})
+
+        messages = [r.message for r in caplog.records]
+        assert any("Discord notification failed" in m for m in messages)
+        assert not any("super-secret-token" in m for m in messages)
+        assert any("<redacted webhook url>" in m for m in messages)
 
         assert any("Discord notification failed" in r.message for r in caplog.records)

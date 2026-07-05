@@ -88,4 +88,8 @@ def send_discord_notification(webhook_url: str | None, payload: dict[str, Any]) 
         response = httpx.post(webhook_url, json=payload, timeout=10)
         response.raise_for_status()
     except Exception as exc:
-        logging.warning("Discord notification failed: %s", exc)
+        # httpx exceptions (e.g. HTTPStatusError.raise_for_status()) often embed
+        # the request URL in their message, and a Discord webhook URL carries an
+        # auth token in its path — redact it so it never lands in logs.
+        message = str(exc).replace(webhook_url, "<redacted webhook url>")
+        logging.warning("Discord notification failed: %s", message)
