@@ -165,7 +165,24 @@ Seeded項目内のfrontend-reviewer/security-reviewer呼び出しの並列化は
 
 ---
 
-## 6. 関連ドキュメント
+## 6. 完了通知（Discord Webhook）
+
+評価対象PR数が多いほど`run_agent_evaluation.py`の実行時間は長くなるため、完了を能動的に知らせる
+仕組みとして Discord Webhook 通知（`evaluation/tools/discord_notify.py`）を用意している。
+
+- **発火タイミング**: `_run_evaluation()`内でレポート(`report_*.md`)を書き込んだ直後、関数の返り値
+  （exit code）確定前。Gold/Seededの全アイテム評価とスコアリングが完了し、Hard Gate判定
+  （Critical Miss Rate = 0 かつ Must-Find Recall ≥ 0.95）が確定したタイミングであり、成功・失敗
+  （Hard Gate PASS/FAIL）を問わず通知する。
+- **通知しないケース**: `GITHUB_TOKEN`未設定・A2Aサーバー無応答・スコアリング失敗など、評価そのもの
+  が完了に至らない致命的エラーでは通知しない（これらは長時間実行の完了を意味しないため）。
+- **オプトイン**: `.env`の`DISCORD_WEBHOOK_URL`が未設定の場合は何もせず即returnする。設定必須では
+  ない。
+- **ベストエフォート**: Webhook送信は`httpx.post(...)`を素朴に呼ぶのみで、リトライは行わない。
+  例外は全て`logging.warning`に留め、評価パイプライン自体のexit codeには一切影響しない
+  （通知の失敗が、長時間かけた評価結果そのものを失敗扱いにしてはならないため）。
+
+## 7. 関連ドキュメント
 
 - [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md) — 何を測るか・合否基準・データセット戦略
 - [evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md) — 評価実行の具体的な手順
