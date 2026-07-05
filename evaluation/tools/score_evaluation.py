@@ -12,12 +12,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 from dataclasses import dataclass
 from typing import Any, Callable, cast
 
 from pydantic import BaseModel
 from strands import Agent
 from strands.models.openai import OpenAIModel
+
+logger = logging.getLogger(__name__)
 
 SemanticJudge = Callable[[str, str], bool]
 
@@ -56,7 +59,16 @@ def make_llm_semantic_judge(
 
     def judge(gold_summary: str, pred_summary: str) -> bool:
         prompt = f"Finding A: {gold_summary}\nFinding B: {pred_summary}"
-        result = agent(prompt, structured_output_model=SemanticMatchVerdict)
+        try:
+            result = agent(prompt, structured_output_model=SemanticMatchVerdict)
+        except Exception:
+            # Fail closed: --semantic-judge is optional and already
+            # non-deterministic, so a transient LLM/transport error should
+            # count as a non-match rather than aborting the whole scoring run.
+            logger.warning(
+                "semantic judge call failed; treating as non-match", exc_info=True
+            )
+            return False
         if result.structured_output is None:
             return False
         return cast(SemanticMatchVerdict, result.structured_output).is_match

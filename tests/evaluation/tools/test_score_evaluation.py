@@ -233,3 +233,13 @@ class TestMakeLlmSemanticJudge:
             judge = make_llm_semantic_judge("gpt-4o")
             result = judge("a", "b")
         assert result is False
+
+    def test_judge_fails_closed_on_transient_agent_error(self):
+        mock_agent = MagicMock(side_effect=TimeoutError("upstream timed out"))
+        with (
+            patch.object(score_evaluation, "Agent", return_value=mock_agent),
+            patch.object(score_evaluation, "OpenAIModel"),
+        ):
+            judge = make_llm_semantic_judge("gpt-4o")
+            result = judge("a", "b")
+        assert result is False
