@@ -161,6 +161,8 @@ GitHub MCPのレート制限次第では2が現実的な上限であり、上げ
 - `agent_predictions.jsonl` — Agentの予測結果
 - `report_YYYYMMDD-HHMMSS-<hash>.md` — 評価レポート（Markdown）
 
+`.env` に `DISCORD_WEBHOOK_URL` が設定されていれば、レポート生成直後（Hard Gate の成否を問わず）に自動で Discord へ完了通知が送信される（任意設定。未設定なら何もしない）。
+
 ---
 
 ## Step 5: サーバー停止の確認（念のためのフォールバック）

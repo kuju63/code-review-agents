@@ -29,6 +29,7 @@ import httpx
 from dotenv import load_dotenv
 
 from a2a_client import a2a_poll, a2a_send
+from discord_notify import build_notification_payload, send_discord_notification
 
 load_dotenv()
 
@@ -461,6 +462,13 @@ def _run_evaluation(args: argparse.Namespace) -> int:
     report_path = Path(args.output).parent / report_filename
     report_path.write_text(report_md, encoding="utf-8")
     print(f"\nReport written: {report_path}")
+
+    send_discord_notification(
+        os.environ.get("DISCORD_WEBHOOK_URL"),
+        build_notification_payload(
+            scores, failed_ids, report_path, commit_hash, model_id, executed_at
+        ),
+    )
 
     return 1 if failed_ids else 0
 

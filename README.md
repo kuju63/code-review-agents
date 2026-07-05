@@ -68,6 +68,7 @@ cp .env.example .env
 | `CODE_REVIEW_PORT`         | `8000`                                        | サービスポート                                             |
 | `CODE_REVIEW_LOG_LEVEL`    | `info`                                        | ログレベル                                               |
 | `GITHUB_MCP_URL`           | `https://api.githubcopilot.com/mcp/read-only` | GitHub MCP エンドポイント                                  |
+| `DISCORD_WEBHOOK_URL`      | —                                             | 設定すると評価パイプライン完了時に Discord へ通知が送信される                   |
 
 詳細は `.env.example` のコメントを参照してください。
 
