@@ -140,6 +140,11 @@ python evaluation/tools/score_evaluation.py \
   --seeded evaluation/data/seeded_set.jsonl \
   --pred evaluation/data/agent_predictions.jsonl
 
+Add `--semantic-judge` (optionally with `--model-id` / `--llm-base-url`) to
+enable LLM-as-judge content matching on top of path/line/category — see
+EVALUATION_PLAN.md §3.1.1 Matching rule. Do not use it for Seeded-set hard
+gate runs (§6): it introduces non-determinism.
+
 ## 6. Gate decision
 
 Check against [evaluation/EVALUATION_PLAN.md](evaluation/EVALUATION_PLAN.md) gates:
