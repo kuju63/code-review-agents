@@ -174,6 +174,12 @@ for now to focus on improving frontend review accuracy.
 - Issue Precision: matched_gold_issues / all_agent_issues
 - Severity Agreement: matched_severity / matched_gold_issues
 - Location Hit Rate: matched_file_line / matched_gold_issues
+  — Among `matched_gold_issues` (pairs that already satisfy the full matching
+    rule below, including the ±5 line tolerance), `matched_file_line` counts
+    only pairs whose line numbers are exactly equal (diff == 0). This isolates
+    how often matches rely on the tolerance window rather than landing exactly,
+    so it stays informative even though the denominator is already
+    location-matched.
 - Decision Agreement (lead): decisions_matching_human / all_decisions
 
 ## 3.1.1 Lead Engineer Decision Metrics
@@ -197,7 +203,21 @@ Matching rule:
 
 - File path must match exactly
 - Line tolerance: plus/minus 5 lines
-- Semantic match judged by rubric categories
+- Semantic match: when both findings carry a non-`unknown` `category`, the
+  categories must be equal. In production this rarely gates anything —
+  `run_agent_evaluation.py::_to_predictions` normalizes the agent's
+  perspective-based categories (`technical`/`security`) to `unknown` (except
+  `security`) because they don't share a taxonomy with the Gold/Seeded
+  `category` values (`correctness`/`performance`/etc.), so most real pairs
+  skip this check entirely.
+- Semantic match: LLM-as-judge on `summary` text. Implemented via
+  `score_evaluation.py`'s `--semantic-judge` flag (`make_llm_semantic_judge`),
+  which asks an OpenAI-compatible model whether two findings' `summary` text
+  describes the same underlying defect, once path/line/category above already
+  hold. **Off by default** — it adds API cost/latency and non-determinism,
+  which would make the Seeded-set hard release gates in §4 flaky. Enable it
+  for Gold-set soft-target scoring (§4) where that trade-off is acceptable;
+  leave it off for Seeded-set hard-gate runs.
 
 ## 3.2 Seeded Metrics
 
