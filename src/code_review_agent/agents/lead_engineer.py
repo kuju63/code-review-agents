@@ -21,6 +21,7 @@ from ..models.lead_engineer import (
 )
 from ..models.review import ReviewFinding, ReviewPerspective, ReviewReport
 from .base_reviewer import ReviewerConfig
+from .exceptions import StructuredOutputMissingError
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,9 @@ Rules — you MUST follow every rule without exception:
 - Do NOT reference specific framework names or technology stacks in your
   reasoning unless a reviewer explicitly mentioned them.
 - Every Finding in the input MUST receive a decision.
-- Return the finding_index exactly as shown in the Finding # label.
+- Return the finding_index as a plain integer matching the Finding # label —
+  for "Finding #1" return 1, not "Finding #1" or "1" (a string). It must
+  always be a JSON number.
 - Assign final_priority; it may differ from the reviewer's original priority
   when the overall PR context justifies it.
 - Provide a concise reason for each decision and an impact assessment.
@@ -86,18 +89,21 @@ class LeadEngineerAgent:
             model = OpenAIModel(
                 model_id=self._config.model_id,
                 client_args={"base_url": self._config.llm_base_url},
+                params={
+                    "temperature": 0.3,
+                },
             )
         else:
             model = OpenAIModel(model_id=self._config.model_id)
         agent = Agent(model=model, system_prompt=self.system_prompt, tools=[])
-        output: LeadEngineerOutput = cast(
-            LeadEngineerOutput,
-            agent(
-                prompt,
-                structured_output_model=LeadEngineerOutput,
-                limits={"turns": self._config.max_agent_turns},
-            ).structured_output,
+        result = agent(
+            prompt,
+            structured_output_model=LeadEngineerOutput,
+            limits={"turns": self._config.max_agent_turns},
         )
+        if result.structured_output is None:
+            raise StructuredOutputMissingError("LeadEngineerAgent", result.stop_reason)
+        output: LeadEngineerOutput = cast(LeadEngineerOutput, result.structured_output)
         decisions = self._resolve_decisions(output.decisions, index_map)
         return LeadEngineerReport(
             overall_summary=output.overall_summary,

@@ -10,6 +10,7 @@ from code_review_agent.agents.base_reviewer import (
     ReviewerConfig,
     _annotate_patch,
 )
+from code_review_agent.agents.exceptions import StructuredOutputMissingError
 from code_review_agent.skills.agent_skills_factory import AgentSkillType
 from code_review_agent.models.pr_info import (
     FileChange,
@@ -276,6 +277,27 @@ class TestReview:
         assert result.project_type is ProjectType.REACT_TS
         assert result.output.summary == "looks good"
 
+    def test_raises_structured_output_missing_error_when_none(self):
+        """Strands returns ``structured_output=None`` without raising when the
+        model exhausts its turn limit without ever satisfying the schema
+        (see strands.agent.Agent.__call__ docs on ``stop_reason``). review()
+        must surface this as an actionable error instead of letting a
+        downstream attribute access fail with an opaque AttributeError."""
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = None
+        mock_agent.return_value.stop_reason = "limit_turns"
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+        ):
+            with pytest.raises(StructuredOutputMissingError, match="stub-technical"):
+                reviewer.review(_make_context())
+
+        mock_mcp.stop.assert_called_once_with(None, None, None)
+
     def test_no_mcp_reviewer_skips_mcp_client(self):
         reviewer = _NoMcpReviewer(ReviewerConfig(github_token="tok"))
         mock_agent = MagicMock()
@@ -360,7 +382,9 @@ class TestReview:
             reviewer.review(_make_context())
 
         mock_model_cls.assert_called_once_with(
-            model_id="gpt-4o", client_args={"base_url": "http://localhost:11434/v1"}
+            model_id="gpt-4o",
+            client_args={"base_url": "http://localhost:11434/v1"},
+            params={"temperature": 0.1},
         )
 
     def test_omits_base_url_from_openai_model_when_not_set(self):

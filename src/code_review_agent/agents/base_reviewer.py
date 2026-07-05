@@ -25,6 +25,7 @@ from ..models.review import (
 )
 from ..skills.agent_skills_factory import AgentSkillType, create_agent_skills
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
+from .exceptions import StructuredOutputMissingError
 
 
 _HUNK_RE = re.compile(r"@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@")
@@ -169,6 +170,9 @@ class LLMReviewAgent(ReviewAgent):
             model = OpenAIModel(
                 model_id=self._config.model_id,
                 client_args={"base_url": self._config.llm_base_url},
+                params={
+                    "temperature": 0.1,
+                },
             )
         else:
             model = OpenAIModel(model_id=self._config.model_id)
@@ -203,14 +207,16 @@ class LLMReviewAgent(ReviewAgent):
                 plugins=plugins,
             )
             limits: Limits = {"turns": self._config.max_agent_turns}
-            output: ReviewOutput = cast(
-                ReviewOutput,
-                agent(
-                    prompt,
-                    structured_output_model=ReviewOutput,
-                    limits=limits,
-                ).structured_output,
+            result = agent(
+                prompt,
+                structured_output_model=ReviewOutput,
+                limits=limits,
             )
+            if result.structured_output is None:
+                raise StructuredOutputMissingError(
+                    f"Reviewer '{self.reviewer_id}'", result.stop_reason
+                )
+            output: ReviewOutput = cast(ReviewOutput, result.structured_output)
         finally:
             if mcp_client is not None:
                 mcp_client.stop(None, None, None)

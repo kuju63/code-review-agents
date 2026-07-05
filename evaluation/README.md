@@ -55,7 +55,7 @@ bash evaluation/tools/run_evaluation_pipeline.sh \
   --min-risk medium
 ```
 
-If you already have `pr_targets.json` and only want Gold+Seeded:
+If you already have `evaluation/data/pr_targets.json` and only want Gold+Seeded:
 
 ```bash
 bash evaluation/tools/run_evaluation_pipeline.sh \
@@ -66,7 +66,9 @@ bash evaluation/tools/run_evaluation_pipeline.sh \
 
 ## 1) Prepare PR target list
 
-Create `evaluation/input/pr_targets.json` with 30-50 PRs:
+`evaluation/data/pr_targets.json` is the generated execution target list
+(derived data — see [docs/evaluation-pipeline-design.md](../docs/evaluation-pipeline-design.md)
+for the `input/` vs `data/` directory split). Create it manually with 30-50 PRs:
 
 ```json
 [
@@ -92,7 +94,7 @@ Example 1: convert all tagged items
 ```bash
 python evaluation/tools/convert_tagged_targets.py \
   --input evaluation/input/pr_targets_b2b2c_tagged.json \
-  --output evaluation/input/pr_targets.json \
+  --output evaluation/data/pr_targets.json \
   --print-summary
 ```
 
@@ -101,7 +103,7 @@ Example 2: pick top 30, balanced by stack, medium risk or higher
 ```bash
 python evaluation/tools/convert_tagged_targets.py \
   --input evaluation/input/pr_targets_b2b2c_tagged.json \
-  --output evaluation/input/pr_targets.json \
+  --output evaluation/data/pr_targets.json \
   --limit 30 \
   --balanced \
   --min-risk medium \
@@ -113,7 +115,7 @@ Example 3: focus on security and tenant themes
 ```bash
 python evaluation/tools/convert_tagged_targets.py \
   --input evaluation/input/pr_targets_b2b2c_tagged.json \
-  --output evaluation/input/pr_targets_security.json \
+  --output evaluation/data/pr_targets_security.json \
   --themes-any security,tenant,isolation,auth \
   --min-risk medium \
   --print-summary
@@ -126,7 +128,7 @@ Set token and run:
 ```bash
 export GITHUB_TOKEN=your_token
 python evaluation/tools/build_gold_set.py \
-  --input evaluation/input/pr_targets.json \
+  --input evaluation/data/pr_targets.json \
   --output evaluation/data/gold_pr_set.jsonl
 ```
 

@@ -3,7 +3,7 @@
 
 Usage:
   python evaluation/tools/build_gold_set.py \
-    --input evaluation/input/pr_targets.json \
+    --input evaluation/data/pr_targets.json \
     --output evaluation/data/gold_pr_set.jsonl
 
 Input format (JSON):

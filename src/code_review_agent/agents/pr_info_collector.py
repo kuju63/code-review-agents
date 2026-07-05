@@ -406,6 +406,9 @@ class PRInfoCollector:
             return OpenAIModel(
                 model_id=self._model_id,
                 client_args={"base_url": self._llm_base_url},
+                params={
+                    "temperature": 0.3,
+                },
             )
         return OpenAIModel(model_id=self._model_id)
 

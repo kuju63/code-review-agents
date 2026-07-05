@@ -451,7 +451,9 @@ class TestPRInfoCollectorCollect:
         ):
             collector.collect("mui", "material-ui", 48591)
         model_cls.assert_called_once_with(
-            model_id="gpt-4o", client_args={"base_url": "http://localhost:11434/v1"}
+            model_id="gpt-4o",
+            client_args={"base_url": "http://localhost:11434/v1"},
+            params={"temperature": 0.3},
         )
 
     def test_logs_response_size(self, caplog):
