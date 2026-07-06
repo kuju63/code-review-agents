@@ -20,6 +20,7 @@ import os
 import signal
 import subprocess
 import sys
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
@@ -171,17 +172,21 @@ def _evaluate_concurrently(
     """
     results: list[dict[str, Any] | None] = [None] * len(items)
     failed_flags: list[bool] = [False] * len(items)
+    print_lock = threading.Lock()
 
     def _run_one(index: int, item: dict[str, Any]) -> None:
         label = label_fn(item)[:60]
-        print(f"  [{label}] ... ", end="", flush=True)
+        with print_lock:
+            print(f"  [{label}] ... started", flush=True)
         try:
             pred = evaluate_fn(item)
             results[index] = pred
-            print(f"done ({len(pred['agent_findings'])} findings)")
+            with print_lock:
+                print(f"  [{label}] ... done ({len(pred['agent_findings'])} findings)")
         except Exception as e:
             failed_flags[index] = True
-            print(f"WARN: {e}")
+            with print_lock:
+                print(f"  [{label}] ... WARN: {e}")
 
     with ThreadPoolExecutor(max_workers=max(1, concurrency)) as executor:
         futures = [executor.submit(_run_one, i, item) for i, item in enumerate(items)]

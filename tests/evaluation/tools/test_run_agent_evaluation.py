@@ -103,6 +103,26 @@ class TestEvaluateConcurrentlyFailureIsolation:
         assert failed == ["item-2"]
         assert [p["id"] for p in predictions] == ["item-0", "item-1", "item-3"]
 
+    def test_failure_log_line_is_self_contained_under_concurrency(self, capsys):
+        """Each outcome line must carry its own label so a WARN can't visually
+        attach to a different, concurrently-running item's start marker."""
+        items = [{"id": f"item-{i}"} for i in range(6)]
+
+        def evaluate_fn(item):
+            time.sleep(0.02)
+            if item["id"] == "item-3":
+                raise TimeoutError(
+                    "Task deadbeef timed out after 1800s (status=working)"
+                )
+            return {"id": item["id"], "agent_findings": []}
+
+        run_agent_evaluation._evaluate_concurrently(items, evaluate_fn, concurrency=6)
+
+        out = capsys.readouterr().out
+        warn_lines = [line for line in out.splitlines() if "WARN" in line]
+        assert len(warn_lines) == 1
+        assert "item-3" in warn_lines[0]
+
 
 class TestSeededItemReviewerParallelism:
     def test_frontend_and_security_reviewer_calls_overlap(self, monkeypatch):
