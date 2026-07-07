@@ -18,6 +18,7 @@ run_agent_evaluation = load_eval_tool_module(
 _build_report = run_agent_evaluation._build_report
 _sanitize_cell = run_agent_evaluation._sanitize_cell
 _ref_cell = run_agent_evaluation._ref_cell
+_finding_row = run_agent_evaluation._finding_row
 _render_item_detail = run_agent_evaluation._render_item_detail
 _gold_heading = run_agent_evaluation._gold_heading
 _seeded_heading = run_agent_evaluation._seeded_heading
@@ -75,11 +76,11 @@ def make_gold_item_row(
 
 
 def make_raw_finding(
-    path="src/a.ts",
-    line=10,
-    category="security",
-    severity="high",
-    summary="xss via innerHTML",
+    path: str = "src/a.ts",
+    line: int = 10,
+    category: str = "security",
+    severity: str = "high",
+    summary: str | None = "xss via innerHTML",
     **extra,
 ):
     return {
@@ -108,6 +109,12 @@ class TestSanitizeCell:
     def test_short_text_is_unchanged(self):
         assert _sanitize_cell("short") == "short"
 
+    def test_none_is_treated_as_empty_string(self):
+        assert _sanitize_cell(None) == ""
+
+    def test_non_string_input_is_coerced(self):
+        assert _sanitize_cell(42) == "42"
+
 
 class TestRefCell:
     def test_source_present_renders_markdown_link(self):
@@ -125,6 +132,29 @@ class TestRefCell:
     def test_source_takes_priority_over_rule_id(self):
         raw = make_raw_finding(source="https://x", rule_id="rule")
         assert _ref_cell(raw) == "[source](https://x)"
+
+
+class TestFindingRow:
+    def test_none_summary_does_not_raise(self):
+        raw = make_raw_finding(summary=None)
+        row = _finding_row("❌ 見逃し", raw)
+        assert "❌ 見逃し" in row
+
+    def test_pipe_in_path_is_escaped(self):
+        raw = make_raw_finding(path="src/a|b.ts")
+        row = _finding_row("✅ マッチ", raw)
+        assert "src/a\\|b.ts" in row
+        assert row.count("|") == row.count("\\|") + 7
+
+    def test_newline_in_category_is_collapsed(self):
+        raw = make_raw_finding(category="security\ninjected")
+        row = _finding_row("✅ マッチ", raw)
+        assert "\n" not in row
+
+    def test_pipe_in_source_ref_is_escaped(self):
+        raw = make_raw_finding(source="https://example.com/a|b")
+        row = _finding_row("✅ マッチ", raw)
+        assert "https://example.com/a\\|b" in row
 
 
 class TestRenderItemDetail:
@@ -324,3 +354,58 @@ class TestBuildReportIntegration:
         report = _build_report(**self._base_kwargs(failed_ids=["pr1"]))
         assert "## 失敗アイテム" in report
         assert "`pr1`" in report
+
+    def test_failed_gold_item_excluded_from_gold_detail_section(self):
+        gold_items = [
+            make_gold_item_row(
+                item_id="pr1",
+                missed=[make_raw_finding(summary="should not appear")],
+                expected_total=1,
+            )
+        ]
+        report = _build_report(
+            **self._base_kwargs(
+                scores=make_scores(gold_items=gold_items), failed_ids=["pr1"]
+            )
+        )
+        start = report.index("## Gold Set 詳細")
+        end = report.index("## Seeded Set 詳細")
+        gold_section = report[start:end]
+        assert "should not appear" not in gold_section
+        assert "評価失敗のため" in gold_section
+
+    def test_failed_seeded_item_excluded_from_seeded_detail_section(self):
+        seeded_items = [
+            make_gold_item_row(
+                item_id="seeded::o/r#1::rule",
+                missed=[make_raw_finding(summary="should not appear")],
+                expected_total=1,
+            )
+        ]
+        report = _build_report(
+            **self._base_kwargs(
+                scores=make_scores(seeded_items=seeded_items),
+                failed_ids=["seeded::o/r#1::rule"],
+            )
+        )
+        start = report.index("## Seeded Set 詳細")
+        end = report.index("## Hard Gate 判定")
+        seeded_section = report[start:end]
+        assert "should not appear" not in seeded_section
+        assert "評価失敗のため" in seeded_section
+
+    def test_non_failed_items_unaffected_by_unrelated_failed_ids(self):
+        gold_items = [
+            make_gold_item_row(
+                item_id="pr1",
+                missed=[make_raw_finding(summary="still shown")],
+                expected_total=1,
+            )
+        ]
+        report = _build_report(
+            **self._base_kwargs(
+                scores=make_scores(gold_items=gold_items), failed_ids=["other-id"]
+            )
+        )
+        assert "still shown" in report
+        assert "評価失敗のため" not in report

@@ -236,14 +236,19 @@ def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
     return json.loads(result.stdout)
 
 
-def _sanitize_cell(text: str, max_len: int = 100) -> str:
+def _sanitize_cell(text: Any, max_len: int = 100) -> str:
     """Make *text* safe for one Markdown table cell.
 
     A raw newline breaks a table row and a literal ``|`` is parsed as a new
     column, so both are neutralized; long text is truncated with an
     ellipsis, generalizing the existing ``title[:50]`` truncation pattern.
+
+    *text* is coerced via ``str()`` (``None`` becomes ``""``) because
+    call sites read straight from dataset/prediction rows loaded from JSONL
+    with no runtime schema enforcement -- a malformed or hand-edited row
+    (e.g. ``"summary": null``) must not crash report generation.
     """
-    collapsed = " ".join(text.split())
+    collapsed = " ".join(str(text if text is not None else "").split())
     escaped = collapsed.replace("|", "\\|")
     if len(escaped) > max_len:
         return escaped[: max_len - 1] + "…"
@@ -263,12 +268,13 @@ def _ref_cell(raw: dict[str, Any]) -> str:
 
 
 def _finding_row(kind: str, raw: dict[str, Any]) -> str:
-    path = raw.get("path", "")
-    line = raw.get("line", "")
-    category = raw.get("category", "unknown")
-    severity = raw.get("severity", "unknown")
+    path = _sanitize_cell(raw.get("path", ""))
+    line = _sanitize_cell(raw.get("line", ""))
+    category = _sanitize_cell(raw.get("category", "unknown"))
+    severity = _sanitize_cell(raw.get("severity", "unknown"))
     summary = _sanitize_cell(raw.get("summary", ""))
-    return f"| {kind} | `{path}:{line}` | {category} | {severity} | {summary} | {_ref_cell(raw)} |"
+    ref = _sanitize_cell(_ref_cell(raw))
+    return f"| {kind} | `{path}:{line}` | {category} | {severity} | {summary} | {ref} |"
 
 
 def _render_item_detail(item: dict[str, Any], heading: str, expected_label: str) -> str:
@@ -346,17 +352,43 @@ def _build_report(
         item["id"]: item.get("base_source", "") for item in seeded_items
     }
 
-    gold_detail = (
+    # Items in failed_ids have no real prediction (score_gold/score_seeded
+    # default them to "0 agent findings"), so their detail would render as
+    # 100% missed / all-agent-only -- indistinguishable from an agent that
+    # genuinely found nothing, when the truth is "evaluation errored out
+    # before producing a prediction". Excluding them here keeps the new
+    # drill-down consistent with the existing 失敗アイテム/partial-score
+    # disclosure instead of contradicting it.
+    failed_id_set = set(failed_ids)
+    gold_detail_items = [item for item in g["items"] if item["id"] not in failed_id_set]
+    seeded_detail_items = [
+        item for item in s["items"] if item["id"] not in failed_id_set
+    ]
+
+    gold_excluded_note = (
+        f"_評価失敗のため {len(g['items']) - len(gold_detail_items)} 件を除外"
+        "（詳細は「失敗アイテム」を参照）_\n\n"
+        if len(gold_detail_items) != len(g["items"])
+        else ""
+    )
+    seeded_excluded_note = (
+        f"_評価失敗のため {len(s['items']) - len(seeded_detail_items)} 件を除外"
+        "（詳細は「失敗アイテム」を参照）_\n\n"
+        if len(seeded_detail_items) != len(s["items"])
+        else ""
+    )
+
+    gold_detail = gold_excluded_note + (
         "\n".join(
             _render_item_detail(
                 item, _gold_heading(item["id"], gold_title_by_id), "人間レビュー指摘"
             )
-            for item in g["items"]
+            for item in gold_detail_items
         )
         or "_(該当PRなし)_\n"
     )
 
-    seeded_detail = (
+    seeded_detail = seeded_excluded_note + (
         "\n".join(
             _render_item_detail(
                 item,
@@ -367,7 +399,7 @@ def _build_report(
                 ),
                 "Must-Find",
             )
-            for item in s["items"]
+            for item in seeded_detail_items
         )
         or "_(該当アイテムなし)_\n"
     )
