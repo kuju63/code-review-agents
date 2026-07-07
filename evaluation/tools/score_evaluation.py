@@ -95,6 +95,21 @@ class Finding:
     summary: str
 
 
+@dataclass(frozen=True)
+class MatchedPair:
+    gold: Finding
+    pred: Finding
+    severity_match: bool
+    exact_line: bool
+
+
+@dataclass(frozen=True)
+class MatchResult:
+    pairs: list[MatchedPair]
+    missed_gold: list[Finding]
+    unmatched_pred: list[Finding]
+
+
 def to_findings(items: list[dict[str, Any]]) -> list[Finding]:
     out: list[Finding] = []
     for i in items:
@@ -127,21 +142,20 @@ def is_match(
     return True
 
 
-def match_findings(
+def match_findings_detailed(
     gold: list[Finding],
     pred: list[Finding],
     semantic_judge: SemanticJudge | None = None,
-) -> tuple[int, int, int]:
+) -> MatchResult:
     """Greedily pair each gold finding with an unused pred finding.
 
-    Returns ``(matched, severity_matched, exact_line_matched)``.
-    ``exact_line_matched`` counts matched pairs whose line numbers are
-    exactly equal, as opposed to relying on the +/-5 line tolerance -- see
-    Location Hit Rate in EVALUATION_PLAN.md Section 3.1.
+    Unlike ``match_findings``, retains the actual matched pairs plus the
+    gold findings that were missed and the pred findings that were never
+    consumed by any pair -- the detail the greedy loop already computes but
+    that a counts-only view throws away.
     """
-    matched = 0
-    severity_matched = 0
-    exact_line_matched = 0
+    pairs: list[MatchedPair] = []
+    missed_gold: list[Finding] = []
     used_pred: set[int] = set()
 
     for g in gold:
@@ -153,19 +167,47 @@ def match_findings(
                 hit_index = idx
                 break
         if hit_index is None:
+            missed_gold.append(g)
             continue
-        matched += 1
         used_pred.add(hit_index)
         p = pred[hit_index]
-        if g.line == p.line:
-            exact_line_matched += 1
-        if (
-            g.severity != "unknown"
-            and p.severity != "unknown"
-            and g.severity == p.severity
-        ):
-            severity_matched += 1
+        pairs.append(
+            MatchedPair(
+                gold=g,
+                pred=p,
+                severity_match=(
+                    g.severity != "unknown"
+                    and p.severity != "unknown"
+                    and g.severity == p.severity
+                ),
+                exact_line=(g.line == p.line),
+            )
+        )
 
+    unmatched_pred = [p for idx, p in enumerate(pred) if idx not in used_pred]
+    return MatchResult(
+        pairs=pairs, missed_gold=missed_gold, unmatched_pred=unmatched_pred
+    )
+
+
+def match_findings(
+    gold: list[Finding],
+    pred: list[Finding],
+    semantic_judge: SemanticJudge | None = None,
+) -> tuple[int, int, int]:
+    """Greedily pair each gold finding with an unused pred finding.
+
+    Returns ``(matched, severity_matched, exact_line_matched)``.
+    ``exact_line_matched`` counts matched pairs whose line numbers are
+    exactly equal, as opposed to relying on the +/-5 line tolerance -- see
+    Location Hit Rate in EVALUATION_PLAN.md Section 3.1.
+
+    Thin counts-only view over ``match_findings_detailed``.
+    """
+    result = match_findings_detailed(gold, pred, semantic_judge=semantic_judge)
+    matched = len(result.pairs)
+    severity_matched = sum(1 for p in result.pairs if p.severity_match)
+    exact_line_matched = sum(1 for p in result.pairs if p.exact_line)
     return matched, severity_matched, exact_line_matched
 
 
@@ -173,6 +215,46 @@ def safe_div(n: float, d: float) -> float:
     if d == 0:
         return 0.0
     return n / d
+
+
+def _build_item_detail(
+    item_id: str,
+    expected: list[Finding],
+    raw_expected: list[dict[str, Any]],
+    predicted: list[Finding],
+    raw_predicted: list[dict[str, Any]],
+    result: MatchResult,
+) -> dict[str, Any]:
+    """Build one entry of score_gold()/score_seeded()'s ``items`` list.
+
+    Keeps the original raw dicts (not a Finding-derived reconstruction) so
+    fields ``Finding`` doesn't carry -- Gold's ``source`` (link to the human
+    review comment), Seeded's ``rule_id`` -- survive into the report instead
+    of being silently dropped. Findings are looked up by ``id()``, not by
+    value, because two structurally-equal Finding records can be distinct
+    rows (e.g. duplicate findings at the same path/line).
+    """
+    raw_by_id: dict[int, dict[str, Any]] = {
+        id(f): raw for f, raw in zip(expected, raw_expected)
+    }
+    raw_by_id.update({id(f): raw for f, raw in zip(predicted, raw_predicted)})
+
+    return {
+        "id": item_id,
+        "matched": [
+            {
+                "expected": raw_by_id[id(pair.gold)],
+                "agent": raw_by_id[id(pair.pred)],
+                "severity_match": pair.severity_match,
+                "exact_line": pair.exact_line,
+            }
+            for pair in result.pairs
+        ],
+        "missed": [raw_by_id[id(f)] for f in result.missed_gold],
+        "unmatched_agent": [raw_by_id[id(f)] for f in result.unmatched_pred],
+        "expected_total": len(expected),
+        "agent_total": len(predicted),
+    }
 
 
 def score_gold(
@@ -186,21 +268,38 @@ def score_gold(
     severity_total = 0
     severity_matched = 0
     exact_line_matched_total = 0
+    items: list[dict[str, Any]] = []
 
     for row in gold_rows:
         pred = pred_by_id.get(row["id"], {"agent_findings": []})
-        gold_findings = to_findings(row.get("human_findings", []))
-        pred_findings = to_findings(pred.get("agent_findings", []))
+        raw_expected = row.get("human_findings", [])
+        raw_predicted = pred.get("agent_findings", [])
+        gold_findings = to_findings(raw_expected)
+        pred_findings = to_findings(raw_predicted)
 
-        matched, sev_matched, exact_line_matched = match_findings(
+        result = match_findings_detailed(
             gold_findings, pred_findings, semantic_judge=semantic_judge
         )
+        matched = len(result.pairs)
+        sev_matched = sum(1 for p in result.pairs if p.severity_match)
+        exact_line_matched = sum(1 for p in result.pairs if p.exact_line)
+
         gold_total += len(gold_findings)
         gold_matched += matched
         pred_total_for_gold += len(pred_findings)
         severity_total += matched
         severity_matched += sev_matched
         exact_line_matched_total += exact_line_matched
+        items.append(
+            _build_item_detail(
+                row["id"],
+                gold_findings,
+                raw_expected,
+                pred_findings,
+                raw_predicted,
+                result,
+            )
+        )
 
     return {
         "issue_recall": safe_div(gold_matched, gold_total),
@@ -213,6 +312,7 @@ def score_gold(
             "pred_total_for_gold": pred_total_for_gold,
             "location_matched_exact": exact_line_matched_total,
         },
+        "items": items,
     }
 
 
@@ -225,17 +325,30 @@ def score_seeded(
     seeded_detected = 0
     seeded_critical_total = 0
     seeded_critical_missed = 0
+    items: list[dict[str, Any]] = []
 
     for row in seeded_rows:
         pred = pred_by_id.get(row["id"], {"agent_findings": []})
-        must_find = to_findings(row.get("must_find", []))
-        pred_findings = to_findings(pred.get("agent_findings", []))
-        detected, _, _ = match_findings(
+        raw_expected = row.get("must_find", [])
+        raw_predicted = pred.get("agent_findings", [])
+        must_find = to_findings(raw_expected)
+        pred_findings = to_findings(raw_predicted)
+        result = match_findings_detailed(
             must_find, pred_findings, semantic_judge=semantic_judge
         )
         seeded_total += len(must_find)
-        seeded_detected += detected
+        seeded_detected += len(result.pairs)
+        items.append(
+            _build_item_detail(
+                row["id"], must_find, raw_expected, pred_findings, raw_predicted, result
+            )
+        )
 
+        # Deliberately independent of the greedy pairing above: a critical
+        # must_find item counts as "missed" only if it structurally matches
+        # nothing in the full pred pool, regardless of pairing/consumption
+        # order. This keeps critical_miss_rate (a Hard Gate metric) from
+        # drifting due to the greedy matcher's item-processing order.
         for mf in must_find:
             if mf.severity == "critical":
                 seeded_critical_total += 1
@@ -254,6 +367,7 @@ def score_seeded(
             "seeded_critical_total": seeded_critical_total,
             "seeded_critical_missed": seeded_critical_missed,
         },
+        "items": items,
     }
 
 
