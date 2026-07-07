@@ -15,6 +15,7 @@ import json
 import os
 import random
 import re
+import sys
 from typing import Any
 
 from dotenv import load_dotenv
@@ -102,58 +103,68 @@ def inject_patch(
     return "\n".join(injected), injected_line
 
 
-def choose_rule(
-    rules: list[dict[str, Any]], lang: str, rnd: random.Random
-) -> dict[str, Any] | None:
-    candidates = [rule for rule in rules if lang in rule.get("languages", [])]
-    if not candidates:
-        return None
-    return rnd.choice(candidates)
-
-
 def get_snippet_for_lang(rule: dict[str, Any], lang: str) -> str:
     lang_snippets = rule.get("language_snippets", {})
     return lang_snippets.get(lang) or rule["line_snippet"]
 
 
-def build_seeded_item(
-    gold_item: dict[str, Any],
-    rules: list[dict[str, Any]],
-    rnd: random.Random,
-) -> dict[str, Any] | None:
-    file_changes = gold_item.get("file_changes", [])
-    if not file_changes:
-        return None
+def candidate_files(gold_item: dict[str, Any]) -> list[dict[str, Any]]:
+    """Pick the file_changes eligible as a mutation target.
 
-    # Prefer production files over test files so agents see realistic vulnerabilities
+    Prefers production files (non-test, with a non-empty patch) over test
+    files so agents see realistic vulnerabilities; falls back to all
+    file_changes when no production file qualifies.
+    """
+    file_changes = gold_item.get("file_changes", [])
     prod_candidates = [
         fc
         for fc in file_changes
         if fc.get("patch") and not is_test_file(fc.get("path", ""))
     ]
-    candidates = prod_candidates if prod_candidates else file_changes
+    return prod_candidates if prod_candidates else file_changes
 
-    target = rnd.choice(candidates)
-    path = target.get("path", "")
-    patch = target.get("patch") or ""
+
+def enumerate_combo_pool(
+    gold_item: dict[str, Any], rules: list[dict[str, Any]]
+) -> list[tuple[dict[str, Any], dict[str, Any]]]:
+    """Enumerate every distinct (file_change, rule) pair valid for this item.
+
+    A pair is valid when the rule's `languages` list contains the file's
+    detected language. Pool size is NOT files x rules -- it is the sum,
+    over candidate files, of the count of rules whose `languages` include
+    that file's detected language, since each file may have a different
+    detected language and thus a different set of matching rules.
+    """
+    pool: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    for fc in candidate_files(gold_item):
+        lang = detect_lang(fc.get("path", ""))
+        for rule in rules:
+            if lang in rule.get("languages", []):
+                pool.append((fc, rule))
+    return pool
+
+
+def render_seeded_item(
+    gold_item: dict[str, Any],
+    file_change: dict[str, Any],
+    rule: dict[str, Any],
+) -> dict[str, Any]:
+    """Build one Seeded item from an already-chosen (file_change, rule) combo."""
+    path = file_change.get("path", "")
+    patch = file_change.get("patch") or ""
     lang = detect_lang(path)
-    rule = choose_rule(rules, lang, rnd)
-    if not rule:
-        return None
-
     snippet = get_snippet_for_lang(rule, lang)
     context_lines = rule.get("context_lines")
     seeded_patch, seeded_line = inject_patch(patch, snippet, context_lines)
 
-    seeded_changes = []
-    for fc in file_changes:
-        if fc is target:
-            seeded_changes.append({"path": path, "patch": seeded_patch})
-        else:
-            seeded_changes.append(fc)
+    file_changes = gold_item.get("file_changes", [])
+    seeded_changes = [
+        {"path": path, "patch": seeded_patch} if fc is file_change else fc
+        for fc in file_changes
+    ]
 
     return {
-        "id": f"seeded::{gold_item['id']}::{rule['rule_id']}",
+        "id": f"seeded::{gold_item['id']}::{rule['rule_id']}::{path}",
         "base_source": gold_item["id"],
         "repository": gold_item["repository"],
         "pr_number": gold_item["pr_number"],
@@ -169,6 +180,45 @@ def build_seeded_item(
             }
         ],
     }
+
+
+def build_seeded_items(
+    gold_item: dict[str, Any],
+    rules: list[dict[str, Any]],
+    rnd: random.Random,
+    multiplier: int,
+) -> tuple[list[dict[str, Any]], str | None]:
+    """Build up to `multiplier` distinct Seeded items for one Gold item.
+
+    Samples (file, rule) combos WITHOUT replacement: enumerates the full
+    valid combo pool, shuffles it deterministically with `rnd`, then takes
+    the first min(multiplier, len(pool)) entries. Shuffle-then-slice is
+    used instead of retry-on-duplicate because retrying is unbounded/
+    wasteful once the pool is nearly exhausted.
+
+    Returns ([], None) when the pool is empty (no candidate file's
+    language matches any rule), matching prior silent-skip behavior.
+    Returns a non-None warning when `multiplier` exceeds the pool size,
+    in which case the requested count is clamped to the pool size.
+    """
+    pool = enumerate_combo_pool(gold_item, rules)
+    if not pool:
+        return [], None
+
+    rnd.shuffle(pool)
+    requested = max(multiplier, 1)
+    take = min(requested, len(pool))
+
+    warning = None
+    if requested > len(pool):
+        warning = (
+            f"[SEEDED-WARN] gold_id={gold_item['id']!r}: requested "
+            f"multiplier={requested} exceeds available (file, rule) "
+            f"combinations={len(pool)}; clamping to {take} seeded item(s)."
+        )
+
+    items = [render_seeded_item(gold_item, fc, rule) for fc, rule in pool[:take]]
+    return items, warning
 
 
 def main() -> int:
@@ -197,10 +247,10 @@ def main() -> int:
     count = 0
     with open(args.output, "w", encoding="utf-8") as out:
         for item in gold_items:
-            for _ in range(max(args.multiplier, 1)):
-                seeded = build_seeded_item(item, rules, rnd)
-                if not seeded:
-                    continue
+            items, warning = build_seeded_items(item, rules, rnd, args.multiplier)
+            if warning:
+                print(warning, file=sys.stderr)
+            for seeded in items:
                 out.write(json.dumps(seeded, ensure_ascii=False) + "\n")
                 count += 1
 
