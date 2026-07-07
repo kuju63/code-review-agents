@@ -182,11 +182,14 @@ def _evaluate_concurrently(
             pred = evaluate_fn(item)
             results[index] = pred
             with print_lock:
-                print(f"  [{label}] ... done ({len(pred['agent_findings'])} findings)")
+                print(
+                    f"  [{label}] ... done ({len(pred['agent_findings'])} findings)",
+                    flush=True,
+                )
         except Exception as e:
             failed_flags[index] = True
             with print_lock:
-                print(f"  [{label}] ... WARN: {e}")
+                print(f"  [{label}] ... WARN: {e}", flush=True)
 
     with ThreadPoolExecutor(max_workers=max(1, concurrency)) as executor:
         futures = [executor.submit(_run_one, i, item) for i, item in enumerate(items)]

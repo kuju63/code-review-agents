@@ -119,9 +119,22 @@ class TestEvaluateConcurrentlyFailureIsolation:
         run_agent_evaluation._evaluate_concurrently(items, evaluate_fn, concurrency=6)
 
         out = capsys.readouterr().out
-        warn_lines = [line for line in out.splitlines() if "WARN" in line]
+        lines = out.splitlines()
+
+        warn_lines = [line for line in lines if "WARN" in line]
         assert len(warn_lines) == 1
         assert "item-3" in warn_lines[0]
+
+        for item in items:
+            started_lines = [line for line in lines if "started" in line]
+            assert any(item["id"] in line for line in started_lines)
+
+        done_lines = [line for line in lines if "done" in line]
+        assert len(done_lines) == 5
+        for item in items:
+            if item["id"] == "item-3":
+                continue
+            assert any(item["id"] in line for line in done_lines)
 
 
 class TestSeededItemReviewerParallelism:
