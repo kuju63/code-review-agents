@@ -28,6 +28,35 @@ from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
 from .exceptions import StructuredOutputMissingError
 
 
+# Small models (e.g. granite4.1:8b) tend to end their turn with a free-form
+# Markdown review report instead of invoking the forced structured-output tool.
+# Strands then raises "The model failed to invoke the structured output tool even
+# after it was forced" (strands/event_loop/event_loop.py: end_turn + force path),
+# and the whole review is lost.  Appending this directive to every reviewer's
+# system prompt steers the model to emit the structured tool call as its final
+# action rather than prose.
+STRUCTURED_OUTPUT_DIRECTIVE = """\
+## Output format (mandatory)
+
+Do NOT write a prose or Markdown review report. Do not produce headings, tables, \
+summaries, or narrative text as your final answer.
+
+Use tools only to gather the information you need. Once you have gathered enough \
+information, your single final action MUST be to return your findings as the \
+structured output. Emit the structured output directly; do not restate it as \
+prose first. If you have no findings, return an empty structured result rather \
+than writing an explanation."""
+
+
+def compose_system_prompt(system_prompt: str) -> str:
+    """Combine a reviewer's role prompt with the shared structured-output directive.
+
+    Output format is a cross-cutting concern shared by every LLM reviewer, so it
+    lives here rather than being duplicated into each reviewer's prompt constant.
+    """
+    return f"{system_prompt}\n\n{STRUCTURED_OUTPUT_DIRECTIVE}"
+
+
 _HUNK_RE = re.compile(r"@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
 
@@ -202,7 +231,7 @@ class LLMReviewAgent(ReviewAgent):
         try:
             agent = Agent(
                 model=model,
-                system_prompt=self.system_prompt,
+                system_prompt=compose_system_prompt(self.system_prompt),
                 tools=tools,
                 plugins=plugins,
             )
