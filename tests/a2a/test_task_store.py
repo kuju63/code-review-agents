@@ -139,6 +139,29 @@ class TestTaskStoreSetFailed:
         assert any(task.id in m and "stop_reason='limit_turns'" in m for m in messages)
 
     @pytest.mark.asyncio
+    async def test_set_failed_logs_multiline_error_as_single_line(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # Non-structured-output failures (e.g. pydantic ValidationError) carry
+        # multi-line str(exc). A raw multi-line log entry breaks grep-based
+        # failure counting, so the log line is normalized to one line -- while the
+        # full error is still stored on the task for the client.
+        store = TaskStore()
+        task = await store.create()
+        error = "validation failed:\nfield a: required\nfield b: too long"
+        with caplog.at_level(
+            logging.WARNING, logger="code_review_agent.a2a.task_store"
+        ):
+            await store.set_failed(task.id, error)
+        failure_records = [r for r in caplog.records if task.id in r.getMessage()]
+        assert failure_records
+        assert all("\n" not in r.getMessage() for r in failure_records)
+        # The stored error keeps the original multi-line message intact.
+        updated = await store.get(task.id)
+        assert updated is not None
+        assert updated.error == error
+
+    @pytest.mark.asyncio
     async def test_set_failed_on_existing_task_schedules_delete(self) -> None:
         store = TaskStore()
         task = await store.create()

@@ -59,7 +59,11 @@ class TaskStore:
         # StructuredOutputMissingError's stop_reason from the server log, forcing
         # failures to be reconstructed after the fact. Logging the sanitized
         # string surfaces the reviewer id and stop_reason without leaking tokens.
-        logger.warning("Task %s failed: %s", task_id, error)
+        # Collapse newlines (some exceptions, e.g. pydantic ValidationError, span
+        # multiple lines) so each failure stays one grep-able log line; the full
+        # error is still stored on the task below.
+        single_line_error = "\\n".join(error.splitlines())
+        logger.warning("Task %s failed: %s", task_id, single_line_error)
         async with self._lock:
             task = self._store.get(task_id)
             if task is not None:
