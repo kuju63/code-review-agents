@@ -125,8 +125,8 @@ class TestEvaluateConcurrentlyFailureIsolation:
         assert len(warn_lines) == 1
         assert "item-3" in warn_lines[0]
 
+        started_lines = [line for line in lines if "started" in line]
         for item in items:
-            started_lines = [line for line in lines if "started" in line]
             assert any(item["id"] in line for line in started_lines)
 
         done_lines = [line for line in lines if "done" in line]

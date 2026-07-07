@@ -14,7 +14,7 @@
 
 ### 根本原因
 
-`evaluation/tools/run_agent_evaluation.py` の `_run_one`(`_evaluate_concurrently` 内、175-184行目):
+`evaluation/tools/run_agent_evaluation.py` の `_run_one`(修正前, `_evaluate_concurrently` 内):
 
 ```python
 def _run_one(index: int, item: dict[str, Any]) -> None:
@@ -56,20 +56,23 @@ def _run_one(index: int, item: dict[str, Any]) -> None:
 ```python
 def _run_one(index: int, item: dict[str, Any]) -> None:
     label = label_fn(item)[:60]
-    with _print_lock:
+    with print_lock:
         print(f"  [{label}] ... started", flush=True)
     try:
         pred = evaluate_fn(item)
         results[index] = pred
-        with _print_lock:
-            print(f"  [{label}] ... done ({len(pred['agent_findings'])} findings)")
+        with print_lock:
+            print(f"  [{label}] ... done ({len(pred['agent_findings'])} findings)", flush=True)
     except Exception as e:
         failed_flags[index] = True
-        with _print_lock:
-            print(f"  [{label}] ... WARN: {e}")
+        with print_lock:
+            print(f"  [{label}] ... WARN: {e}", flush=True)
 ```
 
-`_print_lock` は `_evaluate_concurrently` 内で `threading.Lock()` として用意する。
+`print_lock` は `_evaluate_concurrently` 内で `threading.Lock()` として用意する。`done`/`WARN` にも
+`flush=True` を付ける(標準出力がファイル/ログ収集器へパイプされブロックバッファリングされる
+運用(本プロジェクトの `nohup ... > file` によるバックグラウンド評価実行など)で、完了/失敗行が
+遅延・欠落するのを防ぐため)。
 
 ### 対象外
 
