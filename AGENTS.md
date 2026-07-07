@@ -52,7 +52,7 @@ PROJECT_ROOT=$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)
 mkdir -p "$WORKTREE_ROOT/.claude"
 [ -f "$PROJECT_ROOT/.claude/settings.local.json" ] && \
   cp "$PROJECT_ROOT/.claude/settings.local.json" "$WORKTREE_ROOT/.claude/"
-ln -s "$PROJECT_ROOT/.env" "$WORKTREE_ROOT/.env"
+[ -f "$PROJECT_ROOT/.env" ] && ln -sf "$PROJECT_ROOT/.env" "$WORKTREE_ROOT/.env"
 ```
 
 ### Run Application
