@@ -8,6 +8,7 @@
 .devcontainer/
 .vscode/
 .idea/
+.claude/
 
 # Python キャッシュ
 __pycache__/
@@ -36,6 +37,7 @@ build/
 
 # ドキュメント
 docs/
+plan/
 evaluation/
 AGENTS.md
 CLAUDE.md
@@ -52,3 +54,7 @@ CLAUDE.md
 # macOS
 .DS_Store
 __MACOSX/
+.worktrees/
+
+# Kubernetes/Podman デプロイ設定
+/deploy
