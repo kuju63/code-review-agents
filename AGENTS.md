@@ -41,10 +41,10 @@ Note: `betterleaks` is required for local pre-commit runs. See [README.md](READM
 
 ### Worktree Setup
 
-After creating a new worktree, copy the local Claude Code hook settings into it and create symbolic link for secrets file.
-`.claude/settings.local.json` file is gitignored (personal settings) and must be
+After creating a new worktree, copy the local Claude Code hook settings into it and create a symbolic link to the secrets file.
+The `.claude/settings.local.json` file is gitignored (personal setting) and must be
 copied manually to each worktree.
-`.env` file can't copy to worktree, must create symbolic link from project root file into worktree.
+The `.env` file cannot be copied into a worktree; create a symbolic link from the project root into the worktree.
 
 ```bash
 WORKTREE_ROOT=$(git rev-parse --show-toplevel)
