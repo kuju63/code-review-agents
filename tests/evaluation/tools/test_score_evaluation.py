@@ -9,6 +9,7 @@ be exercised without argparse/file I/O.
 
 from __future__ import annotations
 
+import json
 from unittest.mock import MagicMock, patch
 
 from tests.evaluation.conftest import load_eval_tool_module
@@ -18,6 +19,7 @@ score_evaluation = load_eval_tool_module("score_evaluation", "score_evaluation.p
 Finding = score_evaluation.Finding
 is_match = score_evaluation.is_match
 match_findings = score_evaluation.match_findings
+match_findings_detailed = score_evaluation.match_findings_detailed
 score_gold = score_evaluation.score_gold
 score_seeded = score_evaluation.score_seeded
 make_llm_semantic_judge = score_evaluation.make_llm_semantic_judge
@@ -207,6 +209,269 @@ class TestScoreSeeded:
         assert report["critical_miss_rate"] == 0.0
         assert report["counts"]["seeded_critical_total"] == 1
         assert report["counts"]["seeded_critical_missed"] == 0
+
+
+class TestMatchFindingsDetailed:
+    def test_exact_match_produces_one_pair_with_severity_and_exact_line_true(self):
+        gold = [make_finding(line=10, severity="high")]
+        pred = [make_finding(line=10, severity="high")]
+        result = match_findings_detailed(gold, pred)
+        assert len(result.pairs) == 1
+        pair = result.pairs[0]
+        assert pair.gold is gold[0]
+        assert pair.pred is pred[0]
+        assert pair.severity_match is True
+        assert pair.exact_line is True
+        assert result.missed_gold == []
+        assert result.unmatched_pred == []
+
+    def test_gold_with_no_matching_pred_lands_in_missed_gold(self):
+        gold = [make_finding(path="src/a.ts")]
+        pred = [make_finding(path="src/other.ts")]
+        result = match_findings_detailed(gold, pred)
+        assert result.pairs == []
+        assert result.missed_gold == gold
+        assert result.unmatched_pred == pred
+
+    def test_extra_pred_with_no_matching_gold_lands_in_unmatched_pred(self):
+        gold = [make_finding(path="src/a.ts", line=10)]
+        pred = [
+            make_finding(path="src/a.ts", line=10),
+            make_finding(path="src/b.ts", line=99),
+        ]
+        result = match_findings_detailed(gold, pred)
+        assert len(result.pairs) == 1
+        assert result.missed_gold == []
+        assert result.unmatched_pred == [pred[1]]
+
+    def test_tolerance_only_match_sets_exact_line_false(self):
+        gold = [make_finding(line=10)]
+        pred = [make_finding(line=13)]
+        result = match_findings_detailed(gold, pred)
+        assert result.pairs[0].exact_line is False
+
+    def test_severity_mismatch_sets_severity_match_false(self):
+        gold = [make_finding(severity="high")]
+        pred = [make_finding(severity="low")]
+        result = match_findings_detailed(gold, pred)
+        assert result.pairs[0].severity_match is False
+
+    def test_greedy_consumption_still_only_uses_each_pred_once(self):
+        gold = [make_finding(line=10), make_finding(line=11)]
+        pred = [make_finding(line=10)]
+        result = match_findings_detailed(gold, pred)
+        assert len(result.pairs) == 1
+        assert result.missed_gold == [gold[1]]
+        assert result.unmatched_pred == []
+
+    def test_match_findings_wrapper_counts_match_detailed_result(self):
+        gold = [
+            make_finding(path="src/a.ts", line=10, severity="high"),
+            make_finding(path="src/b.ts", line=20, severity="low"),
+        ]
+        pred = [
+            make_finding(path="src/a.ts", line=10, severity="high"),
+            make_finding(path="src/b.ts", line=23, severity="medium"),
+        ]
+        result = match_findings_detailed(gold, pred)
+        matched, severity_matched, exact_line_matched = match_findings(gold, pred)
+        assert matched == len(result.pairs)
+        assert severity_matched == sum(1 for p in result.pairs if p.severity_match)
+        assert exact_line_matched == sum(1 for p in result.pairs if p.exact_line)
+
+
+class TestScoreGoldItemsDetail:
+    def test_items_include_id_and_totals(self):
+        gold_rows = [{"id": "pr1", "human_findings": [make_finding(line=10).__dict__]}]
+        pred_by_id = {"pr1": {"agent_findings": [make_finding(line=10).__dict__]}}
+        report = score_gold(gold_rows, pred_by_id)
+        assert len(report["items"]) == 1
+        item = report["items"][0]
+        assert item["id"] == "pr1"
+        assert item["expected_total"] == 1
+        assert item["agent_total"] == 1
+
+    def test_items_matched_entry_has_expected_and_agent_sub_dicts(self):
+        raw_human = make_finding(line=10).__dict__
+        raw_agent = make_finding(line=10).__dict__
+        gold_rows = [{"id": "pr1", "human_findings": [raw_human]}]
+        pred_by_id = {"pr1": {"agent_findings": [raw_agent]}}
+        report = score_gold(gold_rows, pred_by_id)
+        matched = report["items"][0]["matched"]
+        assert len(matched) == 1
+        assert matched[0]["expected"] == raw_human
+        assert matched[0]["agent"] == raw_agent
+        assert matched[0]["severity_match"] is True
+        assert matched[0]["exact_line"] is True
+
+    def test_items_missed_entry_for_unmatched_gold_finding(self):
+        raw_human = make_finding(path="src/a.ts").__dict__
+        gold_rows = [{"id": "pr1", "human_findings": [raw_human]}]
+        pred_by_id = {"pr1": {"agent_findings": []}}
+        report = score_gold(gold_rows, pred_by_id)
+        assert report["items"][0]["missed"] == [raw_human]
+        assert report["items"][0]["unmatched_agent"] == []
+
+    def test_items_unmatched_agent_entry_for_extra_agent_finding(self):
+        raw_agent = make_finding(path="src/a.ts").__dict__
+        gold_rows = [{"id": "pr1", "human_findings": []}]
+        pred_by_id = {"pr1": {"agent_findings": [raw_agent]}}
+        report = score_gold(gold_rows, pred_by_id)
+        assert report["items"][0]["missed"] == []
+        assert report["items"][0]["unmatched_agent"] == [raw_agent]
+
+    def test_items_preserve_gold_rows_order(self):
+        gold_rows = [
+            {"id": "pr1", "human_findings": []},
+            {"id": "pr2", "human_findings": []},
+        ]
+        pred_by_id: dict = {}
+        report = score_gold(gold_rows, pred_by_id)
+        assert [item["id"] for item in report["items"]] == ["pr1", "pr2"]
+
+    def test_source_field_survives_into_matched_and_missed_entries(self):
+        raw_human_matched = {
+            **make_finding(line=10).__dict__,
+            "source": "https://github.com/o/r/pull/1#discussion_r1",
+        }
+        raw_human_missed = {
+            **make_finding(path="src/b.ts").__dict__,
+            "source": "https://github.com/o/r/pull/1#discussion_r2",
+        }
+        gold_rows = [
+            {"id": "pr1", "human_findings": [raw_human_matched, raw_human_missed]}
+        ]
+        pred_by_id = {"pr1": {"agent_findings": [make_finding(line=10).__dict__]}}
+        report = score_gold(gold_rows, pred_by_id)
+        item = report["items"][0]
+        assert item["matched"][0]["expected"]["source"] == raw_human_matched["source"]
+        assert item["missed"][0]["source"] == raw_human_missed["source"]
+
+    def test_existing_aggregate_keys_unchanged_when_items_present(self):
+        gold_rows = [
+            {
+                "id": "pr1",
+                "human_findings": [
+                    make_finding(path="src/a.ts", line=10).__dict__,
+                    make_finding(path="src/b.ts", line=20).__dict__,
+                ],
+            }
+        ]
+        pred_by_id = {
+            "pr1": {
+                "agent_findings": [
+                    make_finding(path="src/a.ts", line=10).__dict__,
+                    make_finding(path="src/b.ts", line=23).__dict__,
+                ]
+            }
+        }
+        report = score_gold(gold_rows, pred_by_id)
+        assert report["counts"]["gold_matched"] == 2
+        assert report["location_hit_rate"] == 0.5
+        assert report["issue_recall"] == 1.0
+
+    def test_score_gold_items_are_json_serializable(self):
+        gold_rows = [{"id": "pr1", "human_findings": [make_finding(line=10).__dict__]}]
+        pred_by_id = {"pr1": {"agent_findings": [make_finding(line=10).__dict__]}}
+        report = score_gold(gold_rows, pred_by_id)
+        json.dumps(report)
+
+
+class TestScoreSeededItemsDetail:
+    def test_items_matched_and_missed_mirror_gold_shape(self):
+        raw_must_find_hit = make_finding(
+            path="src/a.ts", line=5, severity="critical"
+        ).__dict__
+        raw_must_find_miss = make_finding(
+            path="src/b.ts", line=15, severity="medium"
+        ).__dict__
+        seeded_rows = [
+            {"id": "seed1", "must_find": [raw_must_find_hit, raw_must_find_miss]}
+        ]
+        raw_agent = make_finding(path="src/a.ts", line=5, severity="critical").__dict__
+        pred_by_id = {"seed1": {"agent_findings": [raw_agent]}}
+        report = score_seeded(seeded_rows, pred_by_id)
+        item = report["items"][0]
+        assert item["id"] == "seed1"
+        assert item["matched"] == [
+            {
+                "expected": raw_must_find_hit,
+                "agent": raw_agent,
+                "severity_match": True,
+                "exact_line": True,
+            }
+        ]
+        assert item["missed"] == [raw_must_find_miss]
+        assert item["unmatched_agent"] == []
+
+    def test_rule_id_survives_into_items(self):
+        raw_must_find = {
+            **make_finding(severity="critical").__dict__,
+            "rule_id": "js_eval_injection",
+        }
+        seeded_rows = [{"id": "seed1", "must_find": [raw_must_find]}]
+        pred_by_id = {"seed1": {"agent_findings": []}}
+        report = score_seeded(seeded_rows, pred_by_id)
+        assert report["items"][0]["missed"][0]["rule_id"] == "js_eval_injection"
+
+    def test_critical_miss_rate_unaffected_by_items_detail(self):
+        seeded_rows = [
+            {
+                "id": "seed1",
+                "must_find": [
+                    make_finding(path="src/a.ts", line=5, severity="critical").__dict__,
+                    make_finding(path="src/b.ts", line=15, severity="medium").__dict__,
+                ],
+            }
+        ]
+        pred_by_id = {
+            "seed1": {
+                "agent_findings": [
+                    make_finding(path="src/a.ts", line=5, severity="critical").__dict__
+                ]
+            }
+        }
+        report = score_seeded(seeded_rows, pred_by_id)
+        assert report["must_find_recall"] == 0.5
+        assert report["critical_miss_rate"] == 0.0
+        assert report["counts"]["seeded_critical_total"] == 1
+        assert report["counts"]["seeded_critical_missed"] == 0
+
+    def test_critical_miss_rate_keeps_full_pred_pool_semantics_not_greedy_missed(self):
+        # Two critical must_find items at the same path/line-tolerance window
+        # both structurally match a single pred finding. The greedy matcher
+        # consumes the pred for whichever must_find it processes first,
+        # leaving the second in `missed` -- but critical_miss_rate must still
+        # treat it as detected (is_match against the full, unconsumed pool),
+        # since it is not a distinct miss from the release-gate's point of view.
+        must_find_a = make_finding(
+            path="src/a.ts", line=10, severity="critical"
+        ).__dict__
+        must_find_b = make_finding(
+            path="src/a.ts", line=11, severity="critical"
+        ).__dict__
+        seeded_rows = [{"id": "seed1", "must_find": [must_find_a, must_find_b]}]
+        pred_by_id = {
+            "seed1": {
+                "agent_findings": [
+                    make_finding(path="src/a.ts", line=10, severity="critical").__dict__
+                ]
+            }
+        }
+        report = score_seeded(seeded_rows, pred_by_id)
+        assert report["counts"]["seeded_critical_total"] == 2
+        assert report["counts"]["seeded_critical_missed"] == 0
+        assert report["critical_miss_rate"] == 0.0
+        # ...even though one of the two appears in `missed` at the items-detail level.
+        assert len(report["items"][0]["missed"]) == 1
+
+    def test_score_seeded_items_are_json_serializable(self):
+        seeded_rows = [
+            {"id": "seed1", "must_find": [make_finding(severity="critical").__dict__]}
+        ]
+        pred_by_id = {"seed1": {"agent_findings": []}}
+        report = score_seeded(seeded_rows, pred_by_id)
+        json.dumps(report)
 
 
 class TestMakeLlmSemanticJudge:
