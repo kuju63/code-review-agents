@@ -236,6 +236,85 @@ def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
     return json.loads(result.stdout)
 
 
+def _sanitize_cell(text: str, max_len: int = 100) -> str:
+    """Make *text* safe for one Markdown table cell.
+
+    A raw newline breaks a table row and a literal ``|`` is parsed as a new
+    column, so both are neutralized; long text is truncated with an
+    ellipsis, generalizing the existing ``title[:50]`` truncation pattern.
+    """
+    collapsed = " ".join(text.split())
+    escaped = collapsed.replace("|", "\\|")
+    if len(escaped) > max_len:
+        return escaped[: max_len - 1] + "…"
+    return escaped
+
+
+def _ref_cell(raw: dict[str, Any]) -> str:
+    """Traceability link for one finding: Gold's review-comment ``source``
+    URL, or Seeded's ``rule_id``, or ``-`` when neither is present. Lets
+    Gold/Seeded items share one render path with no dataset-specific branch.
+    """
+    if raw.get("source"):
+        return f"[source]({raw['source']})"
+    if raw.get("rule_id"):
+        return f"`{raw['rule_id']}`"
+    return "-"
+
+
+def _finding_row(kind: str, raw: dict[str, Any]) -> str:
+    path = raw.get("path", "")
+    line = raw.get("line", "")
+    category = raw.get("category", "unknown")
+    severity = raw.get("severity", "unknown")
+    summary = _sanitize_cell(raw.get("summary", ""))
+    return f"| {kind} | `{path}:{line}` | {category} | {severity} | {summary} | {_ref_cell(raw)} |"
+
+
+def _render_item_detail(item: dict[str, Any], heading: str, expected_label: str) -> str:
+    """Render one Gold PR or Seeded item's matched/missed/unmatched-agent detail."""
+    rows = []
+    for m in item["matched"]:
+        rows.append(_finding_row("✅ マッチ", m["expected"]))
+    for f in item["missed"]:
+        rows.append(_finding_row("❌ 見逃し", f))
+    for f in item["unmatched_agent"]:
+        rows.append(_finding_row("➕ Agentのみ（誤検知とは限らない）", f))
+
+    body = (
+        "| 種別 | Path:Line | Category | Severity | Summary | Ref |\n"
+        "|---|---|---|---|---|---|\n" + "\n".join(rows)
+        if rows
+        else "_findings なし_"
+    )
+    n_expected = item["expected_total"]
+    n_matched = len(item["matched"])
+    n_missed = len(item["missed"])
+    n_unmatched = len(item["unmatched_agent"])
+
+    return (
+        f"### {heading}\n\n{body}\n\n"
+        f"- {expected_label}: {n_expected} 件 / マッチ: {n_matched} 件 / "
+        f"見逃し: {n_missed} 件 / Agentのみ: {n_unmatched} 件\n"
+    )
+
+
+def _gold_heading(item_id: str, gold_title_by_id: dict[str, str]) -> str:
+    title = gold_title_by_id.get(item_id, "")
+    return f"`{item_id}` — {title[:50]}" if title else f"`{item_id}`"
+
+
+def _seeded_heading(
+    item_id: str, base_source: str, gold_title_by_id: dict[str, str]
+) -> str:
+    title = gold_title_by_id.get(base_source, "")
+    if base_source and title:
+        return f"`{item_id}`（元PR: `{base_source}` {title[:50]}）"
+    if base_source:
+        return f"`{item_id}`（元PR: `{base_source}`）"
+    return f"`{item_id}`"
+
+
 def _build_report(
     scores: dict[str, Any],
     gold_items: list[dict[str, Any]],
@@ -261,6 +340,37 @@ def _build_report(
         pr_lines.append(f"| `{item['id']}` | {item['title'][:50]} | {nf} |")
 
     pr_table = "\n".join(pr_lines)
+
+    gold_title_by_id = {item["id"]: item.get("title", "") for item in gold_items}
+    seeded_base_source_by_id = {
+        item["id"]: item.get("base_source", "") for item in seeded_items
+    }
+
+    gold_detail = (
+        "\n".join(
+            _render_item_detail(
+                item, _gold_heading(item["id"], gold_title_by_id), "人間レビュー指摘"
+            )
+            for item in g["items"]
+        )
+        or "_(該当PRなし)_\n"
+    )
+
+    seeded_detail = (
+        "\n".join(
+            _render_item_detail(
+                item,
+                _seeded_heading(
+                    item["id"],
+                    seeded_base_source_by_id.get(item["id"], ""),
+                    gold_title_by_id,
+                ),
+                "Must-Find",
+            )
+            for item in s["items"]
+        )
+        or "_(該当アイテムなし)_\n"
+    )
 
     failure_section = ""
     if failed_ids:
@@ -311,6 +421,12 @@ def _build_report(
 | Critical 総数 | {s["counts"]["seeded_critical_total"]} | - |
 | Critical 見逃し | {s["counts"]["seeded_critical_missed"]} | - |
 
+## Gold Set 詳細（PR ごとの人間レビュー指摘 vs Agent 指摘）
+
+{gold_detail}
+## Seeded Set 詳細（項目ごとの Must-Find vs Agent 指摘）
+
+{seeded_detail}
 ## Hard Gate 判定
 
 **結果: {hard_gate}**
