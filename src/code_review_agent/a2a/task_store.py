@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from uuid import uuid4
 
 from .models import A2AMessage, A2ATask, A2ATaskStatus
 
 TASK_TTL_SECONDS = 1800
+
+logger = logging.getLogger(__name__)
 
 
 class TaskStore:
@@ -51,6 +54,12 @@ class TaskStore:
             asyncio.create_task(self._schedule_delete(task_id))
 
     async def set_failed(self, task_id: str, error: str) -> None:
+        # Every agent failure funnels through here, but the endpoints only store
+        # the (already sanitized) error on the task -- they log nothing. That hid
+        # StructuredOutputMissingError's stop_reason from the server log, forcing
+        # failures to be reconstructed after the fact. Logging the sanitized
+        # string surfaces the reviewer id and stop_reason without leaking tokens.
+        logger.warning("Task %s failed: %s", task_id, error)
         async with self._lock:
             task = self._store.get(task_id)
             if task is not None:

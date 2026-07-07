@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -115,6 +116,27 @@ class TestTaskStoreSetFailed:
     async def test_set_failed_on_nonexistent_task_is_noop(self) -> None:
         store = TaskStore()
         await store.set_failed("no-such-id", "error")
+
+    @pytest.mark.asyncio
+    async def test_set_failed_logs_error(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # The error string carries the reviewer id and stop_reason (from
+        # StructuredOutputMissingError). Logging it in set_failed is the single
+        # choke point that surfaces every agent failure -- and its stop_reason --
+        # in the server log, which the swallow-into-task-store path otherwise hides.
+        store = TaskStore()
+        task = await store.create()
+        error = (
+            "Reviewer 'frontend-technical' completed without producing "
+            "structured output (stop_reason='limit_turns')."
+        )
+        with caplog.at_level(
+            logging.WARNING, logger="code_review_agent.a2a.task_store"
+        ):
+            await store.set_failed(task.id, error)
+        messages = [r.getMessage() for r in caplog.records]
+        assert any(task.id in m and "stop_reason='limit_turns'" in m for m in messages)
 
     @pytest.mark.asyncio
     async def test_set_failed_on_existing_task_schedules_delete(self) -> None:
