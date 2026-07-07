@@ -8,8 +8,11 @@
 
 ## 1. 背景と問題
 
-現在リポジトリにコミットされている `evaluation/data/seeded_set.jsonl` (Gold 5件に対し
-`--multiplier 2 --seed 42` で生成、全10行) を確認したところ、以下の重複が実在していた:
+`evaluation/data/` はパイプラインが生成する導出データであり gitignore 対象 (リポジトリには
+コミットされない、`docs/evaluation-pipeline-design.md` #2 参照)。ローカルで
+`--gold evaluation/data/gold_pr_set.jsonl`(Gold 5件)に対し `--multiplier 2 --seed 42`
+(パイプラインのデフォルト) で生成済みの `evaluation/data/seeded_set.jsonl` (全10行) を
+確認したところ、以下の重複が実在していた:
 
 ```bash
 python3 -c "
