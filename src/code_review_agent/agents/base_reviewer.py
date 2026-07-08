@@ -32,9 +32,11 @@ from .exceptions import StructuredOutputMissingError
 # Markdown review report instead of invoking the forced structured-output tool.
 # Strands then raises "The model failed to invoke the structured output tool even
 # after it was forced" (strands/event_loop/event_loop.py: end_turn + force path),
-# and the whole review is lost.  Appending this directive to every reviewer's
-# system prompt steers the model to emit the structured tool call as its final
-# action rather than prose.
+# and the whole review is lost.  ``LLMReviewAgent.review()`` appends this directive
+# to every LLM reviewer's system prompt (via ``compose_system_prompt``) to steer
+# the model toward emitting the structured tool call as its final action rather
+# than prose.  Other Strands ``Agent(...)`` callers (lead engineer, PR info
+# collector, orchestrator) keep their own system prompts and are unaffected.
 STRUCTURED_OUTPUT_DIRECTIVE = """\
 ## Output format (mandatory)
 
