@@ -113,9 +113,18 @@ class TestTaskStoreSetFailed:
         assert updated.error == "something went wrong"
 
     @pytest.mark.asyncio
-    async def test_set_failed_on_nonexistent_task_is_noop(self) -> None:
+    async def test_set_failed_on_nonexistent_task_is_noop(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # A truly unknown id records no failure state, so the log must not claim
+        # one either -- the WARNING describes the action actually taken, and for a
+        # noop there is nothing to report.
         store = TaskStore()
-        await store.set_failed("no-such-id", "error")
+        with caplog.at_level(
+            logging.WARNING, logger="code_review_agent.a2a.task_store"
+        ):
+            await store.set_failed("no-such-id", "error")
+        assert all("no-such-id" not in r.getMessage() for r in caplog.records)
 
     @pytest.mark.asyncio
     async def test_set_failed_logs_error(

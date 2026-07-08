@@ -54,16 +54,6 @@ class TaskStore:
             asyncio.create_task(self._schedule_delete(task_id))
 
     async def set_failed(self, task_id: str, error: str) -> None:
-        # Every agent failure funnels through here, but the endpoints only store
-        # the (already sanitized) error on the task -- they log nothing. That hid
-        # StructuredOutputMissingError's stop_reason from the server log, forcing
-        # failures to be reconstructed after the fact. Logging the sanitized
-        # string surfaces the reviewer id and stop_reason without leaking tokens.
-        # Collapse newlines (some exceptions, e.g. pydantic ValidationError, span
-        # multiple lines) so each failure stays one grep-able log line; the full
-        # error is still stored on the task below.
-        single_line_error = "\\n".join(error.splitlines())
-        logger.warning("Task %s failed: %s", task_id, single_line_error)
         async with self._lock:
             task = self._store.get(task_id)
             if task is not None:
@@ -71,4 +61,17 @@ class TaskStore:
                     update={"status": A2ATaskStatus.FAILED, "error": error}
                 )
         if task is not None:
+            # Every agent failure funnels through here, but the endpoints only
+            # store the (already sanitized) error on the task -- they log nothing.
+            # That hid StructuredOutputMissingError's stop_reason from the server
+            # log, forcing failures to be reconstructed after the fact. Logging
+            # the sanitized string surfaces the reviewer id and stop_reason
+            # without leaking tokens. Log only when a task was actually marked
+            # failed (mirroring set_completed): the WARNING describes the action
+            # taken, so an unknown id stays a true noop. Collapse newlines (some
+            # exceptions, e.g. pydantic ValidationError, span multiple lines) so
+            # each failure stays one grep-able log line; the full multi-line error
+            # is still stored on the task above.
+            single_line_error = "\\n".join(error.splitlines())
+            logger.warning("Task %s failed: %s", task_id, single_line_error)
             asyncio.create_task(self._schedule_delete(task_id))
