@@ -41,15 +41,18 @@
 
 ### 設計判断
 
-`StructuredOutputMissingError` のメッセージは `base_reviewer.py:216` で
-`f"Reviewer '{self.reviewer_id}'"` ＋ `stop_reason` を含む。この文字列は sanitize 済みで
+`StructuredOutputMissingError` のメッセージは `base_reviewer.py` の
+`LLMReviewAgent.review()` で `f"Reviewer '{self.reviewer_id}'"` ＋ `stop_reason` を含む。
+この文字列は sanitize 済みで
 `TaskStore.set_failed(task_id, error)` に渡る。したがって **全失敗が通る単一地点 `set_failed` に
 1 行のログを足す**のが最も DRY かつ安全（トークン漏洩なし・reviewer 名と stop_reason を取得）。
 
 - 変更対象: `src/code_review_agent/a2a/task_store.py`
 - 内容: モジュールロガーを追加し、`set_failed` が**タスクを実際に failed に更新したときのみ**
   WARNING を出力する（`set_completed` と同じく存在するタスクに対してのみ。未知IDは真の noop）。
-- ログする値は改行を潰した `single_line_error = "\n".join(error.splitlines())`。
+- ログする値は改行を潰した `single_line_error = "\\n".join(error.splitlines())`
+  （Python ソース上の `"\\n"` は「バックスラッシュ + n」のリテラル。実改行 `"\n"` で join すると
+  元の複数行に戻ってしまうため）。
   一部の例外（pydantic `ValidationError` 等）は `str(exc)` が複数行になり、`grep` 由来の
   失敗件数カウントを壊すため。タスクに**保存する** `error` は full の複数行のまま維持する。
 
