@@ -53,9 +53,11 @@ import文の並びであり、コードの意味的文脈 (関数本体・条件
 一切考慮しない。実データで確認すると、`published-docs.resolver.ts` では import文の途中に
 割り込む形で構文的に浮いたコードとして挿入されている。
 
-このロジックは `js_eval_injection` 専用ではなく、`seeded_mutations.json` の4ルール
+このロジックは `js_eval_injection` 専用ではなく、`seeded_mutations.json` の5ルール
 (`js_eval_injection` / `frontend_innerhtml_xss` / `react_useeffect_missing_dep` /
-`frontend_n_plus_one_api`) すべてが共有している。つまり今回可視化されたのは氷山の一角であり、
+`frontend_n_plus_one_api` / `b2b2c_idor_hint`) すべてが `render_seeded_item()` 経由で共有して
+いる (`b2b2c_idor_hint` も `language_snippets` の有無に関わらず挿入位置は同じ `inject_patch()`
+に従うため対象から除外できない)。つまり今回可視化されたのは氷山の一角であり、
 **mutation注入パイプライン全体が抱える構造的限界**として扱う必要がある。
 
 ### 1.3 副次的原因: `language_snippets` 未定義によるランタイム不整合
@@ -70,8 +72,8 @@ import文の並びであり、コードの意味的文脈 (関数本体・条件
 ```
 
 `window.location` はブラウザのグローバルオブジェクトであり、NestJS (Node.jsサーバーサイド) の
-`published-docs.resolver.ts` には存在し得ない。4ルール中 `b2b2c_idor_hint` のみ
-`language_snippets` を定義済みで、残り3ルール (`js_eval_injection` 含む) は未定義のままである。
+`published-docs.resolver.ts` には存在し得ない。5ルール中 `b2b2c_idor_hint` のみ
+`language_snippets` を定義済みで、残り4ルール (`js_eval_injection` 含む) は未定義のままである。
 
 ### 1.4 制約: 入力はunified diff patchのみ
 
@@ -99,7 +101,7 @@ import文の並びであり、コードの意味的文脈 (関数本体・条件
 | R4 | must_find行番号の正確性 | 挿入位置がどこであっても、挿入後patchにおける行番号を機械的に再計算できること | **不充足** (下記注参照) |
 | R5 | 検出難易度の妥当性 | 実際の脆弱性が持つ「見つけやすさ」の分布に近いこと。過度な埋没・過度な露出のどちらも評価の妥当性を損なう | 未評価 (指標なし) |
 | R6 | 再現性 | 同じ `--seed` で同じ結果になること | 充足 (現行の `rnd.shuffle` ベース、LLM併用時は別途担保が必要) |
-| R7 | カタログ完全性 | 全ルールが対象言語ごとの妥当なsnippetを持つこと | 不充足 (1.3、4ルール中1のみ定義。ただし後述の注釈参照) |
+| R7 | カタログ完全性 | 全ルールが対象言語ごとの妥当なsnippetを持つこと | 不充足 (1.3、5ルール中1のみ定義。ただし後述の注釈参照) |
 
 R1〜R3は1.4の制約により決定論的ヒューリスティックのみでは限界がある。R7は決定論のみで解決可能。
 R5は今回の分析で発見された新規の観点であり、既存の評価指標体系 (`EVALUATION_PLAN.md`) には
