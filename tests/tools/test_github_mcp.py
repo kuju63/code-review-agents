@@ -51,12 +51,13 @@ class TestCreateGitHubMcpClient:
         assert isinstance(client, MCPClient)
 
 
-class TestGithubMcpTransport:
+class TestGitHubMcpTransport:
     """Verifies the httpx.AsyncClient ownership design from Issue #43.
 
     ``streamable_http_client`` never closes an ``http_client`` it did not create
-    itself, so ``_github_mcp_transport`` must create, use, and close the
-    ``httpx.AsyncClient`` entirely within its own coroutine.
+    itself, so ``_github_mcp_transport`` must create (via ``create_mcp_http_client``,
+    to keep the MCP SDK's default timeouts), use, and close the ``httpx.AsyncClient``
+    entirely within its own coroutine.
     """
 
     @pytest.mark.asyncio
@@ -72,9 +73,9 @@ class TestGithubMcpTransport:
 
         with (
             patch(
-                "code_review_agent.tools.github_mcp.httpx.AsyncClient",
+                "code_review_agent.tools.github_mcp.create_mcp_http_client",
                 return_value=mock_http_client,
-            ) as mock_async_client_cls,
+            ) as mock_create_http_client,
             patch(
                 "code_review_agent.tools.github_mcp.streamable_http_client",
                 return_value=mock_streamable_cm,
@@ -85,7 +86,7 @@ class TestGithubMcpTransport:
             ) as streams:
                 assert streams == mock_streams
 
-        mock_async_client_cls.assert_called_once_with(
+        mock_create_http_client.assert_called_once_with(
             headers={"Authorization": "Bearer secret-token"}
         )
         mock_streamable.assert_called_once_with(
@@ -104,7 +105,7 @@ class TestGithubMcpTransport:
 
         with (
             patch(
-                "code_review_agent.tools.github_mcp.httpx.AsyncClient",
+                "code_review_agent.tools.github_mcp.create_mcp_http_client",
                 return_value=mock_http_client,
             ),
             patch(
@@ -133,7 +134,7 @@ class TestGithubMcpTransport:
 
         with (
             patch(
-                "code_review_agent.tools.github_mcp.httpx.AsyncClient",
+                "code_review_agent.tools.github_mcp.create_mcp_http_client",
                 return_value=mock_http_client,
             ),
             patch(
@@ -146,3 +147,4 @@ class TestGithubMcpTransport:
                     raise RuntimeError("boom")
 
         mock_http_client.__aexit__.assert_awaited_once()
+        mock_streamable_cm.__aexit__.assert_awaited_once()

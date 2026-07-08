@@ -9,9 +9,9 @@ import functools
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-import httpx
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from mcp.client.streamable_http import GetSessionIdCallback, streamable_http_client
+from mcp.shared._httpx_utils import create_mcp_http_client
 from mcp.shared.message import SessionMessage
 from strands.tools.mcp import MCPClient
 
@@ -38,8 +38,14 @@ async def _github_mcp_transport(
     its background thread's single event loop, so creating, using, and closing
     the ``httpx.AsyncClient`` here (rather than in the caller's thread) avoids
     releasing an async resource across event loops.
+
+    Uses ``create_mcp_http_client`` (the same factory the deprecated
+    ``streamablehttp_client`` used internally) instead of a bare
+    ``httpx.AsyncClient`` so the 30s/300s connect/SSE-read timeouts and
+    ``follow_redirects=True`` are preserved; plain ``httpx.AsyncClient``
+    defaults to a 5s timeout, which would time out long-lived SSE reads.
     """
-    async with httpx.AsyncClient(
+    async with create_mcp_http_client(
         headers={"Authorization": f"Bearer {token}"}
     ) as http_client:
         async with streamable_http_client(url=url, http_client=http_client) as streams:
