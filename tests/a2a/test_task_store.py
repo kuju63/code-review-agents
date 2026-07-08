@@ -124,7 +124,13 @@ class TestTaskStoreSetFailed:
             logging.WARNING, logger="code_review_agent.a2a.task_store"
         ):
             await store.set_failed("no-such-id", "error")
-        assert all("no-such-id" not in r.getMessage() for r in caplog.records)
+        # A noop must emit no log at all -- asserting only that the id is absent
+        # would still pass if set_failed logged a WARNING without the id, which
+        # would contradict the noop contract. So require zero task_store records.
+        task_store_warnings = [
+            r for r in caplog.records if r.name == "code_review_agent.a2a.task_store"
+        ]
+        assert task_store_warnings == []
 
     @pytest.mark.asyncio
     async def test_set_failed_logs_error(
