@@ -2,7 +2,15 @@
 
 - Status: Proposed(未実装・レビュー待ち)
 - Date: 2026-07-08
-- Related: Issue #54, [docs/granite-structured-output-failure-spec.md](../granite-structured-output-failure-spec.md), `evaluation/data/report_20260708-201456-6cc2786.md`, [ADR-0002](0002-workflow-externalization-langflow-dify.md)
+- Related: Issue #54, [docs/granite-structured-output-failure-spec.md](../granite-structured-output-failure-spec.md), `evaluation/data/report_20260708-201456-6cc2786.md`(※下記注記参照), [ADR-0002](0002-workflow-externalization-langflow-dify.md)
+
+> **注記**: `evaluation/data/`は`.gitignore`対象(`.gitignore:338`)であり、評価レポート
+> (`report_*.md`)はリポジトリにコミットされないローカル生成物。本文中の参照は監査証跡
+> としての引用であり、[evaluation/RUNBOOK.md](../../evaluation/RUNBOOK.md)の手順を
+> 実行すれば同名ファイルを再生成できる。同様の引用パターンは
+> [docs/granite-structured-output-failure-spec.md](../granite-structured-output-failure-spec.md)
+> や [docs/eval-concurrent-log-attribution-fix-spec.md](../eval-concurrent-log-attribution-fix-spec.md)
+> でも既に使われている。
 
 ## Context
 
