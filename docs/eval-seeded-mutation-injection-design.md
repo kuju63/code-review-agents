@@ -1,7 +1,9 @@
 # Seeded set生成: mutation注入ロジック 要件と設計ドキュメント
 
-7/8評価 (`evaluation/data/report_20260708-201456-6cc2786.md`) で Critical Miss Rate = 1.000
-となった要因分析 (5whys) の結果、Seeded set側の見逃し (`js_eval_injection` ×2件) の真因は
+7/8評価 (`evaluation/data/report_*.md`; `evaluation/data/` は `.gitignore:338` で除外される
+生成物のためリポジトリには含まれず、`bash evaluation/tools/run_evaluation_pipeline.sh` 等の
+再実行で再現できる) で Critical Miss Rate = 1.000 となった要因分析 (5whys) の結果、
+Seeded set側の見逃し (`js_eval_injection` ×2件) の真因は
 個別ルールの不備ではなく、`evaluation/tools/build_seeded_set.py` の mutation 注入ロジック
 (`inject_patch()` / `get_snippet_for_lang()`) が持つ構造的な限界であることが分かった。
 本ドキュメントはこの注入ロジックが満たすべき要件と、決定論的アプローチ・LLM推論的アプローチを
@@ -224,10 +226,12 @@ file_changes数 × rule数のオーダーでLLM呼び出しが発生するため
   `evaluation/EVALUATION_PLAN.md` への指標追加を検討する候補として記録するに留める。
 - 系統A (モデルの構造化出力信頼性、`StructuredOutputMissingError`) への対応は本ドキュメントの
   対象外。別途 `docs/granite-structured-output-failure-spec.md` の延長で扱う。
-- `evaluation/data/seeded_set.jsonl` は生成物でありgitignore対象
-  (`docs/evaluation-pipeline-design.md` #2参照) だが、Phase 2導入後は
-  LLM生成物を含むため、再現性確保の観点からコミット対象に変更するかどうかは
-  実装時に別途判断する。
+- `evaluation/data/seeded_set.jsonl` は生成物であり `.gitignore:338`
+  (`evaluation/data/`) によりコミット対象外となっている
+  (ディレクトリの役割分担自体は `docs/evaluation-pipeline-design.md` #2参照)。
+  Phase 2導入後はLLM生成物を含むため、再現性確保の観点からコミット対象に変更するか
+  どうかは実装時に別途判断するが、変更する場合は `.gitignore` 側の除外解除
+  (例外パターンの追加、あるいは `evaluation/data/` からの退避) も併せて必要になる。
 
 ---
 
