@@ -10,7 +10,7 @@ Seeded set側の見逃し (`js_eval_injection` ×2件) の真因は
 組み合わせたハイブリッド設計を定義する。
 
 現時点では設計合意のためのドキュメントであり、実装はまだ着手していない。
-CONTRIBUTINGの Spec-Driven + TDD フローに従い、本設計への合意後にIssue化し、
+CONTRIBUTING.md の Spec-Driven + TDD フローに従い、本設計への合意後にIssue化し、
 Phase単位でTDDサイクルに入ることを想定する。
 
 ---
@@ -259,7 +259,7 @@ file_changes数 × rule数のオーダーでLLM呼び出しが発生するため
 
 ## 6. 今後の進め方
 
-CONTRIBUTINGのSpec-Driven + TDDフローに従い、以下の順で進めることを提案する。
+CONTRIBUTING.md のSpec-Driven + TDDフローに従い、以下の順で進めることを提案する。
 
 1. 本ドキュメントの内容についてIssue化 (Phase 1 / Phase 2 を別Issueに分割することを推奨。
    Phase 1は決定論のみで完結し着手コストが低く、Phase 2はLLM呼び出し基盤の設計が別途必要なため)。
