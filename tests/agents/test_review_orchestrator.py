@@ -3,6 +3,10 @@
 import time
 from unittest.mock import patch
 
+import pytest
+from httpx import ConnectError
+from strands.types.exceptions import EventLoopException, MCPClientInitializationError
+
 from code_review_agent.agents.base_reviewer import ReviewAgent, ReviewerConfig
 from code_review_agent.agents.review_orchestrator import ReviewOrchestrator
 from code_review_agent.models.pr_info import (
@@ -70,6 +74,33 @@ class _FailingReviewer(ReviewAgent):
         raise ValueError("boom")
 
 
+class _EventLoopFailingReviewer(ReviewAgent):
+    reviewer_id = "fake-event-loop-failing"
+    perspective = ReviewPerspective.SECURITY
+    project_types = frozenset({ProjectType.REACT_TS})
+
+    def review(self, context, project_type=None):
+        raise EventLoopException(ConnectError("model connection lost"))
+
+
+class _MCPInitFailingReviewer(ReviewAgent):
+    reviewer_id = "fake-mcp-init-failing"
+    perspective = ReviewPerspective.SECURITY
+    project_types = frozenset({ProjectType.REACT_TS})
+
+    def review(self, context, project_type=None):
+        raise MCPClientInitializationError("the client initialization failed")
+
+
+class _TransportFailingReviewer(ReviewAgent):
+    reviewer_id = "fake-transport-failing"
+    perspective = ReviewPerspective.SECURITY
+    project_types = frozenset({ProjectType.REACT_TS})
+
+    def review(self, context, project_type=None):
+        raise ConnectError("connection reset")
+
+
 class _SlowReviewer(ReviewAgent):
     reviewer_id = "fake-slow"
     perspective = ReviewPerspective.TECHNICAL
@@ -133,6 +164,30 @@ class TestRun:
         assert len(report.errors) == 1
         assert report.errors[0].reviewer_id == "fake-failing"
         assert "boom" in report.errors[0].message
+
+    def test_event_loop_exception_propagates_instead_of_being_swallowed(self):
+        with patch(
+            f"{_MOD}.get_reviewer_classes",
+            return_value=[_FakeTechnical, _EventLoopFailingReviewer],
+        ):
+            with pytest.raises(EventLoopException):
+                _orchestrator().run(_context(), project_type=ProjectType.REACT_TS)
+
+    def test_mcp_init_exception_propagates_instead_of_being_swallowed(self):
+        with patch(
+            f"{_MOD}.get_reviewer_classes",
+            return_value=[_FakeTechnical, _MCPInitFailingReviewer],
+        ):
+            with pytest.raises(MCPClientInitializationError):
+                _orchestrator().run(_context(), project_type=ProjectType.REACT_TS)
+
+    def test_transport_exception_propagates_instead_of_being_swallowed(self):
+        with patch(
+            f"{_MOD}.get_reviewer_classes",
+            return_value=[_FakeTechnical, _TransportFailingReviewer],
+        ):
+            with pytest.raises(ConnectError):
+                _orchestrator().run(_context(), project_type=ProjectType.REACT_TS)
 
     def test_empty_selection_yields_empty_report(self):
         with patch(f"{_MOD}.get_reviewer_classes", return_value=[]):

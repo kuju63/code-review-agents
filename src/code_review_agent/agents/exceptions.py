@@ -1,5 +1,21 @@
 """Shared exception types for the review-stage and lead-engineer agents."""
 
+from httpx import TransportError
+from strands.types.exceptions import EventLoopException, MCPClientInitializationError
+
+INFRA_EXCEPTIONS: tuple[type[BaseException], ...] = (
+    EventLoopException,
+    MCPClientInitializationError,
+    TransportError,
+)
+"""Exceptions treated as infrastructure failures rather than isolated/business
+errors (model connection loss, GitHub MCP client init failure, transport-level
+timeouts). Callers should re-raise these instead of degrading them to a
+business-level error/empty result, so the A2A task boundary handler
+(``except Exception`` in ``api/agents/*.py``) marks the task as failed instead
+of silently completing with partial data.
+"""
+
 
 class StructuredOutputMissingError(RuntimeError):
     """Raised when an LLM agent call ends without a structured output result.

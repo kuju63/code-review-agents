@@ -18,6 +18,7 @@ from ..models.review import (
     ReviewResult,
 )
 from .base_reviewer import ReviewAgent, ReviewerConfig
+from .exceptions import INFRA_EXCEPTIONS
 from .registry import detect_project_types, get_reviewer_classes
 
 
@@ -65,7 +66,9 @@ class ReviewOrchestrator:
         a worker thread via :func:`asyncio.to_thread`, so the GitHub MCP
         context manager stays isolated per reviewer while still running in
         parallel.  A failing reviewer is recorded as a :class:`ReviewError`
-        without affecting the others.
+        without affecting the others, except for :data:`INFRA_EXCEPTIONS`
+        (model connection loss, MCP client init failure, transport timeouts),
+        which are re-raised instead of being degraded to a business error.
 
         Args:
             context: Input boundary wrapping the collected PR information.
@@ -109,6 +112,8 @@ class ReviewOrchestrator:
                     )
                 )
             elif exc := asyncio_task.exception():
+                if isinstance(exc, INFRA_EXCEPTIONS):
+                    raise exc
                 errors.append(
                     ReviewError(
                         reviewer_id=reviewer.reviewer_id,

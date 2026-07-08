@@ -12,6 +12,8 @@ import os
 from unittest.mock import MagicMock, patch
 
 import pytest
+from httpx import ConnectError
+from strands.types.exceptions import EventLoopException
 
 from code_review_agent.agents.pr_info_collector import (
     GITHUB_MCP_URL,
@@ -368,6 +370,74 @@ class TestPRInfoCollectorCollect:
         # Deterministic facts are still present.
         assert result.pr_info.title == "[progress] Show runtime errors only once"
         assert result.dependency_files == ["package.json", "pnpm-lock.yaml"]
+
+    def test_infra_exception_during_readme_summary_propagates(self):
+        """An infra exception from the summary LLM must not be swallowed into
+        an empty summary -- unlike a business/model-quality failure, it means
+        the shared model connection is down and downstream reviewers relying
+        on the same connection would fail too, so the caller should learn
+        about it immediately rather than get a deceptively "complete" result.
+        """
+        collector = PRInfoCollector(github_token="tok")
+        failing_agent = MagicMock(
+            side_effect=EventLoopException(ConnectError("model connection lost"))
+        )
+        mcp = _make_mcp()
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=failing_agent),
+            patch(f"{_MOD}.OpenAIModel"),
+            pytest.raises(EventLoopException),
+        ):
+            collector.collect("mui", "material-ui", 48591)
+
+    def test_infra_exception_during_dependency_listing_propagates(self):
+        def dispatch(tool_use_id, name, arguments):
+            if name == "pull_request_read" and arguments["method"] == "get":
+                return _tool_result(json.dumps(_PR_GET))
+            if name == "pull_request_read" and arguments["method"] == "get_files":
+                batch = _PR_FILES if arguments.get("page", 1) == 1 else []
+                return _tool_result(json.dumps(batch))
+            if name == "get_file_contents" and arguments.get("path") == "/":
+                raise ConnectError("mcp connection lost")
+            if name == "get_file_contents":
+                return {"isError": False, "content": [{"text": _README_BODY}]}
+            raise AssertionError(f"unexpected tool call: {name} {arguments}")
+
+        mcp = MagicMock()
+        mcp.call_tool_sync.side_effect = dispatch
+        collector = PRInfoCollector(github_token="tok")
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
+            patch(f"{_MOD}.OpenAIModel"),
+            pytest.raises(ConnectError),
+        ):
+            collector.collect("mui", "material-ui", 48591)
+
+    def test_infra_exception_during_readme_fetch_propagates(self):
+        def dispatch(tool_use_id, name, arguments):
+            if name == "pull_request_read" and arguments["method"] == "get":
+                return _tool_result(json.dumps(_PR_GET))
+            if name == "pull_request_read" and arguments["method"] == "get_files":
+                batch = _PR_FILES if arguments.get("page", 1) == 1 else []
+                return _tool_result(json.dumps(batch))
+            if name == "get_file_contents" and arguments.get("path") == "README.md":
+                raise ConnectError("mcp connection lost")
+            if name == "get_file_contents":
+                return _tool_result(json.dumps(_ROOT_LISTING))
+            raise AssertionError(f"unexpected tool call: {name} {arguments}")
+
+        mcp = MagicMock()
+        mcp.call_tool_sync.side_effect = dispatch
+        collector = PRInfoCollector(github_token="tok")
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
+            patch(f"{_MOD}.OpenAIModel"),
+            pytest.raises(ConnectError),
+        ):
+            collector.collect("mui", "material-ui", 48591)
 
     def test_starts_and_stops_mcp_client(self):
         mcp = _make_mcp()

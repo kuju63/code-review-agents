@@ -24,6 +24,7 @@ from strands.models.openai import OpenAIModel
 
 from ..models.pr_info import FileChange, PRInfo, PRInfoResult, RepositoryInfo
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
+from .exceptions import INFRA_EXCEPTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -218,13 +219,18 @@ class PRInfoCollector:
             mcp_client.stop(None, None, None)
 
         # The README summary is the only non-deterministic step.  It must never
-        # discard the deterministically-fetched facts: if the summary LLM is
-        # unavailable (e.g. model load / connection error), fall back to an
-        # empty summary rather than failing the whole collect().
+        # discard the deterministically-fetched facts: if the summary itself is
+        # rejected or malformed, fall back to an empty summary rather than
+        # failing the whole collect(). Infra failures (model connection lost,
+        # etc.) are re-raised instead -- they signal the shared model
+        # connection is down, which the downstream review stage relying on the
+        # same connection needs to know about rather than silently proceed.
         project_summary = ""
         if readme_text:
             try:
                 project_summary = self._summarize_readme(readme_text)
+            except INFRA_EXCEPTIONS:
+                raise
             except Exception:
                 project_summary = ""
 
@@ -351,6 +357,8 @@ class PRInfoCollector:
         :func:`is_dependency_file`) present at the repository root at ``ref``,
         describing the project's dependency context regardless of whether the
         PR changed them.  Returns an empty list if the listing is unavailable.
+        Infra failures (MCP connection lost, etc.) are re-raised rather than
+        degraded to an empty list -- see :data:`INFRA_EXCEPTIONS`.
         """
         args: dict[str, Any] = {"owner": owner, "repo": repo, "path": "/"}
         if ref:
@@ -360,6 +368,8 @@ class PRInfoCollector:
                 "root-listing", "get_file_contents", args
             )
             texts = _tool_text_blocks(result)
+        except INFRA_EXCEPTIONS:
+            raise
         except Exception:
             return []
         if not texts:
@@ -386,7 +396,9 @@ class PRInfoCollector:
 
         Pinning to the PR head ref keeps ``project_summary`` reproducible and
         reflects README changes made on the PR branch rather than the moving
-        default branch.
+        default branch. Infra failures (MCP connection lost, etc.) are
+        re-raised rather than degraded to ``None`` -- see
+        :data:`INFRA_EXCEPTIONS`.
         """
         args: dict[str, Any] = {"owner": owner, "repo": repo, "path": "README.md"}
         if ref:
@@ -394,6 +406,8 @@ class PRInfoCollector:
         try:
             result = mcp_client.call_tool_sync("readme", "get_file_contents", args)
             texts = _tool_text_blocks(result)
+        except INFRA_EXCEPTIONS:
+            raise
         except Exception:
             return None
         # ``get_file_contents`` returns a status block followed by the file
