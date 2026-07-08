@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -112,9 +113,68 @@ class TestTaskStoreSetFailed:
         assert updated.error == "something went wrong"
 
     @pytest.mark.asyncio
-    async def test_set_failed_on_nonexistent_task_is_noop(self) -> None:
+    async def test_set_failed_on_nonexistent_task_is_noop(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # A truly unknown id records no failure state, so the log must not claim
+        # one either -- the WARNING describes the action actually taken, and for a
+        # noop there is nothing to report.
         store = TaskStore()
-        await store.set_failed("no-such-id", "error")
+        with caplog.at_level(
+            logging.WARNING, logger="code_review_agent.a2a.task_store"
+        ):
+            await store.set_failed("no-such-id", "error")
+        # A noop must emit no log at all -- asserting only that the id is absent
+        # would still pass if set_failed logged a WARNING without the id, which
+        # would contradict the noop contract. So require zero task_store records.
+        task_store_warnings = [
+            r for r in caplog.records if r.name == "code_review_agent.a2a.task_store"
+        ]
+        assert task_store_warnings == []
+
+    @pytest.mark.asyncio
+    async def test_set_failed_logs_error(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # The error string carries the reviewer id and stop_reason (from
+        # StructuredOutputMissingError). Logging it in set_failed is the single
+        # choke point that surfaces every agent failure -- and its stop_reason --
+        # in the server log, which the swallow-into-task-store path otherwise hides.
+        store = TaskStore()
+        task = await store.create()
+        error = (
+            "Reviewer 'frontend-technical' completed without producing "
+            "structured output (stop_reason='limit_turns')."
+        )
+        with caplog.at_level(
+            logging.WARNING, logger="code_review_agent.a2a.task_store"
+        ):
+            await store.set_failed(task.id, error)
+        messages = [r.getMessage() for r in caplog.records]
+        assert any(task.id in m and "stop_reason='limit_turns'" in m for m in messages)
+
+    @pytest.mark.asyncio
+    async def test_set_failed_logs_multiline_error_as_single_line(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # Non-structured-output failures (e.g. pydantic ValidationError) carry
+        # multi-line str(exc). A raw multi-line log entry breaks grep-based
+        # failure counting, so the log line is normalized to one line -- while the
+        # full error is still stored on the task for the client.
+        store = TaskStore()
+        task = await store.create()
+        error = "validation failed:\nfield a: required\nfield b: too long"
+        with caplog.at_level(
+            logging.WARNING, logger="code_review_agent.a2a.task_store"
+        ):
+            await store.set_failed(task.id, error)
+        failure_records = [r for r in caplog.records if task.id in r.getMessage()]
+        assert failure_records
+        assert all("\n" not in r.getMessage() for r in failure_records)
+        # The stored error keeps the original multi-line message intact.
+        updated = await store.get(task.id)
+        assert updated is not None
+        assert updated.error == error
 
     @pytest.mark.asyncio
     async def test_set_failed_on_existing_task_schedules_delete(self) -> None:
