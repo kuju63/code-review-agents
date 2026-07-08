@@ -12,6 +12,11 @@ from code_review_agent.tools.github_mcp import (
 )
 
 
+def _dummy_get_session_id() -> str | None:
+    """Stand-in for the ``GetSessionIdCallback`` slot in a mocked streams tuple."""
+    return "session-id"
+
+
 class TestGitHubMCPURL:
     def test_default_url(self):
         assert GITHUB_MCP_URL == "https://api.githubcopilot.com/mcp/read-only"
@@ -66,7 +71,7 @@ class TestGitHubMcpTransport:
         mock_http_client.__aenter__ = AsyncMock(return_value=mock_http_client)
         mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
-        mock_streams = ("read_stream", "write_stream", None)
+        mock_streams = ("read_stream", "write_stream", _dummy_get_session_id)
         mock_streamable_cm = AsyncMock()
         mock_streamable_cm.__aenter__ = AsyncMock(return_value=mock_streams)
         mock_streamable_cm.__aexit__ = AsyncMock(return_value=False)
@@ -100,7 +105,9 @@ class TestGitHubMcpTransport:
         mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
         mock_streamable_cm = AsyncMock()
-        mock_streamable_cm.__aenter__ = AsyncMock(return_value=("r", "w", None))
+        mock_streamable_cm.__aenter__ = AsyncMock(
+            return_value=("r", "w", _dummy_get_session_id)
+        )
         mock_streamable_cm.__aexit__ = AsyncMock(return_value=False)
 
         with (
@@ -129,7 +136,9 @@ class TestGitHubMcpTransport:
         mock_http_client.__aexit__ = AsyncMock(return_value=False)
 
         mock_streamable_cm = AsyncMock()
-        mock_streamable_cm.__aenter__ = AsyncMock(return_value=("r", "w", None))
+        mock_streamable_cm.__aenter__ = AsyncMock(
+            return_value=("r", "w", _dummy_get_session_id)
+        )
         mock_streamable_cm.__aexit__ = AsyncMock(return_value=False)
 
         with (
