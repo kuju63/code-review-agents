@@ -30,23 +30,26 @@ include_patches = (
 )
 ```
 
-`patch_total_char_limit=30_000` / `patch_max_files=30` のいずれかを超えると、**PR内の
-全ファイルの`patch`が一括で`None`になる**。トリミングではなく全欠落であり、reviewerは
+`patch_total_char_limit=30_000` / `patch_max_files=30` のいずれかを超えると、**レビュー対象
+ファイル(`is_target_file`で絞り込まれた`target_files`。ts/tsx/js/jsx/css/scss/html/
+package.json)の`patch`が一括で`None`になる**。トリミングではなく全欠落であり、reviewerは
 差分をGitHub MCP経由で1ファイルずつ`get_file_contents`して補うしかない設計になっている。
 
 2026-07-08の評価(`report_20260708-201456-6cc2786.md`)で、この二値フォールバックが
 実際に障害を引き起こしたことが確認された。5whys分析(系統A)による因果連鎖:
 
-1. Gold `hoppscotch/hoppscotch#6171`(23ファイル・35,106文字)が`patch_total_char_limit=30,000`
-   を超過 → 全ファイルpatch=Noneにフォールバック。
+1. Gold `hoppscotch/hoppscotch#6171`(レビュー対象ファイル23件・35,106文字)が
+   `patch_total_char_limit=30,000`を超過 → レビュー対象ファイル全件のpatch=Noneに
+   フォールバック。
 2. reviewerがGitHub MCP経由で個別にファイルを逐次fetch(`Tool #1: get_file_contents`が
    複数回発生、`/tmp/a2a_server.log`で確認)。
 3. `skill name does not match parent directory name`というツール名解釈エラーによる
    無駄なリトライがturn予算をさらに圧迫。
 4. `granite4.1:8b`が`max_agent_turns=30`以内に`ReviewOutput`スキーマへ収束できず
-   `StructuredOutputMissingError`発生(`base_reviewer.py:246-249`)。
-5. この例外は`INFRA_EXCEPTIONS`(`exceptions.py`)に含まれないため`review_orchestrator.py`が
-   業務エラーとして記録し再raiseしない → `ReviewReport.results`が空。
+   `StructuredOutputMissingError`発生(`src/code_review_agent/agents/base_reviewer.py:246-249`)。
+5. この例外は`INFRA_EXCEPTIONS`(`src/code_review_agent/agents/exceptions.py`)に含まれないため
+   `src/code_review_agent/agents/review_orchestrator.py`が業務エラーとして記録し再raiseしない
+   → `ReviewReport.results`が空。
 6. `LeadEngineerReport.decisions`が空になり、`to_evaluation_format()`
    (`models/lead_engineer.py:203-237`)が出力する評価用JSON(`agent_predictions.jsonl`)の
    `agent_findings`/`lead_decisions`キーも空配列になる。結果として、Gold評価上
