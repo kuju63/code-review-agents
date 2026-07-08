@@ -39,7 +39,9 @@ include_patches = (
    `StructuredOutputMissingError`発生(`base_reviewer.py:246-249`)。
 5. この例外は`INFRA_EXCEPTIONS`(`exceptions.py`)に含まれないため`review_orchestrator.py`が
    業務エラーとして記録し再raiseしない → `ReviewReport.results`が空。
-6. `LeadEngineerReport.agent_findings`/`lead_decisions`が空になり、Gold評価上
+6. `LeadEngineerReport.decisions`が空になり、`to_evaluation_format()`
+   (`models/lead_engineer.py:203-237`)が出力する評価用JSON(`agent_predictions.jsonl`)の
+   `agent_findings`/`lead_decisions`キーも空配列になる。結果として、Gold評価上
    「PRに問題なし」と見分けがつかない`findings=0`として記録される。
 
 この失敗モードは`docs/granite-structured-output-failure-spec.md`で緩和策(#4可視化ログ、
