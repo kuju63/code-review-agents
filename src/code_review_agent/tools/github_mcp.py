@@ -11,6 +11,12 @@ from contextlib import asynccontextmanager
 
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 from mcp.client.streamable_http import GetSessionIdCallback, streamable_http_client
+
+# create_mcp_http_client is not re-exported from mcp.client.streamable_http (pyright
+# flags that as reportPrivateImportUsage), so it must be imported from its actual
+# defining module. This couples us to an internal mcp path, but it is the same path
+# the deprecated streamablehttp_client relied on; pyright and the tests in
+# test_github_mcp.py would catch it immediately if a future mcp release moves it.
 from mcp.shared._httpx_utils import create_mcp_http_client
 from mcp.shared.message import SessionMessage
 from strands.tools.mcp import MCPClient

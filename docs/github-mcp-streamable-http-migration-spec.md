@@ -64,13 +64,25 @@ async with self._transport_callable() as (read_stream, write_stream, *_):
 
 `httpx.AsyncClient` の**生成・使用・close を transport callable のコルーチン内に閉じ込める**。
 具体的には `streamable_http_client` をラップした独自の async context manager
-`_github_mcp_transport` を用意し、`async with httpx.AsyncClient(...) as http_client` の
+`_github_mcp_transport` を用意し、`async with create_mcp_http_client(...) as http_client` の
 スコープの中で `streamable_http_client` を呼び出す。
+
+素の `httpx.AsyncClient()` ではなく `create_mcp_http_client`（deprecated な `streamablehttp_client`
+が内部で使っていたのと同じファクトリ）を使うのは、素の `httpx.AsyncClient()` が既定で 5 秒タイムアウトに
+なり、旧実装が持っていた `timeout=30s` / `sse_read_timeout=300s` / `follow_redirects=True` が失われて
+長時間の SSE 読み取りがタイムアウトする回帰を防ぐためである（初版実装でこの回帰を作り込み、コードレビュー
+で指摘されて修正した）。
+
+`create_mcp_http_client` は `mcp.shared._httpx_utils`（先頭 `_` の private module）で定義されており、
+`mcp.client.streamable_http` からも import 可能に見えるが、`__all__` で再エクスポートされていないため
+pyright は `mcp.client.streamable_http` 経由の import を `reportPrivateImportUsage` として拒否する
+（実際にレビュー対応中に試して確認した）。そのため定義元の private module から直接 import する。mcp の
+将来リリースでこのパスが変わった場合は pyright と `test_github_mcp.py` が即座に検知する。
 
 ```python
 @asynccontextmanager
-async def _github_mcp_transport(url: str, token: str) -> AsyncGenerator[MCPTransport, None]:
-    async with httpx.AsyncClient(headers={"Authorization": f"Bearer {token}"}) as http_client:
+async def _github_mcp_transport(url: str, token: str) -> AsyncGenerator[_MCPStreams, None]:
+    async with create_mcp_http_client(headers={"Authorization": f"Bearer {token}"}) as http_client:
         async with streamable_http_client(url=url, http_client=http_client) as streams:
             yield streams
 
@@ -80,7 +92,7 @@ def create_github_mcp_client(token: str, url: str = GITHUB_MCP_URL) -> MCPClient
 ```
 
 この `_github_mcp_transport` コルーチンは、`MCPClient._async_background_thread` から
-`async with self._transport_callable() as (...)` として呼ばれるため、**生成 (`httpx.AsyncClient(...)`)・
+`async with self._transport_callable() as (...)` として呼ばれるため、**生成 (`create_mcp_http_client(...)`)・
 使用（`streamable_http_client` 内の全リクエスト）・close（`async with` を抜けるときの `__aexit__`）が
 すべて同一スレッド・同一 event loop 内で完結する**。
 
