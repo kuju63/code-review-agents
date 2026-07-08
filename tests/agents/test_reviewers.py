@@ -1,7 +1,11 @@
 """Tests for the concrete frontend technical and security reviewers."""
 
 from code_review_agent.agents import registry
-from code_review_agent.agents.base_reviewer import LLMReviewAgent
+from code_review_agent.agents.base_reviewer import (
+    STRUCTURED_OUTPUT_DIRECTIVE,
+    LLMReviewAgent,
+    compose_system_prompt,
+)
 from code_review_agent.agents.registry import get_reviewer_classes
 from code_review_agent.agents.reviewers import FrontendReviewer, SecurityReviewer
 from code_review_agent.models.review import ProjectType, ReviewPerspective
@@ -53,6 +57,29 @@ class TestSecurityReviewer:
     def test_web_security_review_skills_resolve(self):
         result = create_agent_skills(AgentSkillType.WEB_SECURITY_REVIEW)
         assert isinstance(result, AgentSkills)
+
+
+class TestStructuredOutputDirective:
+    """The shared directive that steers small models to emit the structured
+    output tool call instead of a prose Markdown review report."""
+
+    def test_directive_forbids_prose_and_requires_structured_output(self):
+        directive = STRUCTURED_OUTPUT_DIRECTIVE.lower()
+        # Must tell the model not to write a prose/Markdown report...
+        assert "markdown" in directive or "prose" in directive
+        # ...and that the final action is the structured output itself.
+        assert "structured output" in directive
+
+    def test_compose_appends_directive_to_role_prompt(self):
+        composed = compose_system_prompt("ROLE PROMPT")
+        assert composed.startswith("ROLE PROMPT")
+        assert STRUCTURED_OUTPUT_DIRECTIVE in composed
+        assert composed != "ROLE PROMPT"
+
+    def test_reviewers_carry_directive_in_effective_prompt(self):
+        for reviewer_cls in (FrontendReviewer, SecurityReviewer):
+            composed = compose_system_prompt(reviewer_cls.system_prompt)
+            assert STRUCTURED_OUTPUT_DIRECTIVE in composed
 
 
 class TestRegistration:

@@ -5,10 +5,12 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from code_review_agent.agents.base_reviewer import (
+    STRUCTURED_OUTPUT_DIRECTIVE,
     LLMReviewAgent,
     ReviewAgent,
     ReviewerConfig,
     _annotate_patch,
+    compose_system_prompt,
 )
 from code_review_agent.agents.exceptions import StructuredOutputMissingError
 from code_review_agent.skills.agent_skills_factory import AgentSkillType
@@ -236,7 +238,12 @@ class TestReview:
         mock_mcp.stop.assert_called_once_with(None, None, None)
 
         call_kwargs = mock_agent_cls.call_args.kwargs
-        assert call_kwargs["system_prompt"] == "You are a stub reviewer."
+        # review() appends the shared structured-output directive to the
+        # reviewer's role prompt, so the Agent sees the composed prompt.
+        assert call_kwargs["system_prompt"] == compose_system_prompt(
+            "You are a stub reviewer."
+        )
+        assert STRUCTURED_OUTPUT_DIRECTIVE in call_kwargs["system_prompt"]
         assert call_kwargs["tools"] == [mock_mcp]
 
     def test_stops_mcp_even_when_agent_raises(self):
