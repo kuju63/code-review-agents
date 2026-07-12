@@ -18,6 +18,12 @@ Phase1 (3.1節: `language_snippets`必須化、挿入位置ヒューリスティ
 
 ## 1. 背景と問題
 
+**注記**: 本節 (1.1〜1.4) は2026-07-08評価で発覚した根本原因分析であり、
+Phase1着手前の状態を記述している。1.2の挿入位置ロジックの問題、および1.3の
+`language_snippets`未定義・`window.location`混入は、いずれもPhase1実装
+(Issue #111、3.1節参照) で解消済み。以下は「なぜPhase1が必要だったか」の
+記録として現在時制のまま残す。
+
 ### 1.1 発覚した事象
 
 `evaluation/data/seeded_set.jsonl` の `js_eval_injection` (severity: critical) 2件について、
