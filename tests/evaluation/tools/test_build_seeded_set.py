@@ -587,6 +587,22 @@ class TestInjectPatchDirect:
         assert result == ""
         assert line == 1
 
+    def test_malformed_header_fallback_still_extracts_line_number(self):
+        # Starts with "@@" (so the top-of-patch insert_idx=1 branch fires)
+        # but doesn't match the strict hunk header pattern, so split_hunks()
+        # returns [] and the legacy fallback in inject_patch() is used. The
+        # fallback should still best-effort extract a line number from the
+        # malformed header instead of hardcoding 1.
+        patch = "@@ malformed +42 change @@\n line1\n line2"
+        result, line = inject_patch(patch, "eval(x);")
+        assert line == 42
+        assert result.splitlines() == [
+            "@@ malformed +42 change @@",
+            "+eval(x);",
+            " line1",
+            " line2",
+        ]
+
 
 class TestGetSnippetForLang:
     def test_returns_language_specific_snippet_when_present(self):
@@ -669,3 +685,18 @@ class TestValidateCatalog:
         )
         catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
         assert validate_catalog(catalog["rules"]) == []
+
+    def test_languages_not_a_list_is_reported_without_crash(self):
+        rule = _valid_rule(languages="ts")
+        errors = validate_catalog([rule])
+        assert any("languages" in e and "rule_x" in e for e in errors)
+
+    def test_language_snippets_not_a_dict_is_reported_without_crash(self):
+        rule = _valid_rule(language_snippets=None)
+        errors = validate_catalog([rule])
+        assert any("language_snippets" in e and "rule_x" in e for e in errors)
+
+    def test_non_string_snippet_value_is_reported_without_crash(self):
+        rule = _valid_rule(language_snippets={"js": "doSomething(x);", "ts": 12345})
+        errors = validate_catalog([rule])
+        assert any("rule_x" in e for e in errors)

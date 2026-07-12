@@ -103,7 +103,15 @@ def inject_patch(
             + [f"+{line_snippet}"]
             + patch_lines[insert_idx:]
         )
-        return "\n".join(injected), 1
+        # Best-effort line extraction for a header-like line that starts
+        # with "@@" but doesn't match the strict hunk header pattern (so
+        # split_hunks() couldn't use it). Falls back to 1 when insert_idx
+        # is 0 (no header-like line at all) or no number is found.
+        base_line = 1
+        if insert_idx == 1:
+            m = re.search(r"\+(\d+)", patch_lines[0])
+            base_line = int(m.group(1)) if m else 1
+        return "\n".join(injected), base_line + len(context_lines or [])
 
     target_idx = select_target_hunk(hunks)
     target_hunk = hunks[target_idx]
@@ -151,8 +159,22 @@ def validate_catalog(rules: list[dict[str, Any]]) -> list[str]:
     errors: list[str] = []
     for rule in rules:
         rule_id = rule.get("rule_id", "<unknown>")
+
         languages = rule.get("languages", [])
+        if not isinstance(languages, list):
+            errors.append(
+                f"rule {rule_id!r}: languages must be a list, "
+                f"got {type(languages).__name__}"
+            )
+            languages = []
+
         snippets = rule.get("language_snippets", {})
+        if not isinstance(snippets, dict):
+            errors.append(
+                f"rule {rule_id!r}: language_snippets must be a dict, "
+                f"got {type(snippets).__name__}"
+            )
+            snippets = {}
 
         missing = [lang for lang in languages if lang not in snippets]
         if missing:
@@ -165,10 +187,24 @@ def validate_catalog(rules: list[dict[str, Any]]) -> list[str]:
                 f"{sorted(_VALID_RUNTIMES)}, got {runtime!r}"
             )
 
-        texts = list(snippets.values()) + list(rule.get("context_lines") or [])
+        context_lines = rule.get("context_lines")
+        if context_lines is not None and not isinstance(context_lines, list):
+            errors.append(
+                f"rule {rule_id!r}: context_lines must be a list, "
+                f"got {type(context_lines).__name__}"
+            )
+            context_lines = []
+
+        texts = list(snippets.values()) + list(context_lines or [])
         if "line_snippet" in rule:
             texts.append(rule["line_snippet"])
         for text in texts:
+            if not isinstance(text, str):
+                errors.append(
+                    f"rule {rule_id!r}: snippet/context_line entries must be "
+                    f"strings, got {type(text).__name__}: {text!r}"
+                )
+                continue
             if _FORBIDDEN_GLOBAL_RE.search(text):
                 errors.append(
                     f"rule {rule_id!r}: snippet references a browser global "
