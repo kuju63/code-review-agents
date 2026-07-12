@@ -36,7 +36,7 @@ python evaluation/tools/score_evaluation.py --gold evaluation/data/gold_pr_set.j
 
 ## Darwin-specific notes
 
-- No GNU-vs-BSD command differences currently relied upon in this repo's scripts; `find`/`grep` as used here behave the same. `betterleaks` and `pre-commit` are installed via Homebrew on this machine.
+- `betterleaks` is installed via Homebrew per README's "Install betterleaks" section; no GNU-specific `find`/`grep` flags appear in this repo's scripts as of this writing, so BSD (macOS) userland has not required special-casing.
 
 ## Worktrees (project convention, not a generic git op)
 

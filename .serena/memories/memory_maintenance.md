@@ -18,8 +18,8 @@
 
 ## Style
 
-Dense agent notes, not prose docs. Prefer invariants, terse bullets. 
-Avoid obvious context, rationale, and examples unless they prevent likely mistakes. 
+Dense agent notes, not prose docs. Prefer invariants, terse bullets.
+Avoid obvious context, rationale, and examples unless they prevent likely mistakes.
 Keep guidance durable and generalizable, not task-local.
 
 ## Add/update threshold
