@@ -25,7 +25,7 @@ Pyright also runs standalone in CI via `uv run pyright` (see `.github/workflows/
 ```bash
 uv run code-review-agent   # CLI entrypoint is currently a placeholder ("Hello from code-review-agent!")
 ```
-Real usage is the FastAPI A2A app (`api/app.py:create_app`), typically run via Docker/Podman — see README "Using Podman" section.
+Real usage is the FastAPI A2A app (`src/code_review_agent/api/app.py:create_app`), typically run via Docker/Podman — see README "Using Podman" section.
 
 ## Evaluation pipeline
 
