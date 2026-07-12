@@ -18,7 +18,7 @@ uv run ruff check --fix
 uv run ruff format
 uv run ruff format --check
 ```
-Pyright and pymarkdown (docs) run via `pre-commit run --all-files`, not as standalone `uv run` commands.
+Pyright also runs standalone in CI via `uv run pyright` (see `.github/workflows/ci.yaml`); pymarkdown (docs) only runs via `pre-commit run --all-files`.
 
 ## Run
 
