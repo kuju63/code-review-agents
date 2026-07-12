@@ -10,9 +10,9 @@ Seeded set側の見逃し (`js_eval_injection` ×2件) の真因は
 本ドキュメントはこの注入ロジックが満たすべき要件と、決定論的アプローチ・LLM推論的アプローチを
 組み合わせたハイブリッド設計を定義する。
 
-現時点では設計合意のためのドキュメントであり、実装はまだ着手していない。
-CONTRIBUTING.md の Spec-Driven + TDD フローに従い、本設計への合意後にIssue化し、
-Phase単位でTDDサイクルに入ることを想定する。
+**実装ステータス**: Issue #110 (親) / #111 (Phase1) / #112 (Phase2) で管理。
+Phase1 (3.1節: `language_snippets`必須化、挿入位置ヒューリスティック改善、行番号再計算) は
+実装済み。Phase2 (3.2節: LLM推論 + 決定論的事後検証) は未着手 (Issue #112 でトラッキングのみ)。
 
 ---
 
@@ -143,7 +143,16 @@ injected_line = base_line + len(context_lines or [])
 再現性 (R6) とコスト・レイテンシの問題が生じる。そのため2フェーズに分割し、
 決定論的処理をLLM生成物の**事後検証・安全網**として使う構成とする。
 
-### 3.1 Phase 1: 決定論的改善 (即座に着手可能)
+### 3.1 Phase 1: 決定論的改善 (即座に着手可能) — 実装済み (Issue #111)
+
+`evaluation/tools/build_seeded_set.py` に `split_hunks` / `select_target_hunk` /
+`find_insertion_point` / `parse_hunk_new_start` / `count_new_lines_before` /
+`validate_catalog` を追加し、`inject_patch()` を書き換えた。
+`evaluation/config/seeded_mutations.json` の全5ルールに `language_snippets` /
+`runtime` を追加し、`window.` / `document.` 参照を排除した (`b2b2c_idor_hint` は
+フレームワーク別イディオムでゼロから再設計)。`tests/evaluation/tools/test_build_seeded_set.py`
+に回帰テスト (hoppscotch#6171 published-docs.resolver.ts 相当の2hunkサンプル、
+`must_find` 行番号の手検算一致を含む) を追加済み。
 
 #### 3.1.1 `language_snippets` の必須化 (R7)
 

@@ -5,8 +5,16 @@
       "category": "security",
       "severity": "critical",
       "languages": ["js", "jsx", "ts", "tsx", "vue", "svelte"],
-      "context_lines": ["const userInput = new URLSearchParams(window.location.search).get('q');"],
-      "line_snippet": "const result = eval(userInput);",
+      "runtime": "universal",
+      "line_snippet": "const result = eval(getQueryParam('q'));",
+      "language_snippets": {
+        "js": "const result = eval(getQueryParam('q'));",
+        "jsx": "const result = eval(getQueryParam('q'));",
+        "ts": "const result: unknown = eval(getQueryParam('q'));",
+        "tsx": "const result: unknown = eval(getQueryParam('q'));",
+        "vue": "const result = eval(getQueryParam('q'));",
+        "svelte": "const result = eval(getQueryParam('q'));"
+      },
       "summary": "Unsanitized eval usage may lead to arbitrary code execution."
     },
     {
@@ -14,7 +22,16 @@
       "category": "security",
       "severity": "high",
       "languages": ["js", "jsx", "ts", "tsx", "vue", "svelte"],
-      "line_snippet": "element.innerHTML = userHtml;",
+      "runtime": "browser",
+      "line_snippet": "element.innerHTML = getUntrustedHtml();",
+      "language_snippets": {
+        "js": "element.innerHTML = getUntrustedHtml();",
+        "ts": "(element as HTMLElement).innerHTML = getUntrustedHtml();",
+        "jsx": "containerRef.current.innerHTML = getUntrustedHtml();",
+        "tsx": "containerRef.current!.innerHTML = getUntrustedHtml();",
+        "vue": "containerRef.value.innerHTML = getUntrustedHtml();",
+        "svelte": "containerEl.innerHTML = getUntrustedHtml();"
+      },
       "summary": "Direct HTML assignment from untrusted input can cause XSS."
     },
     {
@@ -22,7 +39,14 @@
       "category": "correctness",
       "severity": "high",
       "languages": ["js", "jsx", "ts", "tsx"],
+      "runtime": "browser",
       "line_snippet": "useEffect(() => { fetchData(query); }, []);",
+      "language_snippets": {
+        "js": "useEffect(() => { fetchData(query); }, []);",
+        "ts": "useEffect(() => { fetchData(query); }, []);",
+        "jsx": "useEffect(() => { fetchData(props.query); }, []);",
+        "tsx": "useEffect(() => { fetchData(props.query); }, []);"
+      },
       "summary": "useEffect dependency list is incomplete and can cause stale data bugs."
     },
     {
@@ -30,7 +54,16 @@
       "category": "performance",
       "severity": "medium",
       "languages": ["js", "jsx", "ts", "tsx", "vue", "svelte"],
+      "runtime": "universal",
       "line_snippet": "for (const id of ids) { await api.get('/items/' + id); }",
+      "language_snippets": {
+        "js": "for (const id of ids) { await api.get('/items/' + id); }",
+        "ts": "for (const id of ids) { await api.get('/items/' + id); }",
+        "jsx": "for (const id of ids) { await api.get('/items/' + id); }",
+        "tsx": "for (const id of ids) { await api.get('/items/' + id); }",
+        "vue": "for (const id of ids) { await axios.get('/items/' + id); }",
+        "svelte": "for (const id of ids) { await fetch('/items/' + id); }"
+      },
       "summary": "Sequential API calls in loop can cause major latency regressions."
     },
     {
@@ -38,14 +71,15 @@
       "category": "security",
       "severity": "high",
       "languages": ["js", "ts", "jsx", "tsx", "vue", "svelte"],
-      "line_snippet": "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
+      "runtime": "universal",
+      "line_snippet": "const resource = await fetch('/api/items/' + params.id).then((r) => r.json());",
       "language_snippets": {
-        "js":     "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
-        "jsx":    "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
-        "ts":     "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
-        "tsx":    "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
-        "vue":    "const resource = await fetch('/api/items/' + params.id).then(r => r.json());",
-        "svelte": "const resource = await fetch('/api/items/' + params.id).then(r => r.json());"
+        "js": "const resource = await fetch('/api/items/' + params.id).then((r) => r.json());",
+        "ts": "const resource = await fetch('/api/items/' + params.id).then((r) => r.json());",
+        "jsx": "const resource = await fetch('/api/items/' + useParams().id).then((r) => r.json());",
+        "tsx": "const resource = await fetch('/api/items/' + useParams().id).then((r) => r.json());",
+        "vue": "const resource = await axios.get('/api/items/' + useRoute().params.id).then((r) => r.data);",
+        "svelte": "const resource = await fetch('/api/items/' + $page.params.id).then((r) => r.json());"
       },
       "summary": "Direct object access without tenant or ownership validation may cause IDOR."
     }

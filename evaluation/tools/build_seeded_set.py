@@ -80,32 +80,199 @@ def inject_patch(
     line_snippet: str,
     context_lines: list[str] | None = None,
 ) -> tuple[str, int]:
+    """Inject `line_snippet` into the hunk with the most added lines.
+
+    Selects the densest hunk (select_target_hunk) rather than always the
+    first, so the mutation lands in the block of substantive change
+    rather than floating among unrelated import lines. Falls back to the
+    legacy top-of-patch insertion when the patch has no hunk header at
+    all (no candidate hunk to target).
+    """
     patch_lines = original_patch.splitlines()
     if not patch_lines:
         return original_patch, 1
 
-    # Find a reasonable injection point after first hunk header.
-    insert_idx = 1 if patch_lines[0].startswith("@@") else 0
     prefix = [f"+{cl}" for cl in (context_lines or [])]
-    injected = (
-        patch_lines[:insert_idx]
+
+    hunks = split_hunks(original_patch)
+    if not hunks:
+        insert_idx = 1 if patch_lines[0].startswith("@@") else 0
+        injected = (
+            patch_lines[:insert_idx]
+            + prefix
+            + [f"+{line_snippet}"]
+            + patch_lines[insert_idx:]
+        )
+        return "\n".join(injected), 1
+
+    target_idx = select_target_hunk(hunks)
+    target_hunk = hunks[target_idx]
+    insertion_idx = find_insertion_point(target_hunk)
+
+    base_line = parse_hunk_new_start(target_hunk[0])
+    consumed = count_new_lines_before(target_hunk, insertion_idx)
+    injected_line = base_line + consumed + len(context_lines or [])
+
+    hunks[target_idx] = (
+        target_hunk[: insertion_idx + 1]
         + prefix
         + [f"+{line_snippet}"]
-        + patch_lines[insert_idx:]
+        + target_hunk[insertion_idx + 1 :]
     )
-
-    # Best-effort line extraction from hunk header.
-    header = patch_lines[0] if patch_lines else ""
-    m = re.search(r"\+(\d+)", header)
-    base_line = int(m.group(1)) if m else 1
-    # must_find points to the vulnerability line, after any context prefix lines
-    injected_line = base_line + len(context_lines or [])
+    injected = [line for hunk in hunks for line in hunk]
     return "\n".join(injected), injected_line
 
 
 def get_snippet_for_lang(rule: dict[str, Any], lang: str) -> str:
+    """Look up the language-specific snippet for `rule`.
+
+    `validate_catalog` is expected to reject any catalog where `languages`
+    isn't fully covered by `language_snippets` before this is called, so
+    the `line_snippet` fallback below is a defensive backstop rather than
+    a normal code path.
+    """
     lang_snippets = rule.get("language_snippets", {})
     return lang_snippets.get(lang) or rule["line_snippet"]
+
+
+_VALID_RUNTIMES = {"browser", "node", "universal"}
+_FORBIDDEN_GLOBAL_RE = re.compile(r"\b(window|document)\.")
+
+
+def validate_catalog(rules: list[dict[str, Any]]) -> list[str]:
+    """Validate the mutation catalog and return a list of error messages.
+
+    Enforces R7 (every declared language has a snippet) and a static
+    floor for R2 (runtime tagging present and valid, no bare
+    `window.`/`document.` references that would be nonsensical outside a
+    browser context). An empty return means the catalog is safe to use;
+    callers should treat any non-empty result as fatal.
+    """
+    errors: list[str] = []
+    for rule in rules:
+        rule_id = rule.get("rule_id", "<unknown>")
+        languages = rule.get("languages", [])
+        snippets = rule.get("language_snippets", {})
+
+        missing = [lang for lang in languages if lang not in snippets]
+        if missing:
+            errors.append(f"rule {rule_id!r}: missing language_snippets for {missing}")
+
+        runtime = rule.get("runtime")
+        if runtime not in _VALID_RUNTIMES:
+            errors.append(
+                f"rule {rule_id!r}: runtime must be one of "
+                f"{sorted(_VALID_RUNTIMES)}, got {runtime!r}"
+            )
+
+        texts = list(snippets.values()) + list(rule.get("context_lines") or [])
+        if "line_snippet" in rule:
+            texts.append(rule["line_snippet"])
+        for text in texts:
+            if _FORBIDDEN_GLOBAL_RE.search(text):
+                errors.append(
+                    f"rule {rule_id!r}: snippet references a browser global "
+                    f"(window./document.): {text!r}"
+                )
+    return errors
+
+
+_HUNK_HEADER_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
+
+
+def split_hunks(patch: str) -> list[list[str]]:
+    """Split a unified diff patch string into per-hunk line groups.
+
+    Each returned group starts with its `@@ ... @@` header line. Lines
+    before the first header (if any) are discarded; there is no sensible
+    hunk to attach them to. Returns an empty list if the patch has no
+    hunk header at all.
+    """
+    hunks: list[list[str]] = []
+    for line in patch.splitlines():
+        if _HUNK_HEADER_RE.match(line):
+            hunks.append([line])
+        elif hunks:
+            hunks[-1].append(line)
+    return hunks
+
+
+def select_target_hunk(hunks: list[list[str]]) -> int:
+    """Return the index of the hunk with the most added (`+`) lines.
+
+    Ties resolve to the earliest hunk, matching the intuition that the
+    first substantial change block is the more natural injection target.
+    """
+    added_counts = [
+        sum(1 for line in hunk[1:] if line.startswith("+")) for hunk in hunks
+    ]
+    return added_counts.index(max(added_counts))
+
+
+def parse_hunk_new_start(header_line: str) -> int:
+    """Extract the new-file start line `c` from `@@ -a,b +c,d @@`.
+
+    Falls back to 1 on a malformed header; this should not occur for real
+    gold PR data but keeps the function total.
+    """
+    m = _HUNK_HEADER_RE.match(header_line)
+    return int(m.group(1)) if m else 1
+
+
+def count_new_lines_before(hunk_lines: list[str], insertion_idx: int) -> int:
+    """Count new-file lines consumed between the hunk header and insertion_idx.
+
+    Context (` `) and added (`+`) lines advance the new file's line
+    counter; removed (`-`) lines do not, since they are absent from the
+    new file.
+    """
+    return sum(
+        1
+        for line in hunk_lines[1 : insertion_idx + 1]
+        if line.startswith(" ") or line.startswith("+")
+    )
+
+
+_STATEMENT_END_RE = re.compile(r"[;{]\s*$")
+_IMPORT_LIKE_RE = re.compile(
+    r"^\+\s*(import\s|export\s+.*\bfrom\b|const\s+\w+\s*=\s*require\()"
+)
+
+
+def find_insertion_point(hunk_lines: list[str]) -> int:
+    """Pick the index in `hunk_lines` (header at index 0) to insert after.
+
+    Preference order:
+      1. The last non-import added line ending in `;` or `{` -- a safe
+         statement/block-start boundary in the same scope.
+      2. The last non-import added line, regardless of pattern, if no
+         terminator-matching line exists.
+      3. The last added line overall (even if import-like) when every
+         added line looks like an import -- a known Phase 1 limitation
+         (see docs/eval-seeded-mutation-injection-design.md 3.1.3).
+      4. The header itself (index 0) when the hunk has no added lines.
+
+    Closing braces (`}`) are deliberately excluded from the terminator
+    pattern: inserting right after one risks landing outside the scope
+    that brace closes.
+    """
+    added_idxs = [i for i, line in enumerate(hunk_lines) if line.startswith("+")]
+    if not added_idxs:
+        return 0
+
+    non_import_idxs = [
+        i for i in added_idxs if not _IMPORT_LIKE_RE.match(hunk_lines[i])
+    ]
+    if not non_import_idxs:
+        return added_idxs[-1]
+
+    terminated_idxs = [
+        i for i in non_import_idxs if _STATEMENT_END_RE.search(hunk_lines[i])
+    ]
+    if terminated_idxs:
+        return terminated_idxs[-1]
+
+    return non_import_idxs[-1]
 
 
 def candidate_files(gold_item: dict[str, Any]) -> list[dict[str, Any]]:
@@ -241,6 +408,12 @@ def main() -> int:
     with open(args.catalog, encoding="utf-8") as f:
         catalog = json.load(f)
     rules: list[dict[str, Any]] = catalog.get("rules", [])
+
+    catalog_errors = validate_catalog(rules)
+    if catalog_errors:
+        for err in catalog_errors:
+            print(f"[SEEDED-ERROR] {err}", file=sys.stderr)
+        sys.exit(1)
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
 
