@@ -488,7 +488,9 @@ def main() -> int:
             print(f"[SEEDED-ERROR] {err}", file=sys.stderr)
         return 1
 
-    os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    output_dir = os.path.dirname(args.output)
+    if output_dir:
+        os.makedirs(output_dir, exist_ok=True)
 
     count = 0
     with open(args.output, "w", encoding="utf-8") as out:

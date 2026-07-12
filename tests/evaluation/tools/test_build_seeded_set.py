@@ -414,6 +414,39 @@ class TestMainCLI:
         assert "[SEEDED-ERROR]" in captured.err
         assert not output_path.exists()
 
+    def test_output_with_no_directory_component_does_not_crash(
+        self, tmp_path, monkeypatch
+    ):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts")],
+            }
+        ]
+        gold_path = self._write_gold(tmp_path, gold_items)
+        catalog_path = self._write_catalog(tmp_path, RULES)
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                "seeded.jsonl",
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 0
+        assert (tmp_path / "seeded.jsonl").exists()
+
 
 class TestSplitHunks:
     def test_splits_two_hunks_into_separate_lists(self):
