@@ -6,4 +6,4 @@
 - External integration: GitHub MCP read-only endpoint (`https://api.githubcopilot.com/mcp/read-only`) via `tools/github_mcp.py`.
 - Testing: PyTest + pytest-asyncio (`asyncio_mode = "strict"` — async tests need explicit `@pytest.mark.asyncio`) + pytest-cov.
 - Lint/format/type-check: Ruff (no repo-level `[tool.ruff]`/`ruff.toml` override — defaults apply) and Pyright (`venvPath = "."`, `venv = ".venv"` in pyproject).
-- Deployment: Docker or Podman; Chainguard base images pinned by digest (Renovate keeps digests current — see recent chore(deps) commits).
+- Deployment: Docker or Podman; Chainguard base images pinned by digest, kept current by Renovate (`renovate.json`).

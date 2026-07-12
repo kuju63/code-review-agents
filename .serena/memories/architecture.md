@@ -5,7 +5,7 @@
 - `agents/*.py` (`pr_info_collector.py`, `review_orchestrator.py`, `lead_engineer.py`, `base_reviewer.py`, `registry.py`) contain the actual agent behavior, independent of transport.
 - `api/agents/*.py` (`pr_info_collector.py`, `orchestrator.py`, `frontend_reviewer.py`, `security_reviewer.py`, `lead_engineer.py`) are thin FastAPI/A2A adapters — one per core agent, wired via `api/agents/common.py` (`ReviewerSkillInput`/`LeadEngineerSkillInput`, `verify_github_token`). `api/app.py:create_app` assembles the FastAPI app from these.
 - `a2a/models.py` defines the A2A protocol wire types (`A2ATask`, `A2AMessage`, `AgentCard`, etc.) shared by all `api/agents/*` adapters; `a2a/sanitizers.py` and `a2a/task_store.py` are supporting infra.
-- Per `mem:core` project memory / CLAUDE.md convention: **agents must be invoked via the A2A HTTP API**, never by importing and calling the core `agents/*` classes directly — the api layer performs auth/sanitization the core layer does not.
+- The core `agents/*` classes have no auth/sanitization of their own — that's implemented in the `api/agents/*` adapters (`verify_github_token`, input sanitizers). Prefer invoking agents through the A2A HTTP API rather than importing and calling the core classes directly, so that layer isn't bypassed.
 
 ## Reviewer plugin pattern (`agents/registry.py` + `agents/base_reviewer.py`)
 
