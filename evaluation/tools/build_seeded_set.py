@@ -147,7 +147,7 @@ _VALID_RUNTIMES = {"browser", "node", "universal"}
 _FORBIDDEN_GLOBAL_RE = re.compile(r"\b(window|document)\.")
 
 
-def validate_catalog(rules: list[dict[str, Any]]) -> list[str]:
+def validate_catalog(rules: list[Any]) -> list[str]:
     """Validate the mutation catalog and return a list of error messages.
 
     Enforces R7 (every declared language has a snippet) and a static
@@ -155,6 +155,12 @@ def validate_catalog(rules: list[dict[str, Any]]) -> list[str]:
     `window.`/`document.` references that would be nonsensical outside a
     browser context). An empty return means the catalog is safe to use;
     callers should treat any non-empty result as fatal.
+
+    `rules` is typed as `list[Any]` rather than `list[dict[str, Any]]`
+    because this function is the first line of defense against a
+    malformed catalog loaded straight from JSON: individual entries may
+    not be dicts at all, which is checked explicitly below rather than
+    assumed away by the type annotation.
     """
     errors: list[str] = []
     for rule in rules:
