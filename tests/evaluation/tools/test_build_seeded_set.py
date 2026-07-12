@@ -11,10 +11,9 @@ from __future__ import annotations
 import json
 import random
 import sys
+from pathlib import Path
 
 import pytest
-
-from pathlib import Path
 
 from tests.evaluation.conftest import load_eval_tool_module
 
@@ -336,10 +335,45 @@ class TestMainCLI:
             ],
         )
 
-        with pytest.raises(SystemExit) as exc_info:
-            main()
+        exit_code = main()
 
-        assert exc_info.value.code == 1
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
+        assert not output_path.exists()
+
+    def test_exits_with_error_when_catalog_rules_not_a_list(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts")],
+            }
+        ]
+        gold_path = self._write_gold(tmp_path, gold_items)
+        catalog_path = tmp_path / "catalog.json"
+        catalog_path.write_text(json.dumps({"rules": None}))
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
         captured = capsys.readouterr()
         assert "[SEEDED-ERROR]" in captured.err
         assert not output_path.exists()
@@ -698,5 +732,10 @@ class TestValidateCatalog:
 
     def test_non_string_snippet_value_is_reported_without_crash(self):
         rule = _valid_rule(language_snippets={"js": "doSomething(x);", "ts": 12345})
+        errors = validate_catalog([rule])
+        assert any("rule_x" in e for e in errors)
+
+    def test_unhashable_language_entry_is_reported_without_crash(self):
+        rule = _valid_rule(languages=["js", ["ts"]])
         errors = validate_catalog([rule])
         assert any("rule_x" in e for e in errors)

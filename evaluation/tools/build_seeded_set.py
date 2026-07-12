@@ -176,7 +176,15 @@ def validate_catalog(rules: list[dict[str, Any]]) -> list[str]:
             )
             snippets = {}
 
-        missing = [lang for lang in languages if lang not in snippets]
+        non_string_langs = [lang for lang in languages if not isinstance(lang, str)]
+        if non_string_langs:
+            errors.append(
+                f"rule {rule_id!r}: languages entries must be strings, "
+                f"got {non_string_langs}"
+            )
+        string_langs = [lang for lang in languages if isinstance(lang, str)]
+
+        missing = [lang for lang in string_langs if lang not in snippets]
         if missing:
             errors.append(f"rule {rule_id!r}: missing language_snippets for {missing}")
 
@@ -443,13 +451,20 @@ def main() -> int:
     gold_items = read_jsonl(args.gold)
     with open(args.catalog, encoding="utf-8") as f:
         catalog = json.load(f)
-    rules: list[dict[str, Any]] = catalog.get("rules", [])
+    rules = catalog.get("rules", [])
+    if not isinstance(rules, list):
+        print(
+            f"[SEEDED-ERROR] catalog 'rules' must be a list, "
+            f"got {type(rules).__name__}",
+            file=sys.stderr,
+        )
+        return 1
 
     catalog_errors = validate_catalog(rules)
     if catalog_errors:
         for err in catalog_errors:
             print(f"[SEEDED-ERROR] {err}", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
 
