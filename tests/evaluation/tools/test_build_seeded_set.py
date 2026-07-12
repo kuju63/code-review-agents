@@ -378,6 +378,42 @@ class TestMainCLI:
         assert "[SEEDED-ERROR]" in captured.err
         assert not output_path.exists()
 
+    def test_exits_with_error_when_catalog_root_not_a_dict(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts")],
+            }
+        ]
+        gold_path = self._write_gold(tmp_path, gold_items)
+        catalog_path = tmp_path / "catalog.json"
+        catalog_path.write_text(json.dumps(["not", "a", "dict"]))
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
+        assert not output_path.exists()
+
 
 class TestSplitHunks:
     def test_splits_two_hunks_into_separate_lists(self):
@@ -739,3 +775,19 @@ class TestValidateCatalog:
         rule = _valid_rule(languages=["js", ["ts"]])
         errors = validate_catalog([rule])
         assert any("rule_x" in e for e in errors)
+
+    def test_non_dict_rule_entry_is_reported_without_crash(self):
+        errors = validate_catalog([None, "not a rule", _valid_rule()])
+        assert len(errors) == 2
+        assert all("must be an object" in e for e in errors)
+
+    def test_missing_line_snippet_is_reported(self):
+        rule = _valid_rule()
+        del rule["line_snippet"]
+        errors = validate_catalog([rule])
+        assert any("line_snippet" in e for e in errors)
+
+    def test_non_string_line_snippet_is_reported_without_crash(self):
+        rule = _valid_rule(line_snippet=12345)
+        errors = validate_catalog([rule])
+        assert any("line_snippet" in e for e in errors)

@@ -158,6 +158,12 @@ def validate_catalog(rules: list[dict[str, Any]]) -> list[str]:
     """
     errors: list[str] = []
     for rule in rules:
+        if not isinstance(rule, dict):
+            errors.append(
+                f"rule entry must be an object, got {type(rule).__name__}: {rule!r}"
+            )
+            continue
+
         rule_id = rule.get("rule_id", "<unknown>")
 
         languages = rule.get("languages", [])
@@ -203,9 +209,17 @@ def validate_catalog(rules: list[dict[str, Any]]) -> list[str]:
             )
             context_lines = []
 
+        line_snippet = rule.get("line_snippet")
+        if not isinstance(line_snippet, str):
+            errors.append(
+                f"rule {rule_id!r}: line_snippet must be a string, "
+                f"got {type(line_snippet).__name__}"
+            )
+            line_snippet = None
+
         texts = list(snippets.values()) + list(context_lines or [])
-        if "line_snippet" in rule:
-            texts.append(rule["line_snippet"])
+        if line_snippet is not None:
+            texts.append(line_snippet)
         for text in texts:
             if not isinstance(text, str):
                 errors.append(
@@ -451,6 +465,14 @@ def main() -> int:
     gold_items = read_jsonl(args.gold)
     with open(args.catalog, encoding="utf-8") as f:
         catalog = json.load(f)
+    if not isinstance(catalog, dict):
+        print(
+            f"[SEEDED-ERROR] catalog root must be an object, "
+            f"got {type(catalog).__name__}",
+            file=sys.stderr,
+        )
+        return 1
+
     rules = catalog.get("rules", [])
     if not isinstance(rules, list):
         print(
