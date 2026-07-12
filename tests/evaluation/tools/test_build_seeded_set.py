@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import random
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -23,31 +24,52 @@ enumerate_combo_pool = build_seeded_set.enumerate_combo_pool
 render_seeded_item = build_seeded_set.render_seeded_item
 build_seeded_items = build_seeded_set.build_seeded_items
 main = build_seeded_set.main
+inject_patch = build_seeded_set.inject_patch
+get_snippet_for_lang = build_seeded_set.get_snippet_for_lang
+split_hunks = build_seeded_set.split_hunks
+select_target_hunk = build_seeded_set.select_target_hunk
+parse_hunk_new_start = build_seeded_set.parse_hunk_new_start
+count_new_lines_before = build_seeded_set.count_new_lines_before
+find_insertion_point = build_seeded_set.find_insertion_point
+validate_catalog = build_seeded_set.validate_catalog
 
 RULES = [
     {
         "rule_id": "rule_a",
         "languages": ["js", "ts"],
+        "runtime": "universal",
         "category": "security",
         "severity": "high",
         "summary": "Rule A summary",
         "line_snippet": "eval(userInput);",
+        "language_snippets": {
+            "js": "eval(userInput);",
+            "ts": "eval(userInput);",
+        },
     },
     {
         "rule_id": "rule_b",
         "languages": ["js"],
+        "runtime": "browser",
         "category": "security",
         "severity": "medium",
         "summary": "Rule B summary",
         "line_snippet": "el.innerHTML = data;",
+        "language_snippets": {
+            "js": "el.innerHTML = data;",
+        },
     },
     {
         "rule_id": "rule_c",
         "languages": ["ts"],
+        "runtime": "universal",
         "category": "performance",
         "severity": "low",
         "summary": "Rule C summary",
         "line_snippet": "await Promise.all(items.map(fn));",
+        "language_snippets": {
+            "ts": "await Promise.all(items.map(fn));",
+        },
     },
 ]
 
@@ -275,3 +297,530 @@ class TestMainCLI:
         captured = capsys.readouterr()
         assert "[SEEDED-WARN]" in captured.err
         assert "[SEEDED-WARN]" not in captured.out
+
+    def test_exits_with_error_and_message_when_catalog_invalid(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts")],
+            }
+        ]
+        gold_path = self._write_gold(tmp_path, gold_items)
+        invalid_rule = {
+            "rule_id": "rule_missing_snippets",
+            "languages": ["ts"],
+            "runtime": "universal",
+            "category": "security",
+            "severity": "high",
+            "summary": "Missing language_snippets",
+            "line_snippet": "eval(x);",
+        }
+        catalog_path = self._write_catalog(tmp_path, [invalid_rule])
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
+        assert not output_path.exists()
+
+    def test_exits_with_error_when_catalog_rules_not_a_list(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts")],
+            }
+        ]
+        gold_path = self._write_gold(tmp_path, gold_items)
+        catalog_path = tmp_path / "catalog.json"
+        catalog_path.write_text(json.dumps({"rules": None}))
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
+        assert not output_path.exists()
+
+    def test_exits_with_error_when_catalog_root_not_a_dict(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts")],
+            }
+        ]
+        gold_path = self._write_gold(tmp_path, gold_items)
+        catalog_path = tmp_path / "catalog.json"
+        catalog_path.write_text(json.dumps(["not", "a", "dict"]))
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
+        assert not output_path.exists()
+
+    def test_output_with_no_directory_component_does_not_crash(
+        self, tmp_path, monkeypatch
+    ):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts")],
+            }
+        ]
+        gold_path = self._write_gold(tmp_path, gold_items)
+        catalog_path = self._write_catalog(tmp_path, RULES)
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                "seeded.jsonl",
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 0
+        assert (tmp_path / "seeded.jsonl").exists()
+
+
+class TestSplitHunks:
+    def test_splits_two_hunks_into_separate_lists(self):
+        patch = (
+            "@@ -1,4 +1,5 @@\n"
+            " import a\n"
+            " import b\n"
+            "+import c\n"
+            " import d\n"
+            "\n"
+            "@@ -10,6 +11,11 @@ export class Foo {\n"
+            "   constructor() {}\n"
+            "+  bar() {\n"
+            "+    return 1;\n"
+            "+  }\n"
+        )
+        hunks = split_hunks(patch)
+        assert len(hunks) == 2
+        assert hunks[0][0].startswith("@@ -1,4 +1,5 @@")
+        assert hunks[1][0].startswith("@@ -10,6 +11,11 @@")
+        assert hunks[0][1:] == [
+            " import a",
+            " import b",
+            "+import c",
+            " import d",
+            "",
+        ]
+
+    def test_single_hunk_patch_returns_one_element_list(self):
+        patch = "@@ -1,2 +1,2 @@\n line1\n line2"
+        hunks = split_hunks(patch)
+        assert len(hunks) == 1
+        assert hunks[0][0].startswith("@@ -1,2 +1,2 @@")
+
+    def test_no_hunk_header_returns_empty_list(self):
+        patch = " just some context\n more context"
+        assert split_hunks(patch) == []
+
+
+class TestSelectTargetHunk:
+    def test_picks_hunk_with_most_added_lines(self):
+        hunks = [
+            ["@@ -1,4 +1,5 @@", "+import c", " import d"],
+            ["@@ -10,6 +11,11 @@", "+bar() {", "+  return 1;", "+}"],
+        ]
+        assert select_target_hunk(hunks) == 1
+
+    def test_tie_breaks_to_earliest_hunk(self):
+        hunks = [
+            ["@@ -1,2 +1,2 @@", "+a"],
+            ["@@ -5,2 +5,2 @@", "+b"],
+        ]
+        assert select_target_hunk(hunks) == 0
+
+    def test_single_hunk_returns_index_zero(self):
+        hunks = [["@@ -1,2 +1,2 @@", "+a"]]
+        assert select_target_hunk(hunks) == 0
+
+
+class TestParseHunkNewStart:
+    def test_parses_new_start_from_header(self):
+        assert parse_hunk_new_start("@@ -10,6 +11,11 @@") == 11
+
+    def test_parses_header_with_trailing_context_text(self):
+        assert parse_hunk_new_start("@@ -10,6 +11,11 @@ export class Foo {") == 11
+
+    def test_malformed_header_falls_back_to_one(self):
+        assert parse_hunk_new_start("not a hunk header") == 1
+
+
+class TestCountNewLinesBefore:
+    def test_counts_context_and_added_lines(self):
+        hunk = [
+            "@@ -10,6 +11,11 @@",
+            "   constructor() {}",
+            "+  bar() {",
+            "+    return 1;",
+            "+  }",
+        ]
+        # insertion_idx=4 -> count lines at indices 1..4 (context+added)
+        assert count_new_lines_before(hunk, 4) == 4
+
+    def test_excludes_removed_lines(self):
+        hunk = [
+            "@@ -10,6 +11,11 @@",
+            "-  removedLine();",
+            "   constructor() {}",
+            "+  bar() {",
+        ]
+        assert count_new_lines_before(hunk, 3) == 2
+
+    def test_zero_when_insertion_idx_is_header(self):
+        hunk = ["@@ -10,6 +11,11 @@", "   constructor() {}"]
+        assert count_new_lines_before(hunk, 0) == 0
+
+
+class TestFindInsertionPoint:
+    def test_inserts_after_last_statement_terminated_added_line(self):
+        hunk = [
+            "@@ -10,6 +11,11 @@",
+            "   constructor() {}",
+            "+  const doc = await this.service.findById(id);",
+            "+  if (!doc) {",
+            "+    throw new NotFoundException('Document not found');",
+            "+  }",
+            "+  return doc;",
+            "   }",
+        ]
+        # last non-`}` terminator-matching added line is index 6
+        # ("+  return doc;"); the added "+  }" at index 5 closes the `if`
+        # block and is deliberately not treated as a terminator, since
+        # inserting after a closing brace risks exiting the enclosing scope.
+        assert find_insertion_point(hunk) == 6
+
+    def test_skips_import_like_added_lines(self):
+        hunk = [
+            "@@ -1,4 +1,6 @@",
+            " import a from 'a';",
+            "+import c from 'c';",
+            " import d from 'd';",
+            "+const config = loadConfig();",
+        ]
+        # the import-like added line is skipped in favor of the later
+        # non-import statement
+        assert find_insertion_point(hunk) == 4
+
+    def test_falls_back_to_last_added_line_when_no_terminator_matches(self):
+        hunk = [
+            "@@ -1,3 +1,4 @@",
+            " const x = (",
+            "+  a,",
+            "+  b",
+            " )",
+        ]
+        assert find_insertion_point(hunk) == 3
+
+    def test_falls_back_to_header_when_no_added_lines(self):
+        hunk = ["@@ -1,2 +1,2 @@", " line1", " line2"]
+        assert find_insertion_point(hunk) == 0
+
+    def test_import_only_hunk_falls_back_to_import_line(self):
+        # Known Phase 1 limitation: when every added line looks import-like,
+        # there is no non-import candidate to prefer, so find_insertion_point
+        # falls back to the last added line overall (the import itself).
+        # This does not fully solve R1/R3 for import-only hunks, matching
+        # docs/eval-seeded-mutation-injection-design.md 3.1.3's acknowledged
+        # limitation.
+        hunk = [
+            "@@ -1,3 +1,4 @@",
+            " import a from 'a';",
+            "+import b from 'b';",
+            " import c from 'c';",
+        ]
+        assert find_insertion_point(hunk) == 2
+
+
+def _published_docs_resolver_patch():
+    """Two-hunk sample modeled on hoppscotch#6171 published-docs.resolver.ts.
+
+    Hunk 1 (imports) has 1 added line; hunk 2 (resolver body) has 5. This
+    reproduces the exact scenario that motivated
+    docs/eval-seeded-mutation-injection-design.md: a mutation must land in
+    the body hunk, not interleaved among the imports.
+    """
+    lines = [
+        "@@ -1,4 +1,5 @@",
+        " import { Injectable } from '@nestjs/common';",
+        " import { Resolver, Query, Args } from '@nestjs/graphql';",
+        "+import { PublishedDocsService } from './published-docs.service';",
+        " import { Logger } from '@nestjs/common';",
+        " ",
+        "@@ -10,6 +11,11 @@ export class PublishedDocsResolver {",
+        "   constructor(private readonly service: PublishedDocsService) {}",
+        " ",
+        "   @Query(() => PublishedDoc)",
+        "   async publishedDoc(@Args('id') id: string): Promise<PublishedDoc> {",
+        "+    const doc = await this.service.findById(id);",
+        "+    if (!doc) {",
+        "+      throw new NotFoundException('Document not found');",
+        "+    }",
+        "+    return doc;",
+        "   }",
+        " }",
+    ]
+    return "\n".join(lines)
+
+
+class TestInjectPatchDirect:
+    def test_single_hunk_no_added_lines_matches_legacy_placement(self):
+        patch = "@@ -1,2 +1,2 @@\n line1\n line2"
+        result, line = inject_patch(patch, "eval(x);")
+        assert line == 1
+        assert result.splitlines() == [
+            "@@ -1,2 +1,2 @@",
+            "+eval(x);",
+            " line1",
+            " line2",
+        ]
+
+    def test_multi_hunk_selects_densest_hunk_and_computes_line(self):
+        patch = _published_docs_resolver_patch()
+        result, line = inject_patch(patch, "eval(userInput);")
+        assert line == 20
+
+        hunks_out = split_hunks(result)
+        assert len(hunks_out) == 2
+        return_doc_idx = hunks_out[1].index("+    return doc;")
+        assert hunks_out[1][return_doc_idx + 1] == "+eval(userInput);"
+
+    def test_import_hunk_is_not_selected_when_body_hunk_has_more_additions(self):
+        patch = _published_docs_resolver_patch()
+        original_hunk1 = split_hunks(patch)[0]
+
+        result, _ = inject_patch(patch, "eval(userInput);")
+
+        hunks_out = split_hunks(result)
+        assert hunks_out[0] == original_hunk1
+
+    def test_context_lines_are_prefixed_and_offset_line_number(self):
+        patch = "@@ -1,2 +1,2 @@\n line1\n line2"
+        result, line = inject_patch(patch, "eval(x);", context_lines=["const x = 1;"])
+        assert line == 2
+        assert result.splitlines() == [
+            "@@ -1,2 +1,2 @@",
+            "+const x = 1;",
+            "+eval(x);",
+            " line1",
+            " line2",
+        ]
+
+    def test_no_hunk_header_falls_back_to_legacy_top_insertion(self):
+        patch = " just context\n more context"
+        result, line = inject_patch(patch, "eval(x);")
+        assert line == 1
+        lines = result.splitlines()
+        assert lines[0] == "+eval(x);"
+        assert lines[1:] == [" just context", " more context"]
+
+    def test_empty_patch_returns_line_one(self):
+        result, line = inject_patch("", "eval(x);")
+        assert result == ""
+        assert line == 1
+
+    def test_malformed_header_fallback_still_extracts_line_number(self):
+        # Starts with "@@" (so the top-of-patch insert_idx=1 branch fires)
+        # but doesn't match the strict hunk header pattern, so split_hunks()
+        # returns [] and the legacy fallback in inject_patch() is used. The
+        # fallback should still best-effort extract a line number from the
+        # malformed header instead of hardcoding 1.
+        patch = "@@ malformed +42 change @@\n line1\n line2"
+        result, line = inject_patch(patch, "eval(x);")
+        assert line == 42
+        assert result.splitlines() == [
+            "@@ malformed +42 change @@",
+            "+eval(x);",
+            " line1",
+            " line2",
+        ]
+
+
+class TestGetSnippetForLang:
+    def test_returns_language_specific_snippet_when_present(self):
+        rule = {
+            "line_snippet": "eval(x);",
+            "language_snippets": {"ts": "const y: unknown = eval(x);"},
+        }
+        assert get_snippet_for_lang(rule, "ts") == "const y: unknown = eval(x);"
+
+    def test_falls_back_to_line_snippet_when_language_missing(self):
+        rule = {"line_snippet": "eval(x);", "language_snippets": {"ts": "..."}}
+        assert get_snippet_for_lang(rule, "vue") == "eval(x);"
+
+
+def _valid_rule(**overrides):
+    rule = {
+        "rule_id": "rule_x",
+        "languages": ["js", "ts"],
+        "runtime": "universal",
+        "line_snippet": "doSomething(x);",
+        "language_snippets": {
+            "js": "doSomething(x);",
+            "ts": "doSomething(x);",
+        },
+    }
+    rule.update(overrides)
+    return rule
+
+
+class TestValidateCatalog:
+    def test_valid_catalog_returns_no_errors(self):
+        assert validate_catalog([_valid_rule()]) == []
+
+    def test_missing_language_snippet_for_declared_language_is_reported(self):
+        rule = _valid_rule(languages=["js", "ts", "vue"])
+        errors = validate_catalog([rule])
+        assert len(errors) == 1
+        assert "rule_x" in errors[0]
+        assert "vue" in errors[0]
+
+    def test_missing_runtime_is_reported(self):
+        rule = _valid_rule()
+        del rule["runtime"]
+        errors = validate_catalog([rule])
+        assert any("runtime" in e for e in errors)
+
+    def test_invalid_runtime_value_is_reported(self):
+        rule = _valid_rule(runtime="server")
+        errors = validate_catalog([rule])
+        assert any("runtime" in e for e in errors)
+
+    def test_forbidden_browser_global_in_snippet_is_reported(self):
+        rule = _valid_rule(
+            language_snippets={
+                "js": "window.location.href = x;",
+                "ts": "doSomething(x);",
+            }
+        )
+        errors = validate_catalog([rule])
+        assert any("window." in e for e in errors)
+
+    def test_forbidden_browser_global_in_context_lines(self):
+        rule = _valid_rule(context_lines=["const x = document.title;"])
+        errors = validate_catalog([rule])
+        assert any("document." in e for e in errors)
+
+    def test_collects_multiple_errors_across_rules(self):
+        bad_rule_a = _valid_rule(rule_id="rule_a")
+        del bad_rule_a["runtime"]
+        bad_rule_b = _valid_rule(rule_id="rule_b", languages=["js", "vue"])
+        errors = validate_catalog([bad_rule_a, bad_rule_b])
+        assert len(errors) == 2
+
+    def test_real_catalog_file_passes_validation(self):
+        catalog_path = (
+            Path(__file__).parents[3]
+            / "evaluation"
+            / "config"
+            / "seeded_mutations.json"
+        )
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        assert validate_catalog(catalog["rules"]) == []
+
+    def test_languages_not_a_list_is_reported_without_crash(self):
+        rule = _valid_rule(languages="ts")
+        errors = validate_catalog([rule])
+        assert any("languages" in e and "rule_x" in e for e in errors)
+
+    def test_language_snippets_not_a_dict_is_reported_without_crash(self):
+        rule = _valid_rule(language_snippets=None)
+        errors = validate_catalog([rule])
+        assert any("language_snippets" in e and "rule_x" in e for e in errors)
+
+    def test_non_string_snippet_value_is_reported_without_crash(self):
+        rule = _valid_rule(language_snippets={"js": "doSomething(x);", "ts": 12345})
+        errors = validate_catalog([rule])
+        assert any("rule_x" in e for e in errors)
+
+    def test_unhashable_language_entry_is_reported_without_crash(self):
+        rule = _valid_rule(languages=["js", ["ts"]])
+        errors = validate_catalog([rule])
+        assert any("rule_x" in e for e in errors)
+
+    def test_non_dict_rule_entry_is_reported_without_crash(self):
+        errors = validate_catalog([None, "not a rule", _valid_rule()])
+        assert len(errors) == 2
+        assert all("must be an object" in e for e in errors)
+
+    def test_missing_line_snippet_is_reported(self):
+        rule = _valid_rule()
+        del rule["line_snippet"]
+        errors = validate_catalog([rule])
+        assert any("line_snippet" in e for e in errors)
+
+    def test_non_string_line_snippet_is_reported_without_crash(self):
+        rule = _valid_rule(line_snippet=12345)
+        errors = validate_catalog([rule])
+        assert any("line_snippet" in e for e in errors)
