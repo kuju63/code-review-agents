@@ -28,13 +28,22 @@ logger = logging.getLogger(__name__)
 
 
 class MutatedPatchOutput(BaseModel):
-    """Structured output requested from the Seeded mutation generation LLM
-    (design doc 3.2.2). `injected_line` is retained only as a record of
+    """Structured output requested from the Seeded mutation generation LLM.
+
+    See design doc 3.2.2. `injected_line` is retained only as a record of
     the LLM's own reasoning (like `reachability_rationale`); the
     authoritative line number used for `must_find` is recomputed
     deterministically via `recompute_injected_line()` instead of trusting
     this self-reported value (see the "injected_line に関する注" in the
     design doc for why).
+
+    Attributes:
+        mutated_patch: Full unified diff after the vulnerability pattern
+            has been injected.
+        injected_line: 1-based new-file line number the LLM claims the
+            injected code lives on. Record-only; not used for `must_find`.
+        reachability_rationale: Brief, non-blank explanation of why the
+            LLM judged the injection point reachable.
     """
 
     mutated_patch: str
@@ -74,7 +83,17 @@ reachable.
 
 
 def build_generation_prompt(patch: str, rule: dict[str, Any], lang: str) -> str:
-    """Build the user prompt for one (file, rule) mutation generation call."""
+    """Build the user prompt for one (file, rule) mutation generation call.
+
+    Args:
+        patch: Original unified diff for the target file_change.
+        rule: Mutation catalog rule (must have `rule_id`, `summary`).
+        lang: Target file's detected language, used to pick the
+            reference snippet via `get_snippet_for_lang`.
+
+    Returns:
+        The full user prompt string to send to the generation LLM.
+    """
     return (
         f"Target language: {lang}\n"
         f"Vulnerability/bug pattern (rule_id={rule.get('rule_id')!r}): "
@@ -94,6 +113,18 @@ def make_llm_mutation_generator(
     (``base_reviewer.py`` / ``score_evaluation.py::make_llm_semantic_judge``):
     a custom ``llm_base_url`` gets a fixed low temperature for
     reproducibility; the default endpoint is used as-is otherwise.
+
+    Args:
+        model_id: OpenAI-compatible model id to use for generation.
+        llm_base_url: Optional OpenAI-compatible base URL. When set, the
+            model is pinned to a low, fixed temperature for
+            reproducibility.
+
+    Returns:
+        A `MutationGenerator` callable: given `(patch, rule, lang)`, it
+        returns a `MutatedPatchOutput` on success, or `None` (fail
+        closed, no retry) when the LLM call raises or returns no
+        structured output.
     """
     if llm_base_url:
         model = OpenAIModel(
@@ -500,6 +531,13 @@ def verify_diff_parses(mutated_patch: str) -> bool:
     stricter than `inject_patch()`'s best-effort legacy fallback: an LLM
     output that doesn't parse cleanly should fail closed here, not be
     salvaged.
+
+    Args:
+        mutated_patch: LLM-generated unified diff to validate.
+
+    Returns:
+        True if `mutated_patch` has at least one hunk and every body line
+        is a valid context/added/removed line.
     """
     if not mutated_patch.strip():
         return False
@@ -515,16 +553,24 @@ def _hunk_added_indices(
     original_hunk: list[str], mutated_hunk: list[str]
 ) -> list[int] | None:
     """Match `original_hunk`'s body lines as an ordered subsequence of
-    `mutated_hunk`'s body lines; return the indices (into `mutated_hunk`)
-    of lines that are new relative to `original_hunk`.
+    `mutated_hunk`'s body lines.
 
-    Returns None if any line in `mutated_hunk` is neither the next
-    expected original line nor a new `+` line -- i.e. an existing
-    context/removed/added line was altered, reordered, or dropped -- or
-    if `original_hunk` wasn't fully consumed by the end. Hunk headers
-    (index 0) are excluded from the comparison since design doc 3.2.2
-    explicitly allows them to be rewritten to reflect the new line count
-    after insertion.
+    Hunk headers (index 0) are excluded from the comparison since design
+    doc 3.2.2 explicitly allows them to be rewritten to reflect the new
+    line count after insertion.
+
+    Args:
+        original_hunk: One hunk (header at index 0) from the original
+            patch, as returned by `split_hunks()`.
+        mutated_hunk: The corresponding hunk from the mutated patch.
+
+    Returns:
+        Indices (into `mutated_hunk`) of lines that are new relative to
+        `original_hunk`, or None if any line in `mutated_hunk` is neither
+        the next expected original line nor a new `+` line -- i.e. an
+        existing context/removed/added line was altered, reordered, or
+        dropped -- or if `original_hunk` wasn't fully consumed by the
+        end.
     """
     oi = 1
     new_idxs: list[int] = []
@@ -552,6 +598,15 @@ def verify_only_additions_changed(original_patch: str, mutated_patch: str) -> bo
     kind of uncontrolled edit this safety net exists to catch. Also
     rejects a `mutated_patch` identical to `original_patch`, since zero
     added lines means nothing was injected at all.
+
+    Args:
+        original_patch: Unified diff before mutation.
+        mutated_patch: LLM-generated unified diff to validate against
+            `original_patch`.
+
+    Returns:
+        True if every hunk's pre-existing lines survive verbatim and in
+        order, with at least one new `+` line added somewhere.
     """
     original_hunks = split_hunks(original_patch)
     mutated_hunks = split_hunks(mutated_patch)
@@ -577,6 +632,15 @@ def verify_required_tokens(mutated_patch: str, required_tokens: list[str]) -> bo
     across lines (e.g. `frontend_n_plus_one_api` needs a loop keyword and
     `await`, which commonly land on different lines of a multi-line
     block).
+
+    Args:
+        mutated_patch: LLM-generated unified diff to validate.
+        required_tokens: Regex patterns from the rule's catalog entry;
+            all must match for the check to pass.
+
+    Returns:
+        True if `required_tokens` is non-empty and every pattern matches
+        somewhere in the concatenated added lines.
     """
     if not required_tokens:
         return False
@@ -602,6 +666,15 @@ def verify_runtime_consistency(mutated_patch: str, runtime: str | None) -> bool:
     anything. The inverse direction (Node-only APIs leaking into a
     browser-only file) is intentionally out of scope; see design doc
     3.2.3.
+
+    Args:
+        mutated_patch: LLM-generated unified diff to validate.
+        runtime: The rule's declared runtime (`"browser"`, `"node"`, or
+            `"universal"`).
+
+    Returns:
+        True unless `runtime == "node"` and a `window.`/`document.`
+        reference appears in an added line.
     """
     if runtime != "node":
         return True
@@ -631,11 +704,18 @@ def recompute_injected_line(original_patch: str, mutated_patch: str) -> int | No
     computation Phase 1's own `inject_patch()` uses, so both code paths
     agree on what "the line number" means.
 
-    Returns None (a verification failure that should trigger fallback to
-    Phase 1) when the changed hunk can't be uniquely identified, or its
-    new lines aren't contiguous -- both cases where "the" injected line
-    is ambiguous. Callers should only invoke this once
-    `verify_only_additions_changed` has already returned True.
+    Args:
+        original_patch: Unified diff before mutation.
+        mutated_patch: Verified unified diff after mutation (callers
+            should only invoke this once `verify_only_additions_changed`
+            has already returned True).
+
+    Returns:
+        The 1-based new-file line number of the injected block, or None
+        (a verification failure that should trigger fallback to Phase 1)
+        when the changed hunk can't be uniquely identified, or its new
+        lines aren't contiguous -- both cases where "the" injected line
+        is ambiguous.
     """
     original_hunks = split_hunks(original_patch)
     mutated_hunks = split_hunks(mutated_patch)
@@ -706,6 +786,14 @@ def render_seeded_item(
 ) -> dict[str, Any]:
     """Build one Seeded item from an already-chosen (file_change, rule) combo
     using the Phase 1 deterministic injection logic.
+
+    Args:
+        gold_item: Source Gold set item.
+        file_change: The specific file_change to mutate.
+        rule: Mutation catalog rule for this combo.
+
+    Returns:
+        A Seeded item dict with `generation_source: "deterministic_fallback"`.
     """
     path = file_change.get("path", "")
     patch = file_change.get("patch") or ""
@@ -746,6 +834,15 @@ def passes_post_generation_checks(
     """Apply V1 -> V2 -> V3 -> V4 (design doc 3.2.3) in order, short-circuiting
     on the first failure since later checks assume `split_hunks()` on
     `mutated_patch` is trustworthy, which V1 establishes.
+
+    Args:
+        original_patch: Unified diff before mutation.
+        mutated_patch: LLM-generated unified diff to validate.
+        rule: Mutation catalog rule (must have `required_tokens`,
+            `runtime`).
+
+    Returns:
+        True if `mutated_patch` passes all four checks.
     """
     return (
         verify_diff_parses(mutated_patch)
@@ -764,9 +861,19 @@ def render_seeded_item_from_llm(
 ) -> dict[str, Any]:
     """Build one Seeded item from a verified LLM mutation.
 
-    `injected_line` must already be the deterministically recomputed
-    value (`recompute_injected_line()`), not `llm_output.injected_line`
-    -- see the "injected_line に関する注" in the design doc.
+    Args:
+        gold_item: Source Gold set item.
+        file_change: The specific file_change being mutated.
+        rule: Mutation catalog rule (must have `rule_id`, `category`,
+            `severity`, `summary`).
+        llm_output: Verified LLM structured output (must already have
+            passed `passes_post_generation_checks`).
+        injected_line: The deterministically recomputed line number
+            (`recompute_injected_line()`), not `llm_output.injected_line`
+            -- see the "injected_line に関する注" in the design doc.
+
+    Returns:
+        A Seeded item dict with `generation_source: "llm"`.
     """
     path = file_change.get("path", "")
     file_changes = gold_item.get("file_changes", [])
@@ -806,6 +913,18 @@ def render_seeded_item_with_generation(
     Phase 1 deterministic path (no retry) if `generate_fn` is unset, the
     LLM call failed, the output didn't pass V1-V4, or the injected line
     couldn't be unambiguously recomputed.
+
+    Args:
+        gold_item: Source Gold set item.
+        file_change: The specific file_change to mutate.
+        rule: Mutation catalog rule for this combo.
+        generate_fn: Optional LLM mutation generator (from
+            `make_llm_mutation_generator`). Defaults to None, which
+            skips the LLM path entirely for backward compatibility.
+
+    Returns:
+        A Seeded item dict, with `generation_source` set to `"llm"` or
+        `"deterministic_fallback"` depending on which path produced it.
     """
     if generate_fn is not None:
         path = file_change.get("path", "")
@@ -841,14 +960,25 @@ def build_seeded_items(
     used instead of retry-on-duplicate because retrying is unbounded/
     wasteful once the pool is nearly exhausted.
 
-    Returns ([], None) when the pool is empty (no candidate file's
-    language matches any rule), matching prior silent-skip behavior.
-    Returns a non-None warning when `multiplier` exceeds the pool size,
-    in which case the requested count is clamped to the pool size.
+    Args:
+        gold_item: Source Gold set item.
+        rules: Full mutation catalog rule list.
+        rnd: Seeded random source, used only to shuffle the combo pool
+            (R6 reproducibility).
+        multiplier: Requested Seeded items per Gold item; clamped to the
+            pool size if it exceeds it.
+        generate_fn: Optional LLM mutation generator (from
+            `make_llm_mutation_generator`). Defaults to None for backward
+            compatibility: existing callers that don't pass it keep
+            getting the pure Phase 1 path via
+            `render_seeded_item_with_generation`'s own None-handling.
 
-    `generate_fn` defaults to None for backward compatibility: existing
-    callers that don't pass it keep getting the pure Phase 1 path via
-    `render_seeded_item_with_generation`'s own None-handling.
+    Returns:
+        A tuple of `(items, warning)`. `items` is `[]` when the pool is
+        empty (no candidate file's language matches any rule), matching
+        prior silent-skip behavior. `warning` is non-None when
+        `multiplier` exceeds the pool size, in which case the requested
+        count is clamped to the pool size.
     """
     pool = enumerate_combo_pool(gold_item, rules)
     if not pool:
