@@ -243,7 +243,23 @@ class TestMainCLI:
         path.write_text(json.dumps({"rules": rules}))
         return path
 
+    def _stub_generation_model(self, monkeypatch):
+        """Configure a generation model without ever calling a real LLM.
+
+        Patches make_llm_mutation_generator to return a stub that always
+        returns None (deterministic-fallback path), so these tests --
+        which only assert on Phase 1 behavior (dup IDs, clamping, output
+        existing) -- stay hermetic and fast.
+        """
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "gpt-4o-test")
+        monkeypatch.setattr(
+            build_seeded_set,
+            "make_llm_mutation_generator",
+            lambda model_id, llm_base_url=None: lambda patch, rule, lang: None,
+        )
+
     def test_no_duplicate_ids_in_output(self, tmp_path, monkeypatch):
+        self._stub_generation_model(monkeypatch)
         gold_items = [
             {
                 "id": "owner/repo#1",
@@ -287,6 +303,7 @@ class TestMainCLI:
     def test_warns_on_stderr_when_multiplier_exceeds_pool(
         self, tmp_path, monkeypatch, capsys
     ):
+        self._stub_generation_model(monkeypatch)
         gold_items = [
             {
                 "id": "owner/repo#2",
@@ -440,6 +457,7 @@ class TestMainCLI:
     def test_output_with_no_directory_component_does_not_crash(
         self, tmp_path, monkeypatch
     ):
+        self._stub_generation_model(monkeypatch)
         gold_items = [
             {
                 "id": "owner/repo#1",
@@ -1254,3 +1272,214 @@ class TestBuildSeededItemsGenerationSourceWiring:
         item = make_gold_item(files=[make_file("src/foo.ts"), make_file("src/bar.js")])
         items, _ = build_seeded_items(item, RULES, random.Random(1), 2)
         assert all(i["generation_source"] == "deterministic_fallback" for i in items)
+
+
+class TestMainCLIModelConfigValidation:
+    def _write_gold(self, tmp_path, items):
+        path = tmp_path / "gold.jsonl"
+        with open(path, "w", encoding="utf-8") as f:
+            for item in items:
+                f.write(json.dumps(item) + "\n")
+        return path
+
+    def _write_catalog(self, tmp_path, rules):
+        path = tmp_path / "catalog.json"
+        path.write_text(json.dumps({"rules": rules}))
+        return path
+
+    def _gold_and_catalog(self, tmp_path):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts")],
+            }
+        ]
+        return (
+            self._write_gold(tmp_path, gold_items),
+            self._write_catalog(tmp_path, RULES),
+        )
+
+    def test_exits_with_error_when_no_model_configured(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        # Hermetic regardless of the real .env: load_dotenv() would
+        # otherwise re-populate SEEDED_GEN_MODEL_ID from disk after
+        # delenv, silently invalidating this test the moment that key is
+        # ever set in a real .env (see evaluation/RUNBOOK.md).
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.delenv("SEEDED_GEN_MODEL_ID", raising=False)
+        monkeypatch.delenv("SEEDED_GEN_LLM_BASE_URL", raising=False)
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
+        assert not output_path.exists()
+
+    def test_cli_model_id_takes_priority_over_env(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "env-model")
+        mock_factory = MagicMock(
+            side_effect=lambda model_id, llm_base_url=None: (
+                lambda patch, rule, lang: None
+            )
+        )
+        monkeypatch.setattr(
+            build_seeded_set, "make_llm_mutation_generator", mock_factory
+        )
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+                "--model-id",
+                "cli-model",
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 0
+        assert mock_factory.call_args.args[0] == "cli-model"
+
+    def test_env_var_used_when_cli_not_provided(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "env-model")
+        mock_factory = MagicMock(
+            side_effect=lambda model_id, llm_base_url=None: (
+                lambda patch, rule, lang: None
+            )
+        )
+        monkeypatch.setattr(
+            build_seeded_set, "make_llm_mutation_generator", mock_factory
+        )
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 0
+        assert mock_factory.call_args.args[0] == "env-model"
+
+
+class TestMainCLIEndToEnd:
+    def _write_gold(self, tmp_path, items):
+        path = tmp_path / "gold.jsonl"
+        with open(path, "w", encoding="utf-8") as f:
+            for item in items:
+                f.write(json.dumps(item) + "\n")
+        return path
+
+    def _write_catalog(self, tmp_path, rules):
+        path = tmp_path / "catalog.json"
+        path.write_text(json.dumps({"rules": rules}))
+        return path
+
+    def _run(self, tmp_path, monkeypatch, generate_fn):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts", patch=_ORIGINAL_SINGLE_HUNK)],
+            }
+        ]
+        gold_path = self._write_gold(tmp_path, gold_items)
+        catalog_path = self._write_catalog(tmp_path, [RULES[0]])
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setattr(
+            build_seeded_set,
+            "make_llm_mutation_generator",
+            lambda model_id, llm_base_url=None: generate_fn,
+        )
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+                "--model-id",
+                "test-model",
+            ],
+        )
+
+        exit_code = main()
+        assert exit_code == 0
+        lines = output_path.read_text().strip().splitlines()
+        return [json.loads(line) for line in lines]
+
+    def test_llm_path_produces_generation_source_llm(self, tmp_path, monkeypatch):
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="Reached via the init flow.",
+            )
+
+        items = self._run(tmp_path, monkeypatch, generate_fn)
+
+        assert len(items) == 1
+        assert items[0]["generation_source"] == "llm"
+        assert items[0]["must_find"][0]["line"] == 3
+
+    def test_llm_path_failure_falls_back_and_output_not_empty(
+        self, tmp_path, monkeypatch
+    ):
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=(
+                    "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+somethingElse();"
+                ),
+                injected_line=3,
+                reachability_rationale="no eval token",
+            )
+
+        items = self._run(tmp_path, monkeypatch, generate_fn)
+
+        assert len(items) == 1
+        assert items[0]["generation_source"] == "deterministic_fallback"

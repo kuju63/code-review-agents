@@ -886,6 +886,23 @@ def main() -> int:
         "--multiplier", type=int, default=1, help="Seeded items per Gold item"
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
+    parser.add_argument(
+        "--model-id",
+        default=None,
+        help=(
+            "OpenAI-compatible model id for Seeded mutation generation "
+            "(LLM, Phase2). Falls back to SEEDED_GEN_MODEL_ID; error if "
+            "neither is set."
+        ),
+    )
+    parser.add_argument(
+        "--llm-base-url",
+        default=None,
+        help=(
+            "Optional OpenAI-compatible base URL for Seeded mutation "
+            "generation. Falls back to SEEDED_GEN_LLM_BASE_URL."
+        ),
+    )
     args = parser.parse_args()
 
     rnd = random.Random(args.seed)
@@ -915,6 +932,17 @@ def main() -> int:
             print(f"[SEEDED-ERROR] {err}", file=sys.stderr)
         return 1
 
+    model_id = args.model_id or os.environ.get("SEEDED_GEN_MODEL_ID")
+    llm_base_url = args.llm_base_url or os.environ.get("SEEDED_GEN_LLM_BASE_URL")
+    if not model_id:
+        print(
+            "[SEEDED-ERROR] no generation model configured: pass --model-id "
+            "or set SEEDED_GEN_MODEL_ID (see evaluation/RUNBOOK.md)",
+            file=sys.stderr,
+        )
+        return 1
+    generate_fn = make_llm_mutation_generator(model_id, llm_base_url)
+
     output_dir = os.path.dirname(args.output)
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
@@ -922,7 +950,9 @@ def main() -> int:
     count = 0
     with open(args.output, "w", encoding="utf-8") as out:
         for item in gold_items:
-            items, warning = build_seeded_items(item, rules, rnd, args.multiplier)
+            items, warning = build_seeded_items(
+                item, rules, rnd, args.multiplier, generate_fn
+            )
             if warning:
                 print(warning, file=sys.stderr)
             for seeded in items:
