@@ -1,5 +1,7 @@
 """Tests for the parallel review orchestrator."""
 
+import asyncio
+import threading
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -443,5 +445,66 @@ class TestSharedMcpClient:
         ):
             with pytest.raises(ToolProviderException):
                 orchestrator.run(_context(), project_type=ProjectType.REACT_TS)
+
+        shared_client.remove_consumer.assert_called_once_with(orchestrator)
+
+    @pytest.mark.asyncio
+    async def test_shared_client_not_released_until_pending_reviewer_finishes(self):
+        """Regression test for a race flagged in PR review: a reviewer whose
+        background thread hasn't reached Agent(...) (and thus hasn't called
+        add_consumer) by the time run_async's wait-timeout elapses must not
+        see the shared connection torn down by the orchestrator's own
+        release, which used to fire unconditionally as soon as the timeout
+        window closed (spec §4.6)."""
+        shared_client = _mock_shared_client()
+        proceed = threading.Event()
+
+        class _BlockedMCPReviewer(ReviewAgent):
+            reviewer_id = "fake-mcp-blocked"
+            perspective = ReviewPerspective.TECHNICAL
+            project_types = frozenset({ProjectType.REACT_TS})
+            uses_github_mcp = True
+
+            def review(self, context, project_type=None):
+                # Runs in a worker thread; simulates a reviewer whose
+                # Agent(...)/add_consumer call hasn't happened yet by the
+                # time the orchestrator's wait times out.
+                proceed.wait(timeout=5)
+                return ReviewResult(
+                    reviewer_id=self.reviewer_id,
+                    perspective=self.perspective,
+                    project_type=project_type,
+                    output=ReviewOutput(summary="ok"),
+                )
+
+        config = ReviewerConfig(github_token="tok", reviewer_timeout_seconds=0.05)
+        orchestrator = ReviewOrchestrator(config)
+        try:
+            with (
+                patch(
+                    f"{_MOD}.get_reviewer_classes",
+                    return_value=[_BlockedMCPReviewer],
+                ),
+                patch(f"{_MOD}.create_github_mcp_client", return_value=shared_client),
+            ):
+                report = await orchestrator.run_async(
+                    _context(), project_type=ProjectType.REACT_TS
+                )
+
+            # The reviewer timed out (still blocked) -- but the shared
+            # client's reference must not have been released yet, since the
+            # blocked reviewer thread hasn't finished (and thus hasn't had a
+            # chance to register/release its own reference).
+            assert len(report.errors) == 1
+            shared_client.remove_consumer.assert_not_called()
+        finally:
+            proceed.set()
+
+        # Let the blocked reviewer finish and give the background release
+        # task a chance to run.
+        for _ in range(50):
+            if shared_client.remove_consumer.called:
+                break
+            await asyncio.sleep(0.02)
 
         shared_client.remove_consumer.assert_called_once_with(orchestrator)

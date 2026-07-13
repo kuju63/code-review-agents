@@ -7,7 +7,10 @@ its output is the input to the downstream Lead Engineer synthesis agent.
 """
 
 import asyncio
-from collections.abc import Iterable
+from collections.abc import Coroutine, Iterable
+from typing import Any
+
+from strands.tools.mcp import MCPClient
 
 from ..models.review import (
     ProjectType,
@@ -21,6 +24,48 @@ from ..tools.github_mcp import create_github_mcp_client
 from .base_reviewer import ReviewAgent, ReviewerConfig
 from .exceptions import INFRA_EXCEPTIONS
 from .registry import detect_project_types, get_reviewer_classes
+
+# asyncio only holds a *weak* reference to a Task; without a strong reference
+# held elsewhere, a fire-and-forget task (see ``_schedule_background``) could
+# be garbage-collected mid-execution. This module-level set is that reference,
+# per the pattern documented for ``asyncio.create_task``.
+_background_tasks: set[asyncio.Task] = set()
+
+
+def _schedule_background(coro: Coroutine[Any, Any, None]) -> None:
+    """Run ``coro`` in the background without awaiting it, safely.
+
+    Keeps a strong reference to the created task until it finishes (see
+    module docstring on ``_background_tasks``).
+    """
+    task = asyncio.create_task(coro)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+
+async def _release_after_reviewers(
+    shared_client: MCPClient,
+    consumer: object,
+    reviewer_tasks: list[asyncio.Task],
+) -> None:
+    """Release ``consumer``'s reference on ``shared_client`` only once every
+    task in ``reviewer_tasks`` has finished -- including ones still running
+    past ``run_async``'s own wait-timeout window.
+
+    A reviewer's background thread only registers itself as a consumer once
+    its ``Agent(...)`` construction reaches that point. Releasing the
+    orchestrator's own reference as soon as the wait-timeout elapses (rather
+    than once every spawned task is actually done) could otherwise drop the
+    reference count to zero -- stopping the shared connection -- before a
+    slow-to-start reviewer thread had a chance to register at all (spec
+    §4.6). ``try/finally`` guarantees the release still happens even if this
+    task itself is cancelled, e.g. by ``asyncio.run()``'s shutdown sequence
+    when ``ReviewOrchestrator.run`` is used instead of ``run_async``.
+    """
+    try:
+        await asyncio.gather(*reviewer_tasks, return_exceptions=True)
+    finally:
+        shared_client.remove_consumer(consumer)
 
 
 class ReviewOrchestrator:
@@ -110,54 +155,55 @@ class ReviewOrchestrator:
                 raise
             context = context.model_copy(update={"shared_mcp_client": shared_client})
 
-        try:
-            # asyncio.wait_for + to_thread blocks until the thread exits on
-            # cancellation; asyncio.wait avoids this by letting timed-out
-            # threads finish in the background.
-            asyncio_tasks = {
-                asyncio.create_task(
-                    asyncio.to_thread(reviewer.review, context, pt),
-                    name=reviewer.reviewer_id,
-                ): (reviewer, pt)
-                for reviewer, pt in tasks
-            }
+        # asyncio.wait_for + to_thread blocks until the thread exits on
+        # cancellation; asyncio.wait avoids this by letting timed-out
+        # threads finish in the background.
+        asyncio_tasks = {
+            asyncio.create_task(
+                asyncio.to_thread(reviewer.review, context, pt),
+                name=reviewer.reviewer_id,
+            ): (reviewer, pt)
+            for reviewer, pt in tasks
+        }
 
-            _, pending = await asyncio.wait(
-                asyncio_tasks.keys(),
-                timeout=timeout,  # None means wait indefinitely
+        if shared_client is not None:
+            # Deferred to a background task rather than a `finally` tied to
+            # the `asyncio.wait` below: see `_release_after_reviewers`.
+            _schedule_background(
+                _release_after_reviewers(
+                    shared_client, self, list(asyncio_tasks.keys())
+                )
             )
 
-            results: list[ReviewResult] = []
-            errors: list[ReviewError] = []
-            for asyncio_task, (reviewer, _) in asyncio_tasks.items():
-                if asyncio_task in pending:
-                    errors.append(
-                        ReviewError(
-                            reviewer_id=reviewer.reviewer_id,
-                            perspective=reviewer.perspective,
-                            message=f"Reviewer timed out after {timeout}s",
-                        )
+        _, pending = await asyncio.wait(
+            asyncio_tasks.keys(),
+            timeout=timeout,  # None means wait indefinitely
+        )
+
+        results: list[ReviewResult] = []
+        errors: list[ReviewError] = []
+        for asyncio_task, (reviewer, _) in asyncio_tasks.items():
+            if asyncio_task in pending:
+                errors.append(
+                    ReviewError(
+                        reviewer_id=reviewer.reviewer_id,
+                        perspective=reviewer.perspective,
+                        message=f"Reviewer timed out after {timeout}s",
                     )
-                elif exc := asyncio_task.exception():
-                    if isinstance(exc, INFRA_EXCEPTIONS):
-                        raise exc
-                    errors.append(
-                        ReviewError(
-                            reviewer_id=reviewer.reviewer_id,
-                            perspective=reviewer.perspective,
-                            message=str(exc),
-                        )
+                )
+            elif exc := asyncio_task.exception():
+                if isinstance(exc, INFRA_EXCEPTIONS):
+                    raise exc
+                errors.append(
+                    ReviewError(
+                        reviewer_id=reviewer.reviewer_id,
+                        perspective=reviewer.perspective,
+                        message=str(exc),
                     )
-                else:
-                    results.append(asyncio_task.result())
-            return ReviewReport(results=results, errors=errors)
-        finally:
-            # A reviewer still pending when we get here (timeout) has not yet
-            # released its own reference, so this only decrements the count --
-            # the connection stays alive for that reviewer's background thread
-            # (spec §4.6).
-            if shared_client is not None:
-                shared_client.remove_consumer(self)
+                )
+            else:
+                results.append(asyncio_task.result())
+        return ReviewReport(results=results, errors=errors)
 
     def _select_reviewers(
         self,
