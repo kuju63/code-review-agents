@@ -207,6 +207,30 @@ def validate_catalog(rules: list[Any]) -> list[str]:
                 f"{sorted(_VALID_RUNTIMES)}, got {runtime!r}"
             )
 
+        required_tokens = rule.get("required_tokens")
+        if not isinstance(required_tokens, list) or not required_tokens:
+            errors.append(
+                f"rule {rule_id!r}: required_tokens must be a non-empty list, "
+                f"got {required_tokens!r}"
+            )
+            required_tokens = []
+
+        compiled_tokens: list[re.Pattern[str]] = []
+        for token in required_tokens:
+            if not isinstance(token, str):
+                errors.append(
+                    f"rule {rule_id!r}: required_tokens entries must be "
+                    f"strings, got {type(token).__name__}: {token!r}"
+                )
+                continue
+            try:
+                compiled_tokens.append(re.compile(token))
+            except re.error as exc:
+                errors.append(
+                    f"rule {rule_id!r}: required_tokens entry {token!r} is "
+                    f"not a valid regex: {exc}"
+                )
+
         context_lines = rule.get("context_lines")
         if context_lines is not None and not isinstance(context_lines, list):
             errors.append(
@@ -222,6 +246,26 @@ def validate_catalog(rules: list[Any]) -> list[str]:
                 f"got {type(line_snippet).__name__}"
             )
             line_snippet = None
+
+        # Self-consistency (only meaningful once every required_tokens entry
+        # is itself a valid compiled regex; otherwise the entries above
+        # already report the root cause and this would just add noise).
+        if len(compiled_tokens) == len(required_tokens) and compiled_tokens:
+            if line_snippet is not None and not all(
+                p.search(line_snippet) for p in compiled_tokens
+            ):
+                errors.append(
+                    f"rule {rule_id!r}: line_snippet does not satisfy "
+                    f"required_tokens: {line_snippet!r}"
+                )
+            for lang, snippet in snippets.items():
+                if not isinstance(snippet, str):
+                    continue  # already reported by the type check below
+                if not all(p.search(snippet) for p in compiled_tokens):
+                    errors.append(
+                        f"rule {rule_id!r}: language_snippets[{lang!r}] does "
+                        f"not satisfy required_tokens: {snippet!r}"
+                    )
 
         texts = list(snippets.values()) + list(context_lines or [])
         if line_snippet is not None:

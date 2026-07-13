@@ -41,6 +41,7 @@ RULES = [
         "category": "security",
         "severity": "high",
         "summary": "Rule A summary",
+        "required_tokens": [r"\beval\("],
         "line_snippet": "eval(userInput);",
         "language_snippets": {
             "js": "eval(userInput);",
@@ -54,6 +55,7 @@ RULES = [
         "category": "security",
         "severity": "medium",
         "summary": "Rule B summary",
+        "required_tokens": [r"\.innerHTML\b"],
         "line_snippet": "el.innerHTML = data;",
         "language_snippets": {
             "js": "el.innerHTML = data;",
@@ -66,6 +68,7 @@ RULES = [
         "category": "performance",
         "severity": "low",
         "summary": "Rule C summary",
+        "required_tokens": [r"\bawait\b"],
         "line_snippet": "await Promise.all(items.map(fn));",
         "language_snippets": {
             "ts": "await Promise.all(items.map(fn));",
@@ -725,6 +728,7 @@ def _valid_rule(**overrides):
         "rule_id": "rule_x",
         "languages": ["js", "ts"],
         "runtime": "universal",
+        "required_tokens": [r"\bdoSomething\("],
         "line_snippet": "doSomething(x);",
         "language_snippets": {
             "js": "doSomething(x);",
@@ -824,3 +828,66 @@ class TestValidateCatalog:
         rule = _valid_rule(line_snippet=12345)
         errors = validate_catalog([rule])
         assert any("line_snippet" in e for e in errors)
+
+
+class TestValidateCatalogRequiredTokens:
+    def test_valid_required_tokens_returns_no_errors(self):
+        assert validate_catalog([_valid_rule()]) == []
+
+    def test_missing_required_tokens_is_reported(self):
+        rule = _valid_rule()
+        del rule["required_tokens"]
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+    def test_required_tokens_not_a_list_is_reported_without_crash(self):
+        rule = _valid_rule(required_tokens=r"\bdoSomething\(")
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+    def test_required_tokens_empty_list_is_reported(self):
+        rule = _valid_rule(required_tokens=[])
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+    def test_required_tokens_non_string_element_is_reported_without_crash(self):
+        rule = _valid_rule(required_tokens=[123])
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+    def test_required_tokens_invalid_regex_is_reported_without_crash(self):
+        rule = _valid_rule(required_tokens=["("])
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+    def test_line_snippet_not_satisfying_required_tokens_is_reported(self):
+        rule = _valid_rule(line_snippet="somethingElse(x);")
+        errors = validate_catalog([rule])
+        assert any(
+            "required_tokens" in e and "line_snippet" in e and "rule_x" in e
+            for e in errors
+        )
+
+    def test_language_snippet_not_satisfying_required_tokens_is_reported(self):
+        rule = _valid_rule(
+            language_snippets={
+                "js": "doSomething(x);",
+                "ts": "somethingElse(x);",
+            }
+        )
+        errors = validate_catalog([rule])
+        assert any(
+            "required_tokens" in e and "ts" in e and "rule_x" in e for e in errors
+        )
+
+    def test_multiple_required_tokens_are_all_required_for_self_consistency(self):
+        rule = _valid_rule(
+            required_tokens=[r"\bdoSomething\(", r"\bawait\b"],
+            line_snippet="doSomething(x);",
+            language_snippets={
+                "js": "doSomething(x);",
+                "ts": "doSomething(x);",
+            },
+        )
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
