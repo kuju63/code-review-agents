@@ -8,7 +8,8 @@ output contract without changing orchestration.
 
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+from strands.tools.mcp import MCPClient
 
 from .pr_info import PRInfoResult
 
@@ -100,9 +101,21 @@ class ReviewContext(BaseModel):
 
     Attributes:
         pr_info: Structured PR information from the PR Info Collector.
+        shared_mcp_client: Shared GitHub MCP client injected by
+            :class:`~code_review_agent.agents.review_orchestrator.ReviewOrchestrator`
+            for the parallel review stage.  ``None`` when unused, in which case
+            reviewers fall back to creating their own client.
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     pr_info: PRInfoResult = Field(..., description="Collected PR information")
+    shared_mcp_client: MCPClient | None = Field(
+        default=None,
+        exclude=True,
+        repr=False,
+        description="Shared GitHub MCP client for the parallel review stage",
+    )
 
 
 class ReviewResult(BaseModel):
