@@ -1,9 +1,10 @@
 """Tests for GitHub MCP client factory."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from strands.tools.mcp import MCPClient
+from strands.types.exceptions import MCPClientInitializationError
 
 from code_review_agent.tools.github_mcp import (
     GITHUB_MCP_URL,
@@ -24,8 +25,11 @@ class TestGitHubMCPURL:
 
 class TestCreateGitHubMcpClient:
     def test_returns_mcp_client(self):
+        # ``MCPClient.start`` is wrapped in-place with a retrying callable (see
+        # TestRetryOnStartup below), so the mocked instance must accept attribute
+        # assignment -- unlike a bare ``object()``.
         with patch("code_review_agent.tools.github_mcp.MCPClient") as mock_cls:
-            mock_cls.return_value = object()
+            mock_cls.return_value = MagicMock()
             result = create_github_mcp_client("mytoken")
             mock_cls.assert_called_once()
             assert result is mock_cls.return_value
@@ -54,6 +58,78 @@ class TestCreateGitHubMcpClient:
     def test_is_mcp_client_type(self):
         client = create_github_mcp_client("tok")
         assert isinstance(client, MCPClient)
+
+
+class TestRetryOnStartup:
+    """Verifies ``create_github_mcp_client`` wraps ``MCPClient.start`` with
+    tenacity retry per ADR-0003 / mcp-connection-stabilization-spec.md §3.2.
+    """
+
+    def test_start_retries_on_init_error_and_succeeds(self):
+        with patch("code_review_agent.tools.github_mcp.MCPClient") as mock_cls:
+            mock_cls.return_value = MagicMock()
+            # Capture the original mock *before* create_github_mcp_client
+            # overwrites the instance's ``start`` attribute with the retrying
+            # wrapper -- ``mock_cls.return_value.start`` no longer points at
+            # this mock afterwards.
+            original_start = mock_cls.return_value.start
+            original_start.side_effect = [
+                MCPClientInitializationError("timeout"),
+                MCPClientInitializationError("timeout"),
+                None,
+            ]
+            client = create_github_mcp_client(
+                "tok", retry_attempts=3, retry_backoff_seconds=0.0
+            )
+            client.start()
+            assert original_start.call_count == 3
+
+    def test_start_reraises_after_exhausting_attempts(self):
+        with patch("code_review_agent.tools.github_mcp.MCPClient") as mock_cls:
+            mock_cls.return_value = MagicMock()
+            original_start = mock_cls.return_value.start
+            original_start.side_effect = MCPClientInitializationError("still failing")
+            client = create_github_mcp_client(
+                "tok", retry_attempts=3, retry_backoff_seconds=0.0
+            )
+            with pytest.raises(MCPClientInitializationError):
+                client.start()
+            assert original_start.call_count == 3
+
+    def test_retry_attempts_configurable(self):
+        with patch("code_review_agent.tools.github_mcp.MCPClient") as mock_cls:
+            mock_cls.return_value = MagicMock()
+            client = create_github_mcp_client(
+                "tok", retry_attempts=5, retry_backoff_seconds=0.0
+            )
+            assert client.start.retry.stop.max_attempt_number == 5  # type: ignore[attr-defined]
+
+    def test_retry_backoff_configurable(self):
+        with patch("code_review_agent.tools.github_mcp.MCPClient") as mock_cls:
+            mock_cls.return_value = MagicMock()
+            client = create_github_mcp_client(
+                "tok", retry_attempts=3, retry_backoff_seconds=2.5
+            )
+            assert client.start.retry.wait.multiplier == 2.5  # type: ignore[attr-defined]
+
+    def test_default_retry_params_match_settings_defaults(self):
+        with patch("code_review_agent.tools.github_mcp.MCPClient") as mock_cls:
+            mock_cls.return_value = MagicMock()
+            client = create_github_mcp_client("tok")
+            assert client.start.retry.stop.max_attempt_number == 3  # type: ignore[attr-defined]
+            assert client.start.retry.wait.multiplier == 1.0  # type: ignore[attr-defined]
+
+    def test_non_init_errors_are_not_retried(self):
+        with patch("code_review_agent.tools.github_mcp.MCPClient") as mock_cls:
+            mock_cls.return_value = MagicMock()
+            original_start = mock_cls.return_value.start
+            original_start.side_effect = RuntimeError("unrelated")
+            client = create_github_mcp_client(
+                "tok", retry_attempts=3, retry_backoff_seconds=0.0
+            )
+            with pytest.raises(RuntimeError):
+                client.start()
+            assert original_start.call_count == 1
 
 
 class TestGitHubMcpTransport:

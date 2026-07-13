@@ -20,6 +20,13 @@ from mcp.client.streamable_http import GetSessionIdCallback, streamable_http_cli
 from mcp.shared._httpx_utils import create_mcp_http_client
 from mcp.shared.message import SessionMessage
 from strands.tools.mcp import MCPClient
+from strands.types.exceptions import MCPClientInitializationError
+from tenacity import (
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 
 GITHUB_MCP_URL = "https://api.githubcopilot.com/mcp/read-only"
 
@@ -61,6 +68,9 @@ async def _github_mcp_transport(
 def create_github_mcp_client(
     token: str,
     url: str = GITHUB_MCP_URL,
+    *,
+    retry_attempts: int = 3,
+    retry_backoff_seconds: float = 1.0,
 ) -> MCPClient:
     """Create an MCPClient connected to the GitHub MCP endpoint.
 
@@ -69,9 +79,30 @@ def create_github_mcp_client(
             the ``Authorization: Bearer`` header.
         url: GitHub MCP endpoint URL.  Defaults to the read-only Copilot
             endpoint.
+        retry_attempts: Maximum number of attempts (including the first) for
+            the startup handshake, matching
+            ``Settings.mcp_startup_retry_attempts``.
+        retry_backoff_seconds: Base wait time in seconds for the exponential
+            backoff+jitter between startup attempts, matching
+            ``Settings.mcp_startup_retry_backoff_seconds``.
 
     Returns:
         A configured :class:`~strands.tools.mcp.MCPClient` instance ready
-        to be used as a context manager.
+        to be used as a context manager.  ``start()`` is wrapped in-place with
+        exponential backoff+jitter retry (ADR-0003) so every caller -- the
+        direct ``start()`` path, the ``Agent``-owned ``load_tools()`` path, and
+        the orchestrator's shared-client path -- gets the retry for free.
     """
-    return MCPClient(functools.partial(_github_mcp_transport, url=url, token=token))
+    client = MCPClient(functools.partial(_github_mcp_transport, url=url, token=token))
+    # Instance-level override rather than a ``MCPClient`` subclass: the latter
+    # would make this factory return a different type than the one callers
+    # patch in tests (``code_review_agent.tools.github_mcp.MCPClient``), and
+    # ``MCPClient``/``ToolProvider`` define no ``__slots__`` that would block
+    # assigning to ``start`` here.
+    client.start = retry(
+        stop=stop_after_attempt(retry_attempts),
+        wait=wait_random_exponential(multiplier=retry_backoff_seconds),
+        retry=retry_if_exception_type(MCPClientInitializationError),
+        reraise=True,
+    )(client.start)
+    return client
