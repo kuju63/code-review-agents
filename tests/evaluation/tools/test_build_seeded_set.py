@@ -1611,3 +1611,156 @@ class TestRegressionKnownMisses:
         assert seeded["generation_source"] == "deterministic_fallback"
         assert seeded["must_find"][0]["line"] == expected_line
         assert seeded["file_changes"][0]["patch"] == expected_patch
+
+
+class TestRegressionKnownMissesVuetifyTsx:
+    """Golden regression for the second known miss named in design doc 5:
+    vuetify#22788 VDataTableFooter.tsx (js_eval_injection). Unlike the
+    hoppscotch#6171 fixture (NestJS/TypeScript resolver body), this
+    models a `.tsx` component render function -- a different
+    `language_snippets` variant (`tsx`, with a type annotation) and a
+    JSX-returning function body shape, so it is not redundant with the
+    other fixture.
+
+    This is a synthetic patch modeled on the reported scenario (a
+    Vuetify data-table footer component), not a literal reproduction of
+    the real PR's diff.
+    """
+
+    _ORIGINAL_PATCH = (
+        "@@ -1,3 +1,4 @@\n"
+        " import { defineComponent, computed } from 'vue';\n"
+        " import type { PropType } from 'vue';\n"
+        "+import { useDisplay } from 'vuetify';\n"
+        " import './VDataTableFooter.css';\n"
+        "\n"
+        "@@ -15,5 +16,10 @@ export default defineComponent({\n"
+        "   setup(props) {\n"
+        "   const currentPage = computed(() => props.page);\n"
+        "   const totalItems = computed(() => props.itemsLength);\n"
+        "+    const pageText = computed(() => "
+        "`${currentPage.value} of ${totalItems.value}`);\n"
+        "+    return () => (\n"
+        '+      <div class="v-data-table-footer">\n'
+        "+        <span>{pageText.value}</span>\n"
+        "+      </div>\n"
+        "+    );\n"
+        "   },\n"
+        "   });"
+    )
+
+    _GOOD_MUTATED_PATCH = (
+        "@@ -1,3 +1,4 @@\n"
+        " import { defineComponent, computed } from 'vue';\n"
+        " import type { PropType } from 'vue';\n"
+        "+import { useDisplay } from 'vuetify';\n"
+        " import './VDataTableFooter.css';\n"
+        "\n"
+        "@@ -15,5 +16,11 @@ export default defineComponent({\n"
+        "   setup(props) {\n"
+        "   const currentPage = computed(() => props.page);\n"
+        "   const totalItems = computed(() => props.itemsLength);\n"
+        "+    const pageText = computed(() => "
+        "`${currentPage.value} of ${totalItems.value}`);\n"
+        "+    const debugResult: unknown = eval(getQueryParam('q'));\n"
+        "+    return () => (\n"
+        '+      <div class="v-data-table-footer">\n'
+        "+        <span>{pageText.value}</span>\n"
+        "+      </div>\n"
+        "+    );\n"
+        "   },\n"
+        "   });"
+    )
+
+    _BAD_MUTATED_PATCH = (
+        "@@ -1,3 +1,4 @@\n"
+        " import { defineComponent, computed } from 'vue';\n"
+        " import type { PropType } from 'vue';\n"
+        "+import { useDisplay } from 'vuetify';\n"
+        " import './VDataTableFooter.css';\n"
+        "\n"
+        "@@ -15,5 +16,11 @@ export default defineComponent({\n"
+        "   setup(props) {\n"
+        "   const currentPage = computed(() => props.page);\n"
+        "   const totalItems = computed(() => props.itemsLength);\n"
+        "+    const pageText = computed(() => "
+        "`${currentPage.value} of ${totalItems.value}`);\n"
+        "+    const debugResult = getQueryParam('q');\n"
+        "+    return () => (\n"
+        '+      <div class="v-data-table-footer">\n'
+        "+        <span>{pageText.value}</span>\n"
+        "+      </div>\n"
+        "+    );\n"
+        "   },\n"
+        "   });"
+    )
+
+    def _rule(self):
+        return {
+            "rule_id": "js_eval_injection",
+            "category": "security",
+            "severity": "critical",
+            "languages": ["tsx"],
+            "runtime": "universal",
+            "required_tokens": [r"\beval\("],
+            "line_snippet": "eval(userInput);",
+            "language_snippets": {
+                "tsx": "const result: unknown = eval(getQueryParam('q'));"
+            },
+            "summary": "Unsanitized eval usage may lead to arbitrary code execution.",
+        }
+
+    def _gold_item_and_file(self):
+        item = make_gold_item(
+            id="vuetifyjs/vuetify#22788",
+            files=[
+                make_file(
+                    "src/components/VDataTableFooter.tsx", patch=self._ORIGINAL_PATCH
+                )
+            ],
+        )
+        return item, item["file_changes"][0]
+
+    def test_good_llm_output_lands_in_render_body_not_import_block(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=self._GOOD_MUTATED_PATCH,
+                injected_line=999,  # deliberately wrong; must be ignored
+                reachability_rationale=(
+                    "eval() runs during setup(), on every render of this "
+                    "component -- unconditionally reachable."
+                ),
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, self._rule(), generate_fn
+        )
+
+        assert seeded["generation_source"] == "llm"
+        assert seeded["must_find"][0]["line"] == 20
+        import_hunk_text = seeded["file_changes"][0]["patch"].split("@@ -15")[0]
+        assert "eval(" not in import_hunk_text
+
+    def test_bad_llm_output_falls_back_to_phase1_known_good_placement(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=self._BAD_MUTATED_PATCH,
+                injected_line=20,
+                reachability_rationale="missing the eval( call entirely",
+            )
+
+        rule = self._rule()
+        seeded = render_seeded_item_with_generation(
+            item, file_change, rule, generate_fn
+        )
+
+        expected_patch, expected_line = inject_patch(
+            file_change["patch"], get_snippet_for_lang(rule, "tsx")
+        )
+        assert seeded["generation_source"] == "deterministic_fallback"
+        assert seeded["must_find"][0]["line"] == expected_line
+        assert seeded["file_changes"][0]["patch"] == expected_patch
