@@ -3,6 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 import pytest
+from strands.tools.mcp import MCPClient
 
 from code_review_agent.agents.base_reviewer import (
     STRUCTURED_OUTPUT_DIRECTIVE,
@@ -82,7 +83,7 @@ class _SkillsReviewer(LLMReviewAgent):
     skill_type = AgentSkillType.FRONTEND_REVIEW
 
 
-def _make_context() -> ReviewContext:
+def _make_context(shared_mcp_client: MagicMock | None = None) -> ReviewContext:
     return ReviewContext(
         pr_info=PRInfoResult(
             repository_info=RepositoryInfo(owner="octocat", repository="hello"),
@@ -97,12 +98,19 @@ def _make_context() -> ReviewContext:
                 ],
             ),
             dependency_files=["package.json"],
-        )
+        ),
+        shared_mcp_client=shared_mcp_client,
     )
 
 
 def _mock_mcp() -> MagicMock:
     return MagicMock()
+
+
+def _mock_shared_mcp() -> MagicMock:
+    # spec=MCPClient so it satisfies ReviewContext.shared_mcp_client's
+    # arbitrary_types_allowed isinstance check.
+    return MagicMock(spec=MCPClient)
 
 
 def _output() -> ReviewOutput:
@@ -253,7 +261,12 @@ class TestReview:
         ):
             reviewer.review(_make_context())
 
-        mock_factory.assert_called_once_with("tok", reviewer._config.mcp_url)
+        mock_factory.assert_called_once_with(
+            "tok",
+            reviewer._config.mcp_url,
+            retry_attempts=reviewer._config.mcp_startup_retry_attempts,
+            retry_backoff_seconds=reviewer._config.mcp_startup_retry_backoff_seconds,
+        )
         mock_agent.cleanup.assert_called_once_with()
 
         call_kwargs = mock_agent_cls.call_args.kwargs
@@ -441,6 +454,83 @@ class TestReview:
             reviewer.review(_make_context())
 
         mock_model_cls.assert_called_once_with(model_id="gpt-4o")
+
+
+class TestReviewWithSharedMcpClient:
+    """review() must prefer context.shared_mcp_client over creating its own
+    client, per spec §4.2/§4.4 -- the shared connection is the whole point
+    of the parallel-review-stage session sharing."""
+
+    def test_uses_shared_client_when_present(self):
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        shared_mcp = _mock_shared_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client") as mock_factory,
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
+        ):
+            reviewer.review(_make_context(shared_mcp_client=shared_mcp))
+
+        mock_factory.assert_not_called()
+        assert mock_agent_cls.call_args.kwargs["tools"] == [shared_mcp]
+
+    def test_falls_back_to_own_client_when_shared_absent(self):
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(
+                f"{_BASE}.create_github_mcp_client", return_value=mock_mcp
+            ) as mock_factory,
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
+        ):
+            reviewer.review(_make_context(shared_mcp_client=None))
+
+        mock_factory.assert_called_once_with(
+            "tok",
+            reviewer._config.mcp_url,
+            retry_attempts=reviewer._config.mcp_startup_retry_attempts,
+            retry_backoff_seconds=reviewer._config.mcp_startup_retry_backoff_seconds,
+        )
+        assert mock_agent_cls.call_args.kwargs["tools"] == [mock_mcp]
+
+    def test_no_mcp_reviewer_ignores_shared_client(self):
+        reviewer = _NoMcpReviewer(ReviewerConfig(github_token="tok"))
+        shared_mcp = _mock_shared_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client") as mock_factory,
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
+        ):
+            reviewer.review(_make_context(shared_mcp_client=shared_mcp))
+
+        mock_factory.assert_not_called()
+        assert mock_agent_cls.call_args.kwargs["tools"] == []
+
+    def test_shared_client_cleanup_uses_agent_cleanup_not_stop(self):
+        """Reviewers must never call stop() directly on a shared client --
+        that would tear down the connection out from under other reviewers
+        still using it (spec §4.3). Only agent.cleanup() (reference-count
+        release) is permitted."""
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        shared_mcp = _mock_shared_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client"),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+        ):
+            reviewer.review(_make_context(shared_mcp_client=shared_mcp))
+
+        shared_mcp.stop.assert_not_called()
+        mock_agent.cleanup.assert_called_once_with()
 
 
 class TestURLFetchReviewer:

@@ -229,9 +229,18 @@ class LLMReviewAgent(ReviewAgent):
         # stopping it outright when the client is shared across reviewers.
         mcp_client = None
         if self.uses_github_mcp:
-            mcp_client = create_github_mcp_client(
-                self._config.github_token, self._config.mcp_url
-            )
+            if context.shared_mcp_client is not None:
+                # ReviewOrchestrator already started and registered this
+                # connection as a consumer of its own; reuse it instead of
+                # opening a second connection (spec §4.2/§4.4).
+                mcp_client = context.shared_mcp_client
+            else:
+                mcp_client = create_github_mcp_client(
+                    self._config.github_token,
+                    self._config.mcp_url,
+                    retry_attempts=self._config.mcp_startup_retry_attempts,
+                    retry_backoff_seconds=self._config.mcp_startup_retry_backoff_seconds,
+                )
             tools.append(mcp_client)
 
         if self.uses_url_fetch:
