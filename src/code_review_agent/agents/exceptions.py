@@ -1,11 +1,16 @@
 """Shared exception types for the review-stage and lead-engineer agents."""
 
 from httpx import TransportError
-from strands.types.exceptions import EventLoopException, MCPClientInitializationError
+from strands.types.exceptions import (
+    EventLoopException,
+    MCPClientInitializationError,
+    ToolProviderException,
+)
 
 INFRA_EXCEPTIONS: tuple[type[BaseException], ...] = (
     EventLoopException,
     MCPClientInitializationError,
+    ToolProviderException,
     TransportError,
 )
 """Exceptions treated as infrastructure failures rather than isolated/business
