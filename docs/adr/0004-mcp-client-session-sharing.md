@@ -6,10 +6,10 @@
 
 ## Context
 
-Issue #115は評価パイプライン実行中にGitHub MCP接続エラー(`background thread did not
-start in 30 seconds` / `Connection to the MCP server was closed` / 空ボディのJSONパース
-失敗)が多発した問題について、原因分析の結果「1. リトライを入れる」「2. MCPクライアントの
-使い回し」の2方針で対応することを既に合意している。方針1は
+Issue #115は評価パイプライン実行中にGitHub MCP接続エラー
+(`background thread did not start in 30 seconds` / `Connection to the MCP server was closed` /
+空ボディのJSONパース失敗)が多発した問題について、原因分析の結果「1. リトライを入れる」
+「2. MCPクライアントの使い回し」の2方針で対応することを既に合意している。方針1は
 [ADR-0003](0003-github-mcp-startup-retry-strategy.md)として確定し、PR #116でマージ済みである。
 ADR-0003のDecision項6は「『MCPクライアントの使い回し』(Issue #115 item2、セッション共有)は
 本ADRのスコープ外とし、別Issueとして切り出す」と明記しており、本ADRはその方針2の対象範囲と
@@ -25,11 +25,12 @@ ADR-0003は「1PRあたり最大3本のMCP接続が立つ(PR情報収集1本+レ
 (現状は同時に2本)のみである。この事実は「どの範囲で接続を共有するか」を検討する上での
 前提になる。
 
-また、本プロジェクトが依存している`strands-agents`パッケージ(`pyproject.toml`で`>=1.45.0`を
-指定)が提供するMCPクライアント実装(`strands.tools.mcp.mcp_client.MCPClient`、`strands.tools.
-tool_provider.ToolProvider`インターフェースの実装)は、1つの接続を複数の利用者(consumer)で
-共有し、最後の利用者が離脱した時点で自動的に接続を終了する仕組み(`add_consumer`/
-`remove_consumer`)をフレームワーク側の機能として備えている。`MCPClient`クラスのdocstringにも
+また、本プロジェクトが依存している`strands-agents`パッケージ
+(`pyproject.toml`で`>=1.45.0`を指定)が提供するMCPクライアント実装
+(`strands.tools.mcp.mcp_client.MCPClient`、`strands.tools.tool_provider.ToolProvider`
+インターフェースの実装)は、1つの接続を複数の利用者(consumer)で共有し、最後の利用者が
+離脱した時点で自動的に接続を終了する仕組み(`add_consumer`/`remove_consumer`)を
+フレームワーク側の機能として備えている。`MCPClient`クラスのdocstringにも
 「同一コネクションを複数のツール呼び出しで再利用してレイテンシを削減するためのコンテキスト
 マネージャパターン」である旨が明記されており、複数の呼び出し元で同一コネクションを再利用する
 利用形態を想定した設計であることが読み取れる。このため、セッション共有そのものは技術的に
