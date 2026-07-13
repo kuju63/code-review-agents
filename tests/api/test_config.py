@@ -27,6 +27,8 @@ _ENV_KEYS = [
     "CODE_REVIEW_MODEL_ID",
     "CODE_REVIEW_LLM_BASE_URL",
     "CODE_REVIEW_MAX_AGENT_TURNS",
+    "CODE_REVIEW_MCP_STARTUP_RETRY_ATTEMPTS",
+    "CODE_REVIEW_MCP_STARTUP_RETRY_BACKOFF_SECONDS",
     "CODE_REVIEW_AGENT_BASE_URL",
     "CODE_REVIEW_AGENT_PR_INFO_COLLECTOR_URL",
     "CODE_REVIEW_AGENT_FRONTEND_REVIEWER_URL",
@@ -66,6 +68,16 @@ class TestSettingsDefaults:
     def test_max_agent_turns_default_is_30(self, clean_env: None) -> None:
         s = _IsolatedSettings()
         assert s.max_agent_turns == 30
+
+    def test_mcp_startup_retry_attempts_default_is_3(self, clean_env: None) -> None:
+        s = _IsolatedSettings()
+        assert s.mcp_startup_retry_attempts == 3
+
+    def test_mcp_startup_retry_backoff_seconds_default_is_1_0(
+        self, clean_env: None
+    ) -> None:
+        s = _IsolatedSettings()
+        assert s.mcp_startup_retry_backoff_seconds == 1.0
 
     def test_agent_base_url_default(self, clean_env: None) -> None:
         s = _IsolatedSettings()
@@ -107,6 +119,20 @@ class TestSettingsFromEnv:
         monkeypatch.setenv("CODE_REVIEW_MAX_AGENT_TURNS", "50")
         s = _IsolatedSettings()
         assert s.max_agent_turns == 50
+
+    def test_reads_mcp_startup_retry_attempts_from_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_MCP_STARTUP_RETRY_ATTEMPTS", "5")
+        s = _IsolatedSettings()
+        assert s.mcp_startup_retry_attempts == 5
+
+    def test_reads_mcp_startup_retry_backoff_seconds_from_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_MCP_STARTUP_RETRY_BACKOFF_SECONDS", "2.5")
+        s = _IsolatedSettings()
+        assert s.mcp_startup_retry_backoff_seconds == 2.5
 
 
 class TestResolveAgentUrl:
