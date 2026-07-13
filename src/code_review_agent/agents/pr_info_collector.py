@@ -156,6 +156,12 @@ class PRInfoCollector:
         model_id: OpenAI-compatible model ID used for the README summary.
         mcp_url: URL of the GitHub MCP endpoint.
         llm_base_url: Optional OpenAI-compatible base URL (e.g. LM Studio).
+        mcp_startup_retry_attempts: Maximum GitHub MCP startup attempts
+            (including the first), forwarded to
+            :func:`~code_review_agent.tools.github_mcp.create_github_mcp_client`.
+        mcp_startup_retry_backoff_seconds: Base wait time in seconds for the
+            startup retry's exponential backoff+jitter, forwarded to
+            :func:`~code_review_agent.tools.github_mcp.create_github_mcp_client`.
     """
 
     def __init__(
@@ -167,6 +173,8 @@ class PRInfoCollector:
         max_agent_turns: int = 30,
         patch_total_char_limit: int = 30_000,
         patch_max_files: int = 30,
+        mcp_startup_retry_attempts: int = 3,
+        mcp_startup_retry_backoff_seconds: float = 1.0,
     ) -> None:
         self._github_token = github_token
         self._model_id = model_id
@@ -175,6 +183,8 @@ class PRInfoCollector:
         self._max_agent_turns = max_agent_turns
         self._patch_total_char_limit = patch_total_char_limit
         self._patch_max_files = patch_max_files
+        self._mcp_startup_retry_attempts = mcp_startup_retry_attempts
+        self._mcp_startup_retry_backoff_seconds = mcp_startup_retry_backoff_seconds
 
     def collect(self, owner: str, repo: str, pr_number: int) -> PRInfoResult:
         """Collect PR information from GitHub and return structured data.
@@ -193,7 +203,12 @@ class PRInfoCollector:
         Returns:
             Structured PR information ready for downstream review agents.
         """
-        mcp_client = create_github_mcp_client(self._github_token, self._mcp_url)
+        mcp_client = create_github_mcp_client(
+            self._github_token,
+            self._mcp_url,
+            retry_attempts=self._mcp_startup_retry_attempts,
+            retry_backoff_seconds=self._mcp_startup_retry_backoff_seconds,
+        )
         # Used standalone (not via Agent), we own the client's lifecycle.  Start
         # inside the ``try`` so that a failing ``start()`` (e.g. connection or
         # auth error) still reaches ``finally`` and is cleaned up; ``stop()`` is
