@@ -28,6 +28,8 @@ async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -
             max_agent_turns=settings.max_agent_turns,
             patch_total_char_limit=settings.patch_total_char_limit,
             patch_max_files=settings.patch_max_files,
+            mcp_startup_retry_attempts=settings.mcp_startup_retry_attempts,
+            mcp_startup_retry_backoff_seconds=settings.mcp_startup_retry_backoff_seconds,
         )
         result = await asyncio.to_thread(
             collector.collect,

@@ -14,10 +14,11 @@ from code_review_agent.api.config import Settings
 _MOD = "code_review_agent.api.agents.frontend_reviewer"
 
 
-def _make_app() -> tuple[FastAPI, TaskStore]:
+def _make_app(settings: Settings | None = None) -> tuple[FastAPI, TaskStore]:
     app = FastAPI()
     store = TaskStore()
-    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+    if settings is None:
+        settings = Settings(_env_file=None)  # type: ignore[call-arg]
     app.include_router(
         frontend_reviewer_router(settings, store),
         prefix="/frontend-reviewer",
@@ -113,3 +114,41 @@ class TestGetTask:
             task = await store.get(task_id)
             assert task is not None
             assert task.status in (A2ATaskStatus.COMPLETED, A2ATaskStatus.WORKING)
+
+    @pytest.mark.asyncio
+    async def test_forwards_mcp_retry_settings_to_reviewer_config(self) -> None:
+        from code_review_agent.models.review import (
+            ReviewOutput,
+            ReviewPerspective,
+            ReviewResult,
+        )
+
+        mock_result = ReviewResult(
+            reviewer_id="frontend-technical",
+            perspective=ReviewPerspective.TECHNICAL,
+            project_type=None,
+            output=ReviewOutput(summary="Looks good.", findings=[]),
+        )
+        settings = Settings(
+            _env_file=None,  # type: ignore[call-arg]
+            mcp_startup_retry_attempts=7,
+            mcp_startup_retry_backoff_seconds=4.2,
+        )
+
+        app, store = _make_app(settings)
+        with (
+            patch(f"{_MOD}.FrontendReviewer") as mock_reviewer_cls,
+            TestClient(app) as client,
+        ):
+            mock_instance = MagicMock()
+            mock_instance.review.return_value = mock_result
+            mock_reviewer_cls.return_value = mock_instance
+
+            resp = client.post("/frontend-reviewer/tasks/send", json=_send_payload())
+            task_id = resp.json()["task"]["id"]
+            await asyncio.sleep(0.1)
+            await store.get(task_id)
+
+        reviewer_config = mock_reviewer_cls.call_args.args[0]
+        assert reviewer_config.mcp_startup_retry_attempts == 7
+        assert reviewer_config.mcp_startup_retry_backoff_seconds == 4.2
