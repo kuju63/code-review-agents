@@ -1483,3 +1483,120 @@ class TestMainCLIEndToEnd:
 
         assert len(items) == 1
         assert items[0]["generation_source"] == "deterministic_fallback"
+
+
+class TestRegressionKnownMisses:
+    """Golden regression for the hoppscotch#6171 miss (js_eval_injection)
+    that originally motivated this whole redesign: the LLM path must land
+    the mutation in the resolver body, and a bad LLM output must fall
+    back to Phase 1's own known-good placement rather than corrupting the
+    dataset (design doc 1.1, 5).
+    """
+
+    _GOOD_MUTATED_PATCH = (
+        "@@ -1,4 +1,5 @@\n"
+        " import { Injectable } from '@nestjs/common';\n"
+        " import { Resolver, Query, Args } from '@nestjs/graphql';\n"
+        "+import { PublishedDocsService } from './published-docs.service';\n"
+        " import { Logger } from '@nestjs/common';\n"
+        " \n"
+        "@@ -10,6 +11,12 @@ export class PublishedDocsResolver {\n"
+        "   constructor(private readonly service: PublishedDocsService) {}\n"
+        " \n"
+        "   @Query(() => PublishedDoc)\n"
+        "   async publishedDoc(@Args('id') id: string): Promise<PublishedDoc> {\n"
+        "+    const doc = await this.service.findById(id);\n"
+        "+    const result = eval(userInput);\n"
+        "+    if (!doc) {\n"
+        "+      throw new NotFoundException('Document not found');\n"
+        "+    }\n"
+        "+    return doc;\n"
+        "   }\n"
+        " }"
+    )
+
+    _BAD_MUTATED_PATCH = (
+        "@@ -1,4 +1,5 @@\n"
+        " import { Injectable } from '@nestjs/common';\n"
+        " import { Resolver, Query, Args } from '@nestjs/graphql';\n"
+        "+import { PublishedDocsService } from './published-docs.service';\n"
+        " import { Logger } from '@nestjs/common';\n"
+        " \n"
+        "@@ -10,6 +11,12 @@ export class PublishedDocsResolver {\n"
+        "   constructor(private readonly service: PublishedDocsService) {}\n"
+        " \n"
+        "   @Query(() => PublishedDoc)\n"
+        "   async publishedDoc(@Args('id') id: string): Promise<PublishedDoc> {\n"
+        "+    const doc = await this.service.findById(id);\n"
+        "+    const result = Function(userInput)();\n"
+        "+    if (!doc) {\n"
+        "+      throw new NotFoundException('Document not found');\n"
+        "+    }\n"
+        "+    return doc;\n"
+        "   }\n"
+        " }"
+    )
+
+    def _rule(self):
+        return {
+            "rule_id": "js_eval_injection",
+            "category": "security",
+            "severity": "critical",
+            "languages": ["ts"],
+            "runtime": "universal",
+            "required_tokens": [r"\beval\("],
+            "line_snippet": "eval(userInput);",
+            "language_snippets": {"ts": "eval(userInput);"},
+            "summary": "Unsanitized eval usage may lead to arbitrary code execution.",
+        }
+
+    def _gold_item_and_file(self):
+        patch = _published_docs_resolver_patch()
+        item = make_gold_item(
+            id="hoppscotch/hoppscotch#6171",
+            files=[make_file("published-docs.resolver.ts", patch=patch)],
+        )
+        return item, item["file_changes"][0]
+
+    def test_good_llm_output_lands_in_resolver_body_not_import_block(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=self._GOOD_MUTATED_PATCH,
+                injected_line=999,  # deliberately wrong; must be ignored
+                reachability_rationale=(
+                    "eval() runs right after the document is fetched, "
+                    "before the null check -- reachable on every call."
+                ),
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, self._rule(), generate_fn
+        )
+
+        assert seeded["generation_source"] == "llm"
+        assert seeded["must_find"][0]["line"] == 16
+        import_hunk_text = seeded["file_changes"][0]["patch"].split("@@ -10")[0]
+        assert "eval(" not in import_hunk_text
+
+    def test_bad_llm_output_falls_back_to_phase1_known_good_placement(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=self._BAD_MUTATED_PATCH,
+                injected_line=16,
+                reachability_rationale="uses the Function constructor instead",
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, self._rule(), generate_fn
+        )
+
+        expected_patch, expected_line = inject_patch(
+            file_change["patch"], "eval(userInput);"
+        )
+        assert seeded["generation_source"] == "deterministic_fallback"
+        assert seeded["must_find"][0]["line"] == expected_line
+        assert seeded["file_changes"][0]["patch"] == expected_patch
