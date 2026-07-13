@@ -536,17 +536,30 @@ def verify_diff_parses(mutated_patch: str) -> bool:
         mutated_patch: LLM-generated unified diff to validate.
 
     Returns:
-        True if `mutated_patch` has at least one hunk and every body line
-        is a valid context/added/removed line.
+        True if `mutated_patch` has at least one hunk, has no non-blank
+        preamble before the first hunk header, and every body line is a
+        valid context/added/removed line.
     """
     if not mutated_patch.strip():
         return False
-    hunks = split_hunks(mutated_patch)
-    if not hunks:
-        return False
-    return all(
-        line == "" or line[0] in (" ", "+", "-") for hunk in hunks for line in hunk[1:]
-    )
+
+    saw_header = False
+    for line in mutated_patch.splitlines():
+        if _HUNK_HEADER_RE.match(line):
+            saw_header = True
+            continue
+        if not saw_header:
+            # split_hunks() silently discards anything before the first
+            # hunk header, so a preamble (e.g. a full `git diff`'s
+            # `diff --git`/`index`/`---`/`+++` lines) must be rejected
+            # here explicitly -- otherwise it would slip past V1
+            # unvalidated and still end up in the final seeded item.
+            if line.strip():
+                return False
+            continue
+        if not (line == "" or line[0] in (" ", "+", "-")):
+            return False
+    return saw_header
 
 
 def _hunk_added_indices(
@@ -622,35 +635,54 @@ def verify_only_additions_changed(original_patch: str, mutated_patch: str) -> bo
     return total_new > 0
 
 
-def verify_required_tokens(mutated_patch: str, required_tokens: list[str]) -> bool:
+def verify_required_tokens(
+    original_patch: str, mutated_patch: str, required_tokens: list[str]
+) -> bool:
     """Phase 2 post-generation check V3: do all of the rule's
-    `required_tokens` regexes match somewhere across `mutated_patch`'s
-    added (`+`) lines?
+    `required_tokens` regexes match somewhere across the lines newly
+    inserted by this mutation (not the original patch's own `+` lines)?
 
-    Matching is done against the added lines concatenated, not per-line,
+    Matching is restricted to lines identified as new by
+    `_hunk_added_indices()` (the same hunk-diff matching
+    `verify_only_additions_changed` uses), rather than every `+` line in
+    `mutated_patch`. Otherwise, if the original PR's own pre-existing
+    code already happens to contain a required token (`await` is
+    extremely common, for instance), a broken or no-op injection could
+    still pass V3 by coincidence -- real review finding on PR #122.
+    Matching is done against the new lines concatenated, not per-line,
     since some rules need tokens that a natural injection may split
     across lines (e.g. `frontend_n_plus_one_api` needs a loop keyword and
     `await`, which commonly land on different lines of a multi-line
     block).
 
     Args:
+        original_patch: Unified diff before mutation.
         mutated_patch: LLM-generated unified diff to validate.
         required_tokens: Regex patterns from the rule's catalog entry;
             all must match for the check to pass.
 
     Returns:
-        True if `required_tokens` is non-empty and every pattern matches
-        somewhere in the concatenated added lines.
+        True if `required_tokens` is non-empty, the hunk structure
+        between `original_patch` and `mutated_patch` is consistent (per
+        `_hunk_added_indices`), and every pattern matches somewhere in
+        the concatenated newly-inserted lines.
     """
     if not required_tokens:
         return False
-    added_lines = [
-        line[1:]
-        for hunk in split_hunks(mutated_patch)
-        for line in hunk[1:]
-        if line.startswith("+")
-    ]
-    joined = "\n".join(added_lines)
+
+    original_hunks = split_hunks(original_patch)
+    mutated_hunks = split_hunks(mutated_patch)
+    if not original_hunks or len(original_hunks) != len(mutated_hunks):
+        return False
+
+    new_lines: list[str] = []
+    for orig_hunk, mut_hunk in zip(original_hunks, mutated_hunks):
+        new_idxs = _hunk_added_indices(orig_hunk, mut_hunk)
+        if new_idxs is None:
+            return False
+        new_lines.extend(mut_hunk[i][1:] for i in new_idxs)
+
+    joined = "\n".join(new_lines)
     return all(re.search(pattern, joined) for pattern in required_tokens)
 
 
@@ -847,7 +879,9 @@ def passes_post_generation_checks(
     return (
         verify_diff_parses(mutated_patch)
         and verify_only_additions_changed(original_patch, mutated_patch)
-        and verify_required_tokens(mutated_patch, rule.get("required_tokens", []))
+        and verify_required_tokens(
+            original_patch, mutated_patch, rule.get("required_tokens", [])
+        )
         and verify_runtime_consistency(mutated_patch, rule.get("runtime"))
     )
 

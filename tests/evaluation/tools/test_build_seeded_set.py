@@ -953,6 +953,27 @@ class TestVerifyDiffParses:
         patch = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\neval(userInput);"
         assert verify_diff_parses(patch) is False
 
+    def test_git_diff_preamble_before_first_hunk_header_fails(self):
+        # split_hunks() silently discards anything before the first "@@"
+        # header, so a naive check that only looks at hunk[1:] would let
+        # this preamble slide through unvalidated -- and it would still
+        # end up written into the seeded_set.jsonl patch field.
+        patch = (
+            "diff --git a/src/foo.ts b/src/foo.ts\n"
+            "index abc123..def456 100644\n"
+            "--- a/src/foo.ts\n"
+            "+++ b/src/foo.ts\n"
+            "@@ -1,2 +1,3 @@\n"
+            " context1\n"
+            "+addedByPr\n"
+            "+eval(userInput);"
+        )
+        assert verify_diff_parses(patch) is False
+
+    def test_blank_preamble_lines_before_first_hunk_header_are_tolerated(self):
+        patch = "\n\n@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);"
+        assert verify_diff_parses(patch) is True
+
 
 class TestVerifyOnlyAdditionsChanged:
     def test_appended_line_passes(self):
@@ -991,38 +1012,85 @@ class TestVerifyOnlyAdditionsChanged:
 
 class TestVerifyRequiredTokens:
     def test_single_required_token_present_passes(self):
-        assert verify_required_tokens(_MUTATED_SINGLE_HUNK_GOOD, [r"\beval\("]) is True
+        assert (
+            verify_required_tokens(
+                _ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD, [r"\beval\("]
+            )
+            is True
+        )
 
     def test_single_required_token_absent_fails(self):
         assert (
-            verify_required_tokens(_MUTATED_SINGLE_HUNK_GOOD, [r"\binnerHTML\b"])
+            verify_required_tokens(
+                _ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD, [r"\binnerHTML\b"]
+            )
             is False
         )
 
     def test_and_semantics_all_tokens_required(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
         mutated = (
             "@@ -1,2 +1,4 @@\n context1\n+addedByPr\n"
             "+for (const id of ids) {\n+  await api.get('/items/' + id);\n+}"
         )
-        assert verify_required_tokens(mutated, [r"\bfor\s*\(", r"\bawait\b"]) is True
+        assert (
+            verify_required_tokens(original, mutated, [r"\bfor\s*\(", r"\bawait\b"])
+            is True
+        )
 
     def test_and_semantics_missing_one_token_fails(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
         mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+for (const id of ids) {}"
-        assert verify_required_tokens(mutated, [r"\bfor\s*\(", r"\bawait\b"]) is False
+        assert (
+            verify_required_tokens(original, mutated, [r"\bfor\s*\(", r"\bawait\b"])
+            is False
+        )
 
     def test_tokens_may_span_multiple_added_lines(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
         mutated = (
             "@@ -1,2 +1,4 @@\n context1\n+addedByPr\n"
             "+for (const id of ids) {\n+  await api.get('/items/' + id); }"
         )
-        assert verify_required_tokens(mutated, [r"\bfor\s*\(", r"\bawait\b"]) is True
+        assert (
+            verify_required_tokens(original, mutated, [r"\bfor\s*\(", r"\bawait\b"])
+            is True
+        )
 
     def test_word_boundary_avoids_false_positive_substring_match(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
         mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+retrieval(userInput);"
-        assert verify_required_tokens(mutated, [r"\beval\("]) is False
+        assert verify_required_tokens(original, mutated, [r"\beval\("]) is False
 
     def test_empty_required_tokens_fails(self):
-        assert verify_required_tokens(_MUTATED_SINGLE_HUNK_GOOD, []) is False
+        assert (
+            verify_required_tokens(_ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD, [])
+            is False
+        )
+
+    def test_token_already_present_in_original_patch_does_not_leak_into_match(self):
+        # The original PR's own (pre-existing) "+" line already contains
+        # "eval(" -- unrelated to the injected mutation. V3 must not
+        # treat that as satisfying the required token; only newly
+        # inserted "+" lines should count, otherwise a broken/no-op
+        # injection could still pass and corrupt the dataset (real
+        # review finding on PR #122).
+        original = "@@ -1,2 +1,2 @@\n context1\n+eval(existingCall);"
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+eval(existingCall);\n+somethingElse();"
+        assert verify_required_tokens(original, mutated, [r"\beval\("]) is False
+
+    def test_hunk_count_mismatch_fails(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
+        mutated = (
+            "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);\n"
+            "@@ -10,1 +11,2 @@\n context10\n+extraHunk"
+        )
+        assert verify_required_tokens(original, mutated, [r"\beval\("]) is False
+
+    def test_modified_existing_line_fails(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
+        mutated = "@@ -1,2 +1,3 @@\n context1_CHANGED\n+addedByPr\n+eval(userInput);"
+        assert verify_required_tokens(original, mutated, [r"\beval\("]) is False
 
 
 class TestVerifyRuntimeConsistency:
