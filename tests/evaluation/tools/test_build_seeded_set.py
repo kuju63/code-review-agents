@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from tests.evaluation.conftest import load_eval_tool_module
 
@@ -37,6 +38,7 @@ verify_only_additions_changed = build_seeded_set.verify_only_additions_changed
 verify_required_tokens = build_seeded_set.verify_required_tokens
 verify_runtime_consistency = build_seeded_set.verify_runtime_consistency
 recompute_injected_line = build_seeded_set.recompute_injected_line
+MutatedPatchOutput = build_seeded_set.MutatedPatchOutput
 
 RULES = [
     {
@@ -1042,3 +1044,30 @@ class TestRecomputeInjectedLine:
         original = "@@ -5,2 +5,2 @@\n context5\n context6"
         mutated = "@@ -5,2 +5,3 @@\n context5\n context6\n+eval(userInput);"
         assert recompute_injected_line(original, mutated) == 7
+
+
+class TestMutatedPatchOutputSchema:
+    def test_valid_construction_succeeds(self):
+        output = MutatedPatchOutput(
+            mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+            injected_line=3,
+            reachability_rationale="Reached via the module-level init path.",
+        )
+        assert output.mutated_patch == _MUTATED_SINGLE_HUNK_GOOD
+        assert output.injected_line == 3
+
+    def test_blank_reachability_rationale_is_rejected(self):
+        with pytest.raises(ValidationError):
+            MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=3,
+                reachability_rationale="",
+            )
+
+    def test_whitespace_only_reachability_rationale_is_rejected(self):
+        with pytest.raises(ValidationError):
+            MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=3,
+                reachability_rationale="   \n\t",
+            )

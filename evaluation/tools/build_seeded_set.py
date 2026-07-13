@@ -19,6 +19,29 @@ import sys
 from typing import Any
 
 from dotenv import load_dotenv
+from pydantic import BaseModel, field_validator
+
+
+class MutatedPatchOutput(BaseModel):
+    """Structured output requested from the Seeded mutation generation LLM
+    (design doc 3.2.2). `injected_line` is retained only as a record of
+    the LLM's own reasoning (like `reachability_rationale`); the
+    authoritative line number used for `must_find` is recomputed
+    deterministically via `recompute_injected_line()` instead of trusting
+    this self-reported value (see the "injected_line に関する注" in the
+    design doc for why).
+    """
+
+    mutated_patch: str
+    injected_line: int
+    reachability_rationale: str
+
+    @field_validator("reachability_rationale")
+    @classmethod
+    def _rationale_not_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("reachability_rationale must not be blank")
+        return v
 
 
 def read_jsonl(path: str) -> list[dict[str, Any]]:
