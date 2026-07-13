@@ -41,6 +41,9 @@ verify_runtime_consistency = build_seeded_set.verify_runtime_consistency
 recompute_injected_line = build_seeded_set.recompute_injected_line
 MutatedPatchOutput = build_seeded_set.MutatedPatchOutput
 make_llm_mutation_generator = build_seeded_set.make_llm_mutation_generator
+passes_post_generation_checks = build_seeded_set.passes_post_generation_checks
+render_seeded_item_from_llm = build_seeded_set.render_seeded_item_from_llm
+render_seeded_item_with_generation = build_seeded_set.render_seeded_item_with_generation
 
 RULES = [
     {
@@ -147,6 +150,14 @@ class TestRenderSeededItem:
         assert seeded["must_find"][0]["rule_id"] == rule["rule_id"]
         assert seeded["file_changes"][0]["path"] == "src/foo.ts"
         assert "eval(userInput);" in seeded["file_changes"][0]["patch"]
+
+    def test_includes_deterministic_generation_source(self):
+        item = make_gold_item(
+            files=[make_file("src/foo.ts", patch="@@ -1,3 +1,3 @@\n a\n b\n c")]
+        )
+        file_change = item["file_changes"][0]
+        seeded = render_seeded_item(item, file_change, RULES[0])
+        assert seeded["generation_source"] == "deterministic_fallback"
 
 
 class TestBuildSeededItemsNoDuplicates:
@@ -1130,3 +1141,116 @@ class TestMakeLlmMutationGenerator:
         assert kwargs["client_args"] == {
             "base_url": "https://openrouter.example/api/v1"
         }
+
+
+class TestPassesPostGenerationChecks:
+    def test_good_output_passes_all_checks(self):
+        assert (
+            passes_post_generation_checks(
+                _ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD, RULES[0]
+            )
+            is True
+        )
+
+    def test_missing_required_token_fails(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+somethingElse();"
+        assert (
+            passes_post_generation_checks(_ORIGINAL_SINGLE_HUNK, mutated, RULES[0])
+            is False
+        )
+
+
+class TestRenderSeededItemWithGeneration:
+    def _gold_item_and_file(self):
+        item = make_gold_item(
+            id="owner/repo#9",
+            files=[make_file("src/foo.ts", patch=_ORIGINAL_SINGLE_HUNK)],
+        )
+        return item, item["file_changes"][0]
+
+    def test_generate_fn_none_uses_phase1_path(self):
+        item, file_change = self._gold_item_and_file()
+        seeded = render_seeded_item_with_generation(item, file_change, RULES[0], None)
+        assert seeded["generation_source"] == "deterministic_fallback"
+
+    def test_all_checks_pass_uses_llm_path_and_ignores_self_reported_line(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,  # deliberately wrong; must be ignored
+                reachability_rationale="Reached via the init flow.",
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn
+        )
+        assert seeded["generation_source"] == "llm"
+        assert seeded["must_find"][0]["line"] == 3
+        assert seeded["reachability_rationale"] == "Reached via the init flow."
+
+    def test_failed_v3_falls_back_to_deterministic(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=(
+                    "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+somethingElse();"
+                ),
+                injected_line=3,
+                reachability_rationale="no eval here",
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn
+        )
+        assert seeded["generation_source"] == "deterministic_fallback"
+
+    def test_generate_fn_returns_none_falls_back(self):
+        item, file_change = self._gold_item_and_file()
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], lambda patch, rule, lang: None
+        )
+        assert seeded["generation_source"] == "deterministic_fallback"
+
+    def test_ambiguous_recompute_falls_back_even_though_v1_v4_pass(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=(
+                    "@@ -1,2 +1,4 @@\n context1\n+eval(a);\n+addedByPr\n+eval(b);"
+                ),
+                injected_line=2,
+                reachability_rationale="two spots",
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn
+        )
+        assert seeded["generation_source"] == "deterministic_fallback"
+
+
+class TestBuildSeededItemsGenerationSourceWiring:
+    def test_generate_fn_wired_through_to_each_item(self):
+        item = make_gold_item(
+            files=[make_file("src/foo.ts", patch=_ORIGINAL_SINGLE_HUNK)]
+        )
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="ok",
+            )
+
+        items, _ = build_seeded_items(
+            item, [RULES[0]], random.Random(1), 1, generate_fn
+        )
+        assert items[0]["generation_source"] == "llm"
+
+    def test_default_generate_fn_none_preserves_phase1_behavior(self):
+        item = make_gold_item(files=[make_file("src/foo.ts"), make_file("src/bar.js")])
+        items, _ = build_seeded_items(item, RULES, random.Random(1), 2)
+        assert all(i["generation_source"] == "deterministic_fallback" for i in items)

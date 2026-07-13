@@ -704,7 +704,9 @@ def render_seeded_item(
     file_change: dict[str, Any],
     rule: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build one Seeded item from an already-chosen (file_change, rule) combo."""
+    """Build one Seeded item from an already-chosen (file_change, rule) combo
+    using the Phase 1 deterministic injection logic.
+    """
     path = file_change.get("path", "")
     patch = file_change.get("patch") or ""
     lang = detect_lang(path)
@@ -724,6 +726,7 @@ def render_seeded_item(
         "repository": gold_item["repository"],
         "pr_number": gold_item["pr_number"],
         "file_changes": seeded_changes,
+        "generation_source": "deterministic_fallback",
         "must_find": [
             {
                 "rule_id": rule["rule_id"],
@@ -737,11 +740,98 @@ def render_seeded_item(
     }
 
 
+def passes_post_generation_checks(
+    original_patch: str, mutated_patch: str, rule: dict[str, Any]
+) -> bool:
+    """Apply V1 -> V2 -> V3 -> V4 (design doc 3.2.3) in order, short-circuiting
+    on the first failure since later checks assume `split_hunks()` on
+    `mutated_patch` is trustworthy, which V1 establishes.
+    """
+    return (
+        verify_diff_parses(mutated_patch)
+        and verify_only_additions_changed(original_patch, mutated_patch)
+        and verify_required_tokens(mutated_patch, rule.get("required_tokens", []))
+        and verify_runtime_consistency(mutated_patch, rule.get("runtime"))
+    )
+
+
+def render_seeded_item_from_llm(
+    gold_item: dict[str, Any],
+    file_change: dict[str, Any],
+    rule: dict[str, Any],
+    llm_output: MutatedPatchOutput,
+    injected_line: int,
+) -> dict[str, Any]:
+    """Build one Seeded item from a verified LLM mutation.
+
+    `injected_line` must already be the deterministically recomputed
+    value (`recompute_injected_line()`), not `llm_output.injected_line`
+    -- see the "injected_line に関する注" in the design doc.
+    """
+    path = file_change.get("path", "")
+    file_changes = gold_item.get("file_changes", [])
+    seeded_changes = [
+        {"path": path, "patch": llm_output.mutated_patch} if fc is file_change else fc
+        for fc in file_changes
+    ]
+
+    return {
+        "id": f"seeded::{gold_item['id']}::{rule['rule_id']}::{path}",
+        "base_source": gold_item["id"],
+        "repository": gold_item["repository"],
+        "pr_number": gold_item["pr_number"],
+        "file_changes": seeded_changes,
+        "generation_source": "llm",
+        "reachability_rationale": llm_output.reachability_rationale,
+        "must_find": [
+            {
+                "rule_id": rule["rule_id"],
+                "category": rule["category"],
+                "severity": rule["severity"],
+                "path": path,
+                "line": injected_line,
+                "summary": rule["summary"],
+            }
+        ],
+    }
+
+
+def render_seeded_item_with_generation(
+    gold_item: dict[str, Any],
+    file_change: dict[str, Any],
+    rule: dict[str, Any],
+    generate_fn: MutationGenerator | None = None,
+) -> dict[str, Any]:
+    """Try the LLM generation path (design doc 3.2.1); fall back to the
+    Phase 1 deterministic path (no retry) if `generate_fn` is unset, the
+    LLM call failed, the output didn't pass V1-V4, or the injected line
+    couldn't be unambiguously recomputed.
+    """
+    if generate_fn is not None:
+        path = file_change.get("path", "")
+        original_patch = file_change.get("patch") or ""
+        lang = detect_lang(path)
+        llm_output = generate_fn(original_patch, rule, lang)
+        if llm_output is not None and passes_post_generation_checks(
+            original_patch, llm_output.mutated_patch, rule
+        ):
+            injected_line = recompute_injected_line(
+                original_patch, llm_output.mutated_patch
+            )
+            if injected_line is not None:
+                return render_seeded_item_from_llm(
+                    gold_item, file_change, rule, llm_output, injected_line
+                )
+
+    return render_seeded_item(gold_item, file_change, rule)
+
+
 def build_seeded_items(
     gold_item: dict[str, Any],
     rules: list[dict[str, Any]],
     rnd: random.Random,
     multiplier: int,
+    generate_fn: MutationGenerator | None = None,
 ) -> tuple[list[dict[str, Any]], str | None]:
     """Build up to `multiplier` distinct Seeded items for one Gold item.
 
@@ -755,6 +845,10 @@ def build_seeded_items(
     language matches any rule), matching prior silent-skip behavior.
     Returns a non-None warning when `multiplier` exceeds the pool size,
     in which case the requested count is clamped to the pool size.
+
+    `generate_fn` defaults to None for backward compatibility: existing
+    callers that don't pass it keep getting the pure Phase 1 path via
+    `render_seeded_item_with_generation`'s own None-handling.
     """
     pool = enumerate_combo_pool(gold_item, rules)
     if not pool:
@@ -772,7 +866,10 @@ def build_seeded_items(
             f"combinations={len(pool)}; clamping to {take} seeded item(s)."
         )
 
-    items = [render_seeded_item(gold_item, fc, rule) for fc, rule in pool[:take]]
+    items = [
+        render_seeded_item_with_generation(gold_item, fc, rule, generate_fn)
+        for fc, rule in pool[:take]
+    ]
     return items, warning
 
 
