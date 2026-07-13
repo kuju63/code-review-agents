@@ -12,6 +12,7 @@ import json
 import random
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
@@ -39,6 +40,7 @@ verify_required_tokens = build_seeded_set.verify_required_tokens
 verify_runtime_consistency = build_seeded_set.verify_runtime_consistency
 recompute_injected_line = build_seeded_set.recompute_injected_line
 MutatedPatchOutput = build_seeded_set.MutatedPatchOutput
+make_llm_mutation_generator = build_seeded_set.make_llm_mutation_generator
 
 RULES = [
     {
@@ -1071,3 +1073,60 @@ class TestMutatedPatchOutputSchema:
                 injected_line=3,
                 reachability_rationale="   \n\t",
             )
+
+
+class TestMakeLlmMutationGenerator:
+    def test_calls_agent_and_returns_parsed_output(self):
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = MutatedPatchOutput(
+            mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+            injected_line=3,
+            reachability_rationale="Reached via the existing init flow.",
+        )
+        with (
+            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
+            patch.object(build_seeded_set, "OpenAIModel"),
+        ):
+            generate = make_llm_mutation_generator("gpt-4o")
+            result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+
+        assert result is not None
+        assert result.mutated_patch == _MUTATED_SINGLE_HUNK_GOOD
+        _, kwargs = mock_agent.call_args
+        assert kwargs["structured_output_model"] is MutatedPatchOutput
+
+    def test_returns_none_when_structured_output_missing(self):
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = None
+        with (
+            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
+            patch.object(build_seeded_set, "OpenAIModel"),
+        ):
+            generate = make_llm_mutation_generator("gpt-4o")
+            result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+
+        assert result is None
+
+    def test_returns_none_and_does_not_raise_when_agent_call_fails(self):
+        mock_agent = MagicMock(side_effect=RuntimeError("boom"))
+        with (
+            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
+            patch.object(build_seeded_set, "OpenAIModel"),
+        ):
+            generate = make_llm_mutation_generator("gpt-4o")
+            result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+
+        assert result is None
+        assert mock_agent.call_count == 1  # no retry on failure
+
+    def test_uses_base_url_client_args_when_provided(self):
+        with (
+            patch.object(build_seeded_set, "Agent"),
+            patch.object(build_seeded_set, "OpenAIModel") as mock_model_cls,
+        ):
+            make_llm_mutation_generator("gpt-4o", "https://openrouter.example/api/v1")
+
+        _, kwargs = mock_model_cls.call_args
+        assert kwargs["client_args"] == {
+            "base_url": "https://openrouter.example/api/v1"
+        }

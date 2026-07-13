@@ -12,14 +12,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import random
 import re
 import sys
-from typing import Any
+from typing import Any, Callable, cast
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, field_validator
+from strands import Agent
+from strands.models.openai import OpenAIModel
+
+logger = logging.getLogger(__name__)
 
 
 class MutatedPatchOutput(BaseModel):
@@ -42,6 +47,86 @@ class MutatedPatchOutput(BaseModel):
         if not v.strip():
             raise ValueError("reachability_rationale must not be blank")
         return v
+
+
+MutationGenerator = Callable[[str, dict[str, Any], str], MutatedPatchOutput | None]
+
+_MUTATION_GEN_SYSTEM_PROMPT = """\
+You inject a single realistic vulnerability/bug pattern into an existing \
+unified diff patch, for building an evaluation dataset that measures \
+whether a code review agent catches it.
+
+Requirements:
+(a) Wire the injected code into the existing execution flow shown in the \
+patch -- do not add an isolated/unreachable statement.
+(b) Use APIs that are valid for the target language and runtime given \
+below (e.g. do not use browser-only globals in server-side code).
+(c) Match the surrounding code's variable names, scope, and style.
+(d) Preserve strict unified diff format: only insert new lines starting \
+with "+"; do not modify or remove any existing line, and do not change \
+any line that does not start with "+", " ", or "-". Hunk headers \
+("@@ ... @@") may be rewritten to reflect the new line count.
+
+Return the full mutated patch, the 1-based new-file line number where \
+the injected code lives, and a brief rationale for why that location is \
+reachable.
+"""
+
+
+def build_generation_prompt(patch: str, rule: dict[str, Any], lang: str) -> str:
+    """Build the user prompt for one (file, rule) mutation generation call."""
+    return (
+        f"Target language: {lang}\n"
+        f"Vulnerability/bug pattern (rule_id={rule.get('rule_id')!r}): "
+        f"{rule.get('summary', '')}\n"
+        f"Example of the pattern (for reference, do not copy verbatim -- "
+        f"adapt it to the surrounding code): {get_snippet_for_lang(rule, lang)!r}\n\n"
+        f"Original patch:\n{patch}"
+    )
+
+
+def make_llm_mutation_generator(
+    model_id: str, llm_base_url: str | None = None
+) -> MutationGenerator:
+    """Build a mutation generator backed by an OpenAI-compatible LLM.
+
+    Mirrors the model-selection pattern used elsewhere in this repo
+    (``base_reviewer.py`` / ``score_evaluation.py::make_llm_semantic_judge``):
+    a custom ``llm_base_url`` gets a fixed low temperature for
+    reproducibility; the default endpoint is used as-is otherwise.
+    """
+    if llm_base_url:
+        model = OpenAIModel(
+            model_id=model_id,
+            client_args={"base_url": llm_base_url},
+            params={"temperature": 0.0},
+        )
+    else:
+        model = OpenAIModel(model_id=model_id)
+
+    agent = Agent(model=model, system_prompt=_MUTATION_GEN_SYSTEM_PROMPT, tools=[])
+
+    def generate(
+        patch: str, rule: dict[str, Any], lang: str
+    ) -> MutatedPatchOutput | None:
+        prompt = build_generation_prompt(patch, rule, lang)
+        try:
+            result = agent(prompt, structured_output_model=MutatedPatchOutput)
+        except Exception:
+            # Fail closed, no retry: design doc 3.2.3 explicitly forbids
+            # regeneration retries so a flaky/unstable model doesn't leak
+            # into the evaluation dataset's determinism (R6).
+            logger.warning(
+                "mutation generation call failed; falling back to "
+                "deterministic injection",
+                exc_info=True,
+            )
+            return None
+        if result.structured_output is None:
+            return None
+        return cast(MutatedPatchOutput, result.structured_output)
+
+    return generate
 
 
 def read_jsonl(path: str) -> list[dict[str, Any]]:
