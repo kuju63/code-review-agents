@@ -60,7 +60,11 @@ flowchart LR
     B --> C["最終判定<br/>LeadEngineerAgent.evaluate()"]
 ```
 
-PR情報収集は今回の変更対象外(現状通り、独立した1接続を自前で起動・終了する)。並列レビュー段のみ、
+PR情報収集は**セッション共有**の対象外であり、現状通り独立した1接続を自前で起動・終了する
+([ADR-0004](adr/0004-mcp-client-session-sharing.md) Decision 1)。ただし後述の**起動リトライ**
+(3章)はこの個別接続にも他の経路と同様に適用される([ADR-0003](adr/0003-github-mcp-startup-retry-strategy.md))。
+セッション共有と起動リトライは別々のADRに由来する独立した変更であり、適用範囲が一致しない点に注意する
+(セッション共有は並列レビュー段のみが対象、起動リトライは3経路すべてが対象)。並列レビュー段のみ、
 選択されたレビュアーが GitHub MCP を使う場合に限り、オーケストレータが起動する1本の共有接続を
 レビュアー間で使い回す。
 
@@ -156,7 +160,7 @@ strandsの`MCPClient`は「起動済みかどうか」を示す内部状態を`l
 |---|---|
 | `ReviewOrchestrator`(`review_orchestrator.py`) | 選択したレビュアーの中に GitHub MCP を使うものが1つでもあれば、共有`MCPClient`を生成し、`load_tools()`(3.1節の経路(2)、リトライ込み)で初回起動する。起動後、自らも参照カウントの利用者として`add_consumer`で登録する。全レビュアーの実行完了後、自身の参照を`remove_consumer`で解放する。 |
 | `LLMReviewAgent`(`base_reviewer.py`) | 共有クライアントが渡されていればそれを`Agent`の`tools`に渡して使う。渡されていなければ(単体利用・共有対象外の場合)従来通り自分で`create_github_mcp_client`する。**終了処理を`mcp_client.stop()`の直接呼び出しから`agent.cleanup()`に変更する**(4.3節)。 |
-| `PRInfoCollector`(`pr_info_collector.py`) | 変更なし。引き続き自分専用の接続を個別に起動・終了する([ADR-0004](adr/0004-mcp-client-session-sharing.md) Decision 1の通り対象外)。 |
+| `PRInfoCollector`(`pr_info_collector.py`) | **セッション共有の対象外**。引き続き自分専用の接続を個別に起動・終了する([ADR-0004](adr/0004-mcp-client-session-sharing.md) Decision 1の通り)。ただし**起動リトライは適用される**(3.1節 経路(1)、[ADR-0003](adr/0003-github-mcp-startup-retry-strategy.md))。 |
 
 ### 4.2 設計判断A: 共有クライアントの受け渡し方法
 
