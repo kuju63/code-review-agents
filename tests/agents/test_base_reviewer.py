@@ -254,7 +254,7 @@ class TestReview:
             reviewer.review(_make_context())
 
         mock_factory.assert_called_once_with("tok", reviewer._config.mcp_url)
-        mock_mcp.stop.assert_called_once_with(None, None, None)
+        mock_agent.cleanup.assert_called_once_with()
 
         call_kwargs = mock_agent_cls.call_args.kwargs
         # review() appends the shared structured-output directive to the
@@ -279,7 +279,7 @@ class TestReview:
             with pytest.raises(RuntimeError, match="boom"):
                 reviewer.review(_make_context())
 
-        mock_mcp.stop.assert_called_once_with(None, None, None)
+        mock_agent.cleanup.assert_called_once_with()
 
         args, kwargs = mock_agent.call_args
         assert "octocat/hello" in args[0]
@@ -322,7 +322,21 @@ class TestReview:
             with pytest.raises(StructuredOutputMissingError, match="stub-technical"):
                 reviewer.review(_make_context())
 
-        mock_mcp.stop.assert_called_once_with(None, None, None)
+        mock_agent.cleanup.assert_called_once_with()
+
+    def test_review_propagates_agent_construction_error_without_unbound_local(self):
+        """If Agent(...) itself raises, review() must propagate that error
+        cleanly instead of an UnboundLocalError from an unset ``agent`` in
+        the finally block's cleanup call."""
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", side_effect=RuntimeError("construction boom")),
+        ):
+            with pytest.raises(RuntimeError, match="construction boom"):
+                reviewer.review(_make_context())
 
     def test_no_mcp_reviewer_skips_mcp_client(self):
         reviewer = _NoMcpReviewer(ReviewerConfig(github_token="tok"))
@@ -502,7 +516,7 @@ class TestURLFetchReviewer:
             with pytest.raises(RuntimeError, match="boom"):
                 reviewer.review(_make_context())
 
-        mock_mcp.stop.assert_called_once_with(None, None, None)
+        mock_agent.cleanup.assert_called_once_with()
 
 
 class TestAgentSkillsIntegration:

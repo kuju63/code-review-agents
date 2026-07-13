@@ -220,11 +220,13 @@ class LLMReviewAgent(ReviewAgent):
 
         tools: list = []
         # In strands >=1.41 ``MCPClient`` is a ``ToolProvider`` whose lifecycle
-        # the Agent owns: it calls ``start()`` while loading tools and ``stop()``
-        # on cleanup.  Opening it ourselves with ``with`` would start the session
-        # a second time and raise "the client session is currently running", so we
-        # hand the client to the Agent and stop it deterministically in ``finally``
-        # (``stop`` is idempotent).
+        # the Agent owns: it calls ``start()`` while loading tools and releases
+        # its reference on cleanup.  Opening it ourselves with ``with`` would
+        # start the session a second time and raise "the client session is
+        # currently running", so we hand the client to the Agent and clean it up
+        # deterministically via ``agent.cleanup()`` in ``finally`` -- this also
+        # correctly decrements the shared client's reference count instead of
+        # stopping it outright when the client is shared across reviewers.
         mcp_client = None
         if self.uses_github_mcp:
             mcp_client = create_github_mcp_client(
@@ -240,6 +242,7 @@ class LLMReviewAgent(ReviewAgent):
             tools.append(file_read)
             plugins.append(create_agent_skills(self.skill_type))
 
+        agent: Agent | None = None
         try:
             agent = Agent(
                 model=model,
@@ -259,8 +262,8 @@ class LLMReviewAgent(ReviewAgent):
                 )
             output: ReviewOutput = cast(ReviewOutput, result.structured_output)
         finally:
-            if mcp_client is not None:
-                mcp_client.stop(None, None, None)
+            if agent is not None:
+                agent.cleanup()
 
         return ReviewResult(
             reviewer_id=self.reviewer_id,
