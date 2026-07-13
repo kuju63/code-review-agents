@@ -1,11 +1,15 @@
 """Tests for the parallel review orchestrator."""
 
 import time
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import ConnectError
-from strands.types.exceptions import EventLoopException, MCPClientInitializationError
+from strands.types.exceptions import (
+    EventLoopException,
+    MCPClientInitializationError,
+    ToolProviderException,
+)
 
 from code_review_agent.agents.base_reviewer import ReviewAgent, ReviewerConfig
 from code_review_agent.agents.review_orchestrator import ReviewOrchestrator
@@ -114,6 +118,52 @@ class _SlowReviewer(ReviewAgent):
             project_type=project_type,
             output=ReviewOutput(summary="slow ok"),
         )
+
+
+class _MCPUsingFakeReviewer(ReviewAgent):
+    """Fake reviewer that declares GitHub MCP usage and records the context
+    it was called with, so tests can assert on what the orchestrator injects."""
+
+    reviewer_id = "fake-mcp-using"
+    perspective = ReviewPerspective.TECHNICAL
+    project_types = frozenset({ProjectType.REACT_TS})
+    uses_github_mcp = True
+
+    received_contexts: list[ReviewContext] = []
+
+    def review(self, context, project_type=None):
+        self.received_contexts.append(context)
+        return ReviewResult(
+            reviewer_id=self.reviewer_id,
+            perspective=self.perspective,
+            project_type=project_type,
+            output=ReviewOutput(summary="mcp ok"),
+        )
+
+
+class _MCPUsingFakeSecurityReviewer(ReviewAgent):
+    """A second, distinct GitHub-MCP-using reviewer class -- distinct from
+    _MCPUsingFakeReviewer so _select_reviewers instantiates two reviewers
+    instead of deduplicating by class."""
+
+    reviewer_id = "fake-mcp-using-security"
+    perspective = ReviewPerspective.SECURITY
+    project_types = frozenset({ProjectType.REACT_TS})
+    uses_github_mcp = True
+
+    def review(self, context, project_type=None):
+        return ReviewResult(
+            reviewer_id=self.reviewer_id,
+            perspective=self.perspective,
+            project_type=project_type,
+            output=ReviewOutput(summary="mcp sec ok"),
+        )
+
+
+def _mock_shared_client() -> MagicMock:
+    client = MagicMock()
+    client.load_tools = AsyncMock()
+    return client
 
 
 def _orchestrator() -> ReviewOrchestrator:
@@ -302,3 +352,96 @@ class TestRun:
             for _ in range(5):
                 report = _orchestrator().run(_context())
                 assert report.results[0].project_type is ProjectType.NEXTJS
+
+
+class TestSharedMcpClient:
+    """The orchestrator creates and manages one shared GitHub MCP client for
+    the parallel review stage per spec §4.1/§4.4/§4.5."""
+
+    def setup_method(self):
+        _MCPUsingFakeReviewer.received_contexts.clear()
+
+    def test_shared_mcp_client_created_once_when_reviewers_use_mcp(self):
+        shared_client = _mock_shared_client()
+        with (
+            patch(
+                f"{_MOD}.get_reviewer_classes",
+                return_value=[_MCPUsingFakeReviewer, _MCPUsingFakeSecurityReviewer],
+            ),
+            patch(
+                f"{_MOD}.create_github_mcp_client", return_value=shared_client
+            ) as mock_factory,
+        ):
+            report = _orchestrator().run(_context(), project_type=ProjectType.REACT_TS)
+
+        mock_factory.assert_called_once()
+        assert {r.reviewer_id for r in report.results} == {
+            "fake-mcp-using",
+            "fake-mcp-using-security",
+        }
+
+    def test_shared_mcp_client_not_created_when_no_reviewer_uses_mcp(self):
+        with (
+            patch(
+                f"{_MOD}.get_reviewer_classes",
+                return_value=[_FakeTechnical, _FakeSecurity],
+            ),
+            patch(f"{_MOD}.create_github_mcp_client") as mock_factory,
+        ):
+            _orchestrator().run(_context(), project_type=ProjectType.REACT_TS)
+
+        mock_factory.assert_not_called()
+
+    def test_orchestrator_registers_and_releases_consumer(self):
+        shared_client = _mock_shared_client()
+        orchestrator = _orchestrator()
+        with (
+            patch(
+                f"{_MOD}.get_reviewer_classes",
+                return_value=[_MCPUsingFakeReviewer],
+            ),
+            patch(f"{_MOD}.create_github_mcp_client", return_value=shared_client),
+        ):
+            orchestrator.run(_context(), project_type=ProjectType.REACT_TS)
+
+        shared_client.add_consumer.assert_called_once_with(orchestrator)
+        shared_client.load_tools.assert_awaited_once()
+        shared_client.remove_consumer.assert_called_once_with(orchestrator)
+
+        # add_consumer -> load_tools -> remove_consumer, in that order.
+        call_names = [c[0] for c in shared_client.mock_calls]
+        assert call_names.index("add_consumer") < call_names.index("load_tools")
+        assert call_names.index("load_tools") < call_names.index("remove_consumer")
+
+    def test_shared_client_injected_into_context(self):
+        shared_client = _mock_shared_client()
+        with (
+            patch(
+                f"{_MOD}.get_reviewer_classes",
+                return_value=[_MCPUsingFakeReviewer],
+            ),
+            patch(f"{_MOD}.create_github_mcp_client", return_value=shared_client),
+        ):
+            _orchestrator().run(_context(), project_type=ProjectType.REACT_TS)
+
+        assert len(_MCPUsingFakeReviewer.received_contexts) == 1
+        assert (
+            _MCPUsingFakeReviewer.received_contexts[0].shared_mcp_client
+            is shared_client
+        )
+
+    def test_shared_client_startup_failure_removes_consumer_and_reraises(self):
+        shared_client = _mock_shared_client()
+        shared_client.load_tools.side_effect = ToolProviderException("failed to start")
+        orchestrator = _orchestrator()
+        with (
+            patch(
+                f"{_MOD}.get_reviewer_classes",
+                return_value=[_MCPUsingFakeReviewer],
+            ),
+            patch(f"{_MOD}.create_github_mcp_client", return_value=shared_client),
+        ):
+            with pytest.raises(ToolProviderException):
+                orchestrator.run(_context(), project_type=ProjectType.REACT_TS)
+
+        shared_client.remove_consumer.assert_called_once_with(orchestrator)

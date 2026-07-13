@@ -17,6 +17,7 @@ from ..models.review import (
     ReviewReport,
     ReviewResult,
 )
+from ..tools.github_mcp import create_github_mcp_client
 from .base_reviewer import ReviewAgent, ReviewerConfig
 from .exceptions import INFRA_EXCEPTIONS
 from .registry import detect_project_types, get_reviewer_classes
@@ -85,45 +86,78 @@ class ReviewOrchestrator:
 
         timeout = self._config.reviewer_timeout_seconds
 
-        # asyncio.wait_for + to_thread blocks until the thread exits on cancellation;
-        # asyncio.wait avoids this by letting timed-out threads finish in the background.
-        asyncio_tasks = {
-            asyncio.create_task(
-                asyncio.to_thread(reviewer.review, context, pt),
-                name=reviewer.reviewer_id,
-            ): (reviewer, pt)
-            for reviewer, pt in tasks
-        }
+        # Open one shared GitHub MCP connection for the whole parallel-review
+        # batch when at least one selected reviewer uses it, instead of each
+        # reviewer opening its own -- this is the fix for the startup
+        # congestion in Issue #115 (spec §4.1/§4.4). Only start()-equivalent
+        # (load_tools(), the ToolProvider entry point) is used here; calling
+        # the low-level start() directly would leave the client's internal
+        # "started" state out of sync with what each reviewer's Agent later
+        # observes (spec §3.1).
+        shared_client = None
+        if any(getattr(reviewer, "uses_github_mcp", False) for reviewer, _ in tasks):
+            shared_client = create_github_mcp_client(
+                self._config.github_token,
+                self._config.mcp_url,
+                retry_attempts=self._config.mcp_startup_retry_attempts,
+                retry_backoff_seconds=self._config.mcp_startup_retry_backoff_seconds,
+            )
+            shared_client.add_consumer(self)
+            try:
+                await shared_client.load_tools()
+            except Exception:
+                shared_client.remove_consumer(self)
+                raise
+            context = context.model_copy(update={"shared_mcp_client": shared_client})
 
-        _, pending = await asyncio.wait(
-            asyncio_tasks.keys(),
-            timeout=timeout,  # None means wait indefinitely
-        )
+        try:
+            # asyncio.wait_for + to_thread blocks until the thread exits on
+            # cancellation; asyncio.wait avoids this by letting timed-out
+            # threads finish in the background.
+            asyncio_tasks = {
+                asyncio.create_task(
+                    asyncio.to_thread(reviewer.review, context, pt),
+                    name=reviewer.reviewer_id,
+                ): (reviewer, pt)
+                for reviewer, pt in tasks
+            }
 
-        results: list[ReviewResult] = []
-        errors: list[ReviewError] = []
-        for asyncio_task, (reviewer, _) in asyncio_tasks.items():
-            if asyncio_task in pending:
-                errors.append(
-                    ReviewError(
-                        reviewer_id=reviewer.reviewer_id,
-                        perspective=reviewer.perspective,
-                        message=f"Reviewer timed out after {timeout}s",
+            _, pending = await asyncio.wait(
+                asyncio_tasks.keys(),
+                timeout=timeout,  # None means wait indefinitely
+            )
+
+            results: list[ReviewResult] = []
+            errors: list[ReviewError] = []
+            for asyncio_task, (reviewer, _) in asyncio_tasks.items():
+                if asyncio_task in pending:
+                    errors.append(
+                        ReviewError(
+                            reviewer_id=reviewer.reviewer_id,
+                            perspective=reviewer.perspective,
+                            message=f"Reviewer timed out after {timeout}s",
+                        )
                     )
-                )
-            elif exc := asyncio_task.exception():
-                if isinstance(exc, INFRA_EXCEPTIONS):
-                    raise exc
-                errors.append(
-                    ReviewError(
-                        reviewer_id=reviewer.reviewer_id,
-                        perspective=reviewer.perspective,
-                        message=str(exc),
+                elif exc := asyncio_task.exception():
+                    if isinstance(exc, INFRA_EXCEPTIONS):
+                        raise exc
+                    errors.append(
+                        ReviewError(
+                            reviewer_id=reviewer.reviewer_id,
+                            perspective=reviewer.perspective,
+                            message=str(exc),
+                        )
                     )
-                )
-            else:
-                results.append(asyncio_task.result())
-        return ReviewReport(results=results, errors=errors)
+                else:
+                    results.append(asyncio_task.result())
+            return ReviewReport(results=results, errors=errors)
+        finally:
+            # A reviewer still pending when we get here (timeout) has not yet
+            # released its own reference, so this only decrements the count --
+            # the connection stays alive for that reviewer's background thread
+            # (spec §4.6).
+            if shared_client is not None:
+                shared_client.remove_consumer(self)
 
     def _select_reviewers(
         self,
