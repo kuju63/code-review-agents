@@ -12,7 +12,16 @@ Seeded set側の見逃し (`js_eval_injection` ×2件) の真因は
 
 **実装ステータス**: Issue #110 (親) / #111 (Phase1) / #112 (Phase2) で管理。
 Phase1 (3.1節: `language_snippets`必須化、挿入位置ヒューリスティック改善、行番号再計算) は
-実装済み。Phase2 (3.2節: LLM推論 + 決定論的事後検証) はIssue #112で実装着手。
+実装済み。Phase2 (3.2節: LLM推論 + 決定論的事後検証) も実装済み (Issue #112)。
+`evaluation/tools/build_seeded_set.py` に `MutatedPatchOutput` / `make_llm_mutation_generator` /
+`verify_diff_parses` (V1) / `verify_only_additions_changed` (V2) / `verify_required_tokens` (V3) /
+`verify_runtime_consistency` (V4) / `recompute_injected_line` / `passes_post_generation_checks` /
+`render_seeded_item_from_llm` / `render_seeded_item_with_generation` を追加し、
+`evaluation/config/seeded_mutations.json` の全5ルールに `required_tokens` を追加した。
+`tests/evaluation/tools/test_build_seeded_set.py` に対応するテスト (hoppscotch#6171相当の
+LLM経路/フォールバック経路ゴールデンテストを含む) を追加済み。3.2.5節の差分再生成スキップ
+(既存seeded itemの再生成をスキップするキャッシュ機構) は本実装のスコープ外とし、
+将来のフォローアップ課題として残す。
 
 ---
 

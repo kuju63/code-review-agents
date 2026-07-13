@@ -1076,6 +1076,17 @@ class TestRecomputeInjectedLine:
         mutated = "@@ -5,2 +5,3 @@\n context5\n context6\n+eval(userInput);"
         assert recompute_injected_line(original, mutated) == 7
 
+    def test_hunk_count_mismatch_returns_none(self):
+        mutated = (
+            "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);\n"
+            "@@ -10,1 +11,2 @@\n context10\n+extraHunk"
+        )
+        assert recompute_injected_line(_ORIGINAL_SINGLE_HUNK, mutated) is None
+
+    def test_modified_existing_line_returns_none(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1_CHANGED\n+addedByPr\n+eval(userInput);"
+        assert recompute_injected_line(_ORIGINAL_SINGLE_HUNK, mutated) is None
+
 
 class TestMutatedPatchOutputSchema:
     def test_valid_construction_succeeds(self):
