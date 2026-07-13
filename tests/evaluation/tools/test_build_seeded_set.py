@@ -32,6 +32,11 @@ parse_hunk_new_start = build_seeded_set.parse_hunk_new_start
 count_new_lines_before = build_seeded_set.count_new_lines_before
 find_insertion_point = build_seeded_set.find_insertion_point
 validate_catalog = build_seeded_set.validate_catalog
+verify_diff_parses = build_seeded_set.verify_diff_parses
+verify_only_additions_changed = build_seeded_set.verify_only_additions_changed
+verify_required_tokens = build_seeded_set.verify_required_tokens
+verify_runtime_consistency = build_seeded_set.verify_runtime_consistency
+recompute_injected_line = build_seeded_set.recompute_injected_line
 
 RULES = [
     {
@@ -891,3 +896,149 @@ class TestValidateCatalogRequiredTokens:
         )
         errors = validate_catalog([rule])
         assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+
+# Shared fixtures for V1-V4 + recompute_injected_line tests below: a single
+# hunk original patch with one pre-existing context line and one
+# pre-existing "+" line (representing the real PR's own change), plus a
+# "good" mutation that appends one more injected "+" line after it.
+_ORIGINAL_SINGLE_HUNK = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
+_MUTATED_SINGLE_HUNK_GOOD = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);"
+
+
+class TestVerifyDiffParses:
+    def test_well_formed_patch_passes(self):
+        assert verify_diff_parses(_MUTATED_SINGLE_HUNK_GOOD) is True
+
+    def test_empty_patch_fails(self):
+        assert verify_diff_parses("") is False
+
+    def test_patch_without_hunk_header_fails(self):
+        assert verify_diff_parses("just some text\nno header here") is False
+
+    def test_line_with_invalid_marker_fails(self):
+        patch = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\neval(userInput);"
+        assert verify_diff_parses(patch) is False
+
+
+class TestVerifyOnlyAdditionsChanged:
+    def test_appended_line_passes(self):
+        assert (
+            verify_only_additions_changed(
+                _ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD
+            )
+            is True
+        )
+
+    def test_identical_patch_fails(self):
+        assert (
+            verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, _ORIGINAL_SINGLE_HUNK)
+            is False
+        )
+
+    def test_modified_context_line_fails(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1_CHANGED\n+addedByPr\n+eval(userInput);"
+        assert verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, mutated) is False
+
+    def test_modified_original_added_line_fails(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr_CHANGED\n+eval(userInput);"
+        assert verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, mutated) is False
+
+    def test_dropped_original_line_fails(self):
+        mutated = "@@ -1,2 +1,2 @@\n context1\n+eval(userInput);"
+        assert verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, mutated) is False
+
+    def test_hunk_count_mismatch_fails(self):
+        mutated = (
+            "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);\n"
+            "@@ -10,1 +11,2 @@\n context10\n+extraHunk"
+        )
+        assert verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, mutated) is False
+
+
+class TestVerifyRequiredTokens:
+    def test_single_required_token_present_passes(self):
+        assert verify_required_tokens(_MUTATED_SINGLE_HUNK_GOOD, [r"\beval\("]) is True
+
+    def test_single_required_token_absent_fails(self):
+        assert (
+            verify_required_tokens(_MUTATED_SINGLE_HUNK_GOOD, [r"\binnerHTML\b"])
+            is False
+        )
+
+    def test_and_semantics_all_tokens_required(self):
+        mutated = (
+            "@@ -1,2 +1,4 @@\n context1\n+addedByPr\n"
+            "+for (const id of ids) {\n+  await api.get('/items/' + id);\n+}"
+        )
+        assert verify_required_tokens(mutated, [r"\bfor\s*\(", r"\bawait\b"]) is True
+
+    def test_and_semantics_missing_one_token_fails(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+for (const id of ids) {}"
+        assert verify_required_tokens(mutated, [r"\bfor\s*\(", r"\bawait\b"]) is False
+
+    def test_tokens_may_span_multiple_added_lines(self):
+        mutated = (
+            "@@ -1,2 +1,4 @@\n context1\n+addedByPr\n"
+            "+for (const id of ids) {\n+  await api.get('/items/' + id); }"
+        )
+        assert verify_required_tokens(mutated, [r"\bfor\s*\(", r"\bawait\b"]) is True
+
+    def test_word_boundary_avoids_false_positive_substring_match(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+retrieval(userInput);"
+        assert verify_required_tokens(mutated, [r"\beval\("]) is False
+
+    def test_empty_required_tokens_fails(self):
+        assert verify_required_tokens(_MUTATED_SINGLE_HUNK_GOOD, []) is False
+
+
+class TestVerifyRuntimeConsistency:
+    def test_node_runtime_with_window_global_fails(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+window.location.href = x;"
+        assert verify_runtime_consistency(mutated, "node") is False
+
+    def test_node_runtime_without_forbidden_global_passes(self):
+        assert verify_runtime_consistency(_MUTATED_SINGLE_HUNK_GOOD, "node") is True
+
+    def test_browser_runtime_with_window_global_still_passes_noop(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+window.location.href = x;"
+        assert verify_runtime_consistency(mutated, "browser") is True
+
+    def test_universal_runtime_with_window_global_still_passes_noop(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+window.location.href = x;"
+        assert verify_runtime_consistency(mutated, "universal") is True
+
+
+class TestRecomputeInjectedLine:
+    def test_recomputes_line_ignoring_llm_self_report(self):
+        line = recompute_injected_line(_ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD)
+        assert line == 3
+
+    def test_no_new_lines_returns_none(self):
+        assert (
+            recompute_injected_line(_ORIGINAL_SINGLE_HUNK, _ORIGINAL_SINGLE_HUNK)
+            is None
+        )
+
+    def test_non_contiguous_new_lines_in_same_hunk_returns_none(self):
+        original = "@@ -1,3 +1,3 @@\n context1\n+addedByPr\n context2"
+        mutated = (
+            "@@ -1,3 +1,5 @@\n context1\n+injectedBefore\n+addedByPr\n"
+            " context2\n+injectedAfter"
+        )
+        assert recompute_injected_line(original, mutated) is None
+
+    def test_two_hunks_both_changed_returns_none(self):
+        original = (
+            "@@ -1,2 +1,2 @@\n context1\n+addedByPr\n@@ -10,1 +11,1 @@\n context10"
+        )
+        mutated = (
+            "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);\n"
+            "@@ -10,1 +11,2 @@\n context10\n+extraInjected"
+        )
+        assert recompute_injected_line(original, mutated) is None
+
+    def test_injected_block_after_multiple_context_lines(self):
+        original = "@@ -5,2 +5,2 @@\n context5\n context6"
+        mutated = "@@ -5,2 +5,3 @@\n context5\n context6\n+eval(userInput);"
+        assert recompute_injected_line(original, mutated) == 7

@@ -383,6 +383,178 @@ def find_insertion_point(hunk_lines: list[str]) -> int:
     return non_import_idxs[-1]
 
 
+def verify_diff_parses(mutated_patch: str) -> bool:
+    """Phase 2 post-generation check V1: is `mutated_patch` a syntactically
+    well-formed unified diff?
+
+    Reuses `split_hunks()` (Phase 1) rather than introducing a new parser
+    or external dependency (design doc 3.2.3 V1 rationale). Deliberately
+    stricter than `inject_patch()`'s best-effort legacy fallback: an LLM
+    output that doesn't parse cleanly should fail closed here, not be
+    salvaged.
+    """
+    if not mutated_patch.strip():
+        return False
+    hunks = split_hunks(mutated_patch)
+    if not hunks:
+        return False
+    return all(
+        line == "" or line[0] in (" ", "+", "-") for hunk in hunks for line in hunk[1:]
+    )
+
+
+def _hunk_added_indices(
+    original_hunk: list[str], mutated_hunk: list[str]
+) -> list[int] | None:
+    """Match `original_hunk`'s body lines as an ordered subsequence of
+    `mutated_hunk`'s body lines; return the indices (into `mutated_hunk`)
+    of lines that are new relative to `original_hunk`.
+
+    Returns None if any line in `mutated_hunk` is neither the next
+    expected original line nor a new `+` line -- i.e. an existing
+    context/removed/added line was altered, reordered, or dropped -- or
+    if `original_hunk` wasn't fully consumed by the end. Hunk headers
+    (index 0) are excluded from the comparison since design doc 3.2.2
+    explicitly allows them to be rewritten to reflect the new line count
+    after insertion.
+    """
+    oi = 1
+    new_idxs: list[int] = []
+    for i in range(1, len(mutated_hunk)):
+        line = mutated_hunk[i]
+        if oi < len(original_hunk) and line == original_hunk[oi]:
+            oi += 1
+        elif line.startswith("+"):
+            new_idxs.append(i)
+        else:
+            return None
+    if oi != len(original_hunk):
+        return None
+    return new_idxs
+
+
+def verify_only_additions_changed(original_patch: str, mutated_patch: str) -> bool:
+    """Phase 2 post-generation check V2: relative to `original_patch`, does
+    `mutated_patch` differ only by newly inserted `+` lines?
+
+    Extends the design doc's literal wording ("deleted/context lines
+    remain") to also protect the original patch's own `+` lines (the real
+    PR's actual change) from being altered -- an LLM rewriting an
+    unrelated line while "injecting" a mutation elsewhere is exactly the
+    kind of uncontrolled edit this safety net exists to catch. Also
+    rejects a `mutated_patch` identical to `original_patch`, since zero
+    added lines means nothing was injected at all.
+    """
+    original_hunks = split_hunks(original_patch)
+    mutated_hunks = split_hunks(mutated_patch)
+    if not original_hunks or len(original_hunks) != len(mutated_hunks):
+        return False
+
+    total_new = 0
+    for orig_hunk, mut_hunk in zip(original_hunks, mutated_hunks):
+        new_idxs = _hunk_added_indices(orig_hunk, mut_hunk)
+        if new_idxs is None:
+            return False
+        total_new += len(new_idxs)
+    return total_new > 0
+
+
+def verify_required_tokens(mutated_patch: str, required_tokens: list[str]) -> bool:
+    """Phase 2 post-generation check V3: do all of the rule's
+    `required_tokens` regexes match somewhere across `mutated_patch`'s
+    added (`+`) lines?
+
+    Matching is done against the added lines concatenated, not per-line,
+    since some rules need tokens that a natural injection may split
+    across lines (e.g. `frontend_n_plus_one_api` needs a loop keyword and
+    `await`, which commonly land on different lines of a multi-line
+    block).
+    """
+    if not required_tokens:
+        return False
+    added_lines = [
+        line[1:]
+        for hunk in split_hunks(mutated_patch)
+        for line in hunk[1:]
+        if line.startswith("+")
+    ]
+    joined = "\n".join(added_lines)
+    return all(re.search(pattern, joined) for pattern in required_tokens)
+
+
+def verify_runtime_consistency(mutated_patch: str, runtime: str | None) -> bool:
+    """Phase 2 post-generation check V4: for a rule whose target runtime is
+    `"node"`, forbid browser-only globals (`window.`/`document.`) in the
+    injected lines.
+
+    No current catalog rule declares `runtime: "node"` (all 5 are
+    `"universal"` or `"browser"`), so this check is a no-op against
+    today's catalog -- it exists as a forward-looking guard for when a
+    Node-specific rule is added, not because it currently rejects
+    anything. The inverse direction (Node-only APIs leaking into a
+    browser-only file) is intentionally out of scope; see design doc
+    3.2.3.
+    """
+    if runtime != "node":
+        return True
+    added_lines = [
+        line
+        for hunk in split_hunks(mutated_patch)
+        for line in hunk[1:]
+        if line.startswith("+")
+    ]
+    return not any(_FORBIDDEN_GLOBAL_RE.search(line) for line in added_lines)
+
+
+def recompute_injected_line(original_patch: str, mutated_patch: str) -> int | None:
+    """Deterministically recompute the new-file line number of the
+    injected block, ignoring the LLM's self-reported `injected_line`
+    entirely.
+
+    `injected_line` is an unverified LLM self-report -- none of V1-V4
+    check it against the actual `mutated_patch` content. Trusting it
+    directly for `must_find` would reopen, one layer up, exactly the
+    failure mode (R4: must_find line number correctness) that motivated
+    this whole redesign (see design doc 1.1/2 R4 and the "R4に関する注").
+    So instead, the single contiguous block of new `+` lines is located
+    via the same hunk-diff matching `verify_only_additions_changed` uses,
+    and its new-file line number is computed with Phase 1's own
+    `parse_hunk_new_start` + `count_new_lines_before` -- the same
+    computation Phase 1's own `inject_patch()` uses, so both code paths
+    agree on what "the line number" means.
+
+    Returns None (a verification failure that should trigger fallback to
+    Phase 1) when the changed hunk can't be uniquely identified, or its
+    new lines aren't contiguous -- both cases where "the" injected line
+    is ambiguous. Callers should only invoke this once
+    `verify_only_additions_changed` has already returned True.
+    """
+    original_hunks = split_hunks(original_patch)
+    mutated_hunks = split_hunks(mutated_patch)
+    if not original_hunks or len(original_hunks) != len(mutated_hunks):
+        return None
+
+    changed: tuple[list[str], list[int]] | None = None
+    for orig_hunk, mut_hunk in zip(original_hunks, mutated_hunks):
+        new_idxs = _hunk_added_indices(orig_hunk, mut_hunk)
+        if new_idxs is None:
+            return None
+        if new_idxs:
+            if changed is not None:
+                return None  # more than one hunk changed: ambiguous
+            changed = (mut_hunk, new_idxs)
+
+    if changed is None:
+        return None
+    mut_hunk, new_idxs = changed
+    if new_idxs != list(range(new_idxs[0], new_idxs[0] + len(new_idxs))):
+        return None  # non-contiguous new lines: ambiguous which is "the" line
+
+    base_line = parse_hunk_new_start(mut_hunk[0])
+    consumed = count_new_lines_before(mut_hunk, new_idxs[0] - 1)
+    return base_line + consumed
+
+
 def candidate_files(gold_item: dict[str, Any]) -> list[dict[str, Any]]:
     """Pick the file_changes eligible as a mutation target.
 
