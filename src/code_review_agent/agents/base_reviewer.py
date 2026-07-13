@@ -121,6 +121,14 @@ class ReviewerConfig:
             timeout (default).  Any reviewer still running when the timeout
             expires is recorded as a :class:`ReviewError` and the others
             continue.  Configurable via ``CODE_REVIEW_REVIEWER_TIMEOUT_SECONDS``.
+        mcp_startup_retry_attempts: Maximum GitHub MCP startup attempts
+            (including the first), forwarded to
+            :func:`~code_review_agent.tools.github_mcp.create_github_mcp_client`.
+            Configurable via ``CODE_REVIEW_MCP_STARTUP_RETRY_ATTEMPTS``.
+        mcp_startup_retry_backoff_seconds: Base wait time in seconds for the
+            startup retry's exponential backoff+jitter, forwarded to
+            :func:`~code_review_agent.tools.github_mcp.create_github_mcp_client`.
+            Configurable via ``CODE_REVIEW_MCP_STARTUP_RETRY_BACKOFF_SECONDS``.
     """
 
     github_token: str
@@ -129,6 +137,8 @@ class ReviewerConfig:
     llm_base_url: str | None = None
     max_agent_turns: int = 30
     reviewer_timeout_seconds: float | None = None
+    mcp_startup_retry_attempts: int = 3
+    mcp_startup_retry_backoff_seconds: float = 1.0
 
 
 class ReviewAgent(ABC):

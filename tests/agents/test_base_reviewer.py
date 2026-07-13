@@ -109,6 +109,25 @@ def _output() -> ReviewOutput:
     return ReviewOutput(summary="looks good", findings=[])
 
 
+class TestReviewerConfig:
+    def test_default_mcp_startup_retry_attempts_is_3(self):
+        config = ReviewerConfig(github_token="tok")
+        assert config.mcp_startup_retry_attempts == 3
+
+    def test_default_mcp_startup_retry_backoff_seconds_is_1_0(self):
+        config = ReviewerConfig(github_token="tok")
+        assert config.mcp_startup_retry_backoff_seconds == 1.0
+
+    def test_accepts_custom_retry_settings(self):
+        config = ReviewerConfig(
+            github_token="tok",
+            mcp_startup_retry_attempts=5,
+            mcp_startup_retry_backoff_seconds=2.5,
+        )
+        assert config.mcp_startup_retry_attempts == 5
+        assert config.mcp_startup_retry_backoff_seconds == 2.5
+
+
 class TestReviewerMetadata:
     """The base class exposes class-level metadata."""
 
