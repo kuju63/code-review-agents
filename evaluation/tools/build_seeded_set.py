@@ -557,7 +557,7 @@ def verify_diff_parses(mutated_patch: str) -> bool:
             if line.strip():
                 return False
             continue
-        if not (line == "" or line[0] in (" ", "+", "-")):
+        if line[:1] not in (" ", "+", "-"):
             return False
     return saw_header
 
@@ -688,8 +688,17 @@ def verify_required_tokens(
 
 def verify_runtime_consistency(mutated_patch: str, runtime: str | None) -> bool:
     """Phase 2 post-generation check V4: for a rule whose target runtime is
-    `"node"`, forbid browser-only globals (`window.`/`document.`) in the
-    injected lines.
+    `"node"`, forbid browser-only globals (`window.`/`document.`) in
+    `mutated_patch`'s added (`+`) lines.
+
+    Unlike V3, this scans every `+` line in `mutated_patch` -- including
+    the original PR's own pre-existing additions, not just the newly
+    injected ones. That is deliberately left broad rather than narrowed
+    to match V3: this check only ever *rejects* (fails closed), so
+    scanning pre-existing lines can at worst cause an unrelated,
+    legitimate `+` line to trigger a false rejection (falling back to
+    Phase 1), never let a bad injection through -- the opposite risk
+    profile from V3's leak, which caused an incorrect *accept*.
 
     No current catalog rule declares `runtime: "node"` (all 5 are
     `"universal"` or `"browser"`), so this check is a no-op against
@@ -706,7 +715,7 @@ def verify_runtime_consistency(mutated_patch: str, runtime: str | None) -> bool:
 
     Returns:
         True unless `runtime == "node"` and a `window.`/`document.`
-        reference appears in an added line.
+        reference appears in any added (`+`) line of `mutated_patch`.
     """
     if runtime != "node":
         return True

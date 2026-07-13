@@ -974,6 +974,15 @@ class TestVerifyDiffParses:
         patch = "\n\n@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);"
         assert verify_diff_parses(patch) is True
 
+    def test_marker_less_blank_line_inside_hunk_body_fails(self):
+        # A genuinely blank source line must be represented as " " (a
+        # context marker followed by nothing), not a bare empty string
+        # with no marker at all -- the latter is not valid unified diff
+        # syntax even though it's easy to produce by accident when
+        # joining lines with "\n\n" between hunks.
+        patch = "@@ -1,3 +1,4 @@\n context1\n\n+addedByPr\n+eval(userInput);"
+        assert verify_diff_parses(patch) is False
+
 
 class TestVerifyOnlyAdditionsChanged:
     def test_appended_line_passes(self):
@@ -1701,7 +1710,6 @@ class TestRegressionKnownMissesVuetifyTsx:
         " import type { PropType } from 'vue';\n"
         "+import { useDisplay } from 'vuetify';\n"
         " import './VDataTableFooter.css';\n"
-        "\n"
         "@@ -15,5 +16,10 @@ export default defineComponent({\n"
         "   setup(props) {\n"
         "   const currentPage = computed(() => props.page);\n"
@@ -1723,7 +1731,6 @@ class TestRegressionKnownMissesVuetifyTsx:
         " import type { PropType } from 'vue';\n"
         "+import { useDisplay } from 'vuetify';\n"
         " import './VDataTableFooter.css';\n"
-        "\n"
         "@@ -15,5 +16,11 @@ export default defineComponent({\n"
         "   setup(props) {\n"
         "   const currentPage = computed(() => props.page);\n"
@@ -1746,7 +1753,6 @@ class TestRegressionKnownMissesVuetifyTsx:
         " import type { PropType } from 'vue';\n"
         "+import { useDisplay } from 'vuetify';\n"
         " import './VDataTableFooter.css';\n"
-        "\n"
         "@@ -15,5 +16,11 @@ export default defineComponent({\n"
         "   setup(props) {\n"
         "   const currentPage = computed(() => props.page);\n"
