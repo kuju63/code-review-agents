@@ -234,15 +234,21 @@ class TestPRInfoCollectorInit:
         assert collector._github_token == "token123"
         assert collector._model_id == "gpt-4o"
         assert collector._mcp_url == GITHUB_MCP_URL
+        assert collector._mcp_startup_retry_attempts == 3
+        assert collector._mcp_startup_retry_backoff_seconds == 1.0
 
     def test_custom_values(self):
         collector = PRInfoCollector(
             github_token="tok",
             model_id="gpt-4o-mini",
             mcp_url="https://custom.example.com/mcp",
+            mcp_startup_retry_attempts=5,
+            mcp_startup_retry_backoff_seconds=2.5,
         )
         assert collector._model_id == "gpt-4o-mini"
         assert collector._mcp_url == "https://custom.example.com/mcp"
+        assert collector._mcp_startup_retry_attempts == 5
+        assert collector._mcp_startup_retry_backoff_seconds == 2.5
 
 
 class TestPRInfoCollectorCollect:
@@ -498,7 +504,10 @@ class TestPRInfoCollectorCollect:
 
     def test_uses_create_github_mcp_client(self):
         collector = PRInfoCollector(
-            github_token="mytoken", mcp_url="https://custom.example.com/mcp"
+            github_token="mytoken",
+            mcp_url="https://custom.example.com/mcp",
+            mcp_startup_retry_attempts=5,
+            mcp_startup_retry_backoff_seconds=2.5,
         )
         mcp = _make_mcp()
         with (
@@ -507,7 +516,12 @@ class TestPRInfoCollectorCollect:
             patch(f"{_MOD}.OpenAIModel"),
         ):
             collector.collect("mui", "material-ui", 48591)
-        factory.assert_called_once_with("mytoken", "https://custom.example.com/mcp")
+        factory.assert_called_once_with(
+            "mytoken",
+            "https://custom.example.com/mcp",
+            retry_attempts=5,
+            retry_backoff_seconds=2.5,
+        )
 
     def test_passes_llm_base_url_to_openai_model_when_set(self):
         collector = PRInfoCollector(

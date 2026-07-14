@@ -35,6 +35,8 @@ async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -
             llm_base_url=settings.llm_base_url,
             max_agent_turns=settings.max_agent_turns,
             reviewer_timeout_seconds=settings.reviewer_timeout_seconds,
+            mcp_startup_retry_attempts=settings.mcp_startup_retry_attempts,
+            mcp_startup_retry_backoff_seconds=settings.mcp_startup_retry_backoff_seconds,
         )
         reviewer = FrontendReviewer(config)
         result = await asyncio.to_thread(reviewer.review, context)

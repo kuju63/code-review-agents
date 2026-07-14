@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     reviewer_timeout_seconds: float | None = None
     patch_total_char_limit: int = 30_000
     patch_max_files: int = 30
+    mcp_startup_retry_attempts: int = 3
+    mcp_startup_retry_backoff_seconds: float = 1.0
 
     agent_base_url: str = "http://localhost:8000"
     agent_pr_info_collector_url: str | None = None

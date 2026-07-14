@@ -14,10 +14,11 @@ from code_review_agent.api.config import Settings
 _MOD = "code_review_agent.api.agents.pr_info_collector"
 
 
-def _make_app() -> tuple[FastAPI, TaskStore]:
+def _make_app(settings: Settings | None = None) -> tuple[FastAPI, TaskStore]:
     app = FastAPI()
     store = TaskStore()
-    settings = Settings(_env_file=None)  # type: ignore[call-arg]
+    if settings is None:
+        settings = Settings(_env_file=None)  # type: ignore[call-arg]
     app.include_router(
         pr_info_collector_router(settings, store),
         prefix="/pr-info-collector",
@@ -129,3 +130,48 @@ class TestGetTask:
             task = await store.get(task_id)
             assert task is not None
             assert task.status in (A2ATaskStatus.COMPLETED, A2ATaskStatus.WORKING)
+
+    @pytest.mark.asyncio
+    async def test_forwards_mcp_retry_settings_to_collector(self) -> None:
+        from code_review_agent.models.pr_info import (
+            PRInfo,
+            PRInfoResult,
+            RepositoryInfo,
+        )
+
+        mock_result = PRInfoResult(
+            repository_info=RepositoryInfo(owner="octocat", repository="hello"),
+            project_summary="A project.",
+            pr_info=PRInfo(
+                title="Fix", pr_number=1, body="", labels=[], file_changes=[]
+            ),
+            dependency_files=[],
+        )
+        settings = Settings(
+            _env_file=None,  # type: ignore[call-arg]
+            mcp_startup_retry_attempts=7,
+            mcp_startup_retry_backoff_seconds=4.2,
+        )
+
+        app, store = _make_app(settings)
+        with (
+            patch(f"{_MOD}.PRInfoCollector") as mock_collector_cls,
+            TestClient(app) as client,
+        ):
+            mock_instance = MagicMock()
+            mock_instance.collect.return_value = mock_result
+            mock_collector_cls.return_value = mock_instance
+
+            resp = client.post(
+                "/pr-info-collector/tasks/send",
+                json=_send_payload(),
+            )
+            task_id = resp.json()["task"]["id"]
+            await asyncio.sleep(0.1)
+            await store.get(task_id)
+
+        assert mock_collector_cls.call_args.kwargs["mcp_startup_retry_attempts"] == 7
+        assert (
+            mock_collector_cls.call_args.kwargs["mcp_startup_retry_backoff_seconds"]
+            == 4.2
+        )

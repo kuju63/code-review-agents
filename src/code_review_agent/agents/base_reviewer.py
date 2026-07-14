@@ -121,6 +121,14 @@ class ReviewerConfig:
             timeout (default).  Any reviewer still running when the timeout
             expires is recorded as a :class:`ReviewError` and the others
             continue.  Configurable via ``CODE_REVIEW_REVIEWER_TIMEOUT_SECONDS``.
+        mcp_startup_retry_attempts: Maximum GitHub MCP startup attempts
+            (including the first), forwarded to
+            :func:`~code_review_agent.tools.github_mcp.create_github_mcp_client`.
+            Configurable via ``CODE_REVIEW_MCP_STARTUP_RETRY_ATTEMPTS``.
+        mcp_startup_retry_backoff_seconds: Base wait time in seconds for the
+            startup retry's exponential backoff+jitter, forwarded to
+            :func:`~code_review_agent.tools.github_mcp.create_github_mcp_client`.
+            Configurable via ``CODE_REVIEW_MCP_STARTUP_RETRY_BACKOFF_SECONDS``.
     """
 
     github_token: str
@@ -129,6 +137,8 @@ class ReviewerConfig:
     llm_base_url: str | None = None
     max_agent_turns: int = 30
     reviewer_timeout_seconds: float | None = None
+    mcp_startup_retry_attempts: int = 3
+    mcp_startup_retry_backoff_seconds: float = 1.0
 
 
 class ReviewAgent(ABC):
@@ -210,16 +220,27 @@ class LLMReviewAgent(ReviewAgent):
 
         tools: list = []
         # In strands >=1.41 ``MCPClient`` is a ``ToolProvider`` whose lifecycle
-        # the Agent owns: it calls ``start()`` while loading tools and ``stop()``
-        # on cleanup.  Opening it ourselves with ``with`` would start the session
-        # a second time and raise "the client session is currently running", so we
-        # hand the client to the Agent and stop it deterministically in ``finally``
-        # (``stop`` is idempotent).
+        # the Agent owns: it calls ``start()`` while loading tools and releases
+        # its reference on cleanup.  Opening it ourselves with ``with`` would
+        # start the session a second time and raise "the client session is
+        # currently running", so we hand the client to the Agent and clean it up
+        # deterministically via ``agent.cleanup()`` in ``finally`` -- this also
+        # correctly decrements the shared client's reference count instead of
+        # stopping it outright when the client is shared across reviewers.
         mcp_client = None
         if self.uses_github_mcp:
-            mcp_client = create_github_mcp_client(
-                self._config.github_token, self._config.mcp_url
-            )
+            if context.shared_mcp_client is not None:
+                # ReviewOrchestrator already started and registered this
+                # connection as a consumer of its own; reuse it instead of
+                # opening a second connection (spec §4.2/§4.4).
+                mcp_client = context.shared_mcp_client
+            else:
+                mcp_client = create_github_mcp_client(
+                    self._config.github_token,
+                    self._config.mcp_url,
+                    retry_attempts=self._config.mcp_startup_retry_attempts,
+                    retry_backoff_seconds=self._config.mcp_startup_retry_backoff_seconds,
+                )
             tools.append(mcp_client)
 
         if self.uses_url_fetch:
@@ -230,6 +251,7 @@ class LLMReviewAgent(ReviewAgent):
             tools.append(file_read)
             plugins.append(create_agent_skills(self.skill_type))
 
+        agent: Agent | None = None
         try:
             agent = Agent(
                 model=model,
@@ -249,7 +271,21 @@ class LLMReviewAgent(ReviewAgent):
                 )
             output: ReviewOutput = cast(ReviewOutput, result.structured_output)
         finally:
-            if mcp_client is not None:
+            if agent is not None:
+                agent.cleanup()
+            elif mcp_client is not None and context.shared_mcp_client is None:
+                # Agent(...) itself never got constructed (e.g. it -- or
+                # another tool/plugin in ``tools`` -- failed during
+                # process_tools(), possibly after this reviewer's own
+                # mcp_client already successfully started), so
+                # agent.cleanup() above never ran and never will. For a
+                # reviewer-owned (non-shared) client nobody else can be
+                # relying on it, so stop it directly here as a fallback --
+                # ``stop`` is documented as safe/idempotent even if
+                # ``start`` never completed. Never do this for the shared
+                # client: other reviewers or the orchestrator may still be
+                # using it, and calling ``stop`` directly would bypass the
+                # reference count entirely.
                 mcp_client.stop(None, None, None)
 
         return ReviewResult(

@@ -1,7 +1,10 @@
 """Tests for review result models."""
 
+from unittest.mock import MagicMock
+
 import pytest
 from pydantic import ValidationError
+from strands.tools.mcp import MCPClient
 
 from code_review_agent.models.pr_info import (
     PRInfo,
@@ -118,6 +121,17 @@ class TestReviewContext:
     def test_wraps_pr_info(self):
         ctx = ReviewContext(pr_info=_make_pr_info())
         assert ctx.pr_info.repository_info.owner == "octocat"
+
+    def test_shared_mcp_client_defaults_to_none(self):
+        ctx = ReviewContext(pr_info=_make_pr_info())
+        assert ctx.shared_mcp_client is None
+
+    def test_accepts_shared_mcp_client(self):
+        # arbitrary_types_allowed still isinstance-checks the field, so the
+        # double must satisfy isinstance(_, MCPClient), not just any object().
+        mock_client = MagicMock(spec=MCPClient)
+        ctx = ReviewContext(pr_info=_make_pr_info(), shared_mcp_client=mock_client)
+        assert ctx.shared_mcp_client is mock_client
 
 
 class TestReviewResult:
