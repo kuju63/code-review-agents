@@ -87,7 +87,8 @@ def build_generation_prompt(patch: str, rule: dict[str, Any], lang: str) -> str:
 
     Args:
         patch: Original unified diff for the target file_change.
-        rule: Mutation catalog rule (must have `rule_id`, `summary`).
+        rule: Mutation catalog rule (must have `rule_id`, `summary`,
+            `runtime`).
         lang: Target file's detected language, used to pick the
             reference snippet via `get_snippet_for_lang`.
 
@@ -96,6 +97,7 @@ def build_generation_prompt(patch: str, rule: dict[str, Any], lang: str) -> str:
     """
     return (
         f"Target language: {lang}\n"
+        f"Target runtime: {rule.get('runtime', 'universal')}\n"
         f"Vulnerability/bug pattern (rule_id={rule.get('rule_id')!r}): "
         f"{rule.get('summary', '')}\n"
         f"Example of the pattern (for reference, do not copy verbatim -- "
@@ -522,6 +524,9 @@ def find_insertion_point(hunk_lines: list[str]) -> int:
     return non_import_idxs[-1]
 
 
+_NO_NEWLINE_MARKER = "\\ No newline at end of file"
+
+
 def verify_diff_parses(mutated_patch: str) -> bool:
     """Phase 2 post-generation check V1: is `mutated_patch` a syntactically
     well-formed unified diff?
@@ -538,7 +543,8 @@ def verify_diff_parses(mutated_patch: str) -> bool:
     Returns:
         True if `mutated_patch` has at least one hunk, has no non-blank
         preamble before the first hunk header, and every body line is a
-        valid context/added/removed line.
+        valid context/added/removed line (or the standard `\\ No newline
+        at end of file` marker).
     """
     if not mutated_patch.strip():
         return False
@@ -556,6 +562,11 @@ def verify_diff_parses(mutated_patch: str) -> bool:
             # unvalidated and still end up in the final seeded item.
             if line.strip():
                 return False
+            continue
+        if line == _NO_NEWLINE_MARKER:
+            # Standard git marker for a line lacking a trailing newline;
+            # neither a preamble line nor a context/added/removed line,
+            # but still valid unified diff content.
             continue
         if line[:1] not in (" ", "+", "-"):
             return False

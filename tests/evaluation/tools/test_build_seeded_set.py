@@ -40,6 +40,7 @@ verify_required_tokens = build_seeded_set.verify_required_tokens
 verify_runtime_consistency = build_seeded_set.verify_runtime_consistency
 recompute_injected_line = build_seeded_set.recompute_injected_line
 MutatedPatchOutput = build_seeded_set.MutatedPatchOutput
+build_generation_prompt = build_seeded_set.build_generation_prompt
 make_llm_mutation_generator = build_seeded_set.make_llm_mutation_generator
 passes_post_generation_checks = build_seeded_set.passes_post_generation_checks
 render_seeded_item_from_llm = build_seeded_set.render_seeded_item_from_llm
@@ -983,6 +984,17 @@ class TestVerifyDiffParses:
         patch = "@@ -1,3 +1,4 @@\n context1\n\n+addedByPr\n+eval(userInput);"
         assert verify_diff_parses(patch) is False
 
+    def test_no_newline_at_end_of_file_marker_is_tolerated(self):
+        # `\ No newline at end of file` is a standard unified-diff marker
+        # git emits when the referenced line lacks a trailing newline; it
+        # is neither a preamble line nor a context/added/removed line, and
+        # must not be rejected as an "invalid marker".
+        patch = (
+            "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n"
+            "+eval(userInput);\n\\ No newline at end of file"
+        )
+        assert verify_diff_parses(patch) is True
+
 
 class TestVerifyOnlyAdditionsChanged:
     def test_appended_line_passes(self):
@@ -1190,6 +1202,21 @@ class TestMutatedPatchOutputSchema:
                 injected_line=3,
                 reachability_rationale="   \n\t",
             )
+
+
+class TestBuildGenerationPrompt:
+    def test_includes_target_runtime(self):
+        # The system prompt tells the model to use APIs valid for the
+        # "target language and runtime given below" -- if runtime is
+        # never actually included here, the model has no way to honor
+        # that constraint (real review finding on PR #122).
+        prompt = build_generation_prompt(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+        assert "universal" in prompt
+        assert "runtime" in prompt.lower()
+
+    def test_includes_target_language(self):
+        prompt = build_generation_prompt(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+        assert "ts" in prompt
 
 
 class TestMakeLlmMutationGenerator:
