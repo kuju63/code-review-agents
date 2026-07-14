@@ -7,10 +7,7 @@ its output is the input to the downstream Lead Engineer synthesis agent.
 """
 
 import asyncio
-from collections.abc import Coroutine, Iterable
-from typing import Any
-
-from strands.tools.mcp import MCPClient
+from collections.abc import Iterable
 
 from ..models.review import (
     ProjectType,
@@ -24,48 +21,6 @@ from ..tools.github_mcp import create_github_mcp_client
 from .base_reviewer import ReviewAgent, ReviewerConfig
 from .exceptions import INFRA_EXCEPTIONS
 from .registry import detect_project_types, get_reviewer_classes
-
-# asyncio only holds a *weak* reference to a Task; without a strong reference
-# held elsewhere, a fire-and-forget task (see ``_schedule_background``) could
-# be garbage-collected mid-execution. This module-level set is that reference,
-# per the pattern documented for ``asyncio.create_task``.
-_background_tasks: set[asyncio.Task] = set()
-
-
-def _schedule_background(coro: Coroutine[Any, Any, None]) -> None:
-    """Run ``coro`` in the background without awaiting it, safely.
-
-    Keeps a strong reference to the created task until it finishes (see
-    module docstring on ``_background_tasks``).
-    """
-    task = asyncio.create_task(coro)
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
-
-
-async def _release_after_reviewers(
-    shared_client: MCPClient,
-    consumer: object,
-    reviewer_tasks: list[asyncio.Task],
-) -> None:
-    """Release ``consumer``'s reference on ``shared_client`` only once every
-    task in ``reviewer_tasks`` has finished -- including ones still running
-    past ``run_async``'s own wait-timeout window.
-
-    A reviewer's background thread only registers itself as a consumer once
-    its ``Agent(...)`` construction reaches that point. Releasing the
-    orchestrator's own reference as soon as the wait-timeout elapses (rather
-    than once every spawned task is actually done) could otherwise drop the
-    reference count to zero -- stopping the shared connection -- before a
-    slow-to-start reviewer thread had a chance to register at all (spec
-    §4.6). ``try/finally`` guarantees the release still happens even if this
-    task itself is cancelled, e.g. by ``asyncio.run()``'s shutdown sequence
-    when ``ReviewOrchestrator.run`` is used instead of ``run_async``.
-    """
-    try:
-        await asyncio.gather(*reviewer_tasks, return_exceptions=True)
-    finally:
-        shared_client.remove_consumer(consumer)
 
 
 class ReviewOrchestrator:
@@ -158,22 +113,46 @@ class ReviewOrchestrator:
         # asyncio.wait_for + to_thread blocks until the thread exits on
         # cancellation; asyncio.wait avoids this by letting timed-out
         # threads finish in the background.
-        asyncio_tasks = {
-            asyncio.create_task(
+        asyncio_tasks: dict[asyncio.Task, tuple[ReviewAgent, ProjectType]] = {}
+        for reviewer, pt in tasks:
+            task = asyncio.create_task(
                 asyncio.to_thread(reviewer.review, context, pt),
                 name=reviewer.reviewer_id,
-            ): (reviewer, pt)
-            for reviewer, pt in tasks
-        }
+            )
+            asyncio_tasks[task] = (reviewer, pt)
+            if shared_client is not None and getattr(
+                reviewer, "uses_github_mcp", False
+            ):
+                # Register a placeholder reference for this specific task
+                # synchronously, before its worker thread even starts --
+                # rather than relying on the orchestrator's own reference
+                # until the `asyncio.wait` timeout below elapses. This
+                # closes the race Copilot flagged: a reviewer thread that
+                # hasn't reached its own Agent(...)/add_consumer call yet is
+                # already covered by its own placeholder, so releasing the
+                # orchestrator's reference right after this loop can never
+                # drop the connection's reference count to zero while any
+                # dispatched reviewer task is still outstanding (spec §4.6).
+                # The Task object itself is used as the consumer identity,
+                # released via add_done_callback -- which, unlike a
+                # separately scheduled release task, fires only once *this
+                # exact* task genuinely finishes. A to_thread task whose
+                # work has already started cannot actually be cancelled
+                # mid-flight (the underlying OS thread keeps running), so
+                # this holds even under asyncio.run()'s forced-cancellation
+                # shutdown (the ReviewOrchestrator.run sync wrapper path).
+                shared_client.add_consumer(task)
+                task.add_done_callback(
+                    lambda _task, _client=shared_client, _key=task: (
+                        _client.remove_consumer(_key)
+                    )
+                )
 
         if shared_client is not None:
-            # Deferred to a background task rather than a `finally` tied to
-            # the `asyncio.wait` below: see `_release_after_reviewers`.
-            _schedule_background(
-                _release_after_reviewers(
-                    shared_client, self, list(asyncio_tasks.keys())
-                )
-            )
+            # Every dispatched reviewer already holds its own placeholder
+            # reference (registered above); the orchestrator's setup-time
+            # reference is now redundant.
+            shared_client.remove_consumer(self)
 
         _, pending = await asyncio.wait(
             asyncio_tasks.keys(),

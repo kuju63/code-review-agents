@@ -406,11 +406,26 @@ class TestSharedMcpClient:
         ):
             orchestrator.run(_context(), project_type=ProjectType.REACT_TS)
 
-        shared_client.add_consumer.assert_called_once_with(orchestrator)
-        shared_client.load_tools.assert_awaited_once()
-        shared_client.remove_consumer.assert_called_once_with(orchestrator)
+        # Two consumers register on the shared client: the orchestrator
+        # itself (released immediately once every reviewer task has its own
+        # placeholder registered) and a per-task placeholder for the
+        # dispatched reviewer (released via add_done_callback once that
+        # reviewer's task finishes) -- see run_async's dispatch loop.
+        add_consumer_args = [
+            c.args[0] for c in shared_client.add_consumer.call_args_list
+        ]
+        assert shared_client.add_consumer.call_count == 2
+        assert orchestrator in add_consumer_args
 
-        # add_consumer -> load_tools -> remove_consumer, in that order.
+        shared_client.load_tools.assert_awaited_once()
+
+        remove_consumer_args = [
+            c.args[0] for c in shared_client.remove_consumer.call_args_list
+        ]
+        assert shared_client.remove_consumer.call_count == 2
+        assert orchestrator in remove_consumer_args
+
+        # add_consumer(orchestrator) -> load_tools -> remove_consumer(orchestrator)
         call_names = [c[0] for c in shared_client.mock_calls]
         assert call_names.index("add_consumer") < call_names.index("load_tools")
         assert call_names.index("load_tools") < call_names.index("remove_consumer")
@@ -452,10 +467,15 @@ class TestSharedMcpClient:
     async def test_shared_client_not_released_until_pending_reviewer_finishes(self):
         """Regression test for a race flagged in PR review: a reviewer whose
         background thread hasn't reached Agent(...) (and thus hasn't called
-        add_consumer) by the time run_async's wait-timeout elapses must not
-        see the shared connection torn down by the orchestrator's own
-        release, which used to fire unconditionally as soon as the timeout
-        window closed (spec §4.6)."""
+        add_consumer itself) by the time run_async's wait-timeout elapses
+        must still be covered by a reference on the shared client, so the
+        connection isn't torn down while that reviewer is still
+        starting/running (spec §4.6). The fix registers a placeholder
+        reference for each dispatched task up front (synchronously, before
+        any thread starts) instead of relying on the orchestrator's own
+        reference surviving until the reviewer's Agent(...) call registers
+        it -- and releases that placeholder only once the task itself is
+        genuinely done, via add_done_callback."""
         shared_client = _mock_shared_client()
         proceed = threading.Event()
 
@@ -491,20 +511,68 @@ class TestSharedMcpClient:
                     _context(), project_type=ProjectType.REACT_TS
                 )
 
-            # The reviewer timed out (still blocked) -- but the shared
-            # client's reference must not have been released yet, since the
-            # blocked reviewer thread hasn't finished (and thus hasn't had a
-            # chance to register/release its own reference).
+            # The reviewer timed out (still blocked). The orchestrator's own
+            # setup-time reference may already be released (each dispatched
+            # reviewer holds its own placeholder reference from the moment
+            # it was dispatched, independent of the orchestrator's) -- but
+            # the *reviewer's* own placeholder must not have been released
+            # yet, since its thread is still blocked and hasn't finished.
             assert len(report.errors) == 1
-            shared_client.remove_consumer.assert_not_called()
+            removed = [c.args[0] for c in shared_client.remove_consumer.call_args_list]
+            assert removed == [orchestrator]
         finally:
             proceed.set()
 
-        # Let the blocked reviewer finish and give the background release
-        # task a chance to run.
+        # Let the blocked reviewer finish and give its add_done_callback a
+        # chance to run.
         for _ in range(50):
-            if shared_client.remove_consumer.called:
+            if shared_client.remove_consumer.call_count >= 2:
                 break
             await asyncio.sleep(0.02)
 
-        shared_client.remove_consumer.assert_called_once_with(orchestrator)
+        removed = [c.args[0] for c in shared_client.remove_consumer.call_args_list]
+        assert len(removed) == 2
+        assert orchestrator in removed
+
+    def test_shared_client_released_correctly_via_sync_run_wrapper_after_timeout(self):
+        """Complements the async regression test above by exercising the
+        exact path Copilot's follow-up comment called out: the *synchronous*
+        ReviewOrchestrator.run() wrapper (asyncio.run()). asyncio.run()'s
+        shutdown sequence calls .cancel() on any reviewer task still pending
+        after the timeout -- a no-op for a to_thread task whose underlying
+        work has already started running, so run() effectively blocks until
+        the reviewer thread genuinely finishes. Both the orchestrator's and
+        the reviewer's placeholder references must still end up released
+        exactly once each, with no errors."""
+        shared_client = _mock_shared_client()
+
+        class _BrieflySlowMCPReviewer(ReviewAgent):
+            reviewer_id = "fake-mcp-briefly-slow"
+            perspective = ReviewPerspective.TECHNICAL
+            project_types = frozenset({ProjectType.REACT_TS})
+            uses_github_mcp = True
+
+            def review(self, context, project_type=None):
+                time.sleep(0.1)  # longer than reviewer_timeout_seconds below
+                return ReviewResult(
+                    reviewer_id=self.reviewer_id,
+                    perspective=self.perspective,
+                    project_type=project_type,
+                    output=ReviewOutput(summary="ok"),
+                )
+
+        config = ReviewerConfig(github_token="tok", reviewer_timeout_seconds=0.02)
+        orchestrator = ReviewOrchestrator(config)
+        with (
+            patch(
+                f"{_MOD}.get_reviewer_classes",
+                return_value=[_BrieflySlowMCPReviewer],
+            ),
+            patch(f"{_MOD}.create_github_mcp_client", return_value=shared_client),
+        ):
+            report = orchestrator.run(_context(), project_type=ProjectType.REACT_TS)
+
+        assert len(report.errors) == 1
+        removed = [c.args[0] for c in shared_client.remove_consumer.call_args_list]
+        assert len(removed) == 2
+        assert orchestrator in removed
