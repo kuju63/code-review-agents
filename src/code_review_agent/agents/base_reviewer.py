@@ -273,6 +273,20 @@ class LLMReviewAgent(ReviewAgent):
         finally:
             if agent is not None:
                 agent.cleanup()
+            elif mcp_client is not None and context.shared_mcp_client is None:
+                # Agent(...) itself never got constructed (e.g. it -- or
+                # another tool/plugin in ``tools`` -- failed during
+                # process_tools(), possibly after this reviewer's own
+                # mcp_client already successfully started), so
+                # agent.cleanup() above never ran and never will. For a
+                # reviewer-owned (non-shared) client nobody else can be
+                # relying on it, so stop it directly here as a fallback --
+                # ``stop`` is documented as safe/idempotent even if
+                # ``start`` never completed. Never do this for the shared
+                # client: other reviewers or the orchestrator may still be
+                # using it, and calling ``stop`` directly would bypass the
+                # reference count entirely.
+                mcp_client.stop(None, None, None)
 
         return ReviewResult(
             reviewer_id=self.reviewer_id,

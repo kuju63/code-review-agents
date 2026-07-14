@@ -351,6 +351,43 @@ class TestReview:
             with pytest.raises(RuntimeError, match="construction boom"):
                 reviewer.review(_make_context())
 
+    def test_agent_construction_failure_stops_own_non_shared_mcp_client(self):
+        """Regression test flagged in PR review: when Agent(...) never gets
+        constructed (e.g. it -- or another tool/plugin in `tools` -- fails
+        during process_tools(), possibly after the reviewer's own mcp_client
+        already successfully started), `agent` stays None and
+        `agent.cleanup()` in `finally` never runs. For a reviewer-owned
+        (non-shared) client nobody else can be relying on it, so it must be
+        stopped directly as a fallback -- otherwise the connection leaks."""
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", side_effect=RuntimeError("construction boom")),
+        ):
+            with pytest.raises(RuntimeError, match="construction boom"):
+                reviewer.review(_make_context())
+
+        mock_mcp.stop.assert_called_once_with(None, None, None)
+
+    def test_agent_construction_failure_does_not_stop_shared_mcp_client(self):
+        """The fallback stop() must never apply to a shared client: other
+        reviewers or the orchestrator may still be using it, and calling
+        stop() directly bypasses the reference count entirely."""
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        shared_mcp = _mock_shared_mcp()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client") as mock_factory,
+            patch(f"{_BASE}.Agent", side_effect=RuntimeError("construction boom")),
+        ):
+            with pytest.raises(RuntimeError, match="construction boom"):
+                reviewer.review(_make_context(shared_mcp_client=shared_mcp))
+
+        mock_factory.assert_not_called()
+        shared_mcp.stop.assert_not_called()
+
     def test_no_mcp_reviewer_skips_mcp_client(self):
         reviewer = _NoMcpReviewer(ReviewerConfig(github_token="tok"))
         mock_agent = MagicMock()
