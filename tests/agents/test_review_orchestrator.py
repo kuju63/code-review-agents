@@ -409,8 +409,9 @@ class TestSharedMcpClient:
         # Two consumers register on the shared client: the orchestrator
         # itself (released immediately once every reviewer task has its own
         # placeholder registered) and a per-task placeholder for the
-        # dispatched reviewer (released via add_done_callback once that
-        # reviewer's task finishes) -- see run_async's dispatch loop.
+        # dispatched reviewer (released from inside the worker thread once
+        # that reviewer's review() call finishes -- see `_run_reviewer`'s
+        # `finally`) -- see run_async's dispatch loop.
         add_consumer_args = [
             c.args[0] for c in shared_client.add_consumer.call_args_list
         ]
@@ -464,6 +465,43 @@ class TestSharedMcpClient:
         shared_client.remove_consumer.assert_called_once_with(orchestrator)
 
     @pytest.mark.asyncio
+    async def test_orchestrator_reference_released_when_load_tools_is_cancelled(self):
+        """Regression test flagged in PR review: asyncio.CancelledError is a
+        BaseException, not an Exception (verified: issubclass(CancelledError,
+        Exception) is False). A plain `except Exception:` around `await
+        shared_client.load_tools()` therefore does not catch a cancellation
+        delivered while suspended there, so the orchestrator's own
+        add_consumer(self) reference would never be released -- permanently
+        leaking it, since the shared client's refcount would never reach
+        zero and the connection would never be stopped."""
+        shared_client = _mock_shared_client()
+        load_tools_started = asyncio.Event()
+
+        async def _blocking_load_tools():
+            load_tools_started.set()
+            await asyncio.sleep(10)  # long enough to be reliably cancelled first
+
+        shared_client.load_tools = _blocking_load_tools
+        orchestrator = _orchestrator()
+
+        with (
+            patch(
+                f"{_MOD}.get_reviewer_classes",
+                return_value=[_MCPUsingFakeReviewer],
+            ),
+            patch(f"{_MOD}.create_github_mcp_client", return_value=shared_client),
+        ):
+            run_task = asyncio.create_task(
+                orchestrator.run_async(_context(), project_type=ProjectType.REACT_TS)
+            )
+            await load_tools_started.wait()
+            run_task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await run_task
+
+        shared_client.remove_consumer.assert_called_once_with(orchestrator)
+
+    @pytest.mark.asyncio
     async def test_shared_client_not_released_until_pending_reviewer_finishes(self):
         """Regression test for a race flagged in PR review: a reviewer whose
         background thread hasn't reached Agent(...) (and thus hasn't called
@@ -474,8 +512,9 @@ class TestSharedMcpClient:
         reference for each dispatched task up front (synchronously, before
         any thread starts) instead of relying on the orchestrator's own
         reference surviving until the reviewer's Agent(...) call registers
-        it -- and releases that placeholder only once the task itself is
-        genuinely done, via add_done_callback."""
+        it -- and releases that placeholder only once reviewer.review(...)
+        itself genuinely returns, from inside its own worker thread (see
+        `_run_reviewer`'s `finally`), not via an asyncio.Task callback."""
         shared_client = _mock_shared_client()
         proceed = threading.Event()
 
@@ -523,8 +562,8 @@ class TestSharedMcpClient:
         finally:
             proceed.set()
 
-        # Let the blocked reviewer finish and give its add_done_callback a
-        # chance to run.
+        # Let the blocked reviewer finish and give its worker-thread
+        # `finally` a chance to run.
         for _ in range(50):
             if shared_client.remove_consumer.call_count >= 2:
                 break

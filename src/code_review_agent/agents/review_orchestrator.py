@@ -136,7 +136,14 @@ class ReviewOrchestrator:
             shared_client.add_consumer(self)
             try:
                 await shared_client.load_tools()
-            except Exception:
+            except BaseException:
+                # BaseException, not Exception: asyncio.CancelledError is a
+                # BaseException subclass (not an Exception subclass), so a
+                # cancellation delivered while suspended on this await would
+                # otherwise bypass an `except Exception:` clause entirely,
+                # permanently leaking the orchestrator's reference -- the
+                # shared client's refcount would then never reach zero and
+                # the connection would never be stopped.
                 shared_client.remove_consumer(self)
                 raise
             context = context.model_copy(update={"shared_mcp_client": shared_client})
@@ -145,44 +152,50 @@ class ReviewOrchestrator:
         # cancellation; asyncio.wait avoids this by letting timed-out
         # threads finish in the background.
         asyncio_tasks: dict[asyncio.Task, tuple[ReviewAgent, ProjectType]] = {}
-        for reviewer, pt in tasks:
-            placeholder: object | None = None
-            if shared_client is not None and getattr(
-                reviewer, "uses_github_mcp", False
-            ):
-                # Register a placeholder reference for this specific
-                # reviewer synchronously, before its worker thread even
-                # starts -- rather than relying on the orchestrator's own
-                # reference until the `asyncio.wait` timeout below elapses.
-                # This closes the race Copilot flagged: a reviewer thread
-                # that hasn't reached its own Agent(...)/add_consumer call
-                # yet is already covered by its own placeholder, so
-                # releasing the orchestrator's reference right after this
-                # loop can never drop the connection's reference count to
-                # zero while any dispatched reviewer task is still
-                # outstanding (spec §4.6). The placeholder is released from
-                # *inside* the worker thread (see `_run_reviewer`), not via
-                # an `asyncio.Task` done-callback: cancelling the Task (e.g.
-                # asyncio.run()'s shutdown, or a re-raised infra exception)
-                # marks it "cancelled" and fires its callbacks almost
-                # immediately, without actually stopping the underlying
-                # thread -- a done-callback would therefore risk releasing
-                # the reference while the reviewer is still running.
-                placeholder = object()
-                shared_client.add_consumer(placeholder)
-            task = asyncio.create_task(
-                asyncio.to_thread(
-                    _run_reviewer, reviewer, context, pt, shared_client, placeholder
-                ),
-                name=reviewer.reviewer_id,
-            )
-            asyncio_tasks[task] = (reviewer, pt)
-
-        if shared_client is not None:
-            # Every dispatched reviewer already holds its own placeholder
-            # reference (registered above); the orchestrator's setup-time
-            # reference is now redundant.
-            shared_client.remove_consumer(self)
+        try:
+            for reviewer, pt in tasks:
+                placeholder: object | None = None
+                if shared_client is not None and getattr(
+                    reviewer, "uses_github_mcp", False
+                ):
+                    # Register a placeholder reference for this specific
+                    # reviewer synchronously, before its worker thread even
+                    # starts -- rather than relying on the orchestrator's own
+                    # reference until the `asyncio.wait` timeout below
+                    # elapses. This closes the race Copilot flagged: a
+                    # reviewer thread that hasn't reached its own
+                    # Agent(...)/add_consumer call yet is already covered by
+                    # its own placeholder, so releasing the orchestrator's
+                    # reference right after this loop can never drop the
+                    # connection's reference count to zero while any
+                    # dispatched reviewer task is still outstanding (spec
+                    # §4.6). The placeholder is released from *inside* the
+                    # worker thread (see `_run_reviewer`), not via an
+                    # `asyncio.Task` done-callback: cancelling the Task
+                    # (e.g. asyncio.run()'s shutdown, or a re-raised infra
+                    # exception) marks it "cancelled" and fires its
+                    # callbacks almost immediately, without actually
+                    # stopping the underlying thread -- a done-callback
+                    # would therefore risk releasing the reference while the
+                    # reviewer is still running.
+                    placeholder = object()
+                    shared_client.add_consumer(placeholder)
+                task = asyncio.create_task(
+                    asyncio.to_thread(
+                        _run_reviewer, reviewer, context, pt, shared_client, placeholder
+                    ),
+                    name=reviewer.reviewer_id,
+                )
+                asyncio_tasks[task] = (reviewer, pt)
+        finally:
+            if shared_client is not None:
+                # Every dispatched reviewer already holds its own
+                # placeholder reference (registered above); the
+                # orchestrator's setup-time reference is now redundant. A
+                # `finally` (rather than a plain statement after the loop)
+                # also releases it if dispatch itself is interrupted
+                # partway through.
+                shared_client.remove_consumer(self)
 
         _, pending = await asyncio.wait(
             asyncio_tasks.keys(),
