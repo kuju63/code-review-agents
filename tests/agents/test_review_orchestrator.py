@@ -534,6 +534,94 @@ class TestSharedMcpClient:
         assert len(removed) == 2
         assert orchestrator in removed
 
+    @pytest.mark.asyncio
+    async def test_task_cancellation_does_not_release_placeholder_early(self):
+        """Regression test for the precise mechanism in Copilot's follow-up
+        comment: cancelling the asyncio.Task wrapping a still-running
+        to_thread reviewer marks that Task "done"/"cancelled" almost
+        immediately -- independent of whether the underlying OS thread has
+        actually finished (asyncio.Future.cancel() succeeds unconditionally;
+        concurrent.futures.Future.cancel() only fails silently for
+        already-running work). A design that released the placeholder via
+        task.add_done_callback(...) would therefore drop the reference while
+        the reviewer thread is still genuinely running and possibly still
+        using the shared client. The fix instead releases the placeholder
+        from *inside* the worker thread itself (see _run_reviewer), which
+        this test verifies directly by cancelling the Task ourselves and
+        confirming the placeholder survives that cancellation."""
+        shared_client = _mock_shared_client()
+        proceed = threading.Event()
+        thread_finished = threading.Event()
+
+        class _BlockedMCPReviewer(ReviewAgent):
+            reviewer_id = "fake-mcp-cancel-target"
+            perspective = ReviewPerspective.TECHNICAL
+            project_types = frozenset({ProjectType.REACT_TS})
+            uses_github_mcp = True
+
+            def review(self, context, project_type=None):
+                try:
+                    proceed.wait(timeout=5)
+                    return ReviewResult(
+                        reviewer_id=self.reviewer_id,
+                        perspective=self.perspective,
+                        project_type=project_type,
+                        output=ReviewOutput(summary="ok"),
+                    )
+                finally:
+                    thread_finished.set()
+
+        config = ReviewerConfig(github_token="tok", reviewer_timeout_seconds=0.05)
+        orchestrator = ReviewOrchestrator(config)
+        try:
+            with (
+                patch(
+                    f"{_MOD}.get_reviewer_classes",
+                    return_value=[_BlockedMCPReviewer],
+                ),
+                patch(f"{_MOD}.create_github_mcp_client", return_value=shared_client),
+            ):
+                await orchestrator.run_async(
+                    _context(), project_type=ProjectType.REACT_TS
+                )
+
+            # Find and explicitly cancel the still-pending reviewer task,
+            # simulating asyncio.run()'s shutdown sequence (or a sibling
+            # infra-exception cancellation) -- without yet letting the real
+            # thread finish.
+            [task] = [
+                t
+                for t in asyncio.all_tasks()
+                if t.get_name() == "fake-mcp-cancel-target"
+            ]
+            task.cancel()
+            await asyncio.sleep(0.05)
+            assert task.cancelled() or task.done()
+            assert not thread_finished.is_set()
+
+            # The Task is now cancelled/done at the asyncio level, but the
+            # real worker thread is still blocked -- the placeholder must
+            # not have been released yet.
+            removed = [c.args[0] for c in shared_client.remove_consumer.call_args_list]
+            assert removed == [orchestrator]
+        finally:
+            proceed.set()
+
+        for _ in range(50):
+            if thread_finished.is_set():
+                break
+            await asyncio.sleep(0.02)
+        assert thread_finished.is_set()
+
+        for _ in range(50):
+            if shared_client.remove_consumer.call_count >= 2:
+                break
+            await asyncio.sleep(0.02)
+
+        removed = [c.args[0] for c in shared_client.remove_consumer.call_args_list]
+        assert len(removed) == 2
+        assert orchestrator in removed
+
     def test_shared_client_released_correctly_via_sync_run_wrapper_after_timeout(self):
         """Complements the async regression test above by exercising the
         exact path Copilot's follow-up comment called out: the *synchronous*
