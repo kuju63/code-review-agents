@@ -88,6 +88,12 @@ Checkpoint:
 
 ## 3. Build Seeded set
 
+Requires a Seeded mutation generation model to be configured (Phase2:
+LLM inference + deterministic post-generation checks, see
+[docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
+3.2). Set `SEEDED_GEN_MODEL_ID` in `.env` (see `.env.example`), or pass
+`--model-id` explicitly; there is no implicit default model.
+
 python evaluation/tools/build_seeded_set.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --catalog evaluation/config/seeded_mutations.json \
@@ -98,6 +104,25 @@ Checkpoint:
 
 - `evaluation/data/seeded_set.jsonl` exists
 - Must-find labels are present
+- Each row's `generation_source` is either `"llm"` (LLM mutation passed
+  all post-generation checks) or `"deterministic_fallback"` (checks
+  failed or no LLM output; Phase1 logic was used instead) -- both are
+  expected, not an error
+
+### Regenerating after a Seeded generation model change
+
+`SEEDED_GEN_MODEL_ID` / `SEEDED_GEN_LLM_BASE_URL` is not part of the
+cache key for `evaluation/data/seeded_set.jsonl` (design doc 3.2.4:
+generation is a build-time, one-off process). If you change the
+generation model, delete and rebuild manually -- it will not happen
+automatically:
+
+rm evaluation/data/seeded_set.jsonl
+python evaluation/tools/build_seeded_set.py \
+  --gold evaluation/data/gold_pr_set.jsonl \
+  --catalog evaluation/config/seeded_mutations.json \
+  --output evaluation/data/seeded_set.jsonl \
+  --multiplier 2
 
 ## 4. Run review agent pipeline
 
@@ -172,6 +197,14 @@ If Seeded recall is unstable:
 
 - Increase multiplier from 2 to 3
 - Review mutation catalog by stack
+
+If `build_seeded_set.py` exits with
+`[SEEDED-ERROR] no generation model configured`:
+
+- Set `SEEDED_GEN_MODEL_ID` in `.env` (see `.env.example`), or pass
+  `--model-id` explicitly
+- This is intentional: there is no implicit default generation model
+  (see docs/eval-seeded-mutation-injection-design.md 3.2.6)
 
 If stack balance is broken:
 

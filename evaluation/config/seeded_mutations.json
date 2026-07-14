@@ -6,6 +6,7 @@
       "severity": "critical",
       "languages": ["js", "jsx", "ts", "tsx", "vue", "svelte"],
       "runtime": "universal",
+      "required_tokens": ["\\beval\\("],
       "line_snippet": "const result = eval(getQueryParam('q'));",
       "language_snippets": {
         "js": "const result = eval(getQueryParam('q'));",
@@ -23,6 +24,7 @@
       "severity": "high",
       "languages": ["js", "jsx", "ts", "tsx", "vue", "svelte"],
       "runtime": "browser",
+      "required_tokens": ["\\.innerHTML\\b"],
       "line_snippet": "element.innerHTML = getUntrustedHtml();",
       "language_snippets": {
         "js": "element.innerHTML = getUntrustedHtml();",
@@ -40,6 +42,7 @@
       "severity": "high",
       "languages": ["js", "jsx", "ts", "tsx"],
       "runtime": "browser",
+      "required_tokens": ["\\buseEffect\\("],
       "line_snippet": "useEffect(() => { fetchData(query); }, []);",
       "language_snippets": {
         "js": "useEffect(() => { fetchData(query); }, []);",
@@ -55,6 +58,7 @@
       "severity": "medium",
       "languages": ["js", "jsx", "ts", "tsx", "vue", "svelte"],
       "runtime": "universal",
+      "required_tokens": ["\\bfor\\s*\\(", "\\bawait\\b"],
       "line_snippet": "for (const id of ids) { await api.get('/items/' + id); }",
       "language_snippets": {
         "js": "for (const id of ids) { await api.get('/items/' + id); }",
@@ -72,6 +76,7 @@
       "severity": "high",
       "languages": ["js", "ts", "jsx", "tsx", "vue", "svelte"],
       "runtime": "universal",
+      "required_tokens": ["\\bawait\\b", "\\.then\\("],
       "line_snippet": "const resource = await fetch('/api/items/' + params.id).then((r) => r.json());",
       "language_snippets": {
         "js": "const resource = await fetch('/api/items/' + params.id).then((r) => r.json());",
