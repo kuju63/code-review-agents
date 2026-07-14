@@ -12,7 +12,16 @@ Seeded set側の見逃し (`js_eval_injection` ×2件) の真因は
 
 **実装ステータス**: Issue #110 (親) / #111 (Phase1) / #112 (Phase2) で管理。
 Phase1 (3.1節: `language_snippets`必須化、挿入位置ヒューリスティック改善、行番号再計算) は
-実装済み。Phase2 (3.2節: LLM推論 + 決定論的事後検証) は詳細設計まで完了、実装は未着手。
+実装済み。Phase2 (3.2節: LLM推論 + 決定論的事後検証) も実装済み (Issue #112)。
+`evaluation/tools/build_seeded_set.py` に `MutatedPatchOutput` / `make_llm_mutation_generator` /
+`verify_diff_parses` (V1) / `verify_only_additions_changed` (V2) / `verify_required_tokens` (V3) /
+`verify_runtime_consistency` (V4) / `recompute_injected_line` / `passes_post_generation_checks` /
+`render_seeded_item_from_llm` / `render_seeded_item_with_generation` を追加し、
+`evaluation/config/seeded_mutations.json` の全5ルールに `required_tokens` を追加した。
+`tests/evaluation/tools/test_build_seeded_set.py` に対応するテスト (hoppscotch#6171相当の
+LLM経路/フォールバック経路ゴールデンテストを含む) を追加済み。3.2.5節の差分再生成スキップ
+(既存seeded itemの再生成をスキップするキャッシュ機構) は本実装のスコープ外とし、
+将来のフォローアップ課題として残す。
 
 ---
 
@@ -240,6 +249,22 @@ LLMには以下の3フィールドを持つ構造化出力を返させる (Pydan
 検証するのは非現実的なため)。到達可能性 (R1) の担保は「LLMへの指示」と
 「事後検証で明らかな異常を排除すること」の組み合わせで行い、本フィールドは
 生成過程の説明可能性を残すための記録に留める。
+
+**`injected_line` に関する注 (実装時に発見)**: 上表は「`mutated_patch` 中の実際の
+追加行位置と一致すること」を生成時の制約として課しているが、これはLLMへの指示に
+すぎず、3.2.3のV1〜V4のいずれもこの一致を機械的に検証していない。`injected_line`は
+未検証のLLM自己申告値であり、これをそのまま`must_find`に採用すると、
+R4 (must_find行番号の正確性、2節の要件表および「R4に関する注」参照) がLLM経路では
+再び担保されないまま出荷される — まさに本ドキュメント全体の発端となった
+行番号ズレ問題を一段階上で再発させることになる。そのため実装では`injected_line`を
+`must_find`の算出に用いず、`mutated_patch`と元patchの差分から新規追加行のブロックを
+特定した上で、Phase1の`parse_hunk_new_start`/`count_new_lines_before`
+(3.1.2実装済み) を用いて新ファイル側の行番号を決定論的に再計算する
+(`recompute_injected_line()`、V2で確立した「追加行のみの差分」であることを前提に
+動作する)。変更されたhunkが一意に特定できない場合、または新規追加行が非連続な
+場合はNoneを返し、Phase1へのフォールバックとして扱う。`injected_line`自体は
+構造化出力のフィールドとしては残すが、LLMの推論過程を記録する目的
+(`reachability_rationale`と同様の位置づけ) にとどめ、`must_find`の算出には使わない。
 
 #### 3.2.3 決定論的事後検証 (安全網、必須)
 

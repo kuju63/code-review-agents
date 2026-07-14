@@ -12,8 +12,10 @@ import json
 import random
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from tests.evaluation.conftest import load_eval_tool_module
 
@@ -32,6 +34,17 @@ parse_hunk_new_start = build_seeded_set.parse_hunk_new_start
 count_new_lines_before = build_seeded_set.count_new_lines_before
 find_insertion_point = build_seeded_set.find_insertion_point
 validate_catalog = build_seeded_set.validate_catalog
+verify_diff_parses = build_seeded_set.verify_diff_parses
+verify_only_additions_changed = build_seeded_set.verify_only_additions_changed
+verify_required_tokens = build_seeded_set.verify_required_tokens
+verify_runtime_consistency = build_seeded_set.verify_runtime_consistency
+recompute_injected_line = build_seeded_set.recompute_injected_line
+MutatedPatchOutput = build_seeded_set.MutatedPatchOutput
+build_generation_prompt = build_seeded_set.build_generation_prompt
+make_llm_mutation_generator = build_seeded_set.make_llm_mutation_generator
+passes_post_generation_checks = build_seeded_set.passes_post_generation_checks
+render_seeded_item_from_llm = build_seeded_set.render_seeded_item_from_llm
+render_seeded_item_with_generation = build_seeded_set.render_seeded_item_with_generation
 
 RULES = [
     {
@@ -41,6 +54,7 @@ RULES = [
         "category": "security",
         "severity": "high",
         "summary": "Rule A summary",
+        "required_tokens": [r"\beval\("],
         "line_snippet": "eval(userInput);",
         "language_snippets": {
             "js": "eval(userInput);",
@@ -54,6 +68,7 @@ RULES = [
         "category": "security",
         "severity": "medium",
         "summary": "Rule B summary",
+        "required_tokens": [r"\.innerHTML\b"],
         "line_snippet": "el.innerHTML = data;",
         "language_snippets": {
             "js": "el.innerHTML = data;",
@@ -66,6 +81,7 @@ RULES = [
         "category": "performance",
         "severity": "low",
         "summary": "Rule C summary",
+        "required_tokens": [r"\bawait\b"],
         "line_snippet": "await Promise.all(items.map(fn));",
         "language_snippets": {
             "ts": "await Promise.all(items.map(fn));",
@@ -135,6 +151,14 @@ class TestRenderSeededItem:
         assert seeded["must_find"][0]["rule_id"] == rule["rule_id"]
         assert seeded["file_changes"][0]["path"] == "src/foo.ts"
         assert "eval(userInput);" in seeded["file_changes"][0]["patch"]
+
+    def test_includes_deterministic_generation_source(self):
+        item = make_gold_item(
+            files=[make_file("src/foo.ts", patch="@@ -1,3 +1,3 @@\n a\n b\n c")]
+        )
+        file_change = item["file_changes"][0]
+        seeded = render_seeded_item(item, file_change, RULES[0])
+        assert seeded["generation_source"] == "deterministic_fallback"
 
 
 class TestBuildSeededItemsNoDuplicates:
@@ -220,7 +244,23 @@ class TestMainCLI:
         path.write_text(json.dumps({"rules": rules}))
         return path
 
+    def _stub_generation_model(self, monkeypatch):
+        """Configure a generation model without ever calling a real LLM.
+
+        Patches make_llm_mutation_generator to return a stub that always
+        returns None (deterministic-fallback path), so these tests --
+        which only assert on Phase 1 behavior (dup IDs, clamping, output
+        existing) -- stay hermetic and fast.
+        """
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "gpt-4o-test")
+        monkeypatch.setattr(
+            build_seeded_set,
+            "make_llm_mutation_generator",
+            lambda model_id, llm_base_url=None: lambda patch, rule, lang: None,
+        )
+
     def test_no_duplicate_ids_in_output(self, tmp_path, monkeypatch):
+        self._stub_generation_model(monkeypatch)
         gold_items = [
             {
                 "id": "owner/repo#1",
@@ -264,6 +304,7 @@ class TestMainCLI:
     def test_warns_on_stderr_when_multiplier_exceeds_pool(
         self, tmp_path, monkeypatch, capsys
     ):
+        self._stub_generation_model(monkeypatch)
         gold_items = [
             {
                 "id": "owner/repo#2",
@@ -417,6 +458,7 @@ class TestMainCLI:
     def test_output_with_no_directory_component_does_not_crash(
         self, tmp_path, monkeypatch
     ):
+        self._stub_generation_model(monkeypatch)
         gold_items = [
             {
                 "id": "owner/repo#1",
@@ -725,6 +767,7 @@ def _valid_rule(**overrides):
         "rule_id": "rule_x",
         "languages": ["js", "ts"],
         "runtime": "universal",
+        "required_tokens": [r"\bdoSomething\("],
         "line_snippet": "doSomething(x);",
         "language_snippets": {
             "js": "doSomething(x);",
@@ -824,3 +867,1001 @@ class TestValidateCatalog:
         rule = _valid_rule(line_snippet=12345)
         errors = validate_catalog([rule])
         assert any("line_snippet" in e for e in errors)
+
+
+class TestValidateCatalogRequiredTokens:
+    def test_valid_required_tokens_returns_no_errors(self):
+        assert validate_catalog([_valid_rule()]) == []
+
+    def test_missing_required_tokens_is_reported(self):
+        rule = _valid_rule()
+        del rule["required_tokens"]
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+    def test_required_tokens_not_a_list_is_reported_without_crash(self):
+        rule = _valid_rule(required_tokens=r"\bdoSomething\(")
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+    def test_required_tokens_empty_list_is_reported(self):
+        rule = _valid_rule(required_tokens=[])
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+    def test_required_tokens_non_string_element_is_reported_without_crash(self):
+        rule = _valid_rule(required_tokens=[123])
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+    def test_required_tokens_invalid_regex_is_reported_without_crash(self):
+        rule = _valid_rule(required_tokens=["("])
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+    def test_line_snippet_not_satisfying_required_tokens_is_reported(self):
+        rule = _valid_rule(line_snippet="somethingElse(x);")
+        errors = validate_catalog([rule])
+        assert any(
+            "required_tokens" in e and "line_snippet" in e and "rule_x" in e
+            for e in errors
+        )
+
+    def test_language_snippet_not_satisfying_required_tokens_is_reported(self):
+        rule = _valid_rule(
+            language_snippets={
+                "js": "doSomething(x);",
+                "ts": "somethingElse(x);",
+            }
+        )
+        errors = validate_catalog([rule])
+        assert any(
+            "required_tokens" in e and "ts" in e and "rule_x" in e for e in errors
+        )
+
+    def test_multiple_required_tokens_are_all_required_for_self_consistency(self):
+        rule = _valid_rule(
+            required_tokens=[r"\bdoSomething\(", r"\bawait\b"],
+            line_snippet="doSomething(x);",
+            language_snippets={
+                "js": "doSomething(x);",
+                "ts": "doSomething(x);",
+            },
+        )
+        errors = validate_catalog([rule])
+        assert any("required_tokens" in e and "rule_x" in e for e in errors)
+
+
+# Shared fixtures for V1-V4 + recompute_injected_line tests below: a single
+# hunk original patch with one pre-existing context line and one
+# pre-existing "+" line (representing the real PR's own change), plus a
+# "good" mutation that appends one more injected "+" line after it.
+_ORIGINAL_SINGLE_HUNK = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
+_MUTATED_SINGLE_HUNK_GOOD = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);"
+
+
+class TestVerifyDiffParses:
+    def test_well_formed_patch_passes(self):
+        assert verify_diff_parses(_MUTATED_SINGLE_HUNK_GOOD) is True
+
+    def test_empty_patch_fails(self):
+        assert verify_diff_parses("") is False
+
+    def test_patch_without_hunk_header_fails(self):
+        assert verify_diff_parses("just some text\nno header here") is False
+
+    def test_line_with_invalid_marker_fails(self):
+        patch = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\neval(userInput);"
+        assert verify_diff_parses(patch) is False
+
+    def test_git_diff_preamble_before_first_hunk_header_fails(self):
+        # split_hunks() silently discards anything before the first "@@"
+        # header, so a naive check that only looks at hunk[1:] would let
+        # this preamble slide through unvalidated -- and it would still
+        # end up written into the seeded_set.jsonl patch field.
+        patch = (
+            "diff --git a/src/foo.ts b/src/foo.ts\n"
+            "index abc123..def456 100644\n"
+            "--- a/src/foo.ts\n"
+            "+++ b/src/foo.ts\n"
+            "@@ -1,2 +1,3 @@\n"
+            " context1\n"
+            "+addedByPr\n"
+            "+eval(userInput);"
+        )
+        assert verify_diff_parses(patch) is False
+
+    def test_blank_preamble_lines_before_first_hunk_header_are_tolerated(self):
+        patch = "\n\n@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);"
+        assert verify_diff_parses(patch) is True
+
+    def test_marker_less_blank_line_inside_hunk_body_fails(self):
+        # A genuinely blank source line must be represented as " " (a
+        # context marker followed by nothing), not a bare empty string
+        # with no marker at all -- the latter is not valid unified diff
+        # syntax even though it's easy to produce by accident when
+        # joining lines with "\n\n" between hunks.
+        patch = "@@ -1,3 +1,4 @@\n context1\n\n+addedByPr\n+eval(userInput);"
+        assert verify_diff_parses(patch) is False
+
+    def test_no_newline_at_end_of_file_marker_is_tolerated(self):
+        # `\ No newline at end of file` is a standard unified-diff marker
+        # git emits when the referenced line lacks a trailing newline; it
+        # is neither a preamble line nor a context/added/removed line, and
+        # must not be rejected as an "invalid marker".
+        patch = (
+            "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n"
+            "+eval(userInput);\n\\ No newline at end of file"
+        )
+        assert verify_diff_parses(patch) is True
+
+
+class TestVerifyOnlyAdditionsChanged:
+    def test_appended_line_passes(self):
+        assert (
+            verify_only_additions_changed(
+                _ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD
+            )
+            is True
+        )
+
+    def test_identical_patch_fails(self):
+        assert (
+            verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, _ORIGINAL_SINGLE_HUNK)
+            is False
+        )
+
+    def test_modified_context_line_fails(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1_CHANGED\n+addedByPr\n+eval(userInput);"
+        assert verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, mutated) is False
+
+    def test_modified_original_added_line_fails(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr_CHANGED\n+eval(userInput);"
+        assert verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, mutated) is False
+
+    def test_dropped_original_line_fails(self):
+        mutated = "@@ -1,2 +1,2 @@\n context1\n+eval(userInput);"
+        assert verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, mutated) is False
+
+    def test_hunk_count_mismatch_fails(self):
+        mutated = (
+            "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);\n"
+            "@@ -10,1 +11,2 @@\n context10\n+extraHunk"
+        )
+        assert verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, mutated) is False
+
+
+class TestVerifyRequiredTokens:
+    def test_single_required_token_present_passes(self):
+        assert (
+            verify_required_tokens(
+                _ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD, [r"\beval\("]
+            )
+            is True
+        )
+
+    def test_single_required_token_absent_fails(self):
+        assert (
+            verify_required_tokens(
+                _ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD, [r"\binnerHTML\b"]
+            )
+            is False
+        )
+
+    def test_and_semantics_all_tokens_required(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
+        mutated = (
+            "@@ -1,2 +1,4 @@\n context1\n+addedByPr\n"
+            "+for (const id of ids) {\n+  await api.get('/items/' + id);\n+}"
+        )
+        assert (
+            verify_required_tokens(original, mutated, [r"\bfor\s*\(", r"\bawait\b"])
+            is True
+        )
+
+    def test_and_semantics_missing_one_token_fails(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+for (const id of ids) {}"
+        assert (
+            verify_required_tokens(original, mutated, [r"\bfor\s*\(", r"\bawait\b"])
+            is False
+        )
+
+    def test_tokens_may_span_multiple_added_lines(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
+        mutated = (
+            "@@ -1,2 +1,4 @@\n context1\n+addedByPr\n"
+            "+for (const id of ids) {\n+  await api.get('/items/' + id); }"
+        )
+        assert (
+            verify_required_tokens(original, mutated, [r"\bfor\s*\(", r"\bawait\b"])
+            is True
+        )
+
+    def test_word_boundary_avoids_false_positive_substring_match(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+retrieval(userInput);"
+        assert verify_required_tokens(original, mutated, [r"\beval\("]) is False
+
+    def test_empty_required_tokens_fails(self):
+        assert (
+            verify_required_tokens(_ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD, [])
+            is False
+        )
+
+    def test_token_already_present_in_original_patch_does_not_leak_into_match(self):
+        # The original PR's own (pre-existing) "+" line already contains
+        # "eval(" -- unrelated to the injected mutation. V3 must not
+        # treat that as satisfying the required token; only newly
+        # inserted "+" lines should count, otherwise a broken/no-op
+        # injection could still pass and corrupt the dataset (real
+        # review finding on PR #122).
+        original = "@@ -1,2 +1,2 @@\n context1\n+eval(existingCall);"
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+eval(existingCall);\n+somethingElse();"
+        assert verify_required_tokens(original, mutated, [r"\beval\("]) is False
+
+    def test_hunk_count_mismatch_fails(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
+        mutated = (
+            "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);\n"
+            "@@ -10,1 +11,2 @@\n context10\n+extraHunk"
+        )
+        assert verify_required_tokens(original, mutated, [r"\beval\("]) is False
+
+    def test_modified_existing_line_fails(self):
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr"
+        mutated = "@@ -1,2 +1,3 @@\n context1_CHANGED\n+addedByPr\n+eval(userInput);"
+        assert verify_required_tokens(original, mutated, [r"\beval\("]) is False
+
+
+class TestVerifyRuntimeConsistency:
+    def test_node_runtime_with_window_global_fails(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+window.location.href = x;"
+        assert verify_runtime_consistency(mutated, "node") is False
+
+    def test_node_runtime_without_forbidden_global_passes(self):
+        assert verify_runtime_consistency(_MUTATED_SINGLE_HUNK_GOOD, "node") is True
+
+    def test_browser_runtime_with_window_global_still_passes_noop(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+window.location.href = x;"
+        assert verify_runtime_consistency(mutated, "browser") is True
+
+    def test_universal_runtime_with_window_global_still_passes_noop(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+window.location.href = x;"
+        assert verify_runtime_consistency(mutated, "universal") is True
+
+
+class TestRecomputeInjectedLine:
+    def test_recomputes_line_ignoring_llm_self_report(self):
+        line = recompute_injected_line(_ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD)
+        assert line == 3
+
+    def test_no_new_lines_returns_none(self):
+        assert (
+            recompute_injected_line(_ORIGINAL_SINGLE_HUNK, _ORIGINAL_SINGLE_HUNK)
+            is None
+        )
+
+    def test_non_contiguous_new_lines_in_same_hunk_returns_none(self):
+        original = "@@ -1,3 +1,3 @@\n context1\n+addedByPr\n context2"
+        mutated = (
+            "@@ -1,3 +1,5 @@\n context1\n+injectedBefore\n+addedByPr\n"
+            " context2\n+injectedAfter"
+        )
+        assert recompute_injected_line(original, mutated) is None
+
+    def test_two_hunks_both_changed_returns_none(self):
+        original = (
+            "@@ -1,2 +1,2 @@\n context1\n+addedByPr\n@@ -10,1 +11,1 @@\n context10"
+        )
+        mutated = (
+            "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);\n"
+            "@@ -10,1 +11,2 @@\n context10\n+extraInjected"
+        )
+        assert recompute_injected_line(original, mutated) is None
+
+    def test_injected_block_after_multiple_context_lines(self):
+        original = "@@ -5,2 +5,2 @@\n context5\n context6"
+        mutated = "@@ -5,2 +5,3 @@\n context5\n context6\n+eval(userInput);"
+        assert recompute_injected_line(original, mutated) == 7
+
+    def test_hunk_count_mismatch_returns_none(self):
+        mutated = (
+            "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);\n"
+            "@@ -10,1 +11,2 @@\n context10\n+extraHunk"
+        )
+        assert recompute_injected_line(_ORIGINAL_SINGLE_HUNK, mutated) is None
+
+    def test_modified_existing_line_returns_none(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1_CHANGED\n+addedByPr\n+eval(userInput);"
+        assert recompute_injected_line(_ORIGINAL_SINGLE_HUNK, mutated) is None
+
+
+class TestMutatedPatchOutputSchema:
+    def test_valid_construction_succeeds(self):
+        output = MutatedPatchOutput(
+            mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+            injected_line=3,
+            reachability_rationale="Reached via the module-level init path.",
+        )
+        assert output.mutated_patch == _MUTATED_SINGLE_HUNK_GOOD
+        assert output.injected_line == 3
+
+    def test_blank_reachability_rationale_is_rejected(self):
+        with pytest.raises(ValidationError):
+            MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=3,
+                reachability_rationale="",
+            )
+
+    def test_whitespace_only_reachability_rationale_is_rejected(self):
+        with pytest.raises(ValidationError):
+            MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=3,
+                reachability_rationale="   \n\t",
+            )
+
+
+class TestBuildGenerationPrompt:
+    def test_includes_target_runtime(self):
+        # The system prompt tells the model to use APIs valid for the
+        # "target language and runtime given below" -- if runtime is
+        # never actually included here, the model has no way to honor
+        # that constraint (real review finding on PR #122).
+        prompt = build_generation_prompt(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+        assert "universal" in prompt
+        assert "runtime" in prompt.lower()
+
+    def test_includes_target_language(self):
+        prompt = build_generation_prompt(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+        assert "ts" in prompt
+
+
+class TestMakeLlmMutationGenerator:
+    def test_calls_agent_and_returns_parsed_output(self):
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = MutatedPatchOutput(
+            mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+            injected_line=3,
+            reachability_rationale="Reached via the existing init flow.",
+        )
+        with (
+            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
+            patch.object(build_seeded_set, "OpenAIModel"),
+        ):
+            generate = make_llm_mutation_generator("gpt-4o")
+            result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+
+        assert result is not None
+        assert result.mutated_patch == _MUTATED_SINGLE_HUNK_GOOD
+        _, kwargs = mock_agent.call_args
+        assert kwargs["structured_output_model"] is MutatedPatchOutput
+
+    def test_returns_none_when_structured_output_missing(self):
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = None
+        with (
+            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
+            patch.object(build_seeded_set, "OpenAIModel"),
+        ):
+            generate = make_llm_mutation_generator("gpt-4o")
+            result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+
+        assert result is None
+
+    def test_returns_none_and_does_not_raise_when_agent_call_fails(self):
+        mock_agent = MagicMock(side_effect=RuntimeError("boom"))
+        with (
+            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
+            patch.object(build_seeded_set, "OpenAIModel"),
+        ):
+            generate = make_llm_mutation_generator("gpt-4o")
+            result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+
+        assert result is None
+        assert mock_agent.call_count == 1  # no retry on failure
+
+    def test_uses_base_url_client_args_when_provided(self):
+        with (
+            patch.object(build_seeded_set, "Agent"),
+            patch.object(build_seeded_set, "OpenAIModel") as mock_model_cls,
+        ):
+            make_llm_mutation_generator("gpt-4o", "https://openrouter.example/api/v1")
+
+        _, kwargs = mock_model_cls.call_args
+        assert kwargs["client_args"] == {
+            "base_url": "https://openrouter.example/api/v1"
+        }
+
+
+class TestPassesPostGenerationChecks:
+    def test_good_output_passes_all_checks(self):
+        assert (
+            passes_post_generation_checks(
+                _ORIGINAL_SINGLE_HUNK, _MUTATED_SINGLE_HUNK_GOOD, RULES[0]
+            )
+            is True
+        )
+
+    def test_missing_required_token_fails(self):
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+somethingElse();"
+        assert (
+            passes_post_generation_checks(_ORIGINAL_SINGLE_HUNK, mutated, RULES[0])
+            is False
+        )
+
+
+class TestRenderSeededItemWithGeneration:
+    def _gold_item_and_file(self):
+        item = make_gold_item(
+            id="owner/repo#9",
+            files=[make_file("src/foo.ts", patch=_ORIGINAL_SINGLE_HUNK)],
+        )
+        return item, item["file_changes"][0]
+
+    def test_generate_fn_none_uses_phase1_path(self):
+        item, file_change = self._gold_item_and_file()
+        seeded = render_seeded_item_with_generation(item, file_change, RULES[0], None)
+        assert seeded["generation_source"] == "deterministic_fallback"
+
+    def test_all_checks_pass_uses_llm_path_and_ignores_self_reported_line(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,  # deliberately wrong; must be ignored
+                reachability_rationale="Reached via the init flow.",
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn
+        )
+        assert seeded["generation_source"] == "llm"
+        assert seeded["must_find"][0]["line"] == 3
+        assert seeded["reachability_rationale"] == "Reached via the init flow."
+
+    def test_failed_v3_falls_back_to_deterministic(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=(
+                    "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+somethingElse();"
+                ),
+                injected_line=3,
+                reachability_rationale="no eval here",
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn
+        )
+        assert seeded["generation_source"] == "deterministic_fallback"
+
+    def test_generate_fn_returns_none_falls_back(self):
+        item, file_change = self._gold_item_and_file()
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], lambda patch, rule, lang: None
+        )
+        assert seeded["generation_source"] == "deterministic_fallback"
+
+    def test_ambiguous_recompute_falls_back_even_though_v1_v4_pass(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=(
+                    "@@ -1,2 +1,4 @@\n context1\n+eval(a);\n+addedByPr\n+eval(b);"
+                ),
+                injected_line=2,
+                reachability_rationale="two spots",
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn
+        )
+        assert seeded["generation_source"] == "deterministic_fallback"
+
+
+class TestBuildSeededItemsGenerationSourceWiring:
+    def test_generate_fn_wired_through_to_each_item(self):
+        item = make_gold_item(
+            files=[make_file("src/foo.ts", patch=_ORIGINAL_SINGLE_HUNK)]
+        )
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="ok",
+            )
+
+        items, _ = build_seeded_items(
+            item, [RULES[0]], random.Random(1), 1, generate_fn
+        )
+        assert items[0]["generation_source"] == "llm"
+
+    def test_default_generate_fn_none_preserves_phase1_behavior(self):
+        item = make_gold_item(files=[make_file("src/foo.ts"), make_file("src/bar.js")])
+        items, _ = build_seeded_items(item, RULES, random.Random(1), 2)
+        assert all(i["generation_source"] == "deterministic_fallback" for i in items)
+
+
+class TestMainCLIModelConfigValidation:
+    def _write_gold(self, tmp_path, items):
+        path = tmp_path / "gold.jsonl"
+        with open(path, "w", encoding="utf-8") as f:
+            for item in items:
+                f.write(json.dumps(item) + "\n")
+        return path
+
+    def _write_catalog(self, tmp_path, rules):
+        path = tmp_path / "catalog.json"
+        path.write_text(json.dumps({"rules": rules}))
+        return path
+
+    def _gold_and_catalog(self, tmp_path):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts")],
+            }
+        ]
+        return (
+            self._write_gold(tmp_path, gold_items),
+            self._write_catalog(tmp_path, RULES),
+        )
+
+    def test_exits_with_error_when_no_model_configured(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        # Hermetic regardless of the real .env: load_dotenv() would
+        # otherwise re-populate SEEDED_GEN_MODEL_ID from disk after
+        # delenv, silently invalidating this test the moment that key is
+        # ever set in a real .env (see evaluation/RUNBOOK.md).
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.delenv("SEEDED_GEN_MODEL_ID", raising=False)
+        monkeypatch.delenv("SEEDED_GEN_LLM_BASE_URL", raising=False)
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
+        assert not output_path.exists()
+
+    def test_cli_model_id_takes_priority_over_env(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "env-model")
+        mock_factory = MagicMock(
+            side_effect=lambda model_id, llm_base_url=None: (
+                lambda patch, rule, lang: None
+            )
+        )
+        monkeypatch.setattr(
+            build_seeded_set, "make_llm_mutation_generator", mock_factory
+        )
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+                "--model-id",
+                "cli-model",
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 0
+        assert mock_factory.call_args.args[0] == "cli-model"
+
+    def test_env_var_used_when_cli_not_provided(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "env-model")
+        mock_factory = MagicMock(
+            side_effect=lambda model_id, llm_base_url=None: (
+                lambda patch, rule, lang: None
+            )
+        )
+        monkeypatch.setattr(
+            build_seeded_set, "make_llm_mutation_generator", mock_factory
+        )
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 0
+        assert mock_factory.call_args.args[0] == "env-model"
+
+
+class TestMainCLIEndToEnd:
+    def _write_gold(self, tmp_path, items):
+        path = tmp_path / "gold.jsonl"
+        with open(path, "w", encoding="utf-8") as f:
+            for item in items:
+                f.write(json.dumps(item) + "\n")
+        return path
+
+    def _write_catalog(self, tmp_path, rules):
+        path = tmp_path / "catalog.json"
+        path.write_text(json.dumps({"rules": rules}))
+        return path
+
+    def _run(self, tmp_path, monkeypatch, generate_fn):
+        gold_items = [
+            {
+                "id": "owner/repo#1",
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "file_changes": [make_file("src/foo.ts", patch=_ORIGINAL_SINGLE_HUNK)],
+            }
+        ]
+        gold_path = self._write_gold(tmp_path, gold_items)
+        catalog_path = self._write_catalog(tmp_path, [RULES[0]])
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setattr(
+            build_seeded_set,
+            "make_llm_mutation_generator",
+            lambda model_id, llm_base_url=None: generate_fn,
+        )
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+                "--model-id",
+                "test-model",
+            ],
+        )
+
+        exit_code = main()
+        assert exit_code == 0
+        lines = output_path.read_text().strip().splitlines()
+        return [json.loads(line) for line in lines]
+
+    def test_llm_path_produces_generation_source_llm(self, tmp_path, monkeypatch):
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="Reached via the init flow.",
+            )
+
+        items = self._run(tmp_path, monkeypatch, generate_fn)
+
+        assert len(items) == 1
+        assert items[0]["generation_source"] == "llm"
+        assert items[0]["must_find"][0]["line"] == 3
+
+    def test_llm_path_failure_falls_back_and_output_not_empty(
+        self, tmp_path, monkeypatch
+    ):
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=(
+                    "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+somethingElse();"
+                ),
+                injected_line=3,
+                reachability_rationale="no eval token",
+            )
+
+        items = self._run(tmp_path, monkeypatch, generate_fn)
+
+        assert len(items) == 1
+        assert items[0]["generation_source"] == "deterministic_fallback"
+
+
+class TestRegressionKnownMisses:
+    """Golden regression for the hoppscotch#6171 miss (js_eval_injection)
+    that originally motivated this whole redesign: the LLM path must land
+    the mutation in the resolver body, and a bad LLM output must fall
+    back to Phase 1's own known-good placement rather than corrupting the
+    dataset (design doc 1.1, 5).
+    """
+
+    _GOOD_MUTATED_PATCH = (
+        "@@ -1,4 +1,5 @@\n"
+        " import { Injectable } from '@nestjs/common';\n"
+        " import { Resolver, Query, Args } from '@nestjs/graphql';\n"
+        "+import { PublishedDocsService } from './published-docs.service';\n"
+        " import { Logger } from '@nestjs/common';\n"
+        " \n"
+        "@@ -10,6 +11,12 @@ export class PublishedDocsResolver {\n"
+        "   constructor(private readonly service: PublishedDocsService) {}\n"
+        " \n"
+        "   @Query(() => PublishedDoc)\n"
+        "   async publishedDoc(@Args('id') id: string): Promise<PublishedDoc> {\n"
+        "+    const doc = await this.service.findById(id);\n"
+        "+    const result = eval(userInput);\n"
+        "+    if (!doc) {\n"
+        "+      throw new NotFoundException('Document not found');\n"
+        "+    }\n"
+        "+    return doc;\n"
+        "   }\n"
+        " }"
+    )
+
+    _BAD_MUTATED_PATCH = (
+        "@@ -1,4 +1,5 @@\n"
+        " import { Injectable } from '@nestjs/common';\n"
+        " import { Resolver, Query, Args } from '@nestjs/graphql';\n"
+        "+import { PublishedDocsService } from './published-docs.service';\n"
+        " import { Logger } from '@nestjs/common';\n"
+        " \n"
+        "@@ -10,6 +11,12 @@ export class PublishedDocsResolver {\n"
+        "   constructor(private readonly service: PublishedDocsService) {}\n"
+        " \n"
+        "   @Query(() => PublishedDoc)\n"
+        "   async publishedDoc(@Args('id') id: string): Promise<PublishedDoc> {\n"
+        "+    const doc = await this.service.findById(id);\n"
+        "+    const result = Function(userInput)();\n"
+        "+    if (!doc) {\n"
+        "+      throw new NotFoundException('Document not found');\n"
+        "+    }\n"
+        "+    return doc;\n"
+        "   }\n"
+        " }"
+    )
+
+    def _rule(self):
+        return {
+            "rule_id": "js_eval_injection",
+            "category": "security",
+            "severity": "critical",
+            "languages": ["ts"],
+            "runtime": "universal",
+            "required_tokens": [r"\beval\("],
+            "line_snippet": "eval(userInput);",
+            "language_snippets": {"ts": "eval(userInput);"},
+            "summary": "Unsanitized eval usage may lead to arbitrary code execution.",
+        }
+
+    def _gold_item_and_file(self):
+        patch = _published_docs_resolver_patch()
+        item = make_gold_item(
+            id="hoppscotch/hoppscotch#6171",
+            files=[make_file("published-docs.resolver.ts", patch=patch)],
+        )
+        return item, item["file_changes"][0]
+
+    def test_good_llm_output_lands_in_resolver_body_not_import_block(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=self._GOOD_MUTATED_PATCH,
+                injected_line=999,  # deliberately wrong; must be ignored
+                reachability_rationale=(
+                    "eval() runs right after the document is fetched, "
+                    "before the null check -- reachable on every call."
+                ),
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, self._rule(), generate_fn
+        )
+
+        assert seeded["generation_source"] == "llm"
+        assert seeded["must_find"][0]["line"] == 16
+        import_hunk_text = seeded["file_changes"][0]["patch"].split("@@ -10")[0]
+        assert "eval(" not in import_hunk_text
+
+    def test_bad_llm_output_falls_back_to_phase1_known_good_placement(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=self._BAD_MUTATED_PATCH,
+                injected_line=16,
+                reachability_rationale="uses the Function constructor instead",
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, self._rule(), generate_fn
+        )
+
+        expected_patch, expected_line = inject_patch(
+            file_change["patch"], "eval(userInput);"
+        )
+        assert seeded["generation_source"] == "deterministic_fallback"
+        assert seeded["must_find"][0]["line"] == expected_line
+        assert seeded["file_changes"][0]["patch"] == expected_patch
+
+
+class TestRegressionKnownMissesVuetifyTsx:
+    """Golden regression for the second known miss named in design doc 5:
+    vuetify#22788 VDataTableFooter.tsx (js_eval_injection). Unlike the
+    hoppscotch#6171 fixture (NestJS/TypeScript resolver body), this
+    models a `.tsx` component render function -- a different
+    `language_snippets` variant (`tsx`, with a type annotation) and a
+    JSX-returning function body shape, so it is not redundant with the
+    other fixture.
+
+    This is a synthetic patch modeled on the reported scenario (a
+    Vuetify data-table footer component), not a literal reproduction of
+    the real PR's diff.
+    """
+
+    _ORIGINAL_PATCH = (
+        "@@ -1,3 +1,4 @@\n"
+        " import { defineComponent, computed } from 'vue';\n"
+        " import type { PropType } from 'vue';\n"
+        "+import { useDisplay } from 'vuetify';\n"
+        " import './VDataTableFooter.css';\n"
+        "@@ -15,5 +16,10 @@ export default defineComponent({\n"
+        "   setup(props) {\n"
+        "   const currentPage = computed(() => props.page);\n"
+        "   const totalItems = computed(() => props.itemsLength);\n"
+        "+    const pageText = computed(() => "
+        "`${currentPage.value} of ${totalItems.value}`);\n"
+        "+    return () => (\n"
+        '+      <div class="v-data-table-footer">\n'
+        "+        <span>{pageText.value}</span>\n"
+        "+      </div>\n"
+        "+    );\n"
+        "   },\n"
+        "   });"
+    )
+
+    _GOOD_MUTATED_PATCH = (
+        "@@ -1,3 +1,4 @@\n"
+        " import { defineComponent, computed } from 'vue';\n"
+        " import type { PropType } from 'vue';\n"
+        "+import { useDisplay } from 'vuetify';\n"
+        " import './VDataTableFooter.css';\n"
+        "@@ -15,5 +16,11 @@ export default defineComponent({\n"
+        "   setup(props) {\n"
+        "   const currentPage = computed(() => props.page);\n"
+        "   const totalItems = computed(() => props.itemsLength);\n"
+        "+    const pageText = computed(() => "
+        "`${currentPage.value} of ${totalItems.value}`);\n"
+        "+    const debugResult: unknown = eval(getQueryParam('q'));\n"
+        "+    return () => (\n"
+        '+      <div class="v-data-table-footer">\n'
+        "+        <span>{pageText.value}</span>\n"
+        "+      </div>\n"
+        "+    );\n"
+        "   },\n"
+        "   });"
+    )
+
+    _BAD_MUTATED_PATCH = (
+        "@@ -1,3 +1,4 @@\n"
+        " import { defineComponent, computed } from 'vue';\n"
+        " import type { PropType } from 'vue';\n"
+        "+import { useDisplay } from 'vuetify';\n"
+        " import './VDataTableFooter.css';\n"
+        "@@ -15,5 +16,11 @@ export default defineComponent({\n"
+        "   setup(props) {\n"
+        "   const currentPage = computed(() => props.page);\n"
+        "   const totalItems = computed(() => props.itemsLength);\n"
+        "+    const pageText = computed(() => "
+        "`${currentPage.value} of ${totalItems.value}`);\n"
+        "+    const debugResult = getQueryParam('q');\n"
+        "+    return () => (\n"
+        '+      <div class="v-data-table-footer">\n'
+        "+        <span>{pageText.value}</span>\n"
+        "+      </div>\n"
+        "+    );\n"
+        "   },\n"
+        "   });"
+    )
+
+    def _rule(self):
+        return {
+            "rule_id": "js_eval_injection",
+            "category": "security",
+            "severity": "critical",
+            "languages": ["tsx"],
+            "runtime": "universal",
+            "required_tokens": [r"\beval\("],
+            "line_snippet": "eval(userInput);",
+            "language_snippets": {
+                "tsx": "const result: unknown = eval(getQueryParam('q'));"
+            },
+            "summary": "Unsanitized eval usage may lead to arbitrary code execution.",
+        }
+
+    def _gold_item_and_file(self):
+        item = make_gold_item(
+            id="vuetifyjs/vuetify#22788",
+            files=[
+                make_file(
+                    "src/components/VDataTableFooter.tsx", patch=self._ORIGINAL_PATCH
+                )
+            ],
+        )
+        return item, item["file_changes"][0]
+
+    def test_good_llm_output_lands_in_render_body_not_import_block(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=self._GOOD_MUTATED_PATCH,
+                injected_line=999,  # deliberately wrong; must be ignored
+                reachability_rationale=(
+                    "eval() runs during setup(), on every render of this "
+                    "component -- unconditionally reachable."
+                ),
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, self._rule(), generate_fn
+        )
+
+        assert seeded["generation_source"] == "llm"
+        assert seeded["must_find"][0]["line"] == 20
+        import_hunk_text = seeded["file_changes"][0]["patch"].split("@@ -15")[0]
+        assert "eval(" not in import_hunk_text
+
+    def test_bad_llm_output_falls_back_to_phase1_known_good_placement(self):
+        item, file_change = self._gold_item_and_file()
+
+        def generate_fn(patch, rule, lang):
+            return MutatedPatchOutput(
+                mutated_patch=self._BAD_MUTATED_PATCH,
+                injected_line=20,
+                reachability_rationale="missing the eval( call entirely",
+            )
+
+        rule = self._rule()
+        seeded = render_seeded_item_with_generation(
+            item, file_change, rule, generate_fn
+        )
+
+        expected_patch, expected_line = inject_patch(
+            file_change["patch"], get_snippet_for_lang(rule, "tsx")
+        )
+        assert seeded["generation_source"] == "deterministic_fallback"
+        assert seeded["must_find"][0]["line"] == expected_line
+        assert seeded["file_changes"][0]["patch"] == expected_patch
