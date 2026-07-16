@@ -108,6 +108,29 @@ Checkpoint:
   all post-generation checks) or `"deterministic_fallback"` (checks
   failed or no LLM output; Phase1 logic was used instead) -- both are
   expected, not an error
+- Check the LLM Adoption Rate (EVALUATION_PLAN.md §3.2) by rule_id:
+
+  ```bash
+  python -c "
+  import collections, json
+  rows = [json.loads(l) for l in open('evaluation/data/seeded_set.jsonl')]
+  by_rule = collections.Counter(
+      (mf['rule_id'], r['generation_source']) for r in rows for mf in r['must_find']
+  )
+  rules = sorted({mf['rule_id'] for r in rows for mf in r['must_find']})
+  for rule_id in rules:
+      llm = by_rule[(rule_id, 'llm')]
+      fallback = by_rule[(rule_id, 'deterministic_fallback')]
+      total = llm + fallback
+      print(f'{rule_id}: llm={llm} fallback={fallback} rate={llm/total:.0%}' if total else f'{rule_id}: n/a')
+  "
+  ```
+
+  No fixed threshold is enforced (EVALUATION_PLAN.md §3.2); a persistently
+  low rate for a specific `rule_id` may indicate that rule's snippet
+  violates the self-containment principle
+  (docs/eval-seeded-mutation-injection-design.md §7.3) and should be
+  reviewed.
 
 ### Regenerating after a Seeded generation model change
 

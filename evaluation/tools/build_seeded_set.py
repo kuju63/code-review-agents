@@ -287,6 +287,15 @@ def get_snippet_for_lang(rule: dict[str, Any], lang: str) -> str:
 _VALID_RUNTIMES = {"browser", "node", "universal"}
 _FORBIDDEN_GLOBAL_RE = re.compile(r"\b(window|document)\.")
 
+# Design doc §7.3/7.4.3 (Issue #131): a `required_tokens` entry requiring
+# `await` implicitly requires the enclosing function to be declared
+# `async`, but injection is pure addition (V2) -- no signature rewrite is
+# permitted. A snippet that requires `await` must therefore declare its
+# own `async` scope (e.g. an async IIFE) rather than depend on the
+# enclosing code being async.
+_SCOPE_DEPENDENT_TOKEN_RE = re.compile(r"\bawait\b")
+_ASYNC_SCOPE_RE = re.compile(r"\basync\b")
+
 
 def validate_catalog(rules: list[Any]) -> list[str]:
     """Validate the mutation catalog and return a list of error messages.
@@ -406,6 +415,38 @@ def validate_catalog(rules: list[Any]) -> list[str]:
                     errors.append(
                         f"rule {rule_id!r}: language_snippets[{lang!r}] does "
                         f"not satisfy required_tokens: {snippet!r}"
+                    )
+
+            # Self-containment (R8, design doc §7.3): a required_tokens
+            # entry that itself matches the bare word "await" means the
+            # snippet requires an `async` enclosing scope. Injection is
+            # pure addition (V2), so the snippet must declare that scope
+            # itself rather than depend on the surrounding code being
+            # async -- otherwise generation is structurally forced to
+            # rewrite the enclosing function signature, which V2 (by
+            # design) rejects.
+            if any(p.search("await") for p in compiled_tokens):
+                for lang, snippet in snippets.items():
+                    if not isinstance(snippet, str):
+                        continue
+                    if not _ASYNC_SCOPE_RE.search(snippet):
+                        errors.append(
+                            f"rule {rule_id!r}: required_tokens requires "
+                            f"'await' but language_snippets[{lang!r}] does "
+                            "not declare its own 'async' scope (violates "
+                            "self-containment principle, see "
+                            "docs/eval-seeded-mutation-injection-design.md "
+                            f"§7.3): {snippet!r}"
+                        )
+                if line_snippet is not None and not _ASYNC_SCOPE_RE.search(
+                    line_snippet
+                ):
+                    errors.append(
+                        f"rule {rule_id!r}: required_tokens requires 'await' "
+                        "but line_snippet does not declare its own 'async' "
+                        "scope (violates self-containment principle, see "
+                        "docs/eval-seeded-mutation-injection-design.md "
+                        f"§7.3): {line_snippet!r}"
                     )
 
         texts = list(snippets.values()) + list(context_lines or [])
@@ -573,6 +614,24 @@ def verify_diff_parses(mutated_patch: str) -> bool:
     return saw_header
 
 
+def _normalize_diff_line_for_compare(line: str) -> str:
+    """Normalize a diff line's content for whitespace/semicolon-tolerant
+    comparison in `_hunk_added_indices`.
+
+    Design doc 7.4.1 (Issue #131, 1/7 false-negative case): an LLM
+    reproducing a pre-existing line verbatim but with different
+    indentation or a dropped/added trailing semicolon must not be treated
+    as an altered line. Only the diff marker (`+`/`-`/` `) is kept exact;
+    the body is whitespace-collapsed and semicolon-insensitive. Genuine
+    content changes (different tokens, restructured expressions) still
+    differ after normalization and are correctly rejected.
+    """
+    if not line:
+        return line
+    marker, body = line[0], line[1:]
+    return marker + re.sub(r"\s+", " ", body).strip().rstrip(";")
+
+
 def _hunk_added_indices(
     original_hunk: list[str], mutated_hunk: list[str]
 ) -> list[int] | None:
@@ -591,16 +650,21 @@ def _hunk_added_indices(
     Returns:
         Indices (into `mutated_hunk`) of lines that are new relative to
         `original_hunk`, or None if any line in `mutated_hunk` is neither
-        the next expected original line nor a new `+` line -- i.e. an
-        existing context/removed/added line was altered, reordered, or
-        dropped -- or if `original_hunk` wasn't fully consumed by the
-        end.
+        the next expected original line (allowing whitespace/trailing-
+        semicolon differences, design doc 7.4.1) nor a new `+` line --
+        i.e. an existing context/removed/added line was altered in
+        content, reordered, or dropped -- or if `original_hunk` wasn't
+        fully consumed by the end.
     """
     oi = 1
     new_idxs: list[int] = []
     for i in range(1, len(mutated_hunk)):
         line = mutated_hunk[i]
-        if oi < len(original_hunk) and line == original_hunk[oi]:
+        if oi < len(original_hunk) and (
+            line == original_hunk[oi]
+            or _normalize_diff_line_for_compare(line)
+            == _normalize_diff_line_for_compare(original_hunk[oi])
+        ):
             oi += 1
         elif line.startswith("+"):
             new_idxs.append(i)

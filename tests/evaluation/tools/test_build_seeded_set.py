@@ -81,10 +81,10 @@ RULES = [
         "category": "performance",
         "severity": "low",
         "summary": "Rule C summary",
-        "required_tokens": [r"\bawait\b"],
-        "line_snippet": "await Promise.all(items.map(fn));",
+        "required_tokens": [r"\.then\("],
+        "line_snippet": "Promise.all(items.map(fn)).then(() => {});",
         "language_snippets": {
-            "ts": "await Promise.all(items.map(fn));",
+            "ts": "Promise.all(items.map(fn)).then(() => {});",
         },
     },
 ]
@@ -932,6 +932,56 @@ class TestValidateCatalogRequiredTokens:
         assert any("required_tokens" in e and "rule_x" in e for e in errors)
 
 
+class TestValidateCatalogSelfContainment:
+    """Issue #131 design doc §7.3/7.4.3: a snippet whose `required_tokens`
+    requires `await` implicitly requires the enclosing function to be
+    `async`, but injection is pure addition (no signature rewrite allowed).
+    Catalog validation must catch this at build time rather than let it
+    surface later as a high deterministic_fallback rate."""
+
+    def test_await_required_token_without_async_snippet_is_reported(self):
+        rule = _valid_rule(
+            required_tokens=[r"\bawait\b"],
+            line_snippet="await api.get('/items/' + id);",
+            language_snippets={
+                "js": "await api.get('/items/' + id);",
+                "ts": "await api.get('/items/' + id);",
+            },
+        )
+        errors = validate_catalog([rule])
+        assert any(
+            "self-containment" in e and "rule_x" in e and "js" in e for e in errors
+        )
+        assert any(
+            "self-containment" in e and "rule_x" in e and "ts" in e for e in errors
+        )
+
+    def test_await_required_token_with_async_iife_snippet_is_allowed(self):
+        rule = _valid_rule(
+            required_tokens=[r"\bawait\b"],
+            line_snippet="(async () => { await api.get('/x'); })();",
+            language_snippets={
+                "js": "(async () => { await api.get('/x'); })();",
+                "ts": "(async () => { await api.get('/x'); })();",
+            },
+        )
+        assert validate_catalog([rule]) == []
+
+    def test_no_await_requirement_is_unaffected(self):
+        assert validate_catalog([_valid_rule()]) == []
+
+    def test_real_catalog_rules_satisfy_self_containment(self):
+        catalog_path = (
+            Path(__file__).parents[3]
+            / "evaluation"
+            / "config"
+            / "seeded_mutations.json"
+        )
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        errors = validate_catalog(catalog["rules"])
+        assert not any("self-containment" in e for e in errors)
+
+
 # Shared fixtures for V1-V4 + recompute_injected_line tests below: a single
 # hunk original patch with one pre-existing context line and one
 # pre-existing "+" line (representing the real PR's own change), plus a
@@ -1029,6 +1079,54 @@ class TestVerifyOnlyAdditionsChanged:
             "@@ -10,1 +11,2 @@\n context10\n+extraHunk"
         )
         assert verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, mutated) is False
+
+
+class TestVerifyOnlyAdditionsChangedWhitespaceTolerance:
+    """Issue #131 (1/7 false-negative case, bitwarden index.d.ts): a
+    pre-existing line reproduced by the LLM with only indentation/trailing-
+    semicolon differences was rejected by the previous exact-match
+    comparison. Whitespace/semicolon normalization must accept this while
+    still rejecting genuine content changes (structural rewrites)."""
+
+    _ORIGINAL = (
+        "@@ -1,2 +1,2 @@\n context1\n+export function isolateProcess(): Promise<void>;"
+    )
+
+    def test_reindented_preexisting_line_passes(self):
+        mutated = (
+            "@@ -1,2 +1,3 @@\n"
+            " context1\n"
+            "+  export function isolateProcess(): Promise<void>\n"
+            "+eval(userInput);"
+        )
+        assert verify_only_additions_changed(self._ORIGINAL, mutated) is True
+
+    def test_context_line_with_different_indentation_passes(self):
+        original = "@@ -1,2 +1,2 @@\n     context1\n+addedByPr"
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);"
+        assert verify_only_additions_changed(original, mutated) is True
+
+    def test_structural_rewrite_still_fails_despite_whitespace_tolerance(self):
+        # Content itself differs (expression body -> block body), not just
+        # whitespace/semicolons -- normalization must not paper over this.
+        original = (
+            "@@ -1,2 +1,2 @@\n"
+            " context1\n"
+            "+const openLink = (_e, url: string) => shell.openExternal(url);"
+        )
+        mutated = (
+            "@@ -1,2 +1,5 @@\n"
+            " context1\n"
+            "+const openLink = async (_e, url: string) => {\n"
+            "+  await fetch('/api/items/' + params.id);\n"
+            "+  shell.openExternal(url);\n"
+            "+};"
+        )
+        assert verify_only_additions_changed(original, mutated) is False
+
+    def test_dropped_original_line_still_fails_despite_whitespace_tolerance(self):
+        mutated = "@@ -1,2 +1,2 @@\n context1\n+eval(userInput);"
+        assert verify_only_additions_changed(self._ORIGINAL, mutated) is False
 
 
 class TestVerifyRequiredTokens:
@@ -1865,3 +1963,76 @@ class TestRegressionKnownMissesVuetifyTsx:
         assert seeded["generation_source"] == "deterministic_fallback"
         assert seeded["must_find"][0]["line"] == expected_line
         assert seeded["file_changes"][0]["patch"] == expected_patch
+
+
+class TestRegressionIssue131SelfContainedSnippets:
+    """Issue #131: `frontend_n_plus_one_api` / `b2b2c_idor_hint` previously
+    required `await` in `required_tokens`, which implicitly requires the
+    enclosing function to be `async`. Since injection must be pure addition
+    (V2), this forced an LLM to rewrite a sync arrow function's signature --
+    exactly the structural edit V2 exists to reject (6/7 of the observed
+    fallback cases). The revised catalog snippets (Promise-chain for the
+    N+1 rule, plain `.then()` for the IDOR rule) must inject into a sync
+    context via pure addition, while a genuine structural rewrite (the
+    original failure mode) must still fail V2."""
+
+    _CATALOG_PATH = (
+        Path(__file__).parents[3] / "evaluation" / "config" / "seeded_mutations.json"
+    )
+
+    def _rule(self, rule_id):
+        catalog = json.loads(self._CATALOG_PATH.read_text(encoding="utf-8"))
+        return next(r for r in catalog["rules"] if r["rule_id"] == rule_id)
+
+    # A synchronous arrow function with an expression body -- the exact
+    # shape (gitbutler main.ts) that previously triggered an async rewrite.
+    _SYNC_ARROW_ORIGINAL = (
+        "@@ -1,2 +1,2 @@\n"
+        " context1\n"
+        "+const openLink = (_e, url: string) => shell.openExternal(url);"
+    )
+
+    @pytest.mark.parametrize("rule_id", ["frontend_n_plus_one_api", "b2b2c_idor_hint"])
+    def test_required_tokens_do_not_depend_on_await(self, rule_id):
+        rule = self._rule(rule_id)
+        assert not any("await" in token for token in rule["required_tokens"])
+
+    @pytest.mark.parametrize("rule_id", ["frontend_n_plus_one_api", "b2b2c_idor_hint"])
+    def test_snippet_does_not_use_await(self, rule_id):
+        rule = self._rule(rule_id)
+        for lang, snippet in rule["language_snippets"].items():
+            assert "await" not in snippet, f"{rule_id}/{lang}: {snippet!r}"
+
+    @pytest.mark.parametrize("rule_id", ["frontend_n_plus_one_api", "b2b2c_idor_hint"])
+    def test_injects_into_sync_arrow_function_via_pure_addition(self, rule_id):
+        rule = self._rule(rule_id)
+        snippet = get_snippet_for_lang(rule, "ts")
+        mutated = (
+            "@@ -1,2 +1,3 @@\n"
+            " context1\n"
+            "+const openLink = (_e, url: string) => shell.openExternal(url);\n"
+            f"+{snippet}"
+        )
+        assert verify_only_additions_changed(self._SYNC_ARROW_ORIGINAL, mutated) is True
+        assert (
+            verify_required_tokens(
+                self._SYNC_ARROW_ORIGINAL, mutated, rule["required_tokens"]
+            )
+            is True
+        )
+
+    def test_structural_async_rewrite_of_sync_arrow_still_fails_v2(self):
+        # The original failure mode: instead of adding the snippet
+        # untouched, the LLM rewrites the pre-existing arrow function to
+        # `async` so that `await` (previously required) type-checks.
+        mutated = (
+            "@@ -1,2 +1,5 @@\n"
+            " context1\n"
+            "+const openLink = async (_e, url: string) => {\n"
+            "+  await fetch('/api/items/' + params.id);\n"
+            "+  shell.openExternal(url);\n"
+            "+};"
+        )
+        assert (
+            verify_only_additions_changed(self._SYNC_ARROW_ORIGINAL, mutated) is False
+        )

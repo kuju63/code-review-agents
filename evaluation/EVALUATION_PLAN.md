@@ -224,6 +224,23 @@ Matching rule:
 - Must-Find Recall: detected_must_find / all_must_find
 - Critical Miss Rate: missed_critical / all_critical
 - False Positive Rate (seeded): non_seeded_flags / all_agent_issues
+- LLM Adoption Rate (`generation_source`): `llm` count / all seeded items,
+  reported overall and broken down by `rule_id`. Computed from the
+  `generation_source` field each `seeded_set.jsonl` row already carries (see
+  [docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
+  §3.2.7/§7.7). Measures how often Phase 2 (LLM mutation generation +
+  deterministic post-generation checks) is actually adopted versus falling
+  back to Phase 1's deterministic logic — a low rate means the R1/R3
+  improvement Phase 2 was built for (§3.2 of the design doc) isn't being
+  realized. No fixed threshold is set here; per Issue #131 this is
+  reported per rebuild and a numeric target is agreed once baseline data
+  after the §7.4.2 catalog fix is available.
+
+  Reported as a soft observability metric, not a Hard/Domain hard gate
+  (§4): unlike Must-Find Recall/Critical Miss Rate, a low adoption rate
+  does not by itself indicate a wrong or unsafe Seeded item — Phase 1
+  fallback items remain valid must-find labels (§3.2.3, "both are
+  expected, not an error").
 
 ## 3.3 Operational Metrics
 
