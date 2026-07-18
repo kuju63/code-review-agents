@@ -62,24 +62,71 @@ class MutatedPatchOutput(BaseModel):
 MutationGenerator = Callable[[str, dict[str, Any], str], MutatedPatchOutput | None]
 
 _MUTATION_GEN_SYSTEM_PROMPT = """\
-You inject a single realistic vulnerability/bug pattern into an existing \
-unified diff patch, for building an evaluation dataset that measures \
-whether a code review agent catches it.
+You are editing an existing unified diff patch by inserting new lines \
+into it -- you are NOT writing a new snippet from scratch.
 
-Requirements:
+=== THE #1 RULE (read this before anything else) ===
+`mutated_patch` MUST be the ENTIRE original patch given to you, \
+reproduced character-for-character -- every hunk, every hunk header, \
+every context/added/removed line -- with your new lines inserted as \
+additional "+" lines in exactly one place. Copy every hunk through \
+unchanged, including hunks you are not injecting into. Do NOT return \
+only the injected snippet, only the changed hunk, or any subset of the \
+patch. A correct answer is always at least as long as the original \
+patch. If you find yourself about to output just one or two bare \
+statements with no "@@ ... @@" header above them, that is wrong -- go \
+back and include the full original patch around them.
+
+Example (generic, illustrates the required transformation):
+
+Original patch given to you:
+@@ -1,2 +1,2 @@
+ context1
++addedByPr
+
+Correct mutated_patch:
+@@ -1,2 +1,3 @@
+ context1
++addedByPr
++injectedCall(userInput);
+
+Note what happened: the hunk header came first and its line count was \
+updated (1,2 -> 1,3); the pre-existing context line " context1" and the \
+pre-existing added line "+addedByPr" were both copied through unchanged \
+and in order; exactly one new "+" line was appended. Nothing was \
+omitted, reordered, or rewritten. Do not reuse this example's literal \
+content ("context1", "injectedCall") in your real answer -- it is \
+illustrative only.
+
+=== Requirements for the injected code itself ===
 (a) Wire the injected code into the existing execution flow shown in the \
 patch -- do not add an isolated/unreachable statement.
-(b) Use APIs that are valid for the target language and runtime given \
-below (e.g. do not use browser-only globals in server-side code).
-(c) Match the surrounding code's variable names, scope, and style.
-(d) Preserve strict unified diff format: only insert new lines starting \
-with "+"; do not modify or remove any existing line, and do not change \
-any line that does not start with "+", " ", or "-". Hunk headers \
-("@@ ... @@") may be rewritten to reflect the new line count.
+(b) Use the exact API/construct shown in the reference pattern given to \
+you (e.g. the literal function name) -- do not substitute a \
+semantically-equivalent alternative; automated checks look for the \
+exact token.
+(c) Use APIs that are valid for the target language and runtime given \
+below (e.g. do not use browser-only globals such as window./document. \
+in Node-only code).
+(d) Match the surrounding code's variable names, scope, and style.
+(e) Insert ALL of your new lines as ONE contiguous block of "+" lines, \
+all within a single hunk. Do not split the injection across two hunks \
+and do not interleave unchanged lines between two separate injected \
+chunks.
 
-Return the full mutated patch, the 1-based new-file line number where \
-the injected code lives, and a brief rationale for why that location is \
-reachable.
+=== Requirements for the diff format itself ===
+(f) Return `mutated_patch` starting directly with a hunk header line \
+("@@ -old_start,old_count +new_start,new_count @@") -- no markdown code \
+fences, no explanation, no "diff --git"/"index"/"---"/"+++" preamble \
+before it. Blank lines before the first header are fine.
+(g) Only insert new lines starting with "+"; do not modify, remove, or \
+reorder any existing line, and do not change any line that does not \
+start with "+", " ", or "-". Hunk headers ("@@ ... @@") may be rewritten \
+to reflect the new line count they introduce.
+
+Return the full mutated patch (per the #1 rule above), the 1-based \
+new-file line number where the injected code lives, and a brief \
+rationale for why that location is reachable.
 """
 
 
@@ -103,7 +150,9 @@ def build_generation_prompt(patch: str, rule: dict[str, Any], lang: str) -> str:
         f"{rule.get('summary', '')}\n"
         f"Example of the pattern (for reference, do not copy verbatim -- "
         f"adapt it to the surrounding code): {get_snippet_for_lang(rule, lang)!r}\n\n"
-        f"Original patch:\n{patch}"
+        f"Original patch (reproduce this ENTIRE patch verbatim in your "
+        f"mutated_patch output, with your new lines inserted -- see the "
+        f"#1 rule above):\n{patch}"
     )
 
 

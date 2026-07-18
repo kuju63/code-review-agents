@@ -1316,6 +1316,56 @@ class TestBuildGenerationPrompt:
         prompt = build_generation_prompt(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
         assert "ts" in prompt
 
+    def test_reinforces_full_patch_reproduction_near_the_patch(self):
+        # Design doc 8.2: the dominant real-world failure mode was the
+        # model returning only the injected fragment instead of the full
+        # patch. Restate the #1 rule right before the patch itself (the
+        # last thing the model reads) for a recency effect on top of the
+        # system prompt's framing.
+        prompt = build_generation_prompt(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+        assert "entire" in prompt.lower()
+
+
+class TestMutationGenSystemPrompt:
+    """Asserts the system prompt teaches the model the constraints that
+    V1-V4 (and recompute_injected_line's contiguity requirement) enforce
+    after the fact, rather than leaving them undiscoverable until
+    fallback -- see design doc 8 (100% LLM-path fallback rate root cause:
+    the model returning only the injected fragment, not the full patch).
+
+    Assertions target invariants (does the prompt mention concept X) --
+    not brittle exact-string matches -- since the prompt's exact wording
+    is expected to keep evolving.
+    """
+
+    def test_states_full_patch_reproduction_as_the_primary_rule(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "entire" in prompt.lower()
+        assert "every hunk" in prompt.lower()
+
+    def test_forbids_preamble_before_hunk_header(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "hunk header" in prompt.lower()
+        assert "diff --git" in prompt
+
+    def test_requires_single_contiguous_hunk(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "contiguous" in prompt.lower()
+        assert "single hunk" in prompt.lower() or "one hunk" in prompt.lower()
+
+    def test_requires_exact_token_not_equivalent_alternative(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "exact" in prompt.lower()
+
+    def test_includes_a_worked_example(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "@@ -1,2 +1,2 @@" in prompt
+        assert "@@ -1,2 +1,3 @@" in prompt
+
+    def test_forbids_modifying_existing_lines(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "do not modify" in prompt.lower()
+
 
 class TestMakeLlmMutationGenerator:
     """Exercises the `Model.structured_output()` call path.
