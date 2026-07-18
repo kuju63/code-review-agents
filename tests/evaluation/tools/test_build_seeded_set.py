@@ -1318,54 +1318,76 @@ class TestBuildGenerationPrompt:
 
 
 class TestMakeLlmMutationGenerator:
-    def test_calls_agent_and_returns_parsed_output(self):
-        mock_agent = MagicMock()
-        mock_agent.return_value.structured_output = MutatedPatchOutput(
+    """Exercises the `Model.structured_output()` call path.
+
+    Not the Agent-level `structured_output_model` tool-calling path: that
+    path proved unreliable against self-hosted OpenAI-compatible models
+    (strands-agents/harness-sdk#3336) and was dropped in favor of calling
+    `Model.structured_output()` directly. See `make_llm_mutation_generator`.
+    """
+
+    def test_calls_model_structured_output_and_returns_parsed_output(self):
+        expected = MutatedPatchOutput(
             mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
             injected_line=3,
             reachability_rationale="Reached via the existing init flow.",
         )
-        with (
-            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
-            patch.object(build_seeded_set, "OpenAIModel"),
+        call_count = 0
+
+        async def fake_structured_output(
+            output_model, messages, system_prompt=None, **kwargs
         ):
+            nonlocal call_count
+            call_count += 1
+            assert output_model is MutatedPatchOutput
+            yield {"output": expected}
+
+        mock_model = MagicMock()
+        mock_model.structured_output = fake_structured_output
+        with patch.object(build_seeded_set, "OpenAIModel", return_value=mock_model):
             generate = make_llm_mutation_generator("gpt-4o")
             result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
 
-        assert result is not None
-        assert result.mutated_patch == _MUTATED_SINGLE_HUNK_GOOD
-        _, kwargs = mock_agent.call_args
-        assert kwargs["structured_output_model"] is MutatedPatchOutput
+        assert result is expected
+        assert call_count == 1
 
-    def test_returns_none_when_structured_output_missing(self):
-        mock_agent = MagicMock()
-        mock_agent.return_value.structured_output = None
-        with (
-            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
-            patch.object(build_seeded_set, "OpenAIModel"),
+    def test_returns_none_when_structured_output_yields_nothing(self):
+        async def empty_structured_output(
+            output_model, messages, system_prompt=None, **kwargs
         ):
+            return
+            yield  # pragma: no cover - makes this an async generator
+
+        mock_model = MagicMock()
+        mock_model.structured_output = empty_structured_output
+        with patch.object(build_seeded_set, "OpenAIModel", return_value=mock_model):
             generate = make_llm_mutation_generator("gpt-4o")
             result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
 
         assert result is None
 
-    def test_returns_none_and_does_not_raise_when_agent_call_fails(self):
-        mock_agent = MagicMock(side_effect=RuntimeError("boom"))
-        with (
-            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
-            patch.object(build_seeded_set, "OpenAIModel"),
+    def test_returns_none_and_does_not_raise_when_call_fails(self):
+        call_count = 0
+
+        async def failing_structured_output(
+            output_model, messages, system_prompt=None, **kwargs
         ):
+            nonlocal call_count
+            call_count += 1
+            raise RuntimeError("boom")
+            yield  # pragma: no cover - makes this an async generator
+
+        mock_model = MagicMock()
+        mock_model.structured_output = failing_structured_output
+        with patch.object(build_seeded_set, "OpenAIModel", return_value=mock_model):
             generate = make_llm_mutation_generator("gpt-4o")
             result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
 
         assert result is None
-        assert mock_agent.call_count == 1  # no retry on failure
+        assert call_count == 1  # no retry on failure
 
     def test_uses_base_url_client_args_when_provided(self):
-        with (
-            patch.object(build_seeded_set, "Agent"),
-            patch.object(build_seeded_set, "OpenAIModel") as mock_model_cls,
-        ):
+        with patch.object(build_seeded_set, "OpenAIModel") as mock_model_cls:
             make_llm_mutation_generator("gpt-4o", "https://openrouter.example/api/v1")
 
         _, kwargs = mock_model_cls.call_args

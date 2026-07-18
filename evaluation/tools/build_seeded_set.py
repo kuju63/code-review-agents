@@ -11,6 +11,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import logging
 import os
@@ -21,8 +22,8 @@ from typing import Any, Callable, cast
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, field_validator
-from strands import Agent
 from strands.models.openai import OpenAIModel
+from strands.types.content import Messages
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +117,22 @@ def make_llm_mutation_generator(
     a custom ``llm_base_url`` gets a fixed low temperature for
     reproducibility; the default endpoint is used as-is otherwise.
 
+    Calls ``Model.structured_output()`` directly instead of going through
+    ``Agent(...)(prompt, structured_output_model=...)``. The Agent-level
+    path registers a synthetic tool and relies on the model invoking it
+    (``tool_choice=auto`` on the first call, forced only on a retry after
+    ``end_turn`` -- see strands-agents/harness-sdk#3336, open/unresolved
+    as of this writing): a self-hosted OpenAI-compatible model can answer
+    with the correct JSON as freeform text on both attempts without ever
+    emitting a `tool_calls` entry, which raises `StructuredOutputException`
+    on every call. `Model.structured_output()` sidesteps tool-calling
+    entirely via the OpenAI-compatible `response_format` (JSON-schema
+    constrained decoding), which this repo's local Ollama setup honors
+    reliably. This is not the deprecated `Agent.structured_output()`
+    convenience wrapper (which internally calls the same `Model` method) --
+    the `Model.structured_output()` method itself carries no deprecation
+    notice.
+
     Args:
         model_id: OpenAI-compatible model id to use for generation.
         llm_base_url: Optional OpenAI-compatible base URL. When set, the
@@ -137,14 +154,22 @@ def make_llm_mutation_generator(
     else:
         model = OpenAIModel(model_id=model_id)
 
-    agent = Agent(model=model, system_prompt=_MUTATION_GEN_SYSTEM_PROMPT, tools=[])
-
     def generate(
         patch: str, rule: dict[str, Any], lang: str
     ) -> MutatedPatchOutput | None:
         prompt = build_generation_prompt(patch, rule, lang)
+        messages: Messages = [{"role": "user", "content": [{"text": prompt}]}]
+
+        async def invoke() -> MutatedPatchOutput:
+            last_event: dict[str, Any] | None = None
+            async for event in model.structured_output(
+                MutatedPatchOutput, messages, system_prompt=_MUTATION_GEN_SYSTEM_PROMPT
+            ):
+                last_event = event
+            return cast(MutatedPatchOutput, last_event["output"])  # type: ignore[index]
+
         try:
-            result = agent(prompt, structured_output_model=MutatedPatchOutput)
+            return asyncio.run(invoke())
         except Exception:
             # Fail closed, no retry: design doc 3.2.3 explicitly forbids
             # regeneration retries so a flaky/unstable model doesn't leak
@@ -155,9 +180,6 @@ def make_llm_mutation_generator(
                 exc_info=True,
             )
             return None
-        if result.structured_output is None:
-            return None
-        return cast(MutatedPatchOutput, result.structured_output)
 
     return generate
 
