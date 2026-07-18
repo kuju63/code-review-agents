@@ -132,7 +132,7 @@ def make_llm_mutation_generator(
         model = OpenAIModel(
             model_id=model_id,
             client_args={"base_url": llm_base_url},
-            params={"temperature": 0.0},
+            params={"temperature": 0.1},
         )
     else:
         model = OpenAIModel(model_id=model_id)
