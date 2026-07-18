@@ -1534,6 +1534,69 @@ class TestRenderSeededItemWithGeneration:
         )
         assert seeded["generation_source"] == "deterministic_fallback"
 
+    def test_default_max_attempts_calls_generate_fn_exactly_once(self):
+        item, file_change = self._gold_item_and_file()
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            return None
+
+        render_seeded_item_with_generation(item, file_change, RULES[0], generate_fn)
+        assert len(calls) == 1
+
+    def test_retries_until_max_attempts_then_falls_back(self):
+        item, file_change = self._gold_item_and_file()
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            return None
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn, max_attempts=3
+        )
+        assert len(calls) == 3
+        assert seeded["generation_source"] == "deterministic_fallback"
+
+    def test_succeeds_on_a_later_attempt_after_earlier_failures(self):
+        item, file_change = self._gold_item_and_file()
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            if len(calls) < 3:
+                return None
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="third time's the charm",
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn, max_attempts=5
+        )
+        assert len(calls) == 3
+        assert seeded["generation_source"] == "llm"
+        assert seeded["reachability_rationale"] == "third time's the charm"
+
+    def test_stops_retrying_as_soon_as_an_attempt_passes(self):
+        item, file_change = self._gold_item_and_file()
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="first try",
+            )
+
+        render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn, max_attempts=5
+        )
+        assert len(calls) == 1
+
 
 class TestBuildSeededItemsGenerationSourceWiring:
     def test_generate_fn_wired_through_to_each_item(self):
@@ -1557,6 +1620,28 @@ class TestBuildSeededItemsGenerationSourceWiring:
         item = make_gold_item(files=[make_file("src/foo.ts"), make_file("src/bar.js")])
         items, _ = build_seeded_items(item, RULES, random.Random(1), 2)
         assert all(i["generation_source"] == "deterministic_fallback" for i in items)
+
+    def test_max_attempts_wired_through_to_render(self):
+        item = make_gold_item(
+            files=[make_file("src/foo.ts", patch=_ORIGINAL_SINGLE_HUNK)]
+        )
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            if len(calls) < 2:
+                return None
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="second attempt",
+            )
+
+        items, _ = build_seeded_items(
+            item, [RULES[0]], random.Random(1), 1, generate_fn, max_attempts=2
+        )
+        assert items[0]["generation_source"] == "llm"
+        assert len(calls) == 2
 
 
 class TestMainCLIModelConfigValidation:
@@ -1699,7 +1784,7 @@ class TestMainCLIEndToEnd:
         path.write_text(json.dumps({"rules": rules}))
         return path
 
-    def _run(self, tmp_path, monkeypatch, generate_fn):
+    def _run(self, tmp_path, monkeypatch, generate_fn, extra_argv=None):
         gold_items = [
             {
                 "id": "owner/repo#1",
@@ -1730,7 +1815,8 @@ class TestMainCLIEndToEnd:
                 str(output_path),
                 "--model-id",
                 "test-model",
-            ],
+            ]
+            + (extra_argv or []),
         )
 
         exit_code = main()
@@ -1768,6 +1854,39 @@ class TestMainCLIEndToEnd:
 
         assert len(items) == 1
         assert items[0]["generation_source"] == "deterministic_fallback"
+
+    def test_llm_max_attempts_flag_retries_before_falling_back(
+        self, tmp_path, monkeypatch
+    ):
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            if len(calls) < 2:
+                return None
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="second attempt via CLI",
+            )
+
+        items = self._run(
+            tmp_path, monkeypatch, generate_fn, extra_argv=["--llm-max-attempts", "2"]
+        )
+
+        assert len(calls) == 2
+        assert items[0]["generation_source"] == "llm"
+
+    def test_default_llm_max_attempts_is_one(self, tmp_path, monkeypatch):
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            return None
+
+        self._run(tmp_path, monkeypatch, generate_fn)
+
+        assert len(calls) == 1
 
 
 class TestRegressionKnownMisses:

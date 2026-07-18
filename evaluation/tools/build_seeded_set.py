@@ -1097,11 +1097,19 @@ def render_seeded_item_with_generation(
     file_change: dict[str, Any],
     rule: dict[str, Any],
     generate_fn: MutationGenerator | None = None,
+    max_attempts: int = 1,
 ) -> dict[str, Any]:
-    """Try the LLM generation path (design doc 3.2.1); fall back to the
-    Phase 1 deterministic path (no retry) if `generate_fn` is unset, the
-    LLM call failed, the output didn't pass V1-V4, or the injected line
-    couldn't be unambiguously recomputed.
+    """Try the LLM generation path (design doc 3.2.1) up to `max_attempts`
+    times; fall back to the Phase 1 deterministic path if `generate_fn` is
+    unset, or every attempt either fails the LLM call, doesn't pass V1-V4,
+    or has an injected line that can't be unambiguously recomputed.
+
+    Design doc 9.4 reverses 3.2.3's original "no retry" decision: each
+    attempt is independently gated by the same `passes_post_generation_checks`
+    (V1-V4), so a bounded retry cannot let a lower-quality generation
+    through -- it only gives a generation that would have passed on a later
+    attempt a chance to be found, given the high attempt-to-attempt
+    variance measured in 9.2.
 
     Args:
         gold_item: Source Gold set item.
@@ -1110,6 +1118,9 @@ def render_seeded_item_with_generation(
         generate_fn: Optional LLM mutation generator (from
             `make_llm_mutation_generator`). Defaults to None, which
             skips the LLM path entirely for backward compatibility.
+        max_attempts: Maximum number of `generate_fn` calls to try before
+            falling back. Defaults to 1 (no retry), preserving prior
+            behavior for existing callers.
 
     Returns:
         A Seeded item dict, with `generation_source` set to `"llm"` or
@@ -1119,17 +1130,18 @@ def render_seeded_item_with_generation(
         path = file_change.get("path", "")
         original_patch = file_change.get("patch") or ""
         lang = detect_lang(path)
-        llm_output = generate_fn(original_patch, rule, lang)
-        if llm_output is not None and passes_post_generation_checks(
-            original_patch, llm_output.mutated_patch, rule
-        ):
-            injected_line = recompute_injected_line(
-                original_patch, llm_output.mutated_patch
-            )
-            if injected_line is not None:
-                return render_seeded_item_from_llm(
-                    gold_item, file_change, rule, llm_output, injected_line
+        for _ in range(max(max_attempts, 1)):
+            llm_output = generate_fn(original_patch, rule, lang)
+            if llm_output is not None and passes_post_generation_checks(
+                original_patch, llm_output.mutated_patch, rule
+            ):
+                injected_line = recompute_injected_line(
+                    original_patch, llm_output.mutated_patch
                 )
+                if injected_line is not None:
+                    return render_seeded_item_from_llm(
+                        gold_item, file_change, rule, llm_output, injected_line
+                    )
 
     return render_seeded_item(gold_item, file_change, rule)
 
@@ -1140,6 +1152,7 @@ def build_seeded_items(
     rnd: random.Random,
     multiplier: int,
     generate_fn: MutationGenerator | None = None,
+    max_attempts: int = 1,
 ) -> tuple[list[dict[str, Any]], str | None]:
     """Build up to `multiplier` distinct Seeded items for one Gold item.
 
@@ -1161,6 +1174,8 @@ def build_seeded_items(
             compatibility: existing callers that don't pass it keep
             getting the pure Phase 1 path via
             `render_seeded_item_with_generation`'s own None-handling.
+        max_attempts: Passed through to `render_seeded_item_with_generation`
+            (design doc 9.4). Defaults to 1 (no retry).
 
     Returns:
         A tuple of `(items, warning)`. `items` is `[]` when the pool is
@@ -1186,7 +1201,9 @@ def build_seeded_items(
         )
 
     items = [
-        render_seeded_item_with_generation(gold_item, fc, rule, generate_fn)
+        render_seeded_item_with_generation(
+            gold_item, fc, rule, generate_fn, max_attempts
+        )
         for fc, rule in pool[:take]
     ]
     return items, warning
@@ -1220,6 +1237,16 @@ def main() -> int:
         help=(
             "Optional OpenAI-compatible base URL for Seeded mutation "
             "generation. Falls back to SEEDED_GEN_LLM_BASE_URL."
+        ),
+    )
+    parser.add_argument(
+        "--llm-max-attempts",
+        type=int,
+        default=1,
+        help=(
+            "Max LLM generation attempts per (file, rule) combo before "
+            "falling back to Phase 1 (design doc 9.4). Each attempt is "
+            "independently gated by V1-V4; defaults to 1 (no retry)."
         ),
     )
     args = parser.parse_args()
@@ -1270,7 +1297,7 @@ def main() -> int:
     with open(args.output, "w", encoding="utf-8") as out:
         for item in gold_items:
             items, warning = build_seeded_items(
-                item, rules, rnd, args.multiplier, generate_fn
+                item, rules, rnd, args.multiplier, generate_fn, args.llm_max_attempts
             )
             if warning:
                 print(warning, file=sys.stderr)
