@@ -232,9 +232,13 @@ Matching rule:
   deterministic post-generation checks) is actually adopted versus falling
   back to Phase 1's deterministic logic — a low rate means the R1/R3
   improvement Phase 2 was built for (§3.2 of the design doc) isn't being
-  realized. No fixed threshold is set here; per Issue #131 this is
-  reported per rebuild and a numeric target is agreed once baseline data
-  after the §7.4.2 catalog fix is available.
+  realized. A fallback rate below 30% (i.e. LLM Adoption Rate above 70%)
+  is the working target established and measured in
+  [docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
+  §9.4-§9.8, achieved with a sufficiently capable generation model
+  (§9.7) and bounded retry (§9.4, `--llm-max-attempts`, default 3). This
+  target is model-dependent, not a property of the pipeline code alone —
+  see §9.9 for what changing the configured generation model does to it.
 
   Reported as a soft observability metric, not a Hard/Domain hard gate
   (§4): unlike Must-Find Recall/Critical Miss Rate, a low adoption rate

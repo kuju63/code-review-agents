@@ -80,12 +80,12 @@ back and include the full original patch around them.
 Example (generic, illustrates the required transformation):
 
 Original patch given to you:
-@@ -1,2 +1,2 @@
+@@ -1,1 +1,2 @@
  context1
 +addedByPr
 
 Correct mutated_patch:
-@@ -1,2 +1,3 @@
+@@ -1,1 +1,3 @@
  context1
 +addedByPr
 +injectedCall(userInput);
@@ -219,14 +219,23 @@ def make_llm_mutation_generator(
 
         try:
             return asyncio.run(invoke())
-        except Exception:
+        except Exception as exc:
             # This single call failed closed; it does not retry itself.
             # The caller (render_seeded_item_with_generation, design doc
             # 9.4) may call this function again up to max_attempts times,
             # so this warning fires once per failed attempt, not once per
             # combo -- expect it to repeat under --llm-max-attempts > 1.
+            #
+            # The exception type is named in the summary (not just via
+            # exc_info's traceback) so a structural failure -- e.g.
+            # RuntimeError: asyncio.run() cannot be called from a running
+            # event loop, if this were ever invoked from an async context
+            # -- is distinguishable at a glance from ordinary model/network
+            # flakiness, which would otherwise silently exhaust every
+            # retry attempt with an identical-looking log line.
             logger.warning(
-                "mutation generation call failed on this attempt",
+                "mutation generation call failed on this attempt (%s)",
+                type(exc).__name__,
                 exc_info=True,
             )
             return None
@@ -367,6 +376,30 @@ _FORBIDDEN_GLOBAL_RE = re.compile(r"\b(window|document)\.")
 # enclosing code being async.
 _SCOPE_DEPENDENT_TOKEN_RE = re.compile(r"\bawait\b")
 _ASYNC_SCOPE_RE = re.compile(r"\basync\b")
+# Matches a backslash-escape sequence (`\b`, `\s`, `\.`, etc.) in a regex
+# pattern's own source text, so it can be blanked out before running
+# _SCOPE_DEPENDENT_TOKEN_RE against that source: without this, a pattern
+# like r"\bawait\b" contains the literal character run "bawaitb" (the
+# escape letters sit directly against "await" with no real word boundary
+# between them), which would make a naive \bawait\b search against the
+# raw source fail even for the canonical, unambiguous case.
+_REGEX_ESCAPE_SEQUENCE_RE = re.compile(r"\\.")
+
+
+def _pattern_references_keyword(pattern_source: str, keyword_re: re.Pattern) -> bool:
+    """Does `pattern_source` (a regex's own source text) reference
+    `keyword_re` as a literal, whole-word token -- not merely as a
+    substring of a longer identifier (e.g. "awaited" contains "await" as
+    a substring but isn't the `await` keyword)?
+
+    Backslash-escape sequences are blanked out first (see
+    `_REGEX_ESCAPE_SEQUENCE_RE`) so they can't accidentally supply a fake
+    "adjacent letter" that breaks the word-boundary check on either side
+    of the keyword, in either direction (false negative on `\bawait\b`
+    itself, or false positive on `\bawaited\b`).
+    """
+    cleaned = _REGEX_ESCAPE_SEQUENCE_RE.sub(" ", pattern_source)
+    return bool(keyword_re.search(cleaned))
 
 
 def validate_catalog(rules: list[Any]) -> list[str]:
@@ -502,7 +535,15 @@ def validate_catalog(rules: list[Any]) -> list[str]:
             # r"\bawait\s+api\." requires more context than "await" alone
             # to match, so p.search("await") would miss it and silently
             # skip this check for exactly the tokens it exists to catch.
-            if any("await" in p.pattern for p in compiled_tokens):
+            # Matched with a word boundary (_pattern_references_keyword,
+            # not a raw substring test) so an unrelated token like
+            # r"\bawaited\b" or r"\bunawaited\b" -- which contains "await"
+            # as a substring but doesn't reference the keyword -- doesn't
+            # misfire.
+            if any(
+                _pattern_references_keyword(p.pattern, _SCOPE_DEPENDENT_TOKEN_RE)
+                for p in compiled_tokens
+            ):
                 for lang, snippet in snippets.items():
                     if not isinstance(snippet, str):
                         continue
@@ -1143,16 +1184,18 @@ def render_seeded_item_with_generation(
         lang = detect_lang(path)
         for _ in range(max(max_attempts, 1)):
             llm_output = generate_fn(original_patch, rule, lang)
-            if llm_output is not None and passes_post_generation_checks(
+            if llm_output is None or not passes_post_generation_checks(
                 original_patch, llm_output.mutated_patch, rule
             ):
-                injected_line = recompute_injected_line(
-                    original_patch, llm_output.mutated_patch
-                )
-                if injected_line is not None:
-                    return render_seeded_item_from_llm(
-                        gold_item, file_change, rule, llm_output, injected_line
-                    )
+                continue
+            injected_line = recompute_injected_line(
+                original_patch, llm_output.mutated_patch
+            )
+            if injected_line is None:
+                continue
+            return render_seeded_item_from_llm(
+                gold_item, file_change, rule, llm_output, injected_line
+            )
 
     return render_seeded_item(gold_item, file_change, rule)
 
@@ -1289,6 +1332,15 @@ def main() -> int:
     if catalog_errors:
         for err in catalog_errors:
             print(f"[SEEDED-ERROR] {err}", file=sys.stderr)
+        return 1
+
+    if args.llm_max_attempts < 1:
+        print(
+            f"[SEEDED-ERROR] --llm-max-attempts must be >= 1, got "
+            f'{args.llm_max_attempts!r} (0 does not mean "skip the LLM '
+            'path" -- pass no --model-id/SEEDED_GEN_MODEL_ID for that)',
+            file=sys.stderr,
+        )
         return 1
 
     model_id = args.model_id or os.environ.get("SEEDED_GEN_MODEL_ID")

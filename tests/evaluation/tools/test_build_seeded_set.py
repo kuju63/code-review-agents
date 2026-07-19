@@ -988,6 +988,22 @@ class TestValidateCatalogSelfContainment:
             "self-containment" in e and "rule_x" in e and "js" in e for e in errors
         )
 
+    def test_unrelated_token_containing_await_as_substring_is_not_flagged(self):
+        """A token like `\\bawaited\\b` references an unrelated identifier
+        (e.g. a variable named `awaited`), not the `await` keyword, even
+        though "await" appears as a substring of the regex source. A raw
+        substring test on the pattern text would misfire here; a word-
+        boundary match on the keyword itself must not."""
+        rule = _valid_rule(
+            required_tokens=[r"\bawaited\b"],
+            line_snippet="const awaited = true;",
+            language_snippets={
+                "js": "const awaited = true;",
+                "ts": "const awaited = true;",
+            },
+        )
+        assert validate_catalog([rule]) == []
+
     def test_real_catalog_rules_satisfy_self_containment(self):
         catalog_path = (
             Path(__file__).parents[3]
@@ -1386,8 +1402,17 @@ class TestMutationGenSystemPrompt:
 
     def test_includes_a_worked_example(self):
         prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
-        assert "@@ -1,2 +1,2 @@" in prompt
-        assert "@@ -1,2 +1,3 @@" in prompt
+        assert "@@ -1,1 +1,2 @@" in prompt
+        assert "@@ -1,1 +1,3 @@" in prompt
+
+    def test_worked_example_hunk_headers_have_consistent_old_side_count(self):
+        """The worked example's headers must not teach the model an
+        internally-inconsistent unified-diff header: old_count must match
+        the number of context/removed lines actually shown in the body
+        (here, exactly one context line, no removed lines)."""
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "@@ -1,2 +1,2 @@" not in prompt
+        assert "@@ -1,2 +1,3 @@" not in prompt
 
     def test_forbids_modifying_existing_lines(self):
         prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
@@ -1730,6 +1755,66 @@ class TestMainCLIModelConfigValidation:
         captured = capsys.readouterr()
         assert "[SEEDED-ERROR]" in captured.err
         assert not output_path.exists()
+
+    def test_exits_with_error_when_llm_max_attempts_is_zero(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "some-model")
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+                "--llm-max-attempts",
+                "0",
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
+        assert "--llm-max-attempts" in captured.err
+        assert not output_path.exists()
+
+    def test_exits_with_error_when_llm_max_attempts_is_negative(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "some-model")
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+                "--llm-max-attempts",
+                "-1",
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
 
     def test_cli_model_id_takes_priority_over_env(self, tmp_path, monkeypatch):
         monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)

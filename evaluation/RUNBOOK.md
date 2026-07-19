@@ -94,6 +94,17 @@ LLM inference + deterministic post-generation checks, see
 3.2). Set `SEEDED_GEN_MODEL_ID` in `.env` (see `.env.example`), or pass
 `--model-id` explicitly; there is no implicit default model.
 
+Each (file, rule) combo gets up to `--llm-max-attempts` LLM generation
+attempts (default 3) before falling back to Phase1 (design doc §9.4).
+The <30% fallback-rate result reported in design doc §9.7-§9.8 was
+measured with this default *and* a generation model shown there to
+reliably preserve existing patch content while injecting the required
+pattern (§9.2's model comparison) -- retries alone do not compensate for
+a model too small/misaligned to pass the post-generation checks even
+once (§9.6, §9.9). If your configured model's fallback rate stays high
+despite `--llm-max-attempts 3`, try a larger/more capable model before
+assuming the pipeline itself is broken.
+
 python evaluation/tools/build_seeded_set.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --catalog evaluation/config/seeded_mutations.json \
@@ -126,9 +137,11 @@ Checkpoint:
   "
   ```
 
-  No fixed threshold is enforced (EVALUATION_PLAN.md §3.2); a persistently
-  low rate for a specific `rule_id` may indicate that rule's snippet
-  violates the self-containment principle
+  Not a hard release gate (EVALUATION_PLAN.md §3.2), but a working target
+  of fallback rate < 30% overall applies with the default
+  `--llm-max-attempts` and a sufficiently capable model (design doc
+  §9.4-§9.8). A persistently low rate for a specific `rule_id` may
+  indicate that rule's snippet violates the self-containment principle
   (docs/eval-seeded-mutation-injection-design.md §7.3) and should be
   reviewed.
 
