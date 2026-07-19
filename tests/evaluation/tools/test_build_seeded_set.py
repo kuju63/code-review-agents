@@ -1877,7 +1877,7 @@ class TestMainCLIEndToEnd:
         assert len(calls) == 2
         assert items[0]["generation_source"] == "llm"
 
-    def test_default_llm_max_attempts_is_one(self, tmp_path, monkeypatch):
+    def test_default_llm_max_attempts_is_three(self, tmp_path, monkeypatch):
         calls = []
 
         def generate_fn(patch, rule, lang):
@@ -1886,7 +1886,7 @@ class TestMainCLIEndToEnd:
 
         self._run(tmp_path, monkeypatch, generate_fn)
 
-        assert len(calls) == 1
+        assert len(calls) == 3
 
 
 class TestRegressionKnownMisses:

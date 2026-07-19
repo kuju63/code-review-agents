@@ -1242,11 +1242,13 @@ def main() -> int:
     parser.add_argument(
         "--llm-max-attempts",
         type=int,
-        default=1,
+        default=3,
         help=(
             "Max LLM generation attempts per (file, rule) combo before "
             "falling back to Phase 1 (design doc 9.4). Each attempt is "
-            "independently gated by V1-V4; defaults to 1 (no retry)."
+            "independently gated by V1-V4; defaults to 3, the value "
+            "measured in design doc 9.7-9.8 to bring fallback under 30%% "
+            "when combined with a sufficiently capable generation model."
         ),
     )
     args = parser.parse_args()
