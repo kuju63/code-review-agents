@@ -970,6 +970,24 @@ class TestValidateCatalogSelfContainment:
     def test_no_await_requirement_is_unaffected(self):
         assert validate_catalog([_valid_rule()]) == []
 
+    def test_await_required_token_with_extra_context_is_still_detected(self):
+        """A token requiring more than the bare word "await" (e.g. `await`
+        followed by a specific call) must still trigger the self-
+        containment check -- p.search("await") alone would miss this
+        since "await" by itself doesn't satisfy `\\bawait\\s+api\\.`."""
+        rule = _valid_rule(
+            required_tokens=[r"\bawait\s+api\."],
+            line_snippet="await api.get('/items/' + id);",
+            language_snippets={
+                "js": "await api.get('/items/' + id);",
+                "ts": "await api.get('/items/' + id);",
+            },
+        )
+        errors = validate_catalog([rule])
+        assert any(
+            "self-containment" in e and "rule_x" in e and "js" in e for e in errors
+        )
+
     def test_real_catalog_rules_satisfy_self_containment(self):
         catalog_path = (
             Path(__file__).parents[3]
@@ -1127,6 +1145,15 @@ class TestVerifyOnlyAdditionsChangedWhitespaceTolerance:
     def test_dropped_original_line_still_fails_despite_whitespace_tolerance(self):
         mutated = "@@ -1,2 +1,2 @@\n context1\n+eval(userInput);"
         assert verify_only_additions_changed(self._ORIGINAL, mutated) is False
+
+    def test_internal_whitespace_change_inside_string_literal_still_fails(self):
+        """Regression: normalization must not collapse internal whitespace
+        runs. Doing so would treat a changed string literal (a genuine
+        content change, e.g. "a  b" -> "a b") as formatting-only and let
+        it silently pass V2."""
+        original = '@@ -1,2 +1,2 @@\n context1\n+const s = "a  b";'
+        mutated = '@@ -1,2 +1,3 @@\n context1\n+const s = "a b";\n+eval(userInput);'
+        assert verify_only_additions_changed(original, mutated) is False
 
 
 class TestVerifyRequiredTokens:

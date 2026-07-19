@@ -220,12 +220,13 @@ def make_llm_mutation_generator(
         try:
             return asyncio.run(invoke())
         except Exception:
-            # Fail closed, no retry: design doc 3.2.3 explicitly forbids
-            # regeneration retries so a flaky/unstable model doesn't leak
-            # into the evaluation dataset's determinism (R6).
+            # This single call failed closed; it does not retry itself.
+            # The caller (render_seeded_item_with_generation, design doc
+            # 9.4) may call this function again up to max_attempts times,
+            # so this warning fires once per failed attempt, not once per
+            # combo -- expect it to repeat under --llm-max-attempts > 1.
             logger.warning(
-                "mutation generation call failed; falling back to "
-                "deterministic injection",
+                "mutation generation call failed on this attempt",
                 exc_info=True,
             )
             return None
@@ -489,14 +490,19 @@ def validate_catalog(rules: list[Any]) -> list[str]:
                     )
 
             # Self-containment (R8, design doc §7.3): a required_tokens
-            # entry that itself matches the bare word "await" means the
-            # snippet requires an `async` enclosing scope. Injection is
-            # pure addition (V2), so the snippet must declare that scope
-            # itself rather than depend on the surrounding code being
-            # async -- otherwise generation is structurally forced to
-            # rewrite the enclosing function signature, which V2 (by
-            # design) rejects.
-            if any(p.search("await") for p in compiled_tokens):
+            # entry that references "await" means the snippet requires an
+            # `async` enclosing scope. Injection is pure addition (V2), so
+            # the snippet must declare that scope itself rather than
+            # depend on the surrounding code being async -- otherwise
+            # generation is structurally forced to rewrite the enclosing
+            # function signature, which V2 (by design) rejects.
+            #
+            # Checked against each pattern's own source text (not by
+            # executing it against the bare string "await"): a token like
+            # r"\bawait\s+api\." requires more context than "await" alone
+            # to match, so p.search("await") would miss it and silently
+            # skip this check for exactly the tokens it exists to catch.
+            if any("await" in p.pattern for p in compiled_tokens):
                 for lang, snippet in snippets.items():
                     if not isinstance(snippet, str):
                         continue
@@ -686,21 +692,26 @@ def verify_diff_parses(mutated_patch: str) -> bool:
 
 
 def _normalize_diff_line_for_compare(line: str) -> str:
-    """Normalize a diff line's content for whitespace/semicolon-tolerant
+    """Normalize a diff line's content for indentation/semicolon-tolerant
     comparison in `_hunk_added_indices`.
 
     Design doc 7.4.1 (Issue #131, 1/7 false-negative case): an LLM
     reproducing a pre-existing line verbatim but with different
     indentation or a dropped/added trailing semicolon must not be treated
     as an altered line. Only the diff marker (`+`/`-`/` `) is kept exact;
-    the body is whitespace-collapsed and semicolon-insensitive. Genuine
-    content changes (different tokens, restructured expressions) still
-    differ after normalization and are correctly rejected.
+    the body has its leading/trailing whitespace and one trailing
+    semicolon stripped. Internal whitespace is deliberately left intact
+    (not collapsed run-by-run): collapsing it would also normalize
+    whitespace inside string/regex literals, silently treating a genuine
+    content change (e.g. `"a  b"` -> `"a b"`) as formatting-only and
+    letting it slip past V2 undetected. Other genuine content changes
+    (different tokens, restructured expressions) still differ after
+    normalization and are correctly rejected.
     """
     if not line:
         return line
     marker, body = line[0], line[1:]
-    return marker + re.sub(r"\s+", " ", body).strip().rstrip(";")
+    return marker + body.strip().rstrip(";")
 
 
 def _hunk_added_indices(
