@@ -381,7 +381,23 @@ _FORBIDDEN_GLOBAL_RE = re.compile(r"\b(window|document)\.")
 # own `async` scope (e.g. an async IIFE) rather than depend on the
 # enclosing code being async.
 _SCOPE_DEPENDENT_TOKEN_RE = re.compile(r"\bawait\b")
-_ASYNC_SCOPE_RE = re.compile(r"\basync\b")
+# A bare `\basync\b` search would be satisfied by "async" appearing in a
+# comment or string literal (e.g. "// not async"), letting a
+# non-self-contained snippet slip through this build-time check only to
+# surface later as a high deterministic_fallback rate. Instead require
+# one of the actual JS/TS async declaration forms: `async function`,
+# `async (...)`  / `async name(...)` (arrow/method), or `async name =>`.
+# `[ \t]*` (not `\s*`) keeps the identifier/call forms from matching
+# across a newline into unrelated code later in the same snippet.
+# Same known limitation as design doc 7.9's whitespace-normalization
+# case: this is a lexical match, not a parser, so a declaration-shaped
+# string literal (e.g. `const x = "async function() {}"`) would still
+# false-positive as a real async scope. Accepted for the same reason --
+# the catalog has no `await`/`async` rules today, and a real fix needs
+# actual JS/TS parsing.
+_ASYNC_SCOPE_RE = re.compile(
+    r"\basync\b[ \t]*(?:function\b|\(|[A-Za-z_$][\w$]*[ \t]*(?:\(|=>))"
+)
 # Matches a backslash-escape sequence (`\b`, `\s`, `\.`, etc.) in a regex
 # pattern's own source text, so it can be blanked out before running
 # _SCOPE_DEPENDENT_TOKEN_RE against that source: without this, a pattern
@@ -1370,8 +1386,9 @@ def main() -> int:
     if args.llm_max_attempts < 1:
         print(
             f"[SEEDED-ERROR] --llm-max-attempts must be >= 1, got "
-            f'{args.llm_max_attempts!r} (0 does not mean "skip the LLM '
-            'path" -- pass no --model-id/SEEDED_GEN_MODEL_ID for that)',
+            f"{args.llm_max_attempts!r} (each attempt is independently "
+            "checked by the post-generation verifiers -- pass 1 to "
+            "disable retries, not 0)",
             file=sys.stderr,
         )
         return 1

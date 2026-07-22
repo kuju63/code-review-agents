@@ -1004,6 +1004,34 @@ class TestValidateCatalogSelfContainment:
         )
         assert validate_catalog([rule]) == []
 
+    def test_await_with_async_only_in_comment_is_still_reported(self):
+        """Regression: the word "async" appearing in a comment (not an
+        actual async declaration) must not satisfy the self-containment
+        check -- a bare `\\basync\\b` search would wrongly accept this."""
+        rule = _valid_rule(
+            required_tokens=[r"\bawait\b"],
+            line_snippet="// not async\nawait api.get('/items/' + id);",
+            language_snippets={
+                "js": "// not async\nawait api.get('/items/' + id);",
+                "ts": "// not async\nawait api.get('/items/' + id);",
+            },
+        )
+        errors = validate_catalog([rule])
+        assert any(
+            "self-containment" in e and "rule_x" in e and "js" in e for e in errors
+        )
+
+    def test_await_with_async_arrow_without_parens_is_allowed(self):
+        rule = _valid_rule(
+            required_tokens=[r"\bawait\b"],
+            line_snippet="(async id => { await api.get('/items/' + id); })(x);",
+            language_snippets={
+                "js": "(async id => { await api.get('/items/' + id); })(x);",
+                "ts": "(async id => { await api.get('/items/' + id); })(x);",
+            },
+        )
+        assert validate_catalog([rule]) == []
+
     def test_real_catalog_rules_satisfy_self_containment(self):
         catalog_path = (
             Path(__file__).parents[3]
