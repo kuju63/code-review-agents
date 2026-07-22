@@ -35,12 +35,18 @@ on the provided README text; do not invent facts. Output the summary text only, 
 with no preamble, headings, or markdown.
 """
 
-_TARGET_EXTENSIONS = frozenset([".ts", ".tsx", ".js", ".jsx", ".css", ".scss", ".html"])
-_TARGET_FILENAMES = frozenset(["package.json", "angular.json"])
+_TARGET_EXTENSIONS = frozenset(
+    [".ts", ".tsx", ".js", ".jsx", ".css", ".scss", ".html", ".svelte"]
+)
+_TARGET_FILENAMES = frozenset(
+    ["package.json", "angular.json", "svelte.config.js", "svelte.config.ts"]
+)
 _DEPENDENCY_FILENAMES = frozenset(
     [
         "package.json",
         "angular.json",
+        "svelte.config.js",
+        "svelte.config.ts",
         "package-lock.json",
         "yarn.lock",
         "pnpm-lock.yaml",

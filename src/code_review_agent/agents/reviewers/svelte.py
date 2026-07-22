@@ -13,12 +13,13 @@ the downstream Lead Engineer agent is not fed irrelevant Svelte-specific input.
 from ...models.review import (
     ProjectType,
     ReviewContext,
+    ReviewOutput,
     ReviewPerspective,
     ReviewResult,
 )
 from ...skills.agent_skills_factory import AgentSkillType
 from ..base_reviewer import LLMReviewAgent
-from ..registry import register_reviewer
+from ..registry import detect_project_types, register_reviewer
 
 _SYSTEM_PROMPT = """\
 You are a senior Svelte engineer. Please conduct a code review as a colleague \
@@ -54,4 +55,31 @@ class SvelteReviewer(LLMReviewAgent):
         context: ReviewContext,
         project_type: ProjectType | None = None,
     ) -> ReviewResult:
+        """Review the change, skipping non-Svelte PRs with no findings.
+
+        The project type is re-detected from the PR information so the guard
+        holds even when the reviewer is invoked directly through its A2A
+        endpoint, where orchestrator-level project-type selection does not
+        apply. When the PR is not a Svelte project, an empty result is returned
+        without invoking the LLM, so the downstream Lead Engineer agent is not
+        fed irrelevant Svelte-specific input.
+
+        Args:
+            context: Input boundary wrapping the collected PR information.
+            project_type: The project type this review was selected for, used
+                to annotate the result. ``None`` when not scoped.
+
+        Returns:
+            The reviewer's findings, or an empty result for non-Svelte PRs.
+        """
+        if ProjectType.SVELTE not in detect_project_types(context.pr_info):
+            return ReviewResult(
+                reviewer_id=self.reviewer_id,
+                perspective=self.perspective,
+                project_type=project_type,
+                output=ReviewOutput(
+                    summary="Not a Svelte project; no Svelte review performed.",
+                    findings=[],
+                ),
+            )
         return super().review(context, project_type)

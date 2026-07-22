@@ -23,6 +23,8 @@ _ANGULAR_SOURCE_SUFFIXES = (
     ".directive.ts",
     ".pipe.ts",
 )
+_SVELTE_CONFIGS = ("svelte.config.js", "svelte.config.ts")
+_SVELTE_SOURCE_SUFFIX = ".svelte"
 
 _ReviewerT = TypeVar("_ReviewerT", bound=ReviewAgent)
 
@@ -88,14 +90,16 @@ def detect_project_types(pr_info: PRInfoResult) -> set[ProjectType]:
     example ``pom.xml``/``build.gradle`` for Spring Boot).
 
     Two signals are combined: the PR-changed files and ``dependency_files``.
-    Angular is selected when ``angular.json`` or an Angular source naming
-    convention is present. This check runs first so the coarse TypeScript and
-    ``package.json`` signals do not misclassify Angular projects as React.
-    Otherwise, a TS/JS/JSX change or ``package.json`` qualifies the repository
-    as React/TypeScript.
+    Detection is ordered by specificity so the coarse TypeScript and
+    ``package.json`` signals do not misclassify framework projects as React.
+    Angular is checked first (``angular.json`` or an Angular source naming
+    convention), then Svelte (a ``svelte.config.js``/``.ts`` manifest or a
+    ``.svelte`` file). Otherwise, a TS/JS/JSX change or ``package.json``
+    qualifies the repository as React/TypeScript.
 
     Note:
-        Angular intentionally takes priority in mixed-signal repositories.
+        Angular takes priority over Svelte, and both take priority over the
+        coarse React/TypeScript heuristic, in mixed-signal repositories.
         Because ``dependency_files`` is repository-level, a PR that changes
         only non-stack files in a JS/TS repo can still be detected as
         React/TypeScript via ``package.json``.
@@ -108,14 +112,24 @@ def detect_project_types(pr_info: PRInfoResult) -> set[ProjectType]:
     """
     paths = [change.filePath for change in pr_info.pr_info.file_changes]
     dependency_files = set(pr_info.dependency_files)
+    all_files = dependency_files | set(paths)
 
     has_angular_manifest = any(
         path == _ANGULAR_MANIFEST or path.endswith(f"/{_ANGULAR_MANIFEST}")
-        for path in dependency_files | set(paths)
+        for path in all_files
     )
     has_angular_source = any(path.endswith(_ANGULAR_SOURCE_SUFFIXES) for path in paths)
     if has_angular_manifest or has_angular_source:
         return {ProjectType.ANGULAR}
+
+    has_svelte_manifest = any(
+        path == config or path.endswith(f"/{config}")
+        for config in _SVELTE_CONFIGS
+        for path in all_files
+    )
+    has_svelte_source = any(path.endswith(_SVELTE_SOURCE_SUFFIX) for path in paths)
+    if has_svelte_manifest or has_svelte_source:
+        return {ProjectType.SVELTE}
 
     has_package_json = "package.json" in dependency_files or any(
         path.endswith("package.json") for path in paths
