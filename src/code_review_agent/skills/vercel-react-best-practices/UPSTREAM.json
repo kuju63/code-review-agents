@@ -3,5 +3,7 @@
   "path": "skills/react-best-practices",
   "commit": "4559f18a20c1691c744b4395194290db6a0df5e9",
   "license": "MIT",
-  "adapted_files": []
+  "adapted_files": [
+    "Markdown files: trailing whitespace normalization only"
+  ]
 }
