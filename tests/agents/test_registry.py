@@ -137,6 +137,38 @@ class TestDetectProjectTypes:
         pr = _pr_info(file_paths=["styles/main.css"], dependency_files=["package.json"])
         assert detect_project_types(pr) == {ProjectType.REACT_TS}
 
+    def test_detects_angular_from_angular_json_dependency_file(self):
+        pr = _pr_info(file_paths=["styles/main.css"], dependency_files=["angular.json"])
+        assert detect_project_types(pr) == {ProjectType.ANGULAR}
+
+    def test_detects_angular_from_angular_json_change(self):
+        pr = _pr_info(file_paths=["angular.json"], dependency_files=[])
+        assert detect_project_types(pr) == {ProjectType.ANGULAR}
+
+    def test_does_not_match_filename_that_only_ends_with_angular_json_text(self):
+        pr = _pr_info(file_paths=["not-angular.json"], dependency_files=[])
+        assert detect_project_types(pr) == set()
+
+    @pytest.mark.parametrize(
+        "file_path",
+        [
+            "src/app/app.component.ts",
+            "src/app/user.service.ts",
+            "src/app/menu.directive.ts",
+            "src/app/date.pipe.ts",
+        ],
+    )
+    def test_detects_angular_from_file_naming_conventions(self, file_path):
+        pr = _pr_info(file_paths=[file_path], dependency_files=[])
+        assert detect_project_types(pr) == {ProjectType.ANGULAR}
+
+    def test_angular_detection_suppresses_coarse_react_detection(self):
+        pr = _pr_info(
+            file_paths=["src/app/app.component.ts", "package.json"],
+            dependency_files=["package.json", "angular.json"],
+        )
+        assert detect_project_types(pr) == {ProjectType.ANGULAR}
+
     def test_no_detection_without_ts_js_or_manifest(self):
         pr = _pr_info(file_paths=["styles/main.css", "index.html"], dependency_files=[])
         assert detect_project_types(pr) == set()

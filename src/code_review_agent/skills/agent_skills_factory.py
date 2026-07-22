@@ -11,27 +11,30 @@ _SKILLS_DIR = Path(__file__).parent
 
 
 class AgentSkillType(StrEnum):
-    """
-    Enum representing different types of agent skills.
-    """
+    """Skill bundles available to LLM-backed reviewers."""
 
     NONE = ""
     FRONTEND_REVIEW = "frontend_review"
     WEB_SECURITY_REVIEW = "web_security_review"
+    ANGULAR_REVIEW = "angular_review"
 
 
 def create_agent_skills(
     skill_type: AgentSkillType = AgentSkillType.NONE,
 ) -> AgentSkills:
-    """
-    Create an AgentSkills instance with the skills directory.
+    """Create an AgentSkills plugin for a reviewer skill bundle.
+
+    Args:
+        skill_type: Bundle identifying which local skills to load.
 
     Returns:
-        AgentSkills: An instance of AgentSkills with the skills directory.
+        AgentSkills: Plugin containing the selected local skills.
     """
     skills: list[SkillSource] = []
     if skill_type == AgentSkillType.FRONTEND_REVIEW:
         skills = _build_frontend_review_skills()
+    elif skill_type == AgentSkillType.ANGULAR_REVIEW:
+        skills = _build_angular_review_skills()
     elif skill_type == AgentSkillType.WEB_SECURITY_REVIEW:
         skills = _build_web_security_review_skills()
 
@@ -39,24 +42,49 @@ def create_agent_skills(
 
 
 def _build_frontend_review_skills() -> list[SkillSource]:
-    """
-    Build a list of skills for frontend review.
+    """Build the skill bundle for the frontend technical reviewer.
+
+    The bundle combines the project's generic frontend review skills with
+    Vercel's React/Next.js skills so the reviewer can apply React-specific
+    performance and composition guidance in addition to framework-agnostic
+    checks.
 
     Returns:
-        list[SkillSource]: A list of Skill instances for frontend review.
+        list[SkillSource]: Skill instances loaded for frontend review.
     """
     return [
         Skill.from_file(_SKILLS_DIR / "reviewing-universal"),
         Skill.from_file(_SKILLS_DIR / "reviewing-languages"),
         Skill.from_file(_SKILLS_DIR / "reviewing-frameworks"),
         Skill.from_file(_SKILLS_DIR / "reviewing-metaframeworks"),
+        Skill.from_file(_SKILLS_DIR / "vercel-react-best-practices"),
+        Skill.from_file(_SKILLS_DIR / "vercel-composition-patterns"),
+    ]
+
+
+def _build_angular_review_skills() -> list[SkillSource]:
+    """Build the skill bundle for the Angular technical reviewer.
+
+    The bundle pairs the project's generic frontend and language review skills
+    with Angular's official ``angular-developer`` skill so Angular-specific
+    review criteria are applied without routing Angular changes through the
+    React-oriented frontend reviewer.
+
+    Returns:
+        list[SkillSource]: Skill instances loaded for Angular review.
+    """
+    return [
+        Skill.from_file(_SKILLS_DIR / "reviewing-universal"),
+        Skill.from_file(_SKILLS_DIR / "reviewing-languages"),
+        Skill.from_file(_SKILLS_DIR / "reviewing-frameworks"),
+        Skill.from_file(_SKILLS_DIR / "angular-developer"),
     ]
 
 
 def _build_web_security_review_skills() -> list[SkillSource]:
-    """
-    Build a list of skills for web security review.
+    """Build the skill bundle for the web security reviewer.
+
     Returns:
-        list[SkillSource]: A list of Skill instances for web security review.
+        list[SkillSource]: Skill instances loaded for web security review.
     """
     return [Skill.from_file(_SKILLS_DIR / "web-security-review")]

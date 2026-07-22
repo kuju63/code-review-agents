@@ -38,6 +38,7 @@ class TestEnums:
 
     def test_project_type_values(self):
         assert ProjectType.REACT_TS.value == "react_ts"
+        assert ProjectType.ANGULAR.value == "angular"
         # Future project types must be declared even if not yet registered.
         for name in ("SPRING_BOOT", "NEXTJS", "NUXT", "WASM"):
             assert hasattr(ProjectType, name)

@@ -7,7 +7,11 @@ from code_review_agent.agents.base_reviewer import (
     compose_system_prompt,
 )
 from code_review_agent.agents.registry import get_reviewer_classes
-from code_review_agent.agents.reviewers import FrontendReviewer, SecurityReviewer
+from code_review_agent.agents.reviewers import (
+    AngularReviewer,
+    FrontendReviewer,
+    SecurityReviewer,
+)
 from code_review_agent.models.review import ProjectType, ReviewPerspective
 from code_review_agent.skills.agent_skills_factory import (
     AgentSkillType,
@@ -40,6 +44,25 @@ class TestFrontendReviewer:
         assert isinstance(result, AgentSkills)
 
 
+class TestAngularReviewer:
+    """Angular technical reviewer metadata and prompt."""
+
+    def test_is_llm_review_agent(self):
+        assert issubclass(AngularReviewer, LLMReviewAgent)
+
+    def test_metadata(self):
+        assert AngularReviewer.perspective is ReviewPerspective.TECHNICAL
+        assert AngularReviewer.project_types == frozenset({ProjectType.ANGULAR})
+        assert AngularReviewer.reviewer_id == "angular-technical"
+
+    def test_skill_type_is_angular_review(self):
+        assert AngularReviewer.skill_type is AgentSkillType.ANGULAR_REVIEW
+
+    def test_angular_review_skills_resolve(self):
+        result = create_agent_skills(AgentSkillType.ANGULAR_REVIEW)
+        assert isinstance(result, AgentSkills)
+
+
 class TestSecurityReviewer:
     """Security reviewer metadata and prompt."""
 
@@ -49,6 +72,7 @@ class TestSecurityReviewer:
     def test_metadata(self):
         assert SecurityReviewer.perspective is ReviewPerspective.SECURITY
         assert ProjectType.REACT_TS in SecurityReviewer.project_types
+        assert ProjectType.ANGULAR in SecurityReviewer.project_types
         assert SecurityReviewer.reviewer_id
 
     def test_skill_type_is_web_security_review(self):
@@ -77,7 +101,7 @@ class TestStructuredOutputDirective:
         assert composed != "ROLE PROMPT"
 
     def test_reviewers_carry_directive_in_effective_prompt(self):
-        for reviewer_cls in (FrontendReviewer, SecurityReviewer):
+        for reviewer_cls in (AngularReviewer, FrontendReviewer, SecurityReviewer):
             composed = compose_system_prompt(reviewer_cls.system_prompt)
             assert STRUCTURED_OUTPUT_DIRECTIVE in composed
 
@@ -100,3 +124,12 @@ class TestRegistration:
         perspectives = {cls.perspective for cls in selected}
         assert ReviewPerspective.TECHNICAL in perspectives
         assert ReviewPerspective.SECURITY in perspectives
+
+    def test_angular_reviewers_registered_and_selected(self):
+        registered = registry.get_registered_reviewers()
+        selected = get_reviewer_classes(ProjectType.ANGULAR)
+
+        assert AngularReviewer in registered
+        assert AngularReviewer in selected
+        assert SecurityReviewer in selected
+        assert FrontendReviewer not in selected

@@ -44,6 +44,8 @@ class TestIsTargetFile:
             "index.html",
             "package.json",
             "src/nested/package.json",
+            "angular.json",
+            "projects/app/angular.json",
         ],
     )
     def test_included_files(self, path: str):
@@ -82,6 +84,8 @@ class TestIsDependencyFile:
             "poetry.lock",
             "Pipfile",
             "Pipfile.lock",
+            "angular.json",
+            "projects/app/angular.json",
         ],
     )
     def test_dependency_files(self, path: str):
