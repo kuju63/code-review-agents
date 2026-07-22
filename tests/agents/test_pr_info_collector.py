@@ -44,6 +44,8 @@ class TestIsTargetFile:
             "index.html",
             "package.json",
             "src/nested/package.json",
+            "angular.json",
+            "projects/app/angular.json",
         ],
     )
     def test_included_files(self, path: str):

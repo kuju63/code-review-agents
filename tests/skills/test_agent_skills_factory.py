@@ -69,6 +69,18 @@ class TestCreateAgentSkills:
             result = create_agent_skills(AgentSkillType.FRONTEND_REVIEW)
             assert set(result._skills.keys()) == self._EXPECTED_SKILL_NAMES
 
+        def test_vendored_react_rule_files_are_available(self):
+            skills_dir = Path(
+                "src/code_review_agent/skills/vercel-react-best-practices/rules"
+            )
+            composition_dir = Path(
+                "src/code_review_agent/skills/vercel-composition-patterns/rules"
+            )
+
+            assert (skills_dir / "async-parallel.md").is_file()
+            assert (skills_dir / "rerender-derived-state-no-effect.md").is_file()
+            assert (composition_dir / "architecture-compound-components.md").is_file()
+
     class TestAngularReview:
         _EXPECTED_SKILL_NAMES = frozenset(
             {
@@ -90,6 +102,24 @@ class TestCreateAgentSkills:
         def test_skill_names(self):
             result = create_agent_skills(AgentSkillType.ANGULAR_REVIEW)
             assert set(result._skills.keys()) == self._EXPECTED_SKILL_NAMES
+
+        def test_official_angular_references_are_available(self):
+            references_dir = Path(
+                "src/code_review_agent/skills/angular-developer/references"
+            )
+
+            assert (references_dir / "signals-overview.md").is_file()
+            assert (references_dir / "di-fundamentals.md").is_file()
+            assert (references_dir / "testing-fundamentals.md").is_file()
+
+        def test_angular_skill_is_adapted_for_review(self):
+            skill_file = Path(
+                "src/code_review_agent/skills/angular-developer/SKILL.md"
+            ).read_text(encoding="utf-8")
+
+            assert "# Angular Review Guidelines" in skill_file
+            assert "Do not request project creation" in skill_file
+            assert "Execution Rules for `ng new`" not in skill_file
 
     class TestWebSecurityReview:
         def test_returns_agent_skills_instance(self):

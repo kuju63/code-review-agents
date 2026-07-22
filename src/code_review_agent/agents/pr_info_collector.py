@@ -36,7 +36,7 @@ with no preamble, headings, or markdown.
 """
 
 _TARGET_EXTENSIONS = frozenset([".ts", ".tsx", ".js", ".jsx", ".css", ".scss", ".html"])
-_TARGET_FILENAMES = frozenset(["package.json"])
+_TARGET_FILENAMES = frozenset(["package.json", "angular.json"])
 _DEPENDENCY_FILENAMES = frozenset(
     [
         "package.json",

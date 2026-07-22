@@ -17,9 +17,9 @@ from .pr_info import PRInfoResult
 class ProjectType(StrEnum):
     """Project technology stack a reviewer applies to.
 
-    Only :attr:`REACT_TS` is wired up today; the remaining members are declared
-    so future reviewers and project-type detection can reference them without a
-    schema change.
+    ``REACT_TS`` and ``ANGULAR`` are wired to concrete reviewers and automatic
+    detection. The remaining members reserve schema-stable extension points for
+    future stacks.
     """
 
     REACT_TS = "react_ts"

@@ -16,8 +16,10 @@ can be added without changing the orchestration:
 - Review perspective: `technical` and `security` are implemented; `spec_consistency`
   and `requirements_consistency` are planned (they require spec/requirement inputs
   in addition to `PRInfoResult`).
-- Project type: `react_ts` is implemented; `spring_boot`, `nextjs`, `nuxt`, and
-  `wasm` are planned.
+- Project type: `react_ts` and `angular` are implemented; `spring_boot`,
+  `nextjs`, `nuxt`, and `wasm` are planned. Angular detection takes priority
+  over the coarse TypeScript/JavaScript React heuristic when `angular.json` or
+  Angular source naming conventions are present.
 
 See [docs/review-agents-design.md](../docs/review-agents-design.md) for the
 extensible architecture (registry + orchestrator + `ReviewContext`).
@@ -158,7 +160,8 @@ Purpose:
 Must include stack-specific traps:
 
 - React/Vue/Svelte/Angular: XSS vectors (innerHTML, dangerouslySetInnerHTML), eval injection, unsafe dynamic HTML, heavy sequential API calls (N+1)
-- React-specific: useEffect missing dependency causing stale state, uncontrolled component to controlled transition
+- React-specific: useEffect missing dependency causing stale state, uncontrolled component to controlled transition, avoidable request waterfalls, bundle regressions, and component composition defects
+- Angular-specific: signal/effect misuse, dependency-injection scope defects, observable subscription leaks, template correctness, and version-incompatible API recommendations
 - Common frontend: CSRF on state-mutating requests, sensitive data in localStorage, exposed secrets in client bundle
 
 Backend-stack mutation rules (Rails, Spring Boot) were removed from
@@ -266,6 +269,8 @@ Domain hard gates:
 
 - Security Must-Find Recall >= 0.98 for critical/high in ui-library and application subsets
 - XSS/injection must-find misses must be 0 in frontend application samples
+- Angular samples carrying `angular.json` or Angular source naming conventions must route to `AngularReviewer`, not `FrontendReviewer`
+- React technical reviews must expose both Vercel skill indexes; Angular technical reviews must expose the official Angular skill index
 
 Soft targets:
 

@@ -29,17 +29,18 @@
 レビュアーは「どの観点を」「どのプロジェクト種別に対して」見るかで分類されます。
 セルにレビュアーを登録していくマトリクスとして拡張します。
 
-| 観点＼種別             | フロントエンド (React/Vue/Angular/Svelte/Next.js 等) | Spring Boot | WASM |
-| ---------------------- | ---------------------------------------------------- | ----------- | ---- |
-| 技術 (technical)       | ✅ 実装済 — `FrontendReviewer` + AgentSkills でフレームワーク検出 | ⏳ 予定 | ⏳ 予定 |
-| セキュリティ (security)| ✅ 実装済                                             | ⏳ 予定      | ⏳ 予定 |
-| 仕様整合性 (spec)      | ⏳ 予定                                               | ⏳ 予定      | ⏳ 予定 |
-| 要件整合性 (requirements)| ⏳ 予定                                             | ⏳ 予定      | ⏳ 予定 |
+| 観点＼種別             | React/TypeScript | Angular | Spring Boot | WASM |
+| ---------------------- | ---------------- | ------- | ----------- | ---- |
+| 技術 (technical)       | ✅ `FrontendReviewer` + Vercel Agent Skills | ✅ `AngularReviewer` + Angular公式Agent Skill | ⏳ 予定 | ⏳ 予定 |
+| セキュリティ (security)| ✅ `SecurityReviewer` | ✅ `SecurityReviewer` | ⏳ 予定 | ⏳ 予定 |
+| 仕様整合性 (spec)      | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 |
+| 要件整合性 (requirements)| ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 |
 
 - ✅ = 実装済。⏳ = enum 値・拡張点のみ用意（未登録）。
-- `detect_project_types()` はフロントエンド全プロジェクトを `ProjectType.REACT_TS` として返す（既存設計）。
-  Vue/Angular/Svelte/Next.js 等の差分はスキル内部のフレームワーク検出で吸収する。
-- 同一レビュアーを複数種別に登録することも可能（例: セキュリティ観点を複数スタックで共有）。
+- `detect_project_types()` は `angular.json` または Angular固有のファイル命名を検出した場合、
+  粗い TypeScript/JavaScript 判定より Angular を優先して `ProjectType.ANGULAR` を返す。
+- React/Angular 混在モノレポで Angular signal が存在する場合も、現時点では Angular を優先する。
+- 同一レビュアーを複数種別に登録でき、`SecurityReviewer` は React/TypeScript と Angular で共有する。
 
 ---
 
@@ -49,9 +50,9 @@
 PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
                                       │  registry: プロジェクト種別から
                                       │  適用レビュアークラスを選択
-                                      ├──▶ FrontendReviewer (technical)   ┐
-                                      └──▶ SecurityReviewer  (security)   ├ asyncio.gather で並列
-                                                                          ┘
+                                      ├──▶ FrontendReviewer (technical, react_ts)  ┐
+                                      ├──▶ AngularReviewer  (technical, angular)   ├ asyncio.gather で並列
+                                      └──▶ SecurityReviewer (security, 両種別)      ┘
                                    ──▶ ReviewReport(results, errors)  ──▶ (将来) Lead Engineer
 ```
 
@@ -143,16 +144,21 @@ Lead Engineer 自体は本リリースの対象外です。
 
 ## 5. 未配線の拡張点（本リリースで意図的に未実装）
 
-- **フレームワーク別 ProjectType**: `ProjectType.NEXTJS` 等は宣言済みだが、`detect_project_types()`
-  は現状すべてのフロントエンドプロジェクトを `REACT_TS` として返す。`next.config.*` 等の
-  manifest を検出して個別に返すよう拡張可能。
+- **フレームワーク別 ProjectType**: `ProjectType.ANGULAR` は配線済み。`ProjectType.NEXTJS` 等は
+  宣言済みだが未配線で、`detect_project_types()` は React/TypeScript として返す。`next.config.*`
+  等の manifest を検出して個別に返すよう拡張可能。
+- **`@angular/core` 依存判定**: `dependency_files` はパスのみで中身を持たないため、現状は
+  `angular.json` とファイル命名を signal とする。`package.json` の中身解析による判定精度向上は将来課題。
 - **spec / requirement 入力**: `ReviewContext` の拡張フィールドとして追加予定（4 節参照）。
 - **Lead Engineer 合成**: `ReviewReport` を入力とする合成エージェントを別途実装予定。
 
 > **実装済みに変更（旧「未配線」）**: 参照ドキュメント取得は `AgentSkills` と
-> `src/code_review_agent/skills/` 内のスキルパッケージ（reviewing-universal / reviewing-languages
-> / reviewing-frameworks / reviewing-metaframeworks）として実装した。`FrontendReviewer` は
-> `skills_dir` を設定済みで、GitHub MCP + `file_read` ツールとともに動作する（`shell` は最小権限の原則から注入しない）。
+> `src/code_review_agent/skills/` 内のスキルパッケージとして実装した。`FrontendReviewer` は
+> `AgentSkillType.FRONTEND_REVIEW`（reviewing-universal / reviewing-languages / reviewing-frameworks
+> / reviewing-metaframeworks に加え Vercel の vercel-react-best-practices / vercel-composition-patterns）を、
+> `AngularReviewer` は `AgentSkillType.ANGULAR_REVIEW`（reviewing-universal / reviewing-languages /
+> reviewing-frameworks に加え Angular公式の angular-developer）を `skill_type` 経由で読み込む。
+> いずれも GitHub MCP + `file_read` ツールとともに動作する（`shell` は最小権限の原則から注入しない）。
 
 ---
 

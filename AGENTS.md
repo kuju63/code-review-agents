@@ -89,7 +89,7 @@ For shared implementation and design rules, refer to [CONTRIBUTING.md](CONTRIBUT
 
 Project-specific implementation patterns:
 
-- Add new reviewers under `src/code_review_agent/agents/reviewers/` and register them with `@register_reviewer` (see `src/code_review_agent/agents/reviewers/react.py`).
+- Add new reviewers under `src/code_review_agent/agents/reviewers/` and register them with `@register_reviewer` (see `src/code_review_agent/agents/reviewers/frontend.py` and `src/code_review_agent/agents/reviewers/angular.py`).
 - Keep reviewer selection logic in the registry extension point (`src/code_review_agent/agents/registry.py`) instead of hard-coding behavior in the orchestrator.
 - When adding stack support, update `detect_project_types` in `src/code_review_agent/agents/registry.py` and corresponding tests in `tests/agents/test_registry.py`.
 

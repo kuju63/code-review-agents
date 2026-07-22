@@ -11,9 +11,7 @@ _SKILLS_DIR = Path(__file__).parent
 
 
 class AgentSkillType(StrEnum):
-    """
-    Enum representing different types of agent skills.
-    """
+    """Skill bundles available to LLM-backed reviewers."""
 
     NONE = ""
     FRONTEND_REVIEW = "frontend_review"
@@ -24,11 +22,13 @@ class AgentSkillType(StrEnum):
 def create_agent_skills(
     skill_type: AgentSkillType = AgentSkillType.NONE,
 ) -> AgentSkills:
-    """
-    Create an AgentSkills instance with the skills directory.
+    """Create an AgentSkills plugin for a reviewer skill bundle.
+
+    Args:
+        skill_type: Bundle identifying which local skills to load.
 
     Returns:
-        AgentSkills: An instance of AgentSkills with the skills directory.
+        AgentSkills: Plugin containing the selected local skills.
     """
     skills: list[SkillSource] = []
     if skill_type == AgentSkillType.FRONTEND_REVIEW:

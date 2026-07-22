@@ -145,6 +145,10 @@ class TestDetectProjectTypes:
         pr = _pr_info(file_paths=["angular.json"], dependency_files=[])
         assert detect_project_types(pr) == {ProjectType.ANGULAR}
 
+    def test_does_not_match_filename_that_only_ends_with_angular_json_text(self):
+        pr = _pr_info(file_paths=["not-angular.json"], dependency_files=[])
+        assert detect_project_types(pr) == set()
+
     @pytest.mark.parametrize(
         "file_path",
         [

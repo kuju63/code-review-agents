@@ -16,6 +16,13 @@ from ..models.review import ProjectType, ReviewPerspective
 from .base_reviewer import ReviewAgent
 
 _REGISTRY: list[type[ReviewAgent]] = []
+_ANGULAR_MANIFEST = "angular.json"
+_ANGULAR_SOURCE_SUFFIXES = (
+    ".component.ts",
+    ".service.ts",
+    ".directive.ts",
+    ".pipe.ts",
+)
 
 _ReviewerT = TypeVar("_ReviewerT", bound=ReviewAgent)
 
@@ -81,18 +88,17 @@ def detect_project_types(pr_info: PRInfoResult) -> set[ProjectType]:
     example ``pom.xml``/``build.gradle`` for Spring Boot).
 
     Two signals are combined: the PR-changed files and ``dependency_files``.
-    A TS/JS/JSX change alone is treated as a React/TypeScript signal (a typical
-    PR touching only ``src/*.tsx`` changes no manifest).  ``dependency_files``
-    now lists the repository's dependency manifests at the PR head (regardless
-    of change), so the presence of a root ``package.json`` also qualifies the
-    repository as React/TypeScript — the repository-level stack signal that was
-    previously only a future enhancement.
+    Angular is selected when ``angular.json`` or an Angular source naming
+    convention is present. This check runs first so the coarse TypeScript and
+    ``package.json`` signals do not misclassify Angular projects as React.
+    Otherwise, a TS/JS/JSX change or ``package.json`` qualifies the repository
+    as React/TypeScript.
 
     Note:
-        Because ``dependency_files`` is now repository-level, a PR that changes
-        only non-stack files in a JS/TS repo (e.g. docs) can still be detected
-        as React/TypeScript via the root ``package.json``.  This is intentional:
-        the repo *is* a React/TypeScript project.
+        Angular intentionally takes priority in mixed-signal repositories.
+        Because ``dependency_files`` is repository-level, a PR that changes
+        only non-stack files in a JS/TS repo can still be detected as
+        React/TypeScript via ``package.json``.
 
     Args:
         pr_info: Structured PR information from the PR Info Collector.
@@ -104,12 +110,10 @@ def detect_project_types(pr_info: PRInfoResult) -> set[ProjectType]:
     dependency_files = set(pr_info.dependency_files)
 
     has_angular_manifest = any(
-        path.endswith("angular.json") for path in dependency_files | set(paths)
+        path == _ANGULAR_MANIFEST or path.endswith(f"/{_ANGULAR_MANIFEST}")
+        for path in dependency_files | set(paths)
     )
-    has_angular_source = any(
-        path.endswith((".component.ts", ".service.ts", ".directive.ts", ".pipe.ts"))
-        for path in paths
-    )
+    has_angular_source = any(path.endswith(_ANGULAR_SOURCE_SUFFIXES) for path in paths)
     if has_angular_manifest or has_angular_source:
         return {ProjectType.ANGULAR}
 
