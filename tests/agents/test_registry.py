@@ -197,6 +197,41 @@ class TestDetectProjectTypes:
         )
         assert detect_project_types(pr) == {ProjectType.ANGULAR}
 
+    def test_does_not_match_filename_that_only_ends_with_package_json_text(self):
+        # ``package.json`` detection must be as strict as the manifest checks:
+        # a file whose name merely ends with the manifest text is not a match.
+        pr = _pr_info(file_paths=["not-package.json"], dependency_files=[])
+        assert detect_project_types(pr) == set()
+
+    def test_detects_react_from_nested_package_json_change(self):
+        pr = _pr_info(file_paths=["packages/web/package.json"], dependency_files=[])
+        assert detect_project_types(pr) == {ProjectType.REACT_TS}
+
+    def test_svelte_detection_takes_priority_over_react(self):
+        pr = _pr_info(
+            file_paths=["src/App.svelte", "src/main.ts", "package.json"],
+            dependency_files=["package.json", "svelte.config.js"],
+        )
+        assert detect_project_types(pr) == {ProjectType.SVELTE}
+
+    @pytest.mark.parametrize(
+        ("file_paths", "dependency_files", "expected"),
+        [
+            (["a.component.ts", "b.svelte"], ["package.json"], ProjectType.ANGULAR),
+            (["b.svelte", "c.ts"], ["package.json"], ProjectType.SVELTE),
+            (["c.ts"], ["package.json"], ProjectType.REACT_TS),
+            (
+                ["a.component.ts"],
+                ["angular.json", "svelte.config.js"],
+                ProjectType.ANGULAR,
+            ),
+            (["x.svelte"], ["svelte.config.ts", "package.json"], ProjectType.SVELTE),
+        ],
+    )
+    def test_detection_priority_matrix(self, file_paths, dependency_files, expected):
+        pr = _pr_info(file_paths=file_paths, dependency_files=dependency_files)
+        assert detect_project_types(pr) == {expected}
+
     def test_no_detection_without_ts_js_or_manifest(self):
         pr = _pr_info(file_paths=["styles/main.css", "index.html"], dependency_files=[])
         assert detect_project_types(pr) == set()

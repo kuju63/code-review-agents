@@ -34,6 +34,18 @@ class TestAgentSkillType:
 
 
 class TestCreateAgentSkills:
+    @pytest.mark.parametrize("skill_type", list(AgentSkillType))
+    def test_every_skill_type_loads_without_error(self, skill_type):
+        # Guards against adding a new AgentSkillType without wiring a builder,
+        # or vendoring skill files under a path that does not exist: every
+        # declared bundle must resolve to real, loadable skill directories.
+        result = create_agent_skills(skill_type)
+        assert isinstance(result, AgentSkills)
+        if skill_type is AgentSkillType.NONE:
+            assert len(result._skills) == 0
+        else:
+            assert len(result._skills) > 0
+
     def test_returns_agent_skills_instance_none(self):
         result = create_agent_skills(AgentSkillType.NONE)
         assert isinstance(result, AgentSkills)
