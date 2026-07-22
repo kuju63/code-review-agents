@@ -46,6 +46,9 @@ class TestIsTargetFile:
             "src/nested/package.json",
             "angular.json",
             "projects/app/angular.json",
+            "src/App.svelte",
+            "svelte.config.js",
+            "svelte.config.ts",
         ],
     )
     def test_included_files(self, path: str):
@@ -86,6 +89,9 @@ class TestIsDependencyFile:
             "Pipfile.lock",
             "angular.json",
             "projects/app/angular.json",
+            "svelte.config.js",
+            "svelte.config.ts",
+            "frontend/svelte.config.js",
         ],
     )
     def test_dependency_files(self, path: str):

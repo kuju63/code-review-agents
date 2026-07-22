@@ -25,6 +25,9 @@ class TestAgentSkillType:
     def test_angular_review_value(self):
         assert AgentSkillType.ANGULAR_REVIEW == "angular_review"
 
+    def test_svelte_review_value(self):
+        assert AgentSkillType.SVELTE_REVIEW == "svelte_review"
+
     def test_is_str_enum(self):
         assert issubclass(AgentSkillType, StrEnum)
         assert isinstance(AgentSkillType.NONE, str)
@@ -121,6 +124,45 @@ class TestCreateAgentSkills:
             assert "Do not request project creation" in skill_file
             assert "Execution Rules for `ng new`" not in skill_file
 
+    class TestSvelteReview:
+        _EXPECTED_SKILL_NAMES = frozenset(
+            {
+                "reviewing-universal",
+                "reviewing-languages",
+                "reviewing-frameworks",
+                "svelte-core-bestpractices",
+            }
+        )
+
+        def test_returns_agent_skills_instance(self):
+            result = create_agent_skills(AgentSkillType.SVELTE_REVIEW)
+            assert isinstance(result, AgentSkills)
+
+        def test_loads_four_skills(self):
+            result = create_agent_skills(AgentSkillType.SVELTE_REVIEW)
+            assert len(result._skills) == 4
+
+        def test_skill_names(self):
+            result = create_agent_skills(AgentSkillType.SVELTE_REVIEW)
+            assert set(result._skills.keys()) == self._EXPECTED_SKILL_NAMES
+
+        def test_official_svelte_references_are_available(self):
+            references_dir = Path(
+                "src/code_review_agent/skills/svelte-core-bestpractices/references"
+            )
+
+            assert (references_dir / "snippet.md").is_file()
+            assert (references_dir / "each.md").is_file()
+            assert (references_dir / "svelte-reactivity.md").is_file()
+
+        def test_svelte_skill_is_adapted_for_review(self):
+            skill_file = Path(
+                "src/code_review_agent/skills/svelte-core-bestpractices/SKILL.md"
+            ).read_text(encoding="utf-8")
+
+            assert "# Svelte Review Guidelines" in skill_file
+            assert "Do not request code generation" in skill_file
+
     class TestWebSecurityReview:
         def test_returns_agent_skills_instance(self):
             result = create_agent_skills(AgentSkillType.WEB_SECURITY_REVIEW)
@@ -158,3 +200,11 @@ class TestCreateAgentSkills:
             )
             with pytest.raises(FileNotFoundError):
                 create_agent_skills(AgentSkillType.ANGULAR_REVIEW)
+
+        def test_file_not_found_propagates_for_svelte_review(self, monkeypatch):
+            monkeypatch.setattr(
+                "code_review_agent.skills.agent_skills_factory._SKILLS_DIR",
+                Path("/nonexistent/path"),
+            )
+            with pytest.raises(FileNotFoundError):
+                create_agent_skills(AgentSkillType.SVELTE_REVIEW)

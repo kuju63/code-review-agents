@@ -169,6 +169,34 @@ class TestDetectProjectTypes:
         )
         assert detect_project_types(pr) == {ProjectType.ANGULAR}
 
+    def test_detects_svelte_from_svelte_file_change(self):
+        pr = _pr_info(file_paths=["src/App.svelte"], dependency_files=[])
+        assert detect_project_types(pr) == {ProjectType.SVELTE}
+
+    def test_detects_svelte_from_svelte_config_js_dependency_file(self):
+        pr = _pr_info(
+            file_paths=["src/lib/util.ts"], dependency_files=["svelte.config.js"]
+        )
+        assert detect_project_types(pr) == {ProjectType.SVELTE}
+
+    def test_detects_svelte_from_svelte_config_ts_change(self):
+        pr = _pr_info(file_paths=["svelte.config.ts"], dependency_files=[])
+        assert detect_project_types(pr) == {ProjectType.SVELTE}
+
+    def test_svelte_detection_suppresses_coarse_react_detection(self):
+        pr = _pr_info(
+            file_paths=["src/App.svelte", "src/lib/util.ts"],
+            dependency_files=["package.json"],
+        )
+        assert detect_project_types(pr) == {ProjectType.SVELTE}
+
+    def test_angular_detection_takes_priority_over_svelte(self):
+        pr = _pr_info(
+            file_paths=["src/app/app.component.ts", "src/App.svelte"],
+            dependency_files=["angular.json", "svelte.config.js"],
+        )
+        assert detect_project_types(pr) == {ProjectType.ANGULAR}
+
     def test_no_detection_without_ts_js_or_manifest(self):
         pr = _pr_info(file_paths=["styles/main.css", "index.html"], dependency_files=[])
         assert detect_project_types(pr) == set()

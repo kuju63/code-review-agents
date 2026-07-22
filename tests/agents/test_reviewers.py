@@ -1,9 +1,12 @@
 """Tests for the concrete frontend technical and security reviewers."""
 
+from unittest.mock import patch
+
 from code_review_agent.agents import registry
 from code_review_agent.agents.base_reviewer import (
     STRUCTURED_OUTPUT_DIRECTIVE,
     LLMReviewAgent,
+    ReviewerConfig,
     compose_system_prompt,
 )
 from code_review_agent.agents.registry import get_reviewer_classes
@@ -11,13 +14,40 @@ from code_review_agent.agents.reviewers import (
     AngularReviewer,
     FrontendReviewer,
     SecurityReviewer,
+    SvelteReviewer,
 )
-from code_review_agent.models.review import ProjectType, ReviewPerspective
+from code_review_agent.models.pr_info import (
+    FileChange,
+    PRInfo,
+    PRInfoResult,
+    RepositoryInfo,
+)
+from code_review_agent.models.review import (
+    ProjectType,
+    ReviewContext,
+    ReviewPerspective,
+)
 from code_review_agent.skills.agent_skills_factory import (
     AgentSkillType,
     create_agent_skills,
 )
 from strands import AgentSkills
+
+_BASE = "code_review_agent.agents.base_reviewer"
+
+
+def _context(*, file_paths: list[str], dependency_files: list[str]) -> ReviewContext:
+    pr_info = PRInfoResult(
+        repository_info=RepositoryInfo(owner="o", repository="r"),
+        project_summary="s",
+        pr_info=PRInfo(
+            title="t",
+            pr_number=1,
+            file_changes=[FileChange(filePath=p) for p in file_paths],
+        ),
+        dependency_files=dependency_files,
+    )
+    return ReviewContext(pr_info=pr_info)
 
 
 class TestFrontendReviewer:
@@ -63,6 +93,48 @@ class TestAngularReviewer:
         assert isinstance(result, AgentSkills)
 
 
+class TestSvelteReviewer:
+    """Svelte technical reviewer metadata, prompt, and non-Svelte guard."""
+
+    def test_is_llm_review_agent(self):
+        assert issubclass(SvelteReviewer, LLMReviewAgent)
+
+    def test_metadata(self):
+        assert SvelteReviewer.perspective is ReviewPerspective.TECHNICAL
+        assert SvelteReviewer.project_types == frozenset({ProjectType.SVELTE})
+        assert SvelteReviewer.reviewer_id == "svelte-technical"
+
+    def test_skill_type_is_svelte_review(self):
+        assert SvelteReviewer.skill_type is AgentSkillType.SVELTE_REVIEW
+
+    def test_svelte_review_skills_resolve(self):
+        result = create_agent_skills(AgentSkillType.SVELTE_REVIEW)
+        assert isinstance(result, AgentSkills)
+
+    def test_non_svelte_pr_returns_empty_without_invoking_llm(self):
+        reviewer = SvelteReviewer(ReviewerConfig(github_token="t"))
+        context = _context(
+            file_paths=["src/App.tsx"], dependency_files=["package.json"]
+        )
+        with patch(f"{_BASE}.Agent") as mock_agent_cls:
+            result = reviewer.review(context, ProjectType.SVELTE)
+        mock_agent_cls.assert_not_called()
+        assert result.reviewer_id == "svelte-technical"
+        assert result.perspective is ReviewPerspective.TECHNICAL
+        assert result.output.findings == []
+
+    def test_svelte_pr_delegates_to_llm_review(self):
+        reviewer = SvelteReviewer(ReviewerConfig(github_token="t"))
+        context = _context(file_paths=["src/App.svelte"], dependency_files=[])
+        sentinel = object()
+        with patch.object(
+            LLMReviewAgent, "review", return_value=sentinel
+        ) as mock_super:
+            result = reviewer.review(context, ProjectType.SVELTE)
+        mock_super.assert_called_once()
+        assert result is sentinel
+
+
 class TestSecurityReviewer:
     """Security reviewer metadata and prompt."""
 
@@ -73,6 +145,7 @@ class TestSecurityReviewer:
         assert SecurityReviewer.perspective is ReviewPerspective.SECURITY
         assert ProjectType.REACT_TS in SecurityReviewer.project_types
         assert ProjectType.ANGULAR in SecurityReviewer.project_types
+        assert ProjectType.SVELTE in SecurityReviewer.project_types
         assert SecurityReviewer.reviewer_id
 
     def test_skill_type_is_web_security_review(self):
@@ -101,7 +174,12 @@ class TestStructuredOutputDirective:
         assert composed != "ROLE PROMPT"
 
     def test_reviewers_carry_directive_in_effective_prompt(self):
-        for reviewer_cls in (AngularReviewer, FrontendReviewer, SecurityReviewer):
+        for reviewer_cls in (
+            AngularReviewer,
+            FrontendReviewer,
+            SecurityReviewer,
+            SvelteReviewer,
+        ):
             composed = compose_system_prompt(reviewer_cls.system_prompt)
             assert STRUCTURED_OUTPUT_DIRECTIVE in composed
 
@@ -133,3 +211,13 @@ class TestRegistration:
         assert AngularReviewer in selected
         assert SecurityReviewer in selected
         assert FrontendReviewer not in selected
+
+    def test_svelte_reviewers_registered_and_selected(self):
+        registered = registry.get_registered_reviewers()
+        selected = get_reviewer_classes(ProjectType.SVELTE)
+
+        assert SvelteReviewer in registered
+        assert SvelteReviewer in selected
+        assert SecurityReviewer in selected
+        assert FrontendReviewer not in selected
+        assert AngularReviewer not in selected

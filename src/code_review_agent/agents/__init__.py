@@ -12,7 +12,7 @@ from .registry import (
 
 # Importing the reviewers package registers the concrete reviewers as a side
 # effect, so they are discoverable via the registry once `agents` is imported.
-from .reviewers import FrontendReviewer, SecurityReviewer
+from .reviewers import FrontendReviewer, SecurityReviewer, SvelteReviewer
 
 __all__ = [
     "PRInfoCollector",
@@ -26,4 +26,5 @@ __all__ = [
     "detect_project_types",
     "FrontendReviewer",
     "SecurityReviewer",
+    "SvelteReviewer",
 ]
