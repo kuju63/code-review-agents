@@ -5,7 +5,8 @@ effect.  Add new reviewer modules here so they are discovered by the
 orchestrator.
 """
 
+from .angular import AngularReviewer
 from .frontend import FrontendReviewer
 from .security import SecurityReviewer
 
-__all__ = ["FrontendReviewer", "SecurityReviewer"]
+__all__ = ["AngularReviewer", "FrontendReviewer", "SecurityReviewer"]

@@ -22,6 +22,9 @@ class TestAgentSkillType:
     def test_web_security_review_value(self):
         assert AgentSkillType.WEB_SECURITY_REVIEW == "web_security_review"
 
+    def test_angular_review_value(self):
+        assert AgentSkillType.ANGULAR_REVIEW == "angular_review"
+
     def test_is_str_enum(self):
         assert issubclass(AgentSkillType, StrEnum)
         assert isinstance(AgentSkillType.NONE, str)
@@ -49,6 +52,8 @@ class TestCreateAgentSkills:
                 "reviewing-languages",
                 "reviewing-frameworks",
                 "reviewing-metaframeworks",
+                "vercel-react-best-practices",
+                "vercel-composition-patterns",
             }
         )
 
@@ -56,12 +61,34 @@ class TestCreateAgentSkills:
             result = create_agent_skills(AgentSkillType.FRONTEND_REVIEW)
             assert isinstance(result, AgentSkills)
 
-        def test_loads_four_skills(self):
+        def test_loads_six_skills(self):
             result = create_agent_skills(AgentSkillType.FRONTEND_REVIEW)
-            assert len(result._skills) == 4
+            assert len(result._skills) == 6
 
         def test_skill_names(self):
             result = create_agent_skills(AgentSkillType.FRONTEND_REVIEW)
+            assert set(result._skills.keys()) == self._EXPECTED_SKILL_NAMES
+
+    class TestAngularReview:
+        _EXPECTED_SKILL_NAMES = frozenset(
+            {
+                "reviewing-universal",
+                "reviewing-languages",
+                "reviewing-frameworks",
+                "angular-developer",
+            }
+        )
+
+        def test_returns_agent_skills_instance(self):
+            result = create_agent_skills(AgentSkillType.ANGULAR_REVIEW)
+            assert isinstance(result, AgentSkills)
+
+        def test_loads_four_skills(self):
+            result = create_agent_skills(AgentSkillType.ANGULAR_REVIEW)
+            assert len(result._skills) == 4
+
+        def test_skill_names(self):
+            result = create_agent_skills(AgentSkillType.ANGULAR_REVIEW)
             assert set(result._skills.keys()) == self._EXPECTED_SKILL_NAMES
 
     class TestWebSecurityReview:
@@ -93,3 +120,11 @@ class TestCreateAgentSkills:
             )
             with pytest.raises(FileNotFoundError):
                 create_agent_skills(AgentSkillType.WEB_SECURITY_REVIEW)
+
+        def test_file_not_found_propagates_for_angular_review(self, monkeypatch):
+            monkeypatch.setattr(
+                "code_review_agent.skills.agent_skills_factory._SKILLS_DIR",
+                Path("/nonexistent/path"),
+            )
+            with pytest.raises(FileNotFoundError):
+                create_agent_skills(AgentSkillType.ANGULAR_REVIEW)

@@ -23,6 +23,7 @@ class ProjectType(StrEnum):
     """
 
     REACT_TS = "react_ts"
+    ANGULAR = "angular"
     SPRING_BOOT = "spring_boot"
     NEXTJS = "nextjs"
     NUXT = "nuxt"

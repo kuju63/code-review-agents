@@ -18,6 +18,7 @@ class AgentSkillType(StrEnum):
     NONE = ""
     FRONTEND_REVIEW = "frontend_review"
     WEB_SECURITY_REVIEW = "web_security_review"
+    ANGULAR_REVIEW = "angular_review"
 
 
 def create_agent_skills(

@@ -82,6 +82,8 @@ class TestIsDependencyFile:
             "poetry.lock",
             "Pipfile",
             "Pipfile.lock",
+            "angular.json",
+            "projects/app/angular.json",
         ],
     )
     def test_dependency_files(self, path: str):
