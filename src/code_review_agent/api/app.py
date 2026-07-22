@@ -6,6 +6,7 @@ from code_review_agent.api.agents import (
     orchestrator_router,
     pr_info_collector_router,
     frontend_reviewer_router,
+    svelte_reviewer_router,
     security_reviewer_router,
 )
 from code_review_agent.api.config import Settings
@@ -25,6 +26,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.include_router(
         frontend_reviewer_router(settings, store), prefix="/frontend-reviewer"
+    )
+    app.include_router(
+        svelte_reviewer_router(settings, store), prefix="/svelte-reviewer"
     )
     app.include_router(
         security_reviewer_router(settings, store), prefix="/security-reviewer"

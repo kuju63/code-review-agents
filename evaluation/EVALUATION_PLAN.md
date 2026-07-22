@@ -162,6 +162,7 @@ Must include stack-specific traps:
 - React/Vue/Svelte/Angular: XSS vectors (innerHTML, dangerouslySetInnerHTML), eval injection, unsafe dynamic HTML, heavy sequential API calls (N+1)
 - React-specific: useEffect missing dependency causing stale state, uncontrolled component to controlled transition, avoidable request waterfalls, bundle regressions, and component composition defects
 - Angular-specific: signal/effect misuse, dependency-injection scope defects, observable subscription leaks, template correctness, and version-incompatible API recommendations
+- Svelte-specific: rune misuse (`$state`/`$derived`/`$effect`), state updates inside effects, non-keyed each blocks, legacy-feature regressions (`$:`, `export let`, `on:click`, `<slot>`), and version-incompatible API recommendations (for example async expressions before Svelte 5.36)
 - Common frontend: CSRF on state-mutating requests, sensitive data in localStorage, exposed secrets in client bundle
 
 Backend-stack mutation rules (Rails, Spring Boot) were removed from

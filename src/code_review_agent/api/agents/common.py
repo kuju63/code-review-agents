@@ -10,7 +10,7 @@ from code_review_agent.models.review import ReviewReport
 
 
 class ReviewerSkillInput(BaseModel):
-    """Input payload schema for reviewer skills (React / Security).
+    """Input payload schema for reviewer skills (Frontend / Svelte / Security).
 
     Defined as a Pydantic model so the AgentCard can advertise a fully
     self-contained JSON Schema (``$defs``-based) via ``model_json_schema()``

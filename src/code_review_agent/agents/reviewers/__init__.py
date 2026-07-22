@@ -8,5 +8,11 @@ orchestrator.
 from .angular import AngularReviewer
 from .frontend import FrontendReviewer
 from .security import SecurityReviewer
+from .svelte import SvelteReviewer
 
-__all__ = ["AngularReviewer", "FrontendReviewer", "SecurityReviewer"]
+__all__ = [
+    "AngularReviewer",
+    "FrontendReviewer",
+    "SecurityReviewer",
+    "SvelteReviewer",
+]

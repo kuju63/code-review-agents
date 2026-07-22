@@ -17,6 +17,7 @@ class AgentSkillType(StrEnum):
     FRONTEND_REVIEW = "frontend_review"
     WEB_SECURITY_REVIEW = "web_security_review"
     ANGULAR_REVIEW = "angular_review"
+    SVELTE_REVIEW = "svelte_review"
 
 
 def create_agent_skills(
@@ -35,6 +36,8 @@ def create_agent_skills(
         skills = _build_frontend_review_skills()
     elif skill_type == AgentSkillType.ANGULAR_REVIEW:
         skills = _build_angular_review_skills()
+    elif skill_type == AgentSkillType.SVELTE_REVIEW:
+        skills = _build_svelte_review_skills()
     elif skill_type == AgentSkillType.WEB_SECURITY_REVIEW:
         skills = _build_web_security_review_skills()
 
@@ -78,6 +81,25 @@ def _build_angular_review_skills() -> list[SkillSource]:
         Skill.from_file(_SKILLS_DIR / "reviewing-languages"),
         Skill.from_file(_SKILLS_DIR / "reviewing-frameworks"),
         Skill.from_file(_SKILLS_DIR / "angular-developer"),
+    ]
+
+
+def _build_svelte_review_skills() -> list[SkillSource]:
+    """Build the skill bundle for the Svelte technical reviewer.
+
+    The bundle pairs the project's generic frontend and language review skills
+    with Svelte's official ``svelte-core-bestpractices`` skill so Svelte-specific
+    review criteria are applied without routing Svelte changes through the
+    React-oriented frontend reviewer.
+
+    Returns:
+        list[SkillSource]: Skill instances loaded for Svelte review.
+    """
+    return [
+        Skill.from_file(_SKILLS_DIR / "reviewing-universal"),
+        Skill.from_file(_SKILLS_DIR / "reviewing-languages"),
+        Skill.from_file(_SKILLS_DIR / "reviewing-frameworks"),
+        Skill.from_file(_SKILLS_DIR / "svelte-core-bestpractices"),
     ]
 
 

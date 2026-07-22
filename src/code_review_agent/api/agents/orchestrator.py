@@ -80,7 +80,7 @@ def orchestrator_router(settings: Settings, store: TaskStore) -> APIRouter:
                 AgentSkill(
                     id="full_review",
                     name="Full Code Review",
-                    description="Collects PR information, runs React and Security reviewers in parallel, then produces a final accept/reject decision for each finding.",
+                    description="Collects PR information, runs the applicable specialist reviewers (detected by project type) in parallel, then produces a final accept/reject decision for each finding.",
                     inputSchema={
                         "type": "object",
                         "properties": {

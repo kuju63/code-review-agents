@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/sveltejs/ai-tools",
+  "path": "tools/skills/svelte-core-bestpractices",
+  "commit": "ab14e46ec3515520b1e2c8dea9a4ab9059139f84",
+  "license": "MIT",
+  "adapted_files": [
+    "SKILL.md"
+  ]
+}
