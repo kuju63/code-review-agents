@@ -11,6 +11,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import logging
 import os
@@ -21,8 +22,8 @@ from typing import Any, Callable, cast
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, field_validator
-from strands import Agent
 from strands.models.openai import OpenAIModel
+from strands.types.content import Messages
 
 logger = logging.getLogger(__name__)
 
@@ -61,24 +62,71 @@ class MutatedPatchOutput(BaseModel):
 MutationGenerator = Callable[[str, dict[str, Any], str], MutatedPatchOutput | None]
 
 _MUTATION_GEN_SYSTEM_PROMPT = """\
-You inject a single realistic vulnerability/bug pattern into an existing \
-unified diff patch, for building an evaluation dataset that measures \
-whether a code review agent catches it.
+You are editing an existing unified diff patch by inserting new lines \
+into it -- you are NOT writing a new snippet from scratch.
 
-Requirements:
+=== THE #1 RULE (read this before anything else) ===
+`mutated_patch` MUST be the ENTIRE original patch given to you, \
+reproduced character-for-character -- every hunk, every hunk header, \
+every context/added/removed line -- with your new lines inserted as \
+additional "+" lines in exactly one place. Copy every hunk through \
+unchanged, including hunks you are not injecting into. Do NOT return \
+only the injected snippet, only the changed hunk, or any subset of the \
+patch. A correct answer is always at least as long as the original \
+patch. If you find yourself about to output just one or two bare \
+statements with no "@@ ... @@" header above them, that is wrong -- go \
+back and include the full original patch around them.
+
+Example (generic, illustrates the required transformation):
+
+Original patch given to you:
+@@ -1,1 +1,2 @@
+ context1
++addedByPr
+
+Correct mutated_patch:
+@@ -1,1 +1,3 @@
+ context1
++addedByPr
++injectedCall(userInput);
+
+Note what happened: the hunk header came first and its line count was \
+updated (1,2 -> 1,3); the pre-existing context line " context1" and the \
+pre-existing added line "+addedByPr" were both copied through unchanged \
+and in order; exactly one new "+" line was appended. Nothing was \
+omitted, reordered, or rewritten. Do not reuse this example's literal \
+content ("context1", "injectedCall") in your real answer -- it is \
+illustrative only.
+
+=== Requirements for the injected code itself ===
 (a) Wire the injected code into the existing execution flow shown in the \
 patch -- do not add an isolated/unreachable statement.
-(b) Use APIs that are valid for the target language and runtime given \
-below (e.g. do not use browser-only globals in server-side code).
-(c) Match the surrounding code's variable names, scope, and style.
-(d) Preserve strict unified diff format: only insert new lines starting \
-with "+"; do not modify or remove any existing line, and do not change \
-any line that does not start with "+", " ", or "-". Hunk headers \
-("@@ ... @@") may be rewritten to reflect the new line count.
+(b) Use the exact API/construct shown in the reference pattern given to \
+you (e.g. the literal function name) -- do not substitute a \
+semantically-equivalent alternative; automated checks look for the \
+exact token.
+(c) Use APIs that are valid for the target language and runtime given \
+below (e.g. do not use browser-only globals such as window./document. \
+in Node-only code).
+(d) Match the surrounding code's variable names, scope, and style.
+(e) Insert ALL of your new lines as ONE contiguous block of "+" lines, \
+all within a single hunk. Do not split the injection across two hunks \
+and do not interleave unchanged lines between two separate injected \
+chunks.
 
-Return the full mutated patch, the 1-based new-file line number where \
-the injected code lives, and a brief rationale for why that location is \
-reachable.
+=== Requirements for the diff format itself ===
+(f) Return `mutated_patch` starting directly with a hunk header line \
+("@@ -old_start,old_count +new_start,new_count @@") -- no markdown code \
+fences, no explanation, no "diff --git"/"index"/"---"/"+++" preamble \
+before it. Blank lines before the first header are fine.
+(g) Only insert new lines starting with "+"; do not modify, remove, or \
+reorder any existing line, and do not change any line that does not \
+start with "+", " ", or "-". Hunk headers ("@@ ... @@") may be rewritten \
+to reflect the new line count they introduce.
+
+Return the full mutated patch (per the #1 rule above), the 1-based \
+new-file line number where the injected code lives, and a brief \
+rationale for why that location is reachable.
 """
 
 
@@ -102,7 +150,9 @@ def build_generation_prompt(patch: str, rule: dict[str, Any], lang: str) -> str:
         f"{rule.get('summary', '')}\n"
         f"Example of the pattern (for reference, do not copy verbatim -- "
         f"adapt it to the surrounding code): {get_snippet_for_lang(rule, lang)!r}\n\n"
-        f"Original patch:\n{patch}"
+        f"Original patch (reproduce this ENTIRE patch verbatim in your "
+        f"mutated_patch output, with your new lines inserted -- see the "
+        f"#1 rule above):\n{patch}"
     )
 
 
@@ -113,14 +163,34 @@ def make_llm_mutation_generator(
 
     Mirrors the model-selection pattern used elsewhere in this repo
     (``base_reviewer.py`` / ``score_evaluation.py::make_llm_semantic_judge``):
-    a custom ``llm_base_url`` gets a fixed low temperature for
-    reproducibility; the default endpoint is used as-is otherwise.
+    a custom ``llm_base_url`` gets a fixed low temperature (0.1) to
+    reduce output variance; this does not guarantee reproducibility,
+    since most models remain stochastic at any nonzero temperature
+    (design doc 9.2 observed non-deterministic results across repeated
+    calls even at this setting). The default endpoint is used as-is
+    otherwise.
+
+    Calls ``Model.structured_output()`` directly instead of going through
+    ``Agent(...)(prompt, structured_output_model=...)``. The Agent-level
+    path registers a synthetic tool and relies on the model invoking it
+    (``tool_choice=auto`` on the first call, forced only on a retry after
+    ``end_turn`` -- see strands-agents/harness-sdk#3336, open/unresolved
+    as of this writing): a self-hosted OpenAI-compatible model can answer
+    with the correct JSON as freeform text on both attempts without ever
+    emitting a `tool_calls` entry, which raises `StructuredOutputException`
+    on every call. `Model.structured_output()` sidesteps tool-calling
+    entirely via the OpenAI-compatible `response_format` (JSON-schema
+    constrained decoding), which this repo's local Ollama setup honors
+    reliably. This is not the deprecated `Agent.structured_output()`
+    convenience wrapper (which internally calls the same `Model` method) --
+    the `Model.structured_output()` method itself carries no deprecation
+    notice.
 
     Args:
         model_id: OpenAI-compatible model id to use for generation.
         llm_base_url: Optional OpenAI-compatible base URL. When set, the
-            model is pinned to a low, fixed temperature for
-            reproducibility.
+            model is pinned to a low, fixed temperature (0.1) to reduce
+            output variance -- not a reproducibility guarantee.
 
     Returns:
         A `MutationGenerator` callable: given `(patch, rule, lang)`, it
@@ -132,32 +202,49 @@ def make_llm_mutation_generator(
         model = OpenAIModel(
             model_id=model_id,
             client_args={"base_url": llm_base_url},
-            params={"temperature": 0.0},
+            params={"temperature": 0.1},
         )
     else:
         model = OpenAIModel(model_id=model_id)
-
-    agent = Agent(model=model, system_prompt=_MUTATION_GEN_SYSTEM_PROMPT, tools=[])
 
     def generate(
         patch: str, rule: dict[str, Any], lang: str
     ) -> MutatedPatchOutput | None:
         prompt = build_generation_prompt(patch, rule, lang)
+        messages: Messages = [{"role": "user", "content": [{"text": prompt}]}]
+
+        async def invoke() -> MutatedPatchOutput | None:
+            last_event: dict[str, Any] | None = None
+            async for event in model.structured_output(
+                MutatedPatchOutput, messages, system_prompt=_MUTATION_GEN_SYSTEM_PROMPT
+            ):
+                last_event = event
+            if last_event is None:
+                return None
+            return cast(MutatedPatchOutput, last_event["output"])
+
         try:
-            result = agent(prompt, structured_output_model=MutatedPatchOutput)
-        except Exception:
-            # Fail closed, no retry: design doc 3.2.3 explicitly forbids
-            # regeneration retries so a flaky/unstable model doesn't leak
-            # into the evaluation dataset's determinism (R6).
+            return asyncio.run(invoke())
+        except Exception as exc:
+            # This single call failed closed; it does not retry itself.
+            # The caller (render_seeded_item_with_generation, design doc
+            # 9.4) may call this function again up to max_attempts times,
+            # so this warning fires once per failed attempt, not once per
+            # combo -- expect it to repeat under --llm-max-attempts > 1.
+            #
+            # The exception type is named in the summary (not just via
+            # exc_info's traceback) so a structural failure -- e.g.
+            # RuntimeError: asyncio.run() cannot be called from a running
+            # event loop, if this were ever invoked from an async context
+            # -- is distinguishable at a glance from ordinary model/network
+            # flakiness, which would otherwise silently exhaust every
+            # retry attempt with an identical-looking log line.
             logger.warning(
-                "mutation generation call failed; falling back to "
-                "deterministic injection",
+                "mutation generation call failed on this attempt (%s)",
+                type(exc).__name__,
                 exc_info=True,
             )
             return None
-        if result.structured_output is None:
-            return None
-        return cast(MutatedPatchOutput, result.structured_output)
 
     return generate
 
@@ -287,6 +374,64 @@ def get_snippet_for_lang(rule: dict[str, Any], lang: str) -> str:
 _VALID_RUNTIMES = {"browser", "node", "universal"}
 _FORBIDDEN_GLOBAL_RE = re.compile(r"\b(window|document)\.")
 
+# Design doc §7.3/7.4.3 (Issue #131): a `required_tokens` entry requiring
+# `await` implicitly requires the enclosing function to be declared
+# `async`, but injection is pure addition (V2) -- no signature rewrite is
+# permitted. A snippet that requires `await` must therefore declare its
+# own `async` scope (e.g. an async IIFE) rather than depend on the
+# enclosing code being async.
+_SCOPE_DEPENDENT_TOKEN_RE = re.compile(r"\bawait\b")
+# A bare `\basync\b` search would be satisfied by "async" appearing in a
+# comment or string literal (e.g. "// not async"), letting a
+# non-self-contained snippet slip through this build-time check only to
+# surface later as a high deterministic_fallback rate. Instead require
+# one of the actual JS/TS async declaration forms: `async function`,
+# `async (...)`  / `async name(...)` (arrow/method), or `async name =>`.
+# `[ \t]*` (not `\s*`) keeps the identifier/call forms from matching
+# across a newline into unrelated code later in the same snippet.
+# Same known limitation as design doc 7.9's whitespace-normalization
+# case: this is a lexical match, not a parser, so a declaration-shaped
+# string literal (e.g. `const x = "async function() {}"`) would still
+# false-positive as a real async scope. Accepted for the same reason --
+# the catalog has no `await`/`async` rules today, and a real fix needs
+# actual JS/TS parsing.
+_ASYNC_SCOPE_RE = re.compile(
+    r"\basync\b[ \t]*(?:function\b|\(|[A-Za-z_$][\w$]*[ \t]*(?:\(|=>))"
+)
+# Matches a backslash-escape sequence (`\b`, `\s`, `\.`, etc.) in a regex
+# pattern's own source text, so it can be blanked out before running
+# _SCOPE_DEPENDENT_TOKEN_RE against that source: without this, a pattern
+# like r"\bawait\b" contains the literal character run "bawaitb" (the
+# escape letters sit directly against "await" with no real word boundary
+# between them), which would make a naive \bawait\b search against the
+# raw source fail even for the canonical, unambiguous case.
+_REGEX_ESCAPE_SEQUENCE_RE = re.compile(r"\\.")
+
+
+def _pattern_references_keyword(pattern_source: str, keyword_re: re.Pattern) -> bool:
+    """Does `pattern_source` reference `keyword_re` as a literal,
+    whole-word token -- not merely as a substring of a longer identifier
+    (e.g. "awaited" contains "await" as a substring but isn't the
+    `await` keyword)?
+
+    Backslash-escape sequences are blanked out first (see
+    `_REGEX_ESCAPE_SEQUENCE_RE`) so they can't accidentally supply a fake
+    "adjacent letter" that breaks the word-boundary check on either side
+    of the keyword, in either direction (false negative on `\bawait\b`
+    itself, or false positive on `\bawaited\b`).
+
+    Args:
+        pattern_source: A regex's own source text (e.g. `r"\bawait\b"`),
+            not text to be matched by that regex.
+        keyword_re: A compiled regex identifying the keyword to look for,
+            expected to itself use `\b` word boundaries.
+
+    Returns:
+        True if `pattern_source` references the keyword as a whole word.
+    """
+    cleaned = _REGEX_ESCAPE_SEQUENCE_RE.sub(" ", pattern_source)
+    return bool(keyword_re.search(cleaned))
+
 
 def validate_catalog(rules: list[Any]) -> list[str]:
     """Validate the mutation catalog and return a list of error messages.
@@ -406,6 +551,51 @@ def validate_catalog(rules: list[Any]) -> list[str]:
                     errors.append(
                         f"rule {rule_id!r}: language_snippets[{lang!r}] does "
                         f"not satisfy required_tokens: {snippet!r}"
+                    )
+
+            # Self-containment (R8, design doc §7.3): a required_tokens
+            # entry that references "await" means the snippet requires an
+            # `async` enclosing scope. Injection is pure addition (V2), so
+            # the snippet must declare that scope itself rather than
+            # depend on the surrounding code being async -- otherwise
+            # generation is structurally forced to rewrite the enclosing
+            # function signature, which V2 (by design) rejects.
+            #
+            # Checked against each pattern's own source text (not by
+            # executing it against the bare string "await"): a token like
+            # r"\bawait\s+api\." requires more context than "await" alone
+            # to match, so p.search("await") would miss it and silently
+            # skip this check for exactly the tokens it exists to catch.
+            # Matched with a word boundary (_pattern_references_keyword,
+            # not a raw substring test) so an unrelated token like
+            # r"\bawaited\b" or r"\bunawaited\b" -- which contains "await"
+            # as a substring but doesn't reference the keyword -- doesn't
+            # misfire.
+            if any(
+                _pattern_references_keyword(p.pattern, _SCOPE_DEPENDENT_TOKEN_RE)
+                for p in compiled_tokens
+            ):
+                for lang, snippet in snippets.items():
+                    if not isinstance(snippet, str):
+                        continue
+                    if not _ASYNC_SCOPE_RE.search(snippet):
+                        errors.append(
+                            f"rule {rule_id!r}: required_tokens requires "
+                            f"'await' but language_snippets[{lang!r}] does "
+                            "not declare its own 'async' scope (violates "
+                            "self-containment principle, see "
+                            "docs/eval-seeded-mutation-injection-design.md "
+                            f"§7.3): {snippet!r}"
+                        )
+                if line_snippet is not None and not _ASYNC_SCOPE_RE.search(
+                    line_snippet
+                ):
+                    errors.append(
+                        f"rule {rule_id!r}: required_tokens requires 'await' "
+                        "but line_snippet does not declare its own 'async' "
+                        "scope (violates self-containment principle, see "
+                        "docs/eval-seeded-mutation-injection-design.md "
+                        f"§7.3): {line_snippet!r}"
                     )
 
         texts = list(snippets.values()) + list(context_lines or [])
@@ -573,6 +763,47 @@ def verify_diff_parses(mutated_patch: str) -> bool:
     return saw_header
 
 
+def _normalize_diff_line_for_compare(line: str) -> str:
+    """Normalize a diff line's content for indentation/semicolon-tolerant
+    comparison in `_hunk_added_indices`.
+
+    Design doc 7.4.1 (Issue #131, 1/7 false-negative case): an LLM
+    reproducing a pre-existing line verbatim but with different
+    indentation or a dropped/added trailing semicolon must not be treated
+    as an altered line. Only the diff marker (`+`/`-`/` `) is kept exact;
+    the body has its leading/trailing whitespace and one trailing
+    semicolon stripped. Internal whitespace is deliberately left intact
+    (not collapsed run-by-run): collapsing it would also normalize
+    whitespace inside string/regex literals, silently treating a genuine
+    content change (e.g. `"a  b"` -> `"a b"`) as formatting-only and
+    letting it slip past V2 undetected. Other genuine content changes
+    (different tokens, restructured expressions) still differ after
+    normalization and are correctly rejected.
+
+    Known limitation (design doc 7.9): this compares the body as a plain
+    string, with no notion of whether a line sits inside a multi-line
+    string/template literal. On such a continuation line, leading
+    whitespace is part of the literal's value, so a pure reindent there
+    is a genuine content change that this normalization would still
+    treat as formatting-only. Detecting that requires tracking
+    quote/backtick nesting across the whole hunk (or file), which is out
+    of scope for this lightweight lexical comparison; see design doc 7.9
+    for why the trade-off is accepted as-is.
+
+    Args:
+        line: A single diff line, including its leading marker
+            (`+`/`-`/` `).
+
+    Returns:
+        The marker unchanged, followed by the body with leading/trailing
+        whitespace and at most one trailing semicolon stripped.
+    """
+    if not line:
+        return line
+    marker, body = line[0], line[1:]
+    return marker + body.strip().removesuffix(";")
+
+
 def _hunk_added_indices(
     original_hunk: list[str], mutated_hunk: list[str]
 ) -> list[int] | None:
@@ -591,16 +822,21 @@ def _hunk_added_indices(
     Returns:
         Indices (into `mutated_hunk`) of lines that are new relative to
         `original_hunk`, or None if any line in `mutated_hunk` is neither
-        the next expected original line nor a new `+` line -- i.e. an
-        existing context/removed/added line was altered, reordered, or
-        dropped -- or if `original_hunk` wasn't fully consumed by the
-        end.
+        the next expected original line (allowing whitespace/trailing-
+        semicolon differences, design doc 7.4.1) nor a new `+` line --
+        i.e. an existing context/removed/added line was altered in
+        content, reordered, or dropped -- or if `original_hunk` wasn't
+        fully consumed by the end.
     """
     oi = 1
     new_idxs: list[int] = []
     for i in range(1, len(mutated_hunk)):
         line = mutated_hunk[i]
-        if oi < len(original_hunk) and line == original_hunk[oi]:
+        if oi < len(original_hunk) and (
+            line == original_hunk[oi]
+            or _normalize_diff_line_for_compare(line)
+            == _normalize_diff_line_for_compare(original_hunk[oi])
+        ):
             oi += 1
         elif line.startswith("+"):
             new_idxs.append(i)
@@ -962,11 +1198,19 @@ def render_seeded_item_with_generation(
     file_change: dict[str, Any],
     rule: dict[str, Any],
     generate_fn: MutationGenerator | None = None,
+    max_attempts: int = 1,
 ) -> dict[str, Any]:
-    """Try the LLM generation path (design doc 3.2.1); fall back to the
-    Phase 1 deterministic path (no retry) if `generate_fn` is unset, the
-    LLM call failed, the output didn't pass V1-V4, or the injected line
-    couldn't be unambiguously recomputed.
+    """Try the LLM generation path (design doc 3.2.1) up to `max_attempts`
+    times; fall back to the Phase 1 deterministic path if `generate_fn` is
+    unset, or every attempt either fails the LLM call, doesn't pass V1-V4,
+    or has an injected line that can't be unambiguously recomputed.
+
+    Design doc 9.4 reverses 3.2.3's original "no retry" decision: each
+    attempt is independently gated by the same `passes_post_generation_checks`
+    (V1-V4), so a bounded retry cannot let a lower-quality generation
+    through -- it only gives a generation that would have passed on a later
+    attempt a chance to be found, given the high attempt-to-attempt
+    variance measured in 9.2.
 
     Args:
         gold_item: Source Gold set item.
@@ -975,6 +1219,9 @@ def render_seeded_item_with_generation(
         generate_fn: Optional LLM mutation generator (from
             `make_llm_mutation_generator`). Defaults to None, which
             skips the LLM path entirely for backward compatibility.
+        max_attempts: Maximum number of `generate_fn` calls to try before
+            falling back. Defaults to 1 (no retry), preserving prior
+            behavior for existing callers.
 
     Returns:
         A Seeded item dict, with `generation_source` set to `"llm"` or
@@ -984,17 +1231,20 @@ def render_seeded_item_with_generation(
         path = file_change.get("path", "")
         original_patch = file_change.get("patch") or ""
         lang = detect_lang(path)
-        llm_output = generate_fn(original_patch, rule, lang)
-        if llm_output is not None and passes_post_generation_checks(
-            original_patch, llm_output.mutated_patch, rule
-        ):
+        for _ in range(max(max_attempts, 1)):
+            llm_output = generate_fn(original_patch, rule, lang)
+            if llm_output is None or not passes_post_generation_checks(
+                original_patch, llm_output.mutated_patch, rule
+            ):
+                continue
             injected_line = recompute_injected_line(
                 original_patch, llm_output.mutated_patch
             )
-            if injected_line is not None:
-                return render_seeded_item_from_llm(
-                    gold_item, file_change, rule, llm_output, injected_line
-                )
+            if injected_line is None:
+                continue
+            return render_seeded_item_from_llm(
+                gold_item, file_change, rule, llm_output, injected_line
+            )
 
     return render_seeded_item(gold_item, file_change, rule)
 
@@ -1005,6 +1255,7 @@ def build_seeded_items(
     rnd: random.Random,
     multiplier: int,
     generate_fn: MutationGenerator | None = None,
+    max_attempts: int = 1,
 ) -> tuple[list[dict[str, Any]], str | None]:
     """Build up to `multiplier` distinct Seeded items for one Gold item.
 
@@ -1026,6 +1277,8 @@ def build_seeded_items(
             compatibility: existing callers that don't pass it keep
             getting the pure Phase 1 path via
             `render_seeded_item_with_generation`'s own None-handling.
+        max_attempts: Passed through to `render_seeded_item_with_generation`
+            (design doc 9.4). Defaults to 1 (no retry).
 
     Returns:
         A tuple of `(items, warning)`. `items` is `[]` when the pool is
@@ -1051,7 +1304,9 @@ def build_seeded_items(
         )
 
     items = [
-        render_seeded_item_with_generation(gold_item, fc, rule, generate_fn)
+        render_seeded_item_with_generation(
+            gold_item, fc, rule, generate_fn, max_attempts
+        )
         for fc, rule in pool[:take]
     ]
     return items, warning
@@ -1087,6 +1342,18 @@ def main() -> int:
             "generation. Falls back to SEEDED_GEN_LLM_BASE_URL."
         ),
     )
+    parser.add_argument(
+        "--llm-max-attempts",
+        type=int,
+        default=3,
+        help=(
+            "Max LLM generation attempts per (file, rule) combo before "
+            "falling back to Phase 1 (design doc 9.4). Each attempt is "
+            "independently gated by V1-V4; defaults to 3, the value "
+            "measured in design doc 9.7-9.8 to bring fallback under 30%% "
+            "when combined with a sufficiently capable generation model."
+        ),
+    )
     args = parser.parse_args()
 
     rnd = random.Random(args.seed)
@@ -1116,6 +1383,16 @@ def main() -> int:
             print(f"[SEEDED-ERROR] {err}", file=sys.stderr)
         return 1
 
+    if args.llm_max_attempts < 1:
+        print(
+            f"[SEEDED-ERROR] --llm-max-attempts must be >= 1, got "
+            f"{args.llm_max_attempts!r} (each attempt is independently "
+            "checked by the post-generation verifiers -- pass 1 to "
+            "disable retries, not 0)",
+            file=sys.stderr,
+        )
+        return 1
+
     model_id = args.model_id or os.environ.get("SEEDED_GEN_MODEL_ID")
     llm_base_url = args.llm_base_url or os.environ.get("SEEDED_GEN_LLM_BASE_URL")
     if not model_id:
@@ -1135,7 +1412,7 @@ def main() -> int:
     with open(args.output, "w", encoding="utf-8") as out:
         for item in gold_items:
             items, warning = build_seeded_items(
-                item, rules, rnd, args.multiplier, generate_fn
+                item, rules, rnd, args.multiplier, generate_fn, args.llm_max_attempts
             )
             if warning:
                 print(warning, file=sys.stderr)

@@ -58,15 +58,15 @@
       "severity": "medium",
       "languages": ["js", "jsx", "ts", "tsx", "vue", "svelte"],
       "runtime": "universal",
-      "required_tokens": ["\\bfor\\s*\\(", "\\bawait\\b"],
-      "line_snippet": "for (const id of ids) { await api.get('/items/' + id); }",
+      "required_tokens": ["\\bfor\\s*\\(", "\\.then\\("],
+      "line_snippet": "let chain = Promise.resolve(); for (const id of ids) { chain = chain.then(() => api.get('/items/' + id)); }",
       "language_snippets": {
-        "js": "for (const id of ids) { await api.get('/items/' + id); }",
-        "ts": "for (const id of ids) { await api.get('/items/' + id); }",
-        "jsx": "for (const id of ids) { await api.get('/items/' + id); }",
-        "tsx": "for (const id of ids) { await api.get('/items/' + id); }",
-        "vue": "for (const id of ids) { await axios.get('/items/' + id); }",
-        "svelte": "for (const id of ids) { await fetch('/items/' + id); }"
+        "js": "let chain = Promise.resolve(); for (const id of ids) { chain = chain.then(() => api.get('/items/' + id)); }",
+        "ts": "let chain = Promise.resolve(); for (const id of ids) { chain = chain.then(() => api.get('/items/' + id)); }",
+        "jsx": "let chain = Promise.resolve(); for (const id of ids) { chain = chain.then(() => api.get('/items/' + id)); }",
+        "tsx": "let chain = Promise.resolve(); for (const id of ids) { chain = chain.then(() => api.get('/items/' + id)); }",
+        "vue": "let chain = Promise.resolve(); for (const id of ids) { chain = chain.then(() => axios.get('/items/' + id)); }",
+        "svelte": "let chain = Promise.resolve(); for (const id of ids) { chain = chain.then(() => fetch('/items/' + id)); }"
       },
       "summary": "Sequential API calls in loop can cause major latency regressions."
     },
@@ -76,15 +76,15 @@
       "severity": "high",
       "languages": ["js", "ts", "jsx", "tsx", "vue", "svelte"],
       "runtime": "universal",
-      "required_tokens": ["\\bawait\\b", "\\.then\\("],
-      "line_snippet": "const resource = await fetch('/api/items/' + params.id).then((r) => r.json());",
+      "required_tokens": ["\\.then\\("],
+      "line_snippet": "fetch('/api/items/' + params.id).then((r) => r.json());",
       "language_snippets": {
-        "js": "const resource = await fetch('/api/items/' + params.id).then((r) => r.json());",
-        "ts": "const resource = await fetch('/api/items/' + params.id).then((r) => r.json());",
-        "jsx": "const resource = await fetch('/api/items/' + useParams().id).then((r) => r.json());",
-        "tsx": "const resource = await fetch('/api/items/' + useParams().id).then((r) => r.json());",
-        "vue": "const resource = await axios.get('/api/items/' + useRoute().params.id).then((r) => r.data);",
-        "svelte": "const resource = await fetch('/api/items/' + $page.params.id).then((r) => r.json());"
+        "js": "fetch('/api/items/' + params.id).then((r) => r.json());",
+        "ts": "fetch('/api/items/' + params.id).then((r) => r.json());",
+        "jsx": "fetch('/api/items/' + useParams().id).then((r) => r.json());",
+        "tsx": "fetch('/api/items/' + useParams().id).then((r) => r.json());",
+        "vue": "axios.get('/api/items/' + useRoute().params.id).then((r) => r.data);",
+        "svelte": "fetch('/api/items/' + $page.params.id).then((r) => r.json());"
       },
       "summary": "Direct object access without tenant or ownership validation may cause IDOR."
     }

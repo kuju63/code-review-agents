@@ -81,10 +81,10 @@ RULES = [
         "category": "performance",
         "severity": "low",
         "summary": "Rule C summary",
-        "required_tokens": [r"\bawait\b"],
-        "line_snippet": "await Promise.all(items.map(fn));",
+        "required_tokens": [r"\.then\("],
+        "line_snippet": "Promise.all(items.map(fn)).then(() => {});",
         "language_snippets": {
-            "ts": "await Promise.all(items.map(fn));",
+            "ts": "Promise.all(items.map(fn)).then(() => {});",
         },
     },
 ]
@@ -932,6 +932,118 @@ class TestValidateCatalogRequiredTokens:
         assert any("required_tokens" in e and "rule_x" in e for e in errors)
 
 
+class TestValidateCatalogSelfContainment:
+    """Issue #131 design doc §7.3/7.4.3: a snippet whose `required_tokens`
+    requires `await` implicitly requires the enclosing function to be
+    `async`, but injection is pure addition (no signature rewrite allowed).
+    Catalog validation must catch this at build time rather than let it
+    surface later as a high deterministic_fallback rate."""
+
+    def test_await_required_token_without_async_snippet_is_reported(self):
+        rule = _valid_rule(
+            required_tokens=[r"\bawait\b"],
+            line_snippet="await api.get('/items/' + id);",
+            language_snippets={
+                "js": "await api.get('/items/' + id);",
+                "ts": "await api.get('/items/' + id);",
+            },
+        )
+        errors = validate_catalog([rule])
+        assert any(
+            "self-containment" in e and "rule_x" in e and "js" in e for e in errors
+        )
+        assert any(
+            "self-containment" in e and "rule_x" in e and "ts" in e for e in errors
+        )
+
+    def test_await_required_token_with_async_iife_snippet_is_allowed(self):
+        rule = _valid_rule(
+            required_tokens=[r"\bawait\b"],
+            line_snippet="(async () => { await api.get('/x'); })();",
+            language_snippets={
+                "js": "(async () => { await api.get('/x'); })();",
+                "ts": "(async () => { await api.get('/x'); })();",
+            },
+        )
+        assert validate_catalog([rule]) == []
+
+    def test_no_await_requirement_is_unaffected(self):
+        assert validate_catalog([_valid_rule()]) == []
+
+    def test_await_required_token_with_extra_context_is_still_detected(self):
+        """A token requiring more than the bare word "await" (e.g. `await`
+        followed by a specific call) must still trigger the self-
+        containment check -- p.search("await") alone would miss this
+        since "await" by itself doesn't satisfy `\\bawait\\s+api\\.`."""
+        rule = _valid_rule(
+            required_tokens=[r"\bawait\s+api\."],
+            line_snippet="await api.get('/items/' + id);",
+            language_snippets={
+                "js": "await api.get('/items/' + id);",
+                "ts": "await api.get('/items/' + id);",
+            },
+        )
+        errors = validate_catalog([rule])
+        assert any(
+            "self-containment" in e and "rule_x" in e and "js" in e for e in errors
+        )
+
+    def test_unrelated_token_containing_await_as_substring_is_not_flagged(self):
+        """A token like `\\bawaited\\b` references an unrelated identifier
+        (e.g. a variable named `awaited`), not the `await` keyword, even
+        though "await" appears as a substring of the regex source. A raw
+        substring test on the pattern text would misfire here; a word-
+        boundary match on the keyword itself must not."""
+        rule = _valid_rule(
+            required_tokens=[r"\bawaited\b"],
+            line_snippet="const awaited = true;",
+            language_snippets={
+                "js": "const awaited = true;",
+                "ts": "const awaited = true;",
+            },
+        )
+        assert validate_catalog([rule]) == []
+
+    def test_await_with_async_only_in_comment_is_still_reported(self):
+        """Regression: the word "async" appearing in a comment (not an
+        actual async declaration) must not satisfy the self-containment
+        check -- a bare `\\basync\\b` search would wrongly accept this."""
+        rule = _valid_rule(
+            required_tokens=[r"\bawait\b"],
+            line_snippet="// not async\nawait api.get('/items/' + id);",
+            language_snippets={
+                "js": "// not async\nawait api.get('/items/' + id);",
+                "ts": "// not async\nawait api.get('/items/' + id);",
+            },
+        )
+        errors = validate_catalog([rule])
+        assert any(
+            "self-containment" in e and "rule_x" in e and "js" in e for e in errors
+        )
+
+    def test_await_with_async_arrow_without_parens_is_allowed(self):
+        rule = _valid_rule(
+            required_tokens=[r"\bawait\b"],
+            line_snippet="(async id => { await api.get('/items/' + id); })(x);",
+            language_snippets={
+                "js": "(async id => { await api.get('/items/' + id); })(x);",
+                "ts": "(async id => { await api.get('/items/' + id); })(x);",
+            },
+        )
+        assert validate_catalog([rule]) == []
+
+    def test_real_catalog_rules_satisfy_self_containment(self):
+        catalog_path = (
+            Path(__file__).parents[3]
+            / "evaluation"
+            / "config"
+            / "seeded_mutations.json"
+        )
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        errors = validate_catalog(catalog["rules"])
+        assert not any("self-containment" in e for e in errors)
+
+
 # Shared fixtures for V1-V4 + recompute_injected_line tests below: a single
 # hunk original patch with one pre-existing context line and one
 # pre-existing "+" line (representing the real PR's own change), plus a
@@ -1029,6 +1141,72 @@ class TestVerifyOnlyAdditionsChanged:
             "@@ -10,1 +11,2 @@\n context10\n+extraHunk"
         )
         assert verify_only_additions_changed(_ORIGINAL_SINGLE_HUNK, mutated) is False
+
+
+class TestVerifyOnlyAdditionsChangedWhitespaceTolerance:
+    """Issue #131 (1/7 false-negative case, bitwarden index.d.ts): a
+    pre-existing line reproduced by the LLM with only indentation/trailing-
+    semicolon differences was rejected by the previous exact-match
+    comparison. Whitespace/semicolon normalization must accept this while
+    still rejecting genuine content changes (structural rewrites)."""
+
+    _ORIGINAL = (
+        "@@ -1,2 +1,2 @@\n context1\n+export function isolateProcess(): Promise<void>;"
+    )
+
+    def test_reindented_preexisting_line_passes(self):
+        mutated = (
+            "@@ -1,2 +1,3 @@\n"
+            " context1\n"
+            "+  export function isolateProcess(): Promise<void>\n"
+            "+eval(userInput);"
+        )
+        assert verify_only_additions_changed(self._ORIGINAL, mutated) is True
+
+    def test_context_line_with_different_indentation_passes(self):
+        original = "@@ -1,2 +1,2 @@\n     context1\n+addedByPr"
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr\n+eval(userInput);"
+        assert verify_only_additions_changed(original, mutated) is True
+
+    def test_structural_rewrite_still_fails_despite_whitespace_tolerance(self):
+        # Content itself differs (expression body -> block body), not just
+        # whitespace/semicolons -- normalization must not paper over this.
+        original = (
+            "@@ -1,2 +1,2 @@\n"
+            " context1\n"
+            "+const openLink = (_e, url: string) => shell.openExternal(url);"
+        )
+        mutated = (
+            "@@ -1,2 +1,5 @@\n"
+            " context1\n"
+            "+const openLink = async (_e, url: string) => {\n"
+            "+  await fetch('/api/items/' + params.id);\n"
+            "+  shell.openExternal(url);\n"
+            "+};"
+        )
+        assert verify_only_additions_changed(original, mutated) is False
+
+    def test_dropped_original_line_still_fails_despite_whitespace_tolerance(self):
+        mutated = "@@ -1,2 +1,2 @@\n context1\n+eval(userInput);"
+        assert verify_only_additions_changed(self._ORIGINAL, mutated) is False
+
+    def test_internal_whitespace_change_inside_string_literal_still_fails(self):
+        """Regression: normalization must not collapse internal whitespace
+        runs. Doing so would treat a changed string literal (a genuine
+        content change, e.g. "a  b" -> "a b") as formatting-only and let
+        it silently pass V2."""
+        original = '@@ -1,2 +1,2 @@\n context1\n+const s = "a  b";'
+        mutated = '@@ -1,2 +1,3 @@\n context1\n+const s = "a b";\n+eval(userInput);'
+        assert verify_only_additions_changed(original, mutated) is False
+
+    def test_double_trailing_semicolon_is_not_treated_as_formatting_only(self):
+        """Regression: the docstring promises only *one* trailing
+        semicolon is normalized away. A line legitimately ending in two
+        semicolons (e.g. an empty statement after a real one) must still
+        be distinguishable from a single-semicolon line."""
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr;;"
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr;\n+eval(userInput);"
+        assert verify_only_additions_changed(original, mutated) is False
 
 
 class TestVerifyRequiredTokens:
@@ -1218,56 +1396,137 @@ class TestBuildGenerationPrompt:
         prompt = build_generation_prompt(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
         assert "ts" in prompt
 
+    def test_reinforces_full_patch_reproduction_near_the_patch(self):
+        # Design doc 8.2: the dominant real-world failure mode was the
+        # model returning only the injected fragment instead of the full
+        # patch. Restate the #1 rule right before the patch itself (the
+        # last thing the model reads) for a recency effect on top of the
+        # system prompt's framing.
+        prompt = build_generation_prompt(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
+        assert "entire" in prompt.lower()
+
+
+class TestMutationGenSystemPrompt:
+    """Asserts the system prompt teaches the model the constraints that
+    V1-V4 (and recompute_injected_line's contiguity requirement) enforce
+    after the fact, rather than leaving them undiscoverable until
+    fallback -- see design doc 8 (100% LLM-path fallback rate root cause:
+    the model returning only the injected fragment, not the full patch).
+
+    Assertions target invariants (does the prompt mention concept X) --
+    not brittle exact-string matches -- since the prompt's exact wording
+    is expected to keep evolving.
+    """
+
+    def test_states_full_patch_reproduction_as_the_primary_rule(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "entire" in prompt.lower()
+        assert "every hunk" in prompt.lower()
+
+    def test_forbids_preamble_before_hunk_header(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "hunk header" in prompt.lower()
+        assert "diff --git" in prompt
+
+    def test_requires_single_contiguous_hunk(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "contiguous" in prompt.lower()
+        assert "single hunk" in prompt.lower() or "one hunk" in prompt.lower()
+
+    def test_requires_exact_token_not_equivalent_alternative(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "exact" in prompt.lower()
+
+    def test_includes_a_worked_example(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "@@ -1,1 +1,2 @@" in prompt
+        assert "@@ -1,1 +1,3 @@" in prompt
+
+    def test_worked_example_hunk_headers_have_consistent_old_side_count(self):
+        """The worked example's headers must not teach the model an
+        internally-inconsistent unified-diff header: old_count must match
+        the number of context/removed lines actually shown in the body
+        (here, exactly one context line, no removed lines)."""
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "@@ -1,2 +1,2 @@" not in prompt
+        assert "@@ -1,2 +1,3 @@" not in prompt
+
+    def test_forbids_modifying_existing_lines(self):
+        prompt = build_seeded_set._MUTATION_GEN_SYSTEM_PROMPT
+        assert "do not modify" in prompt.lower()
+
 
 class TestMakeLlmMutationGenerator:
-    def test_calls_agent_and_returns_parsed_output(self):
-        mock_agent = MagicMock()
-        mock_agent.return_value.structured_output = MutatedPatchOutput(
+    """Exercises the `Model.structured_output()` call path.
+
+    Not the Agent-level `structured_output_model` tool-calling path: that
+    path proved unreliable against self-hosted OpenAI-compatible models
+    (strands-agents/harness-sdk#3336) and was dropped in favor of calling
+    `Model.structured_output()` directly. See `make_llm_mutation_generator`.
+    """
+
+    def test_calls_model_structured_output_and_returns_parsed_output(self):
+        expected = MutatedPatchOutput(
             mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
             injected_line=3,
             reachability_rationale="Reached via the existing init flow.",
         )
-        with (
-            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
-            patch.object(build_seeded_set, "OpenAIModel"),
+        call_count = 0
+
+        async def fake_structured_output(
+            output_model, messages, system_prompt=None, **kwargs
         ):
+            nonlocal call_count
+            call_count += 1
+            assert output_model is MutatedPatchOutput
+            yield {"output": expected}
+
+        mock_model = MagicMock()
+        mock_model.structured_output = fake_structured_output
+        with patch.object(build_seeded_set, "OpenAIModel", return_value=mock_model):
             generate = make_llm_mutation_generator("gpt-4o")
             result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
 
-        assert result is not None
-        assert result.mutated_patch == _MUTATED_SINGLE_HUNK_GOOD
-        _, kwargs = mock_agent.call_args
-        assert kwargs["structured_output_model"] is MutatedPatchOutput
+        assert result is expected
+        assert call_count == 1
 
-    def test_returns_none_when_structured_output_missing(self):
-        mock_agent = MagicMock()
-        mock_agent.return_value.structured_output = None
-        with (
-            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
-            patch.object(build_seeded_set, "OpenAIModel"),
+    def test_returns_none_when_structured_output_yields_nothing(self):
+        async def empty_structured_output(
+            output_model, messages, system_prompt=None, **kwargs
         ):
+            return
+            yield  # pragma: no cover - makes this an async generator
+
+        mock_model = MagicMock()
+        mock_model.structured_output = empty_structured_output
+        with patch.object(build_seeded_set, "OpenAIModel", return_value=mock_model):
             generate = make_llm_mutation_generator("gpt-4o")
             result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
 
         assert result is None
 
-    def test_returns_none_and_does_not_raise_when_agent_call_fails(self):
-        mock_agent = MagicMock(side_effect=RuntimeError("boom"))
-        with (
-            patch.object(build_seeded_set, "Agent", return_value=mock_agent),
-            patch.object(build_seeded_set, "OpenAIModel"),
+    def test_returns_none_and_does_not_raise_when_call_fails(self):
+        call_count = 0
+
+        async def failing_structured_output(
+            output_model, messages, system_prompt=None, **kwargs
         ):
+            nonlocal call_count
+            call_count += 1
+            raise RuntimeError("boom")
+            yield  # pragma: no cover - makes this an async generator
+
+        mock_model = MagicMock()
+        mock_model.structured_output = failing_structured_output
+        with patch.object(build_seeded_set, "OpenAIModel", return_value=mock_model):
             generate = make_llm_mutation_generator("gpt-4o")
             result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
 
         assert result is None
-        assert mock_agent.call_count == 1  # no retry on failure
+        assert call_count == 1  # no retry on failure
 
     def test_uses_base_url_client_args_when_provided(self):
-        with (
-            patch.object(build_seeded_set, "Agent"),
-            patch.object(build_seeded_set, "OpenAIModel") as mock_model_cls,
-        ):
+        with patch.object(build_seeded_set, "OpenAIModel") as mock_model_cls:
             make_llm_mutation_generator("gpt-4o", "https://openrouter.example/api/v1")
 
         _, kwargs = mock_model_cls.call_args
@@ -1364,6 +1623,69 @@ class TestRenderSeededItemWithGeneration:
         )
         assert seeded["generation_source"] == "deterministic_fallback"
 
+    def test_default_max_attempts_calls_generate_fn_exactly_once(self):
+        item, file_change = self._gold_item_and_file()
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            return None
+
+        render_seeded_item_with_generation(item, file_change, RULES[0], generate_fn)
+        assert len(calls) == 1
+
+    def test_retries_until_max_attempts_then_falls_back(self):
+        item, file_change = self._gold_item_and_file()
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            return None
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn, max_attempts=3
+        )
+        assert len(calls) == 3
+        assert seeded["generation_source"] == "deterministic_fallback"
+
+    def test_succeeds_on_a_later_attempt_after_earlier_failures(self):
+        item, file_change = self._gold_item_and_file()
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            if len(calls) < 3:
+                return None
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="third time's the charm",
+            )
+
+        seeded = render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn, max_attempts=5
+        )
+        assert len(calls) == 3
+        assert seeded["generation_source"] == "llm"
+        assert seeded["reachability_rationale"] == "third time's the charm"
+
+    def test_stops_retrying_as_soon_as_an_attempt_passes(self):
+        item, file_change = self._gold_item_and_file()
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="first try",
+            )
+
+        render_seeded_item_with_generation(
+            item, file_change, RULES[0], generate_fn, max_attempts=5
+        )
+        assert len(calls) == 1
+
 
 class TestBuildSeededItemsGenerationSourceWiring:
     def test_generate_fn_wired_through_to_each_item(self):
@@ -1387,6 +1709,28 @@ class TestBuildSeededItemsGenerationSourceWiring:
         item = make_gold_item(files=[make_file("src/foo.ts"), make_file("src/bar.js")])
         items, _ = build_seeded_items(item, RULES, random.Random(1), 2)
         assert all(i["generation_source"] == "deterministic_fallback" for i in items)
+
+    def test_max_attempts_wired_through_to_render(self):
+        item = make_gold_item(
+            files=[make_file("src/foo.ts", patch=_ORIGINAL_SINGLE_HUNK)]
+        )
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            if len(calls) < 2:
+                return None
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="second attempt",
+            )
+
+        items, _ = build_seeded_items(
+            item, [RULES[0]], random.Random(1), 1, generate_fn, max_attempts=2
+        )
+        assert items[0]["generation_source"] == "llm"
+        assert len(calls) == 2
 
 
 class TestMainCLIModelConfigValidation:
@@ -1448,6 +1792,66 @@ class TestMainCLIModelConfigValidation:
         captured = capsys.readouterr()
         assert "[SEEDED-ERROR]" in captured.err
         assert not output_path.exists()
+
+    def test_exits_with_error_when_llm_max_attempts_is_zero(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "some-model")
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+                "--llm-max-attempts",
+                "0",
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
+        assert "--llm-max-attempts" in captured.err
+        assert not output_path.exists()
+
+    def test_exits_with_error_when_llm_max_attempts_is_negative(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "some-model")
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+                "--llm-max-attempts",
+                "-1",
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        captured = capsys.readouterr()
+        assert "[SEEDED-ERROR]" in captured.err
 
     def test_cli_model_id_takes_priority_over_env(self, tmp_path, monkeypatch):
         monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
@@ -1529,7 +1933,7 @@ class TestMainCLIEndToEnd:
         path.write_text(json.dumps({"rules": rules}))
         return path
 
-    def _run(self, tmp_path, monkeypatch, generate_fn):
+    def _run(self, tmp_path, monkeypatch, generate_fn, extra_argv=None):
         gold_items = [
             {
                 "id": "owner/repo#1",
@@ -1560,7 +1964,8 @@ class TestMainCLIEndToEnd:
                 str(output_path),
                 "--model-id",
                 "test-model",
-            ],
+            ]
+            + (extra_argv or []),
         )
 
         exit_code = main()
@@ -1598,6 +2003,39 @@ class TestMainCLIEndToEnd:
 
         assert len(items) == 1
         assert items[0]["generation_source"] == "deterministic_fallback"
+
+    def test_llm_max_attempts_flag_retries_before_falling_back(
+        self, tmp_path, monkeypatch
+    ):
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            if len(calls) < 2:
+                return None
+            return MutatedPatchOutput(
+                mutated_patch=_MUTATED_SINGLE_HUNK_GOOD,
+                injected_line=999,
+                reachability_rationale="second attempt via CLI",
+            )
+
+        items = self._run(
+            tmp_path, monkeypatch, generate_fn, extra_argv=["--llm-max-attempts", "2"]
+        )
+
+        assert len(calls) == 2
+        assert items[0]["generation_source"] == "llm"
+
+    def test_default_llm_max_attempts_is_three(self, tmp_path, monkeypatch):
+        calls = []
+
+        def generate_fn(patch, rule, lang):
+            calls.append(1)
+            return None
+
+        self._run(tmp_path, monkeypatch, generate_fn)
+
+        assert len(calls) == 3
 
 
 class TestRegressionKnownMisses:
@@ -1865,3 +2303,76 @@ class TestRegressionKnownMissesVuetifyTsx:
         assert seeded["generation_source"] == "deterministic_fallback"
         assert seeded["must_find"][0]["line"] == expected_line
         assert seeded["file_changes"][0]["patch"] == expected_patch
+
+
+class TestRegressionIssue131SelfContainedSnippets:
+    """Issue #131: `frontend_n_plus_one_api` / `b2b2c_idor_hint` previously
+    required `await` in `required_tokens`, which implicitly requires the
+    enclosing function to be `async`. Since injection must be pure addition
+    (V2), this forced an LLM to rewrite a sync arrow function's signature --
+    exactly the structural edit V2 exists to reject (6/7 of the observed
+    fallback cases). The revised catalog snippets (Promise-chain for the
+    N+1 rule, plain `.then()` for the IDOR rule) must inject into a sync
+    context via pure addition, while a genuine structural rewrite (the
+    original failure mode) must still fail V2."""
+
+    _CATALOG_PATH = (
+        Path(__file__).parents[3] / "evaluation" / "config" / "seeded_mutations.json"
+    )
+
+    def _rule(self, rule_id):
+        catalog = json.loads(self._CATALOG_PATH.read_text(encoding="utf-8"))
+        return next(r for r in catalog["rules"] if r["rule_id"] == rule_id)
+
+    # A synchronous arrow function with an expression body -- the exact
+    # shape (gitbutler main.ts) that previously triggered an async rewrite.
+    _SYNC_ARROW_ORIGINAL = (
+        "@@ -1,2 +1,2 @@\n"
+        " context1\n"
+        "+const openLink = (_e, url: string) => shell.openExternal(url);"
+    )
+
+    @pytest.mark.parametrize("rule_id", ["frontend_n_plus_one_api", "b2b2c_idor_hint"])
+    def test_required_tokens_do_not_depend_on_await(self, rule_id):
+        rule = self._rule(rule_id)
+        assert not any("await" in token for token in rule["required_tokens"])
+
+    @pytest.mark.parametrize("rule_id", ["frontend_n_plus_one_api", "b2b2c_idor_hint"])
+    def test_snippet_does_not_use_await(self, rule_id):
+        rule = self._rule(rule_id)
+        for lang, snippet in rule["language_snippets"].items():
+            assert "await" not in snippet, f"{rule_id}/{lang}: {snippet!r}"
+
+    @pytest.mark.parametrize("rule_id", ["frontend_n_plus_one_api", "b2b2c_idor_hint"])
+    def test_injects_into_sync_arrow_function_via_pure_addition(self, rule_id):
+        rule = self._rule(rule_id)
+        snippet = get_snippet_for_lang(rule, "ts")
+        mutated = (
+            "@@ -1,2 +1,3 @@\n"
+            " context1\n"
+            "+const openLink = (_e, url: string) => shell.openExternal(url);\n"
+            f"+{snippet}"
+        )
+        assert verify_only_additions_changed(self._SYNC_ARROW_ORIGINAL, mutated) is True
+        assert (
+            verify_required_tokens(
+                self._SYNC_ARROW_ORIGINAL, mutated, rule["required_tokens"]
+            )
+            is True
+        )
+
+    def test_structural_async_rewrite_of_sync_arrow_still_fails_v2(self):
+        # The original failure mode: instead of adding the snippet
+        # untouched, the LLM rewrites the pre-existing arrow function to
+        # `async` so that `await` (previously required) type-checks.
+        mutated = (
+            "@@ -1,2 +1,5 @@\n"
+            " context1\n"
+            "+const openLink = async (_e, url: string) => {\n"
+            "+  await fetch('/api/items/' + params.id);\n"
+            "+  shell.openExternal(url);\n"
+            "+};"
+        )
+        assert (
+            verify_only_additions_changed(self._SYNC_ARROW_ORIGINAL, mutated) is False
+        )
