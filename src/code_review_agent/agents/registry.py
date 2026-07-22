@@ -103,6 +103,16 @@ def detect_project_types(pr_info: PRInfoResult) -> set[ProjectType]:
     paths = [change.filePath for change in pr_info.pr_info.file_changes]
     dependency_files = set(pr_info.dependency_files)
 
+    has_angular_manifest = any(
+        path.endswith("angular.json") for path in dependency_files | set(paths)
+    )
+    has_angular_source = any(
+        path.endswith((".component.ts", ".service.ts", ".directive.ts", ".pipe.ts"))
+        for path in paths
+    )
+    if has_angular_manifest or has_angular_source:
+        return {ProjectType.ANGULAR}
+
     has_package_json = "package.json" in dependency_files or any(
         path.endswith("package.json") for path in paths
     )

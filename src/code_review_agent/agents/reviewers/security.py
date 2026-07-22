@@ -34,11 +34,11 @@ If a security property depends on a file you did not fetch, state that explicitl
 
 @register_reviewer
 class SecurityReviewer(LLMReviewAgent):
-    """Security reviewer for front-end (React/TypeScript) projects."""
+    """Security reviewer for React/TypeScript and Angular projects."""
 
     reviewer_id = "security"
     perspective = ReviewPerspective.SECURITY
-    project_types = frozenset({ProjectType.REACT_TS})
+    project_types = frozenset({ProjectType.REACT_TS, ProjectType.ANGULAR})
     system_prompt = _SYSTEM_PROMPT
     uses_url_fetch = True
     skill_type = AgentSkillType.WEB_SECURITY_REVIEW

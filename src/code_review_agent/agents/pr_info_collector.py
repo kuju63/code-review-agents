@@ -40,6 +40,7 @@ _TARGET_FILENAMES = frozenset(["package.json"])
 _DEPENDENCY_FILENAMES = frozenset(
     [
         "package.json",
+        "angular.json",
         "package-lock.json",
         "yarn.lock",
         "pnpm-lock.yaml",

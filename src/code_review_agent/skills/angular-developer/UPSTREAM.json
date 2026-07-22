@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/angular/angular",
+  "path": "skills/dev-skills/angular-developer",
+  "commit": "ab52df470a3be72d5d08d88af0c026cbf2ce8ee3",
+  "license": "MIT",
+  "adapted_files": [
+    "SKILL.md"
+  ]
+}
