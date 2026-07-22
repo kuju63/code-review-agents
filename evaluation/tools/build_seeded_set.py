@@ -163,8 +163,12 @@ def make_llm_mutation_generator(
 
     Mirrors the model-selection pattern used elsewhere in this repo
     (``base_reviewer.py`` / ``score_evaluation.py::make_llm_semantic_judge``):
-    a custom ``llm_base_url`` gets a fixed low temperature for
-    reproducibility; the default endpoint is used as-is otherwise.
+    a custom ``llm_base_url`` gets a fixed low temperature (0.1) to
+    reduce output variance; this does not guarantee reproducibility,
+    since most models remain stochastic at any nonzero temperature
+    (design doc 9.2 observed non-deterministic results across repeated
+    calls even at this setting). The default endpoint is used as-is
+    otherwise.
 
     Calls ``Model.structured_output()`` directly instead of going through
     ``Agent(...)(prompt, structured_output_model=...)``. The Agent-level
@@ -185,8 +189,8 @@ def make_llm_mutation_generator(
     Args:
         model_id: OpenAI-compatible model id to use for generation.
         llm_base_url: Optional OpenAI-compatible base URL. When set, the
-            model is pinned to a low, fixed temperature for
-            reproducibility.
+            model is pinned to a low, fixed temperature (0.1) to reduce
+            output variance -- not a reproducibility guarantee.
 
     Returns:
         A `MutationGenerator` callable: given `(patch, rule, lang)`, it
@@ -209,13 +213,15 @@ def make_llm_mutation_generator(
         prompt = build_generation_prompt(patch, rule, lang)
         messages: Messages = [{"role": "user", "content": [{"text": prompt}]}]
 
-        async def invoke() -> MutatedPatchOutput:
+        async def invoke() -> MutatedPatchOutput | None:
             last_event: dict[str, Any] | None = None
             async for event in model.structured_output(
                 MutatedPatchOutput, messages, system_prompt=_MUTATION_GEN_SYSTEM_PROMPT
             ):
                 last_event = event
-            return cast(MutatedPatchOutput, last_event["output"])  # type: ignore[index]
+            if last_event is None:
+                return None
+            return cast(MutatedPatchOutput, last_event["output"])
 
         try:
             return asyncio.run(invoke())
@@ -387,16 +393,25 @@ _REGEX_ESCAPE_SEQUENCE_RE = re.compile(r"\\.")
 
 
 def _pattern_references_keyword(pattern_source: str, keyword_re: re.Pattern) -> bool:
-    """Does `pattern_source` (a regex's own source text) reference
-    `keyword_re` as a literal, whole-word token -- not merely as a
-    substring of a longer identifier (e.g. "awaited" contains "await" as
-    a substring but isn't the `await` keyword)?
+    """Does `pattern_source` reference `keyword_re` as a literal,
+    whole-word token -- not merely as a substring of a longer identifier
+    (e.g. "awaited" contains "await" as a substring but isn't the
+    `await` keyword)?
 
     Backslash-escape sequences are blanked out first (see
     `_REGEX_ESCAPE_SEQUENCE_RE`) so they can't accidentally supply a fake
     "adjacent letter" that breaks the word-boundary check on either side
     of the keyword, in either direction (false negative on `\bawait\b`
     itself, or false positive on `\bawaited\b`).
+
+    Args:
+        pattern_source: A regex's own source text (e.g. `r"\bawait\b"`),
+            not text to be matched by that regex.
+        keyword_re: A compiled regex identifying the keyword to look for,
+            expected to itself use `\b` word boundaries.
+
+    Returns:
+        True if `pattern_source` references the keyword as a whole word.
     """
     cleaned = _REGEX_ESCAPE_SEQUENCE_RE.sub(" ", pattern_source)
     return bool(keyword_re.search(cleaned))
@@ -748,11 +763,29 @@ def _normalize_diff_line_for_compare(line: str) -> str:
     letting it slip past V2 undetected. Other genuine content changes
     (different tokens, restructured expressions) still differ after
     normalization and are correctly rejected.
+
+    Known limitation (design doc 7.9): this compares the body as a plain
+    string, with no notion of whether a line sits inside a multi-line
+    string/template literal. On such a continuation line, leading
+    whitespace is part of the literal's value, so a pure reindent there
+    is a genuine content change that this normalization would still
+    treat as formatting-only. Detecting that requires tracking
+    quote/backtick nesting across the whole hunk (or file), which is out
+    of scope for this lightweight lexical comparison; see design doc 7.9
+    for why the trade-off is accepted as-is.
+
+    Args:
+        line: A single diff line, including its leading marker
+            (`+`/`-`/` `).
+
+    Returns:
+        The marker unchanged, followed by the body with leading/trailing
+        whitespace and at most one trailing semicolon stripped.
     """
     if not line:
         return line
     marker, body = line[0], line[1:]
-    return marker + body.strip().rstrip(";")
+    return marker + body.strip().removesuffix(";")
 
 
 def _hunk_added_indices(

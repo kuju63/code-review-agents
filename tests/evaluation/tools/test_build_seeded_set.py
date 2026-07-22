@@ -1171,6 +1171,15 @@ class TestVerifyOnlyAdditionsChangedWhitespaceTolerance:
         mutated = '@@ -1,2 +1,3 @@\n context1\n+const s = "a b";\n+eval(userInput);'
         assert verify_only_additions_changed(original, mutated) is False
 
+    def test_double_trailing_semicolon_is_not_treated_as_formatting_only(self):
+        """Regression: the docstring promises only *one* trailing
+        semicolon is normalized away. A line legitimately ending in two
+        semicolons (e.g. an empty statement after a real one) must still
+        be distinguishable from a single-semicolon line."""
+        original = "@@ -1,2 +1,2 @@\n context1\n+addedByPr;;"
+        mutated = "@@ -1,2 +1,3 @@\n context1\n+addedByPr;\n+eval(userInput);"
+        assert verify_only_additions_changed(original, mutated) is False
+
 
 class TestVerifyRequiredTokens:
     def test_single_required_token_present_passes(self):
