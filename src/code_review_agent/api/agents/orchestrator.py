@@ -1,4 +1,4 @@
-"""A2A router that runs the full 3-stage review pipeline as a single agent call."""
+"""A2A router that runs the full 3-stage review pipeline as a single background A2A task."""
 
 import asyncio
 

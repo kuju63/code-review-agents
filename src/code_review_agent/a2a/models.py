@@ -40,7 +40,7 @@ A2APart = A2ATextPart | A2ADataPart
 
 
 class A2AMessage(BaseModel):
-    """A message exchanged between the user and an agent, made of one or more parts."""
+    """A message exchanged between the user and an agent, made of zero or more parts."""
 
     role: Literal["user", "agent"]
     parts: list[A2APart]

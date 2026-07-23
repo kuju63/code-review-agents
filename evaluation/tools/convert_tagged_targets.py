@@ -330,7 +330,7 @@ def check_coverage_thresholds(
 
     Returns:
         Human-readable warning strings; empty when every ratio is within
-        tolerance (or when ``rows`` is empty).
+        tolerance (or when ``summary["total"]`` is ``0``).
     """
     warnings: list[str] = []
     total = summary["total"]

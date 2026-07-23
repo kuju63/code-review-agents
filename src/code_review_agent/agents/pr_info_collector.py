@@ -232,10 +232,12 @@ class PRInfoCollector:
             Structured PR information ready for downstream review agents.
 
         Raises:
-            INFRA_EXCEPTIONS: The README summary's model call failed due to an
-                infrastructure-level error (model connection lost, GitHub MCP
-                client init failure, transport-level timeout) rather than a
-                business-level failure.
+            INFRA_EXCEPTIONS: An infrastructure-level error (model connection
+                lost, GitHub MCP client init failure, transport-level
+                timeout) occurred while starting or using the GitHub MCP
+                client, or during the README summary's model call, rather
+                than a business-level failure. Collection is not guaranteed
+                to have completed when this is raised.
         """
         mcp_client = create_github_mcp_client(
             self._github_token,

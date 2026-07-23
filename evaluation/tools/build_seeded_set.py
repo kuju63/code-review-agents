@@ -319,7 +319,8 @@ def inject_patch(
     Returns:
         A ``(patched_text, injected_line)`` tuple: the patch text with
         ``line_snippet`` inserted, and the new-file line number it landed
-        on.
+        on. When ``original_patch`` is empty, returns it unchanged with
+        ``injected_line`` set to ``1`` and no ``line_snippet`` inserted.
     """
     patch_lines = original_patch.splitlines()
     if not patch_lines:
