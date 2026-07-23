@@ -1,0 +1,353 @@
+[
+  {
+    "repository": "vuejs/core",
+    "pr_number": 15147,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 15127,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 15125,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "performance",
+    "priority": "medium"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 15111,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 15051,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "vuejs/core",
+    "pr_number": 15092,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "nuxt/nuxt",
+    "pr_number": 35455,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "nuxt/nuxt",
+    "pr_number": 35729,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "nuxt/nuxt",
+    "pr_number": 35799,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "nuxt/nuxt",
+    "pr_number": 35782,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "performance",
+    "priority": "medium"
+  },
+  {
+    "repository": "nuxt/nuxt",
+    "pr_number": 35791,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "performance",
+    "priority": "medium"
+  },
+  {
+    "repository": "nuxt/nuxt",
+    "pr_number": 35790,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "performance",
+    "priority": "high"
+  },
+  {
+    "repository": "vuetifyjs/vuetify",
+    "pr_number": 22987,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "vuetifyjs/vuetify",
+    "pr_number": 21359,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "vuetifyjs/vuetify",
+    "pr_number": 21136,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "pr_number": 23394,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "pr_number": 24579,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "maintainability",
+    "priority": "medium"
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "pr_number": 24558,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "maintainability",
+    "priority": "high"
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "pr_number": 20079,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "pr_number": 24552,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "maintainability",
+    "priority": "medium"
+  },
+  {
+    "repository": "element-plus/element-plus",
+    "pr_number": 24549,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "maintainability",
+    "priority": "high"
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 4039,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6508,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6463,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6496,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "maintainability",
+    "priority": "high"
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6502,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6481,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "pr_number": 34664,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "pr_number": 34580,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "pr_number": 34767,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "pr_number": 34761,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "pr_number": 34759,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "n8n-io/n8n",
+    "pr_number": 34731,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "directus/directus",
+    "pr_number": 27967,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "directus/directus",
+    "pr_number": 27964,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "directus/directus",
+    "pr_number": 27962,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "directus/directus",
+    "pr_number": 27816,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "directus/directus",
+    "pr_number": 27876,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "performance",
+    "priority": "high"
+  },
+  {
+    "repository": "directus/directus",
+    "pr_number": 27958,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  }
+]
