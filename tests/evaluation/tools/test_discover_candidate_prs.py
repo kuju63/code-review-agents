@@ -477,7 +477,14 @@ class TestBuildTarget:
 
 class TestGitHubClient:
     def _client(self, responses):
-        """responses: list of (status_code, json_body) to return in order."""
+        """Build a GitHubClient with a stubbed HTTP session.
+
+        Args:
+            responses: list of (status_code, json_body) to return in order.
+
+        Returns:
+            A GitHubClient whose session yields the given responses.
+        """
         client = GitHubClient("tok")
         calls = iter(responses)
 

@@ -1,84 +1,30 @@
 [
   {
     "repository": "sveltejs/svelte",
-    "pr_number": 18548,
-    "stack": "svelte",
-    "repo_type": "ui-library",
-    "severity": "low",
-    "impact": "performance",
-    "priority": "low"
-  },
-  {
-    "repository": "sveltejs/svelte",
-    "pr_number": 18530,
-    "stack": "svelte",
-    "repo_type": "ui-library",
-    "severity": "high",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "sveltejs/svelte",
-    "pr_number": 18400,
-    "stack": "svelte",
-    "repo_type": "ui-library",
-    "severity": "medium",
-    "impact": "correctness",
-    "priority": "medium"
-  },
-  {
-    "repository": "sveltejs/svelte",
-    "pr_number": 18543,
-    "stack": "svelte",
-    "repo_type": "ui-library",
-    "severity": "high",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "sveltejs/svelte",
-    "pr_number": 18517,
-    "stack": "svelte",
-    "repo_type": "ui-library",
-    "severity": "high",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "sveltejs/svelte",
     "pr_number": 18521,
     "stack": "svelte",
     "repo_type": "ui-library",
     "severity": "medium",
     "impact": "correctness",
-    "priority": "medium"
-  },
-  {
-    "repository": "sveltejs/kit",
-    "pr_number": 16461,
-    "stack": "svelte",
-    "repo_type": "ui-library",
-    "severity": "high",
-    "impact": "performance",
     "priority": "high"
   },
   {
-    "repository": "sveltejs/kit",
-    "pr_number": 16470,
-    "stack": "svelte",
-    "repo_type": "ui-library",
-    "severity": "medium",
-    "impact": "maintainability",
-    "priority": "medium"
-  },
-  {
-    "repository": "sveltejs/kit",
-    "pr_number": 16381,
+    "repository": "sveltejs/svelte",
+    "pr_number": 18453,
     "stack": "svelte",
     "repo_type": "ui-library",
     "severity": "medium",
     "impact": "correctness",
-    "priority": "medium"
+    "priority": "high"
+  },
+  {
+    "repository": "sveltejs/svelte",
+    "pr_number": 18425,
+    "stack": "svelte",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
   },
   {
     "repository": "sveltejs/kit",
@@ -91,15 +37,6 @@
   },
   {
     "repository": "sveltejs/kit",
-    "pr_number": 16467,
-    "stack": "svelte",
-    "repo_type": "ui-library",
-    "severity": "medium",
-    "impact": "correctness",
-    "priority": "medium"
-  },
-  {
-    "repository": "sveltejs/kit",
     "pr_number": 16462,
     "stack": "svelte",
     "repo_type": "ui-library",
@@ -108,39 +45,39 @@
     "priority": "high"
   },
   {
-    "repository": "huntabyte/shadcn-svelte",
-    "pr_number": 2770,
-    "stack": "svelte",
-    "repo_type": "ui-library",
-    "severity": "low",
-    "impact": "maintainability",
-    "priority": "low"
-  },
-  {
-    "repository": "huntabyte/shadcn-svelte",
-    "pr_number": 2781,
-    "stack": "svelte",
-    "repo_type": "ui-library",
-    "severity": "low",
-    "impact": "maintainability",
-    "priority": "low"
-  },
-  {
-    "repository": "huntabyte/shadcn-svelte",
-    "pr_number": 2773,
+    "repository": "sveltejs/kit",
+    "pr_number": 16431,
     "stack": "svelte",
     "repo_type": "ui-library",
     "severity": "medium",
-    "impact": "maintainability",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "sveltejs/kit",
+    "pr_number": 16445,
+    "stack": "svelte",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "correctness",
     "priority": "medium"
   },
   {
-    "repository": "huntabyte/shadcn-svelte",
-    "pr_number": 2738,
+    "repository": "sveltejs/kit",
+    "pr_number": 16440,
     "stack": "svelte",
     "repo_type": "ui-library",
     "severity": "high",
-    "impact": "maintainability",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "sveltejs/kit",
+    "pr_number": 16430,
+    "stack": "svelte",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
     "priority": "high"
   },
   {
@@ -149,17 +86,35 @@
     "stack": "svelte",
     "repo_type": "ui-library",
     "severity": "low",
-    "impact": "maintainability",
-    "priority": "low"
+    "impact": "correctness",
+    "priority": "medium"
   },
   {
     "repository": "huntabyte/shadcn-svelte",
-    "pr_number": 2746,
+    "pr_number": 2753,
+    "stack": "svelte",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "huntabyte/shadcn-svelte",
+    "pr_number": 2697,
     "stack": "svelte",
     "repo_type": "ui-library",
     "severity": "medium",
-    "impact": "maintainability",
-    "priority": "medium"
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "huntabyte/shadcn-svelte",
+    "pr_number": 2680,
+    "stack": "svelte",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
   },
   {
     "repository": "skeletonlabs/skeleton",
@@ -167,17 +122,8 @@
     "stack": "svelte",
     "repo_type": "ui-library",
     "severity": "medium",
-    "impact": "maintainability",
-    "priority": "medium"
-  },
-  {
-    "repository": "immich-app/immich",
-    "pr_number": 30151,
-    "stack": "svelte",
-    "repo_type": "application",
-    "severity": "low",
-    "impact": "maintainability",
-    "priority": "low"
+    "impact": "correctness",
+    "priority": "high"
   },
   {
     "repository": "immich-app/immich",
@@ -185,15 +131,6 @@
     "stack": "svelte",
     "repo_type": "application",
     "severity": "medium",
-    "impact": "maintainability",
-    "priority": "medium"
-  },
-  {
-    "repository": "immich-app/immich",
-    "pr_number": 29839,
-    "stack": "svelte",
-    "repo_type": "application",
-    "severity": "high",
     "impact": "correctness",
     "priority": "high"
   },
@@ -208,7 +145,43 @@
   },
   {
     "repository": "immich-app/immich",
-    "pr_number": 30131,
+    "pr_number": 29295,
+    "stack": "svelte",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "immich-app/immich",
+    "pr_number": 30049,
+    "stack": "svelte",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "immich-app/immich",
+    "pr_number": 29826,
+    "stack": "svelte",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "immich-app/immich",
+    "pr_number": 29991,
+    "stack": "svelte",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "pr_number": 14935,
     "stack": "svelte",
     "repo_type": "application",
     "severity": "low",
@@ -216,53 +189,35 @@
     "priority": "low"
   },
   {
-    "repository": "immich-app/immich",
-    "pr_number": 30071,
-    "stack": "svelte",
-    "repo_type": "application",
-    "severity": "medium",
-    "impact": "correctness",
-    "priority": "medium"
-  },
-  {
     "repository": "gitbutlerapp/gitbutler",
-    "pr_number": 14930,
+    "pr_number": 14905,
     "stack": "svelte",
     "repo_type": "application",
-    "severity": "high",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "gitbutlerapp/gitbutler",
-    "pr_number": 14928,
-    "stack": "svelte",
-    "repo_type": "application",
-    "severity": "high",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "gitbutlerapp/gitbutler",
-    "pr_number": 14924,
-    "stack": "svelte",
-    "repo_type": "application",
-    "severity": "medium",
-    "impact": "performance",
-    "priority": "medium"
-  },
-  {
-    "repository": "gitbutlerapp/gitbutler",
-    "pr_number": 14923,
-    "stack": "svelte",
-    "repo_type": "application",
-    "severity": "medium",
+    "severity": "low",
     "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "pr_number": 14884,
+    "stack": "svelte",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
     "priority": "medium"
   },
   {
     "repository": "gitbutlerapp/gitbutler",
-    "pr_number": 14920,
+    "pr_number": 14900,
+    "stack": "svelte",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "gitbutlerapp/gitbutler",
+    "pr_number": 14901,
     "stack": "svelte",
     "repo_type": "application",
     "severity": "high",
@@ -271,11 +226,11 @@
   },
   {
     "repository": "gitbutlerapp/gitbutler",
-    "pr_number": 14678,
+    "pr_number": 14889,
     "stack": "svelte",
     "repo_type": "application",
-    "severity": "medium",
+    "severity": "high",
     "impact": "correctness",
-    "priority": "medium"
+    "priority": "high"
   }
 ]

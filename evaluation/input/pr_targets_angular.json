@@ -1,21 +1,12 @@
 [
   {
     "repository": "angular/angular",
-    "pr_number": 69455,
-    "stack": "angular",
-    "repo_type": "ui-library",
-    "severity": "medium",
-    "impact": "correctness",
-    "priority": "medium"
-  },
-  {
-    "repository": "angular/angular",
     "pr_number": 69743,
     "stack": "angular",
     "repo_type": "ui-library",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
+    "severity": "medium",
+    "impact": "security",
+    "priority": "high"
   },
   {
     "repository": "angular/angular",
@@ -24,16 +15,16 @@
     "repo_type": "ui-library",
     "severity": "medium",
     "impact": "correctness",
-    "priority": "medium"
+    "priority": "high"
   },
   {
     "repository": "angular/angular",
     "pr_number": 69852,
     "stack": "angular",
     "repo_type": "ui-library",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
+    "severity": "medium",
+    "impact": "security",
+    "priority": "high"
   },
   {
     "repository": "angular/components",
@@ -45,29 +36,11 @@
     "priority": "low"
   },
   {
-    "repository": "angular/components",
-    "pr_number": 33565,
-    "stack": "angular",
-    "repo_type": "ui-library",
-    "severity": "medium",
-    "impact": "correctness",
-    "priority": "medium"
-  },
-  {
-    "repository": "angular/components",
-    "pr_number": 33564,
-    "stack": "angular",
-    "repo_type": "ui-library",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
-  },
-  {
     "repository": "ionic-team/ionic-framework",
     "pr_number": 31277,
     "stack": "angular",
     "repo_type": "ui-library",
-    "severity": "high",
+    "severity": "medium",
     "impact": "security",
     "priority": "high"
   },
@@ -76,81 +49,63 @@
     "pr_number": 30967,
     "stack": "angular",
     "repo_type": "ui-library",
-    "severity": "medium",
+    "severity": "high",
     "impact": "correctness",
-    "priority": "medium"
+    "priority": "high"
   },
   {
     "repository": "ionic-team/ionic-framework",
     "pr_number": 31270,
     "stack": "angular",
     "repo_type": "ui-library",
-    "severity": "high",
+    "severity": "low",
     "impact": "maintainability",
+    "priority": "medium"
+  },
+  {
+    "repository": "ionic-team/ionic-framework",
+    "pr_number": 31260,
+    "stack": "angular",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
     "priority": "high"
   },
   {
     "repository": "ionic-team/ionic-framework",
-    "pr_number": 31275,
+    "pr_number": 31267,
     "stack": "angular",
     "repo_type": "ui-library",
     "severity": "low",
-    "impact": "performance",
+    "impact": "maintainability",
     "priority": "low"
   },
   {
     "repository": "ionic-team/ionic-framework",
-    "pr_number": 31266,
-    "stack": "angular",
-    "repo_type": "ui-library",
-    "severity": "high",
-    "impact": "maintainability",
-    "priority": "high"
-  },
-  {
-    "repository": "ionic-team/ionic-framework",
-    "pr_number": 31261,
+    "pr_number": 31248,
     "stack": "angular",
     "repo_type": "ui-library",
     "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "bitwarden/clients",
+    "pr_number": 21926,
+    "stack": "angular",
+    "repo_type": "application",
+    "severity": "low",
     "impact": "maintainability",
     "priority": "medium"
   },
   {
     "repository": "bitwarden/clients",
-    "pr_number": 21849,
-    "stack": "angular",
-    "repo_type": "application",
-    "severity": "high",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "bitwarden/clients",
-    "pr_number": 21906,
-    "stack": "angular",
-    "repo_type": "application",
-    "severity": "medium",
-    "impact": "correctness",
-    "priority": "medium"
-  },
-  {
-    "repository": "bitwarden/clients",
-    "pr_number": 21857,
+    "pr_number": 21925,
     "stack": "angular",
     "repo_type": "application",
     "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
-  },
-  {
-    "repository": "bitwarden/clients",
-    "pr_number": 21518,
-    "stack": "angular",
-    "repo_type": "application",
-    "severity": "high",
-    "impact": "correctness",
-    "priority": "high"
+    "impact": "maintainability",
+    "priority": "medium"
   },
   {
     "repository": "bitwarden/clients",
@@ -163,10 +118,28 @@
   },
   {
     "repository": "bitwarden/clients",
-    "pr_number": 21983,
+    "pr_number": 21561,
     "stack": "angular",
     "repo_type": "application",
     "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "bitwarden/clients",
+    "pr_number": 21703,
+    "stack": "angular",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "bitwarden/clients",
+    "pr_number": 20128,
+    "stack": "angular",
+    "repo_type": "application",
+    "severity": "critical",
     "impact": "correctness",
     "priority": "high"
   }

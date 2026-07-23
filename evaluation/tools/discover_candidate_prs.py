@@ -97,7 +97,11 @@ def is_doc_file(path: str) -> bool:
 
 
 def has_production_code_change(files: list[dict[str, Any]]) -> bool:
-    """True if at least one changed file is neither a test nor a doc file."""
+    """Check whether the PR touches production code.
+
+    Returns:
+        True if at least one changed file is neither a test nor a doc file.
+    """
     for file_item in files:
         path = file_item.get("filename", "")
         if not path:
@@ -116,7 +120,11 @@ def has_production_code_change(files: list[dict[str, Any]]) -> bool:
 def collect_review_texts(
     inline: list[dict[str, Any]], reviews: list[dict[str, Any]]
 ) -> list[str]:
-    """Aggregate non-blank inline comment and review bodies (any author)."""
+    """Aggregate non-blank inline comment and review bodies (any author).
+
+    Returns:
+        The list of non-blank review text bodies.
+    """
     texts: list[str] = []
     for comment in inline:
         body = (comment.get("body") or "").strip()
@@ -132,10 +140,13 @@ def collect_review_texts(
 def has_review_comments(
     inline: list[dict[str, Any]], reviews: list[dict[str, Any]]
 ) -> bool:
-    """True if the PR has at least one non-blank review comment.
+    """Check whether the PR has at least one non-blank review comment.
 
     The comment author may be a human or an AI review bot -- the spec only
     requires that some review remark exists, not that a bot produced it.
+
+    Returns:
+        True if at least one non-blank review comment exists.
     """
     return bool(collect_review_texts(inline, reviews))
 
@@ -180,7 +191,11 @@ def has_recent_release(
     now: datetime,
     days: int = RELEASE_WINDOW_DAYS,
 ) -> bool:
-    """True if the repo has a release (or tag fallback) within `days`."""
+    """Check whether the repo has a recent release.
+
+    Returns:
+        True if the repo has a release (or tag fallback) within ``days``.
+    """
     cutoff = now - timedelta(days=days)
 
     releases = client.list_releases(repo)
@@ -253,6 +268,10 @@ def make_llm_assessor(model_id: str, llm_base_url: str | None = None) -> ReviewA
     ``llm_base_url`` pins a low temperature; the default endpoint is used
     as-is otherwise. Fails closed -- returns None on any error or missing
     structured output so the caller can skip that PR.
+
+    Returns:
+        A callable that assesses a PR and returns a ``ReviewAssessment`` or
+        None when the assessment fails.
     """
     if llm_base_url:
         model = OpenAIModel(
@@ -447,8 +466,9 @@ def build_target(
 ) -> dict[str, Any] | None:
     """Evaluate one PR against all filters; return a target dict or None.
 
-    Returns None (skip) when the PR fails any filter or when the LLM
-    assessment fails (fail-closed).
+    Returns:
+        The built target dict, or None (skip) when the PR fails any filter
+        or when the LLM assessment fails (fail-closed).
     """
     repo = candidate.repository
     pr_number = pr["number"]
