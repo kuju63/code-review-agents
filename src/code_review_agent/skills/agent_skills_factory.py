@@ -1,3 +1,5 @@
+"""Factory for building framework-specific Agent Skills bundles for reviewers."""
+
 from enum import StrEnum
 from pathlib import Path
 from typing import TypeAlias

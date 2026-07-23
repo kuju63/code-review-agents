@@ -183,6 +183,27 @@ class PRInfoCollector:
         mcp_startup_retry_attempts: int = 3,
         mcp_startup_retry_backoff_seconds: float = 1.0,
     ) -> None:
+        """Store the GitHub/LLM connection settings used by :meth:`collect`.
+
+        Args:
+            github_token: GitHub personal access token or Copilot token.
+            model_id: OpenAI-compatible model ID used for the README summary.
+            mcp_url: URL of the GitHub MCP endpoint.
+            llm_base_url: Optional OpenAI-compatible base URL (e.g. LM Studio).
+            max_agent_turns: Maximum agent loop iterations for the README
+                summary call.
+            patch_total_char_limit: Maximum combined patch size (characters)
+                across target files before patches are omitted in favor of
+                ``patch=None``.
+            patch_max_files: Maximum number of target files before patches are
+                omitted in favor of ``patch=None``.
+            mcp_startup_retry_attempts: Maximum GitHub MCP startup attempts
+                (including the first), forwarded to
+                :func:`~code_review_agent.tools.github_mcp.create_github_mcp_client`.
+            mcp_startup_retry_backoff_seconds: Base wait time in seconds for
+                the startup retry's exponential backoff+jitter, forwarded to
+                :func:`~code_review_agent.tools.github_mcp.create_github_mcp_client`.
+        """
         self._github_token = github_token
         self._model_id = model_id
         self._mcp_url = mcp_url
@@ -209,6 +230,14 @@ class PRInfoCollector:
 
         Returns:
             Structured PR information ready for downstream review agents.
+
+        Raises:
+            INFRA_EXCEPTIONS: An infrastructure-level error (model connection
+                lost, GitHub MCP client init failure, transport-level
+                timeout) occurred while starting or using the GitHub MCP
+                client, or during the README summary's model call, rather
+                than a business-level failure. Collection is not guaranteed
+                to have completed when this is raised.
         """
         mcp_client = create_github_mcp_client(
             self._github_token,
@@ -327,7 +356,12 @@ class PRInfoCollector:
     def _read_pr_details(
         self, mcp_client: Any, owner: str, repo: str, pr_number: int
     ) -> dict[str, Any]:
-        """Fetch PR metadata (title, body, labels, number) deterministically."""
+        """Fetch PR metadata (title, body, labels, number) deterministically.
+
+        Returns:
+            The parsed ``pull_request_read`` ``get`` payload, or an empty dict
+            if the tool returned no text content.
+        """
         result = mcp_client.call_tool_sync(
             "pr-get",
             "pull_request_read",
@@ -344,7 +378,12 @@ class PRInfoCollector:
     def _read_changed_files(
         self, mcp_client: Any, owner: str, repo: str, pr_number: int
     ) -> list[dict[str, Any]]:
-        """Fetch the full changed-file list, paging until exhausted."""
+        """Fetch the full changed-file list, paging until exhausted.
+
+        Returns:
+            The raw changed-file entries (as returned by ``get_files``) across
+            all pages, in page order.
+        """
         files: list[dict[str, Any]] = []
         page = 1
         while True:
@@ -381,6 +420,16 @@ class PRInfoCollector:
         PR changed them.  Returns an empty list if the listing is unavailable.
         Infra failures (MCP connection lost, etc.) are re-raised rather than
         degraded to an empty list -- see :data:`INFRA_EXCEPTIONS`.
+
+        Returns:
+            Sorted paths of dependency manifest files at the repo root, or an
+            empty list if the listing is unavailable or unparseable.
+
+        Raises:
+            INFRA_EXCEPTIONS: The repo-root listing call failed due to an
+                infrastructure-level error (model connection lost, GitHub MCP
+                client init failure, transport-level timeout) rather than a
+                business-level failure.
         """
         args: dict[str, Any] = {"owner": owner, "repo": repo, "path": "/"}
         if ref:
@@ -421,6 +470,15 @@ class PRInfoCollector:
         default branch. Infra failures (MCP connection lost, etc.) are
         re-raised rather than degraded to ``None`` -- see
         :data:`INFRA_EXCEPTIONS`.
+
+        Returns:
+            The README text at ``ref``, or ``None`` if unavailable.
+
+        Raises:
+            INFRA_EXCEPTIONS: The file-contents call failed due to an
+                infrastructure-level error (model connection lost, GitHub MCP
+                client init failure, transport-level timeout) rather than a
+                business-level failure.
         """
         args: dict[str, Any] = {"owner": owner, "repo": repo, "path": "README.md"}
         if ref:
@@ -437,7 +495,12 @@ class PRInfoCollector:
         return texts[-1] if texts else None
 
     def _build_model(self) -> OpenAIModel:
-        """Build the OpenAI-compatible model for README summarisation."""
+        """Build the OpenAI-compatible model for README summarisation.
+
+        Returns:
+            A model configured with ``llm_base_url`` when set, else the
+            default OpenAI-compatible client.
+        """
         if self._llm_base_url:
             return OpenAIModel(
                 model_id=self._model_id,
@@ -449,7 +512,11 @@ class PRInfoCollector:
         return OpenAIModel(model_id=self._model_id)
 
     def _summarize_readme(self, readme_text: str) -> str:
-        """Summarise the README with a single tool-free LLM call."""
+        """Summarise the README with a single tool-free LLM call.
+
+        Returns:
+            The 2-4 sentence plain-prose summary produced by the LLM.
+        """
         agent = Agent(model=self._build_model(), system_prompt=SUMMARY_SYSTEM_PROMPT)
         result = agent(
             readme_text[:_README_MAX_CHARS],

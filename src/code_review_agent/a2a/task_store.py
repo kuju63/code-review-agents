@@ -1,3 +1,5 @@
+"""In-memory storage for A2A tasks, with lock-guarded mutation and TTL expiry."""
+
 import asyncio
 import logging
 from uuid import uuid4
@@ -10,7 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 class TaskStore:
+    """Tracks :class:`A2ATask` lifecycle in memory, guarded by a single asyncio lock.
+
+    Completed and failed tasks are automatically evicted ``TASK_TTL_SECONDS``
+    after they reach a terminal state, so the store does not grow unbounded
+    for a long-running process.
+    """
+
     def __init__(self) -> None:
+        """Initialize an empty task store."""
         self._store: dict[str, A2ATask] = {}
         self._lock = asyncio.Lock()
 
@@ -20,16 +30,31 @@ class TaskStore:
             self._store.pop(task_id, None)
 
     async def create(self) -> A2ATask:
+        """Create and store a new task in the ``SUBMITTED`` state.
+
+        Returns:
+            The newly created task, with a fresh random id.
+        """
         task = A2ATask(id=str(uuid4()), status=A2ATaskStatus.SUBMITTED)
         async with self._lock:
             self._store[task.id] = task
         return task
 
     async def get(self, task_id: str) -> A2ATask | None:
+        """Look up a task by id.
+
+        Returns:
+            The stored task, or ``None`` if ``task_id`` is unknown or has
+            already been evicted.
+        """
         async with self._lock:
             return self._store.get(task_id)
 
     async def set_working(self, task_id: str) -> None:
+        """Transition a known task to the ``WORKING`` state.
+
+        A no-op if ``task_id`` is unknown.
+        """
         async with self._lock:
             if task := self._store.get(task_id):
                 self._store[task_id] = task.model_copy(
@@ -37,6 +62,11 @@ class TaskStore:
                 )
 
     async def set_completed(self, task_id: str, parts: list) -> None:
+        """Transition a known task to ``COMPLETED`` and attach the agent's reply.
+
+        Schedules TTL-based deletion of the task once it has been marked
+        completed. A no-op if ``task_id`` is unknown.
+        """
         async with self._lock:
             task = self._store.get(task_id)
             if task is not None:
@@ -54,6 +84,12 @@ class TaskStore:
             asyncio.create_task(self._schedule_delete(task_id))
 
     async def set_failed(self, task_id: str, error: str) -> None:
+        """Transition a known task to ``FAILED`` and record the sanitized error.
+
+        Schedules TTL-based deletion of the task once it has been marked
+        failed, and logs a single-line warning with the task id and error.
+        A no-op if ``task_id`` is unknown.
+        """
         async with self._lock:
             task = self._store.get(task_id)
             if task is not None:

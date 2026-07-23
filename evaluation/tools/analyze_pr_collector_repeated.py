@@ -56,7 +56,12 @@ def _mean_sd(xs: list[float]) -> tuple[float, float]:
 
 
 def _ci95(xs: list[float]) -> tuple[float, float]:
-    """Normal-approx 95% CI for the mean."""
+    """Normal-approx 95% CI for the mean.
+
+    Returns:
+        A ``(low, high)`` tuple of the 95% confidence interval bounds, or
+        ``(nan, nan)`` when fewer than two samples are given.
+    """
     if len(xs) < 2:
         return float("nan"), float("nan")
     m = statistics.mean(xs)
@@ -124,7 +129,12 @@ def main() -> None:
         return f"{m:.3f}", f"{sd:.3f}", f"[{lo:.3f}, {hi:.3f}]"
 
     def rate(count: int) -> str:
-        """Format ``count/n`` as a percentage, or ``n/a`` when no runs succeeded."""
+        """Format ``count/n`` as a percentage, or ``n/a`` when no runs succeeded.
+
+        Returns:
+            A string like ``"3/5 (60%)"``, or ``"count/0 (n/a)"`` when ``n``
+            is zero.
+        """
         if n == 0:
             return f"{count}/0 (n/a)"
         return f"{count}/{n} ({100 * count / n:.0f}%)"

@@ -1,3 +1,5 @@
+"""A2A router exposing the Svelte Reviewer as an independently callable agent."""
+
 import asyncio
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -46,6 +48,19 @@ async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -
 
 
 def svelte_reviewer_router(settings: Settings, store: TaskStore) -> APIRouter:
+    """Build the A2A-compatible router for the Svelte Reviewer agent.
+
+    Exposes the standard A2A endpoint trio: an agent card, task submission
+    (which runs :class:`SvelteReviewer` in the background), and task polling.
+
+    Args:
+        settings: Shared runtime configuration (model, MCP retry, timeouts).
+        store: Task store used to track submitted review tasks.
+
+    Returns:
+        An ``APIRouter`` with the ``/.well-known/agent.json``, ``/tasks/send``,
+        and ``/tasks/{task_id}`` routes registered.
+    """
     router = APIRouter()
 
     @router.get("/.well-known/agent.json", response_model=AgentCard)

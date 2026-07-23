@@ -1,3 +1,5 @@
+"""Shared request/response schemas and dependencies for the per-agent routers."""
+
 from typing import Any
 
 import httpx
@@ -40,6 +42,19 @@ def _extract_data(message: A2AMessage) -> dict[str, Any]:
 async def verify_github_token(
     authorization: str = Header(..., description="Bearer <github_oauth_token>"),
 ) -> str:
+    """FastAPI dependency that authenticates a request against the GitHub API.
+
+    Args:
+        authorization: Raw ``Authorization`` header value, expected to be a
+            ``Bearer <token>`` string.
+
+    Returns:
+        The extracted token, once GitHub confirms it identifies a user.
+
+    Raises:
+        HTTPException: 401 when the header is malformed or GitHub rejects the
+            token; 503 when the GitHub authentication endpoint is unreachable.
+    """
     if not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=401,

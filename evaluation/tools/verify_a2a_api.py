@@ -105,7 +105,11 @@ def _write_result(record: dict) -> None:
 
 
 def _verify_agent(base_url: str, agent: str, github_token: str) -> bool:
-    """Run one agent check. Returns True on success, False on timeout/failure."""
+    """Run one agent check.
+
+    Returns:
+        ``True`` on success, ``False`` on timeout or failure.
+    """
     print(f"\n[{agent}] Sending task...")
     started_at = datetime.now(timezone.utc).isoformat()
 

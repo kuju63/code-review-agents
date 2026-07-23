@@ -27,7 +27,12 @@ def build_notification_payload(
     model_id: str,
     executed_at: str,
 ) -> dict[str, Any]:
-    """Build a Discord Webhook embed payload summarizing an evaluation run."""
+    """Build a Discord Webhook embed payload summarizing an evaluation run.
+
+    Returns:
+        A dict shaped as a Discord Webhook embed payload (``embeds`` with
+        gate status, recall/precision fields, etc.), ready to POST.
+    """
     g = scores["gold"]
     s = scores["seeded"]
 

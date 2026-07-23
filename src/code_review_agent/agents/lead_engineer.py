@@ -73,6 +73,13 @@ class LeadEngineerAgent:
     system_prompt: ClassVar[str] = _SYSTEM_PROMPT
 
     def __init__(self, config: ReviewerConfig) -> None:
+        """Store the shared runtime configuration for this agent instance.
+
+        Args:
+            config: Shared runtime configuration.  ``github_token`` is present
+                for interface consistency but unused by this agent;
+                ``model_id`` selects the LLM.
+        """
         self._config = config
 
     def evaluate(self, report: ReviewReport) -> LeadEngineerReport:
@@ -83,6 +90,10 @@ class LeadEngineerAgent:
 
         Returns:
             Final report with accept/reject decisions for every finding.
+
+        Raises:
+            StructuredOutputMissingError: The agent ended its turn without
+                invoking the forced structured-output tool.
         """
         prompt, index_map = self._build_prompt_and_index(report)
         if self._config.llm_base_url:

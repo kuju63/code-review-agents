@@ -57,6 +57,10 @@ async def _github_mcp_transport(
     ``httpx.AsyncClient`` so the 30s/300s connect/SSE-read timeouts and
     ``follow_redirects=True`` are preserved; plain ``httpx.AsyncClient``
     defaults to a 5s timeout, which would time out long-lived SSE reads.
+
+    Yields:
+        The read stream, write stream, and session-id callback returned by
+        ``streamable_http_client`` for this connection.
     """
     async with create_mcp_http_client(
         headers={"Authorization": f"Bearer {token}"}

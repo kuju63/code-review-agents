@@ -652,6 +652,9 @@ def _published_docs_resolver_patch():
     reproduces the exact scenario that motivated
     docs/eval-seeded-mutation-injection-design.md: a mutation must land in
     the body hunk, not interleaved among the imports.
+
+    Returns:
+        The unified-diff lines of the two-hunk sample patch.
     """
     lines = [
         "@@ -1,4 +1,5 @@",

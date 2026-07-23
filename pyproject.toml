@@ -33,6 +33,31 @@ venv = ".venv"
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 
+[tool.ruff.lint]
+select = [
+    "E4",
+    "E7",
+    "E9",
+    "F",
+    "D",
+    "DOC102",
+    "DOC201",
+    "DOC202",
+    "DOC402",
+    "DOC403",
+    "DOC501",
+    "DOC502",
+]
+preview = true
+explicit-preview-rules = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+"evaluation/**" = ["D"]
+
 [dependency-groups]
 dev = [
     "pre-commit>=4.6.0",
@@ -40,5 +65,5 @@ dev = [
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
     "pytest-cov>=7.1.0",
-    "ruff>=0.15.20",
+    "ruff>=0.15.20,<0.16",
 ]
