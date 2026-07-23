@@ -199,6 +199,10 @@ def allocate_quota(
 ) -> dict[str, int]:
     """Split ``limit`` evenly across ``repo_types``, clamped to each stratum's
     stock, redistributing any shortfall to strata that still have spare rows.
+
+    Returns:
+        A mapping from each ``repo_types`` entry to its allocated quota.
+        Empty when ``repo_types`` is empty.
     """
     if not repo_types:
         return {}
@@ -236,6 +240,10 @@ def select_stratified(
 
     Falls back to a plain shuffle(+balanced) selection when no row carries
     repo_type information (older tagged-input format).
+
+    Returns:
+        The selected rows, stratified where possible and truncated to
+        ``limit``.
     """
     rnd = random.Random(seed)
 
@@ -317,8 +325,12 @@ def check_coverage_thresholds(
     rows: list[TaggedTarget], summary: dict[str, Any]
 ) -> list[str]:
     """Compare the selected rows against EVALUATION_PLAN.md §2.0 minimum
-    ratios. Returns human-readable warnings; never raises and never implies
-    the caller should stop (advisory only, see docs/evaluation-pipeline-design.md).
+    ratios. Never raises and never implies the caller should stop
+    (advisory only, see docs/evaluation-pipeline-design.md).
+
+    Returns:
+        Human-readable warning strings; empty when every ratio is within
+        tolerance (or when ``summary["total"]`` is ``0``).
     """
     warnings: list[str] = []
     total = summary["total"]

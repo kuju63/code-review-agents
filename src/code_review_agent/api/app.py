@@ -1,3 +1,5 @@
+"""FastAPI application factory wiring every per-agent A2A router together."""
+
 from fastapi import FastAPI
 
 from code_review_agent.a2a.task_store import TaskStore
@@ -13,6 +15,16 @@ from code_review_agent.api.config import Settings
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
+    """Construct the FastAPI app with every agent router mounted under its prefix.
+
+    Args:
+        settings: Runtime configuration; a fresh :class:`Settings` (loaded from
+            the environment) is used when ``None``.
+
+    Returns:
+        A ``FastAPI`` instance with the PR info collector, per-stack reviewer,
+        lead engineer, orchestrator, and ``/health`` routes registered.
+    """
     if settings is None:
         settings = Settings()
     app = FastAPI(

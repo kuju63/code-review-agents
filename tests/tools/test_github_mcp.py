@@ -14,7 +14,11 @@ from code_review_agent.tools.github_mcp import (
 
 
 def _dummy_get_session_id() -> str | None:
-    """Stand-in for the ``GetSessionIdCallback`` slot in a mocked streams tuple."""
+    """Stand-in for the ``GetSessionIdCallback`` slot in a mocked streams tuple.
+
+    Returns:
+        A fixed dummy session id.
+    """
     return "session-id"
 
 

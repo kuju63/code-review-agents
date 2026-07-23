@@ -1,3 +1,5 @@
+"""FastAPI routers for each stage of the review workflow (per-agent HTTP endpoints)."""
+
 from code_review_agent.api.agents.lead_engineer import lead_engineer_router
 from code_review_agent.api.agents.orchestrator import orchestrator_router
 from code_review_agent.api.agents.pr_info_collector import pr_info_collector_router

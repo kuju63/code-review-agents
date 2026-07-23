@@ -18,7 +18,11 @@ def a2a_send(
     endpoint: str,
     data: dict[str, Any],
 ) -> str:
-    """POST a task to an A2A endpoint and return the task_id."""
+    """POST a task to an A2A endpoint and return the task_id.
+
+    Returns:
+        The ``task.id`` value from the send response.
+    """
     payload = {
         "message": {
             "role": "user",
@@ -38,7 +42,17 @@ def a2a_poll(
     timeout: float = 1800,
     verbose: bool = False,
 ) -> dict[str, Any]:
-    """Poll until the task completes. Return the data part or raise on failure/timeout."""
+    """Poll until the task completes. Return the data part or raise on failure/timeout.
+
+    Returns:
+        The ``data`` part of the completed task's message.
+
+    Raises:
+        RuntimeError: If the task completes without a data part, or if the
+            task status becomes ``failed``.
+        TimeoutError: If the task is still not completed after ``timeout``
+            seconds have elapsed.
+    """
     deadline = time.monotonic() + timeout
     while True:
         resp = client.get(f"{endpoint}/tasks/{task_id}", timeout=10)
