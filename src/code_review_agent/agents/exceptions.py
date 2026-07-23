@@ -34,6 +34,14 @@ class StructuredOutputMissingError(RuntimeError):
     """
 
     def __init__(self, agent_label: str, stop_reason: str | None) -> None:
+        """Build the error message from which agent failed and why it stopped.
+
+        Args:
+            agent_label: Human-readable identifier of the agent call that
+                failed (e.g. ``"Reviewer 'react-technical'"``).
+            stop_reason: The Strands ``AgentResult.stop_reason`` value (e.g.
+                ``"limit_turns"``), or ``None`` if unavailable.
+        """
         super().__init__(
             f"{agent_label} completed without producing structured output "
             f"(stop_reason={stop_reason!r}). The model likely could not satisfy "

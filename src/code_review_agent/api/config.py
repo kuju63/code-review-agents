@@ -1,7 +1,15 @@
+"""Runtime configuration for the FastAPI service, sourced from the environment."""
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Environment-backed runtime configuration for the API and its agents.
+
+    Values are read from ``CODE_REVIEW_``-prefixed environment variables (or
+    a ``.env`` file); unrecognized variables are ignored rather than raising.
+    """
+
     model_config = SettingsConfigDict(
         env_prefix="CODE_REVIEW_", env_file=".env", extra="ignore"
     )
@@ -28,5 +36,16 @@ class Settings(BaseSettings):
     agent_orchestrator_url: str | None = None
 
     def resolve_agent_url(self, prefix: str, override: str | None) -> str:
+        """Resolve the public URL an agent card should advertise for itself.
+
+        Args:
+            prefix: Path segment the agent is mounted under (for example
+                ``"frontend-reviewer"``), used when no override is set.
+            override: Explicit URL configured for this agent, if any.
+
+        Returns:
+            ``override`` when set, otherwise ``agent_base_url`` joined with
+            ``prefix``.
+        """
         base = self.agent_base_url.rstrip("/")
         return override or f"{base}/{prefix.lstrip('/')}"

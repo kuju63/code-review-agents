@@ -45,6 +45,10 @@ def make_llm_semantic_judge(
     (``base_reviewer.py`` / ``lead_engineer.py``): a custom ``llm_base_url``
     gets a fixed low temperature for reproducibility; the default endpoint is
     used as-is otherwise.
+
+    Returns:
+        A callable that takes ``(gold_summary, pred_summary)`` and returns
+        ``True`` when the LLM judges them the same underlying defect.
     """
     if llm_base_url:
         model = OpenAIModel(
@@ -153,6 +157,10 @@ def match_findings_detailed(
     gold findings that were missed and the pred findings that were never
     consumed by any pair -- the detail the greedy loop already computes but
     that a counts-only view throws away.
+
+    Returns:
+        A ``MatchResult`` with the matched pairs, missed gold findings,
+        and unmatched predicted findings.
     """
     pairs: list[MatchedPair] = []
     missed_gold: list[Finding] = []
@@ -197,12 +205,14 @@ def match_findings(
 ) -> tuple[int, int, int]:
     """Greedily pair each gold finding with an unused pred finding.
 
-    Returns ``(matched, severity_matched, exact_line_matched)``.
     ``exact_line_matched`` counts matched pairs whose line numbers are
     exactly equal, as opposed to relying on the +/-5 line tolerance -- see
     Location Hit Rate in EVALUATION_PLAN.md Section 3.1.
 
     Thin counts-only view over ``match_findings_detailed``.
+
+    Returns:
+        A ``(matched, severity_matched, exact_line_matched)`` tuple.
     """
     result = match_findings_detailed(gold, pred, semantic_judge=semantic_judge)
     matched = len(result.pairs)
@@ -233,6 +243,12 @@ def _build_item_detail(
     of being silently dropped. Findings are looked up by ``id()``, not by
     value, because two structurally-equal Finding records can be distinct
     rows (e.g. duplicate findings at the same path/line).
+
+    Returns:
+        A dict with the item ``id``, a ``matched`` list pairing each raw
+        expected/agent finding with its severity/line-match flags, raw
+        ``missed`` and ``unmatched_agent`` finding lists, and the
+        ``expected_total``/``agent_total`` counts.
     """
     raw_by_id: dict[int, dict[str, Any]] = {
         id(f): raw for f, raw in zip(expected, raw_expected)

@@ -20,6 +20,9 @@ def load_eval_tool_module(name: str, filename: str) -> ModuleType:
 
     evaluation/tools is added to sys.path so sibling imports used by the
     scripts themselves (e.g. ``from a2a_client import ...``) keep working.
+
+    Returns:
+        The loaded module, registered in ``sys.modules`` under ``name``.
     """
     tools_dir_str = str(EVAL_TOOLS_DIR)
     if tools_dir_str not in sys.path:

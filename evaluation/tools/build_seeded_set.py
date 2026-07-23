@@ -315,6 +315,11 @@ def inject_patch(
     rather than floating among unrelated import lines. Falls back to the
     legacy top-of-patch insertion when the patch has no hunk header at
     all (no candidate hunk to target).
+
+    Returns:
+        A ``(patched_text, injected_line)`` tuple: the patch text with
+        ``line_snippet`` inserted, and the new-file line number it landed
+        on.
     """
     patch_lines = original_patch.splitlines()
     if not patch_lines:
@@ -366,6 +371,10 @@ def get_snippet_for_lang(rule: dict[str, Any], lang: str) -> str:
     isn't fully covered by `language_snippets` before this is called, so
     the `line_snippet` fallback below is a defensive backstop rather than
     a normal code path.
+
+    Returns:
+        The language-specific snippet for ``lang`` if present in
+        ``rule["language_snippets"]``, otherwise ``rule["line_snippet"]``.
     """
     lang_snippets = rule.get("language_snippets", {})
     return lang_snippets.get(lang) or rule["line_snippet"]
@@ -439,14 +448,17 @@ def validate_catalog(rules: list[Any]) -> list[str]:
     Enforces R7 (every declared language has a snippet) and a static
     floor for R2 (runtime tagging present and valid, no bare
     `window.`/`document.` references that would be nonsensical outside a
-    browser context). An empty return means the catalog is safe to use;
-    callers should treat any non-empty result as fatal.
+    browser context).
 
     `rules` is typed as `list[Any]` rather than `list[dict[str, Any]]`
     because this function is the first line of defense against a
     malformed catalog loaded straight from JSON: individual entries may
     not be dicts at all, which is checked explicitly below rather than
     assumed away by the type annotation.
+
+    Returns:
+        A list of error messages. An empty list means the catalog is
+        safe to use; callers should treat any non-empty result as fatal.
     """
     errors: list[str] = []
     for rule in rules:
@@ -624,8 +636,11 @@ def split_hunks(patch: str) -> list[list[str]]:
 
     Each returned group starts with its `@@ ... @@` header line. Lines
     before the first header (if any) are discarded; there is no sensible
-    hunk to attach them to. Returns an empty list if the patch has no
-    hunk header at all.
+    hunk to attach them to.
+
+    Returns:
+        A list of hunks, each a list of that hunk's lines (header
+        first). Empty if the patch has no hunk header at all.
     """
     hunks: list[list[str]] = []
     for line in patch.splitlines():
@@ -653,6 +668,10 @@ def parse_hunk_new_start(header_line: str) -> int:
 
     Falls back to 1 on a malformed header; this should not occur for real
     gold PR data but keeps the function total.
+
+    Returns:
+        The new-file start line ``c``, or ``1`` when ``header_line``
+        doesn't match the hunk header pattern.
     """
     m = _HUNK_HEADER_RE.match(header_line)
     return int(m.group(1)) if m else 1
@@ -664,6 +683,10 @@ def count_new_lines_before(hunk_lines: list[str], insertion_idx: int) -> int:
     Context (` `) and added (`+`) lines advance the new file's line
     counter; removed (`-`) lines do not, since they are absent from the
     new file.
+
+    Returns:
+        The count of context/added lines between the hunk header and
+        ``insertion_idx`` (inclusive).
     """
     return sum(
         1
@@ -694,6 +717,10 @@ def find_insertion_point(hunk_lines: list[str]) -> int:
     Closing braces (`}`) are deliberately excluded from the terminator
     pattern: inserting right after one risks landing outside the scope
     that brace closes.
+
+    Returns:
+        The index in ``hunk_lines`` to insert after, chosen per the
+        preference order above.
     """
     added_idxs = [i for i, line in enumerate(hunk_lines) if line.startswith("+")]
     if not added_idxs:
@@ -1037,6 +1064,10 @@ def candidate_files(gold_item: dict[str, Any]) -> list[dict[str, Any]]:
     Prefers production files (non-test, with a non-empty patch) over test
     files so agents see realistic vulnerabilities; falls back to all
     file_changes when no production file qualifies.
+
+    Returns:
+        The subset of ``gold_item["file_changes"]`` that qualify as
+        production candidates, or all ``file_changes`` if none do.
     """
     file_changes = gold_item.get("file_changes", [])
     prod_candidates = [
@@ -1057,6 +1088,9 @@ def enumerate_combo_pool(
     over candidate files, of the count of rules whose `languages` include
     that file's detected language, since each file may have a different
     detected language and thus a different set of matching rules.
+
+    Returns:
+        A list of ``(file_change, rule)`` pairs valid for this item.
     """
     pool: list[tuple[dict[str, Any], dict[str, Any]]] = []
     for fc in candidate_files(gold_item):

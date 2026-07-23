@@ -32,9 +32,10 @@ def _run_reviewer(
     shared_client: MCPClient | None,
     placeholder: object | None,
 ) -> ReviewResult:
-    """Run ``reviewer.review(...)`` and release its shared-client placeholder
-    reference from *inside* the worker thread this runs on (via
-    :func:`asyncio.to_thread`), in a ``finally`` block.
+    """Run a reviewer and release its shared-client placeholder afterward.
+
+    The placeholder reference is released from *inside* the worker thread
+    this runs on (via :func:`asyncio.to_thread`), in a ``finally`` block.
 
     This ties the placeholder's release to the actual completion of
     ``reviewer.review(...)`` rather than to the wrapping ``asyncio.Task``'s
@@ -46,6 +47,18 @@ def _run_reviewer(
     keyed to the Task's completion would therefore drop the reference (and
     risk the shared connection being stopped) while the reviewer is still
     actively using it.
+
+    Args:
+        reviewer: The reviewer instance to run.
+        context: Input boundary wrapping the collected PR information.
+        project_type: The project type this review was selected for.
+        shared_client: The shared GitHub MCP client, or ``None`` when this
+            reviewer opened its own connection.
+        placeholder: The consumer-count placeholder registered on
+            ``shared_client`` for this reviewer, or ``None`` when unused.
+
+    Returns:
+        The reviewer's review result.
     """
     try:
         return reviewer.review(context, project_type)
@@ -62,6 +75,12 @@ class ReviewOrchestrator:
     """
 
     def __init__(self, config: ReviewerConfig) -> None:
+        """Store the shared configuration injected into every selected reviewer.
+
+        Args:
+            config: Shared configuration injected into every selected
+                reviewer.
+        """
         self._config = config
 
     def run(

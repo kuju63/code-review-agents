@@ -1,3 +1,5 @@
+"""A2A router that runs the full 3-stage review pipeline as a single agent call."""
+
 import asyncio
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -65,6 +67,21 @@ async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -
 
 
 def orchestrator_router(settings: Settings, store: TaskStore) -> APIRouter:
+    """Build the A2A-compatible router that drives the end-to-end review pipeline.
+
+    Task submission chains PR info collection (:class:`PRInfoCollector`),
+    parallel specialist review (:class:`ReviewOrchestrator`), and final
+    accept/reject synthesis (:class:`LeadEngineerAgent`) in the background,
+    so callers only need to poll a single task.
+
+    Args:
+        settings: Shared runtime configuration (model, MCP retry, timeouts).
+        store: Task store used to track submitted pipeline runs.
+
+    Returns:
+        An ``APIRouter`` with the ``/.well-known/agent.json``, ``/tasks/send``,
+        and ``/tasks/{task_id}`` routes registered.
+    """
     router = APIRouter()
 
     @router.get("/.well-known/agent.json", response_model=AgentCard)

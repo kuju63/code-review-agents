@@ -58,6 +58,9 @@ def _to_predictions(lead_report_data: dict[str, Any], pr_id: str) -> dict[str, A
     categories (technical/security) that don't match the Gold/Seeded taxonomy
     (correctness/performance/etc.), causing is_match() to reject all non-unknown pairs.
     Matching falls back to path+line+severity which is the intended signal.
+
+    Returns:
+        The item in ``agent_predictions.jsonl`` format, category-normalized.
     """
     from code_review_agent.models.lead_engineer import LeadEngineerReport
 
@@ -77,7 +80,12 @@ def evaluate_gold_item(
     timeout: float,
     model_id: str,
 ) -> dict[str, Any]:
-    """Evaluate a gold PR item via the orchestrator endpoint."""
+    """Evaluate a gold PR item via the orchestrator endpoint.
+
+    Returns:
+        The orchestrator's result, converted to ``agent_predictions.jsonl``
+        format.
+    """
     owner, repo = item["repository"].split("/")
     data = {
         "owner": owner,
@@ -99,7 +107,12 @@ def evaluate_seeded_item(
     timeout: float,
     model_id: str,
 ) -> dict[str, Any]:
-    """Evaluate a seeded item: collect real PR metadata, inject seeded file_changes."""
+    """Evaluate a seeded item: collect real PR metadata, inject seeded file_changes.
+
+    Returns:
+        The lead engineer's synthesized result, converted to
+        ``agent_predictions.jsonl`` format.
+    """
     owner, repo = item["repository"].split("/")
     pr_number = item["pr_number"]
 
@@ -166,9 +179,13 @@ def _evaluate_concurrently(
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """Evaluate ``items`` with at most ``concurrency`` running at once.
 
-    Returns ``(predictions, failed_ids)``. Both preserve the original item
-    order regardless of completion order, so output files and scores stay
-    reproducible across runs and across --concurrency values.
+    Both preserve the original item order regardless of completion order,
+    so output files and scores stay reproducible across runs and across
+    --concurrency values.
+
+    Returns:
+        A ``(predictions, failed_ids)`` tuple: successful predictions in
+        original item order, and the ``id`` of every item that raised.
     """
     results: list[dict[str, Any] | None] = [None] * len(items)
     failed_flags: list[bool] = [False] * len(items)
@@ -215,7 +232,15 @@ def _get_commit_hash() -> str:
 
 
 def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
-    """Run score_evaluation.py and return the parsed JSON result."""
+    """Run score_evaluation.py and return the parsed JSON result.
+
+    Returns:
+        The parsed JSON object printed by ``score_evaluation.py`` on stdout.
+
+    Raises:
+        RuntimeError: If ``score_evaluation.py`` exits with a non-zero
+            status.
+    """
     score_script = Path(__file__).parent / "score_evaluation.py"
     result = subprocess.run(
         [
@@ -247,6 +272,9 @@ def _sanitize_cell(text: Any, max_len: int = 100) -> str:
     call sites read straight from dataset/prediction rows loaded from JSONL
     with no runtime schema enforcement -- a malformed or hand-edited row
     (e.g. ``"summary": null``) must not crash report generation.
+
+    Returns:
+        The whitespace-collapsed, pipe-escaped, length-clamped text.
     """
     collapsed = " ".join(str(text if text is not None else "").split())
     escaped = collapsed.replace("|", "\\|")
@@ -259,6 +287,11 @@ def _ref_cell(raw: dict[str, Any]) -> str:
     """Traceability link for one finding: Gold's review-comment ``source``
     URL, or Seeded's ``rule_id``, or ``-`` when neither is present. Lets
     Gold/Seeded items share one render path with no dataset-specific branch.
+
+    Returns:
+        A Markdown link/code span for the finding's traceability
+        reference, or ``"-"`` when neither ``source`` nor ``rule_id`` is
+        present.
     """
     if raw.get("source"):
         return f"[source]({raw['source']})"
@@ -278,7 +311,12 @@ def _finding_row(kind: str, raw: dict[str, Any]) -> str:
 
 
 def _render_item_detail(item: dict[str, Any], heading: str, expected_label: str) -> str:
-    """Render one Gold PR or Seeded item's matched/missed/unmatched-agent detail."""
+    """Render one Gold PR or Seeded item's matched/missed/unmatched-agent detail.
+
+    Returns:
+        A Markdown section (``heading`` + summary line + findings table)
+        for this item.
+    """
     rows = []
     for m in item["matched"]:
         rows.append(_finding_row("✅ マッチ", m["expected"]))

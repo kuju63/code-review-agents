@@ -55,6 +55,9 @@ def compose_system_prompt(system_prompt: str) -> str:
 
     Output format is a cross-cutting concern shared by every LLM reviewer, so it
     lives here rather than being duplicated into each reviewer's prompt constant.
+
+    Returns:
+        ``system_prompt`` followed by :data:`STRUCTURED_OUTPUT_DIRECTIVE`.
     """
     return f"{system_prompt}\n\n{STRUCTURED_OUTPUT_DIRECTIVE}"
 
@@ -77,6 +80,11 @@ def _annotate_patch(patch: str) -> str:
       "+L{N}:" — line N added in the new file.
       " L{N}:" — line N unchanged (context) in the new file.
       "-L{N}:" — line N removed from the old file (absent in new file).
+
+    Returns:
+        The diff with every added/removed/context line prefixed by its
+        annotated line number; hunk headers and any other line are passed
+        through unchanged.
     """
     result: list[str] = []
     new_line = 0
@@ -160,6 +168,12 @@ class ReviewAgent(ABC):
     project_types: ClassVar[frozenset[ProjectType]]
 
     def __init__(self, config: ReviewerConfig) -> None:
+        """Store the shared runtime configuration for this reviewer instance.
+
+        Args:
+            config: Shared runtime configuration (tokens, model ID, MCP URL,
+                timeouts) injected by the orchestrator.
+        """
         self._config = config
 
     @abstractmethod
@@ -206,6 +220,24 @@ class LLMReviewAgent(ReviewAgent):
         context: ReviewContext,
         project_type: ProjectType | None = None,
     ) -> ReviewResult:
+        """Run this reviewer's Strands ``Agent`` against ``context`` and collect its output.
+
+        Builds the prompt, wires the GitHub MCP client (shared or per-reviewer)
+        and any configured skill plugin, then forces the agent to emit a
+        :class:`ReviewOutput` via ``structured_output``.
+
+        Args:
+            context: Input boundary wrapping the collected PR information.
+            project_type: The project type this review was selected for, used
+                to annotate the result.  ``None`` when not scoped.
+
+        Returns:
+            The reviewer's findings wrapped with its identity metadata.
+
+        Raises:
+            StructuredOutputMissingError: The agent ended its turn without
+                invoking the forced structured-output tool.
+        """
         prompt = self._build_prompt(context)
         if self._config.llm_base_url:
             model = OpenAIModel(

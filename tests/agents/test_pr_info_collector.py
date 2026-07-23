@@ -203,7 +203,12 @@ def _make_mcp(
     root_listing: list[dict] | None = None,
     root_error: bool = False,
 ) -> MagicMock:
-    """Build a mock MCP client whose call_tool_sync dispatches by arguments."""
+    """Build a mock MCP client whose call_tool_sync dispatches by arguments.
+
+    Returns:
+        A ``MagicMock`` standing in for the MCP client, with ``call_tool_sync``
+        routed to the appropriate canned response.
+    """
     pr_get = _PR_GET if pr_get is None else pr_get
     pr_files = _PR_FILES if pr_files is None else pr_files
     root_listing = _ROOT_LISTING if root_listing is None else root_listing
