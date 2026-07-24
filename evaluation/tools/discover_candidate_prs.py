@@ -1,107 +1,302 @@
 #!/usr/bin/env python3
-"""Discover PR candidates from UI library / application repositories.
+"""Discover per-stack Gold-set PR targets from UI library / application repos.
 
-Searches merged PRs that have human review comments focusing on security
-or unintended side effects — not design discussions.
+Selects merged PRs that satisfy the requirements in
+docs/goldset-per-stack-spec.md:
 
-Outputs a ranked JSON list for manual curation into pr_targets_b2b2c_tagged.json.
+1. Repository released within the last 6 months (release, or tag fallback).
+2. Repository has >= 5,000 stars.
+3. PR changes production code (not test/doc-only).
+4. PR has at least one review comment (human OR AI bot -- CodeRabbit,
+   Copilot Code Review, etc.); PRs with no review comment are excluded.
+5. PR change size is <= 20 files and <= 1,000 lines.
+
+severity / impact / priority are derived by an LLM assessor as three
+independent axes (see make_llm_assessor). Output is written per stack to
+`pr_targets_{stack}.json`; there is no intermediate candidate file and no
+manual curation step.
 
 Usage:
   python evaluation/tools/discover_candidate_prs.py \\
     --repos evaluation/input/repo_candidates.json \\
-    --output evaluation/input/pr_candidates_raw.json \\
-    --min-score 0.3
+    --output-dir evaluation/input
+
+Required env (loaded from .env):
+  GITHUB_TOKEN
+  CODE_REVIEW_MODEL_ID       (optional, default: gpt-4o)
+  CODE_REVIEW_LLM_BASE_URL   (optional; OpenAI-compatible endpoint)
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Callable, Literal, cast
 
 import requests
 from dotenv import load_dotenv
+from pydantic import BaseModel
+from strands import Agent
+from strands.models.openai import OpenAIModel
+
+logger = logging.getLogger(__name__)
+
+DEFAULT_STACKS = ("react", "vue", "angular", "svelte")
+
+MIN_STARS = 5000
+RELEASE_WINDOW_DAYS = 180
+MAX_CHANGED_FILES = 20
+MAX_CHANGED_LINES = 1000
 
 # ---------------------------------------------------------------------------
-# Scoring keywords
+# Production-code detection
 # ---------------------------------------------------------------------------
 
-SECURITY_KEYWORDS = [
-    "security",
-    "xss",
-    "inject",
-    "auth",
-    "vulnerab",
-    "exploit",
-    "sensitiv",
-    "exposure",
-    "bypass",
-    "privilege",
-    "idor",
-    "csrf",
-    "sanitiz",
-    "disclosure",
-    "attack",
-    "malicious",
-    "untrusted",
-    "escape",
-    "encode",
-]
+_TEST_PATH_PATTERNS = (
+    "/__tests__/",
+    "/__test__/",
+    ".test.js",
+    ".test.ts",
+    ".test.jsx",
+    ".test.tsx",
+    ".spec.js",
+    ".spec.ts",
+    ".spec.jsx",
+    ".spec.tsx",
+    ".test.vue",
+    ".spec.vue",
+    ".test.svelte",
+    ".spec.svelte",
+    "/test_",
+    "_test.py",
+    "/tests/",
+    "/test/",
+    "/e2e/",
+    "/cypress/",
+    "/__mocks__/",
+)
 
-SIDEEFFECT_KEYWORDS = [
-    "regression",
-    "breaking",
-    "unintended",
-    "unexpected",
-    "side effect",
-    "race condition",
-    "memory leak",
-    "n+1",
-    "performance impact",
-    "infinite loop",
-    "stale",
-    "out of sync",
-    "deadlock",
-    "overflow",
-    "edge case",
-    "missed",
-    "overlooked",
-]
+_DOC_SUFFIXES = (".md", ".mdx", ".rst", ".txt")
+_DOC_PATH_PATTERNS = ("/docs/", "/documentation/")
 
-DESIGN_KEYWORDS = [
-    "prefer",
-    "consider",
-    "naming",
-    "refactor",
-    "architecture",
-    "design pattern",
-    "style",
-    "approach",
-    "opinion",
-    "nitpick",
-    "nit:",
-    "suggestion",
-    "alternatively",
-]
 
-BOT_LOGINS = {
-    "github-actions[bot]",
-    "dependabot[bot]",
-    "renovate[bot]",
-    "codecov[bot]",
-    "sonarcloud[bot]",
-    "netlify[bot]",
-    "vercel[bot]",
-    "stale[bot]",
-    "changeset-bot[bot]",
-    "semantic-release-bot",
-    "imgbot[bot]",
-    "allcontributors[bot]",
-}
+def is_test_file(path: str) -> bool:
+    return any(pat in path for pat in _TEST_PATH_PATTERNS)
+
+
+def is_doc_file(path: str) -> bool:
+    lower = path.lower()
+    if lower.endswith(_DOC_SUFFIXES):
+        return True
+    return any(pat in lower for pat in _DOC_PATH_PATTERNS)
+
+
+def has_production_code_change(files: list[dict[str, Any]]) -> bool:
+    """Check whether the PR touches production code.
+
+    Returns:
+        True if at least one changed file is neither a test nor a doc file.
+    """
+    for file_item in files:
+        path = file_item.get("filename", "")
+        if not path:
+            continue
+        if is_test_file(path) or is_doc_file(path):
+            continue
+        return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Review-comment presence (human or AI bot)
+# ---------------------------------------------------------------------------
+
+
+def collect_review_texts(
+    inline: list[dict[str, Any]], reviews: list[dict[str, Any]]
+) -> list[str]:
+    """Aggregate non-blank inline comment and review bodies (any author).
+
+    Returns:
+        The list of non-blank review text bodies.
+    """
+    texts: list[str] = []
+    for comment in inline:
+        body = (comment.get("body") or "").strip()
+        if body:
+            texts.append(body)
+    for review in reviews:
+        body = (review.get("body") or "").strip()
+        if body:
+            texts.append(body)
+    return texts
+
+
+def has_review_comments(
+    inline: list[dict[str, Any]], reviews: list[dict[str, Any]]
+) -> bool:
+    """Check whether the PR has at least one non-blank review comment.
+
+    The comment author may be a human or an AI review bot -- the spec only
+    requires that some review remark exists, not that a bot produced it.
+
+    Returns:
+        True if at least one non-blank review comment exists.
+    """
+    return bool(collect_review_texts(inline, reviews))
+
+
+# ---------------------------------------------------------------------------
+# Change-size filter
+# ---------------------------------------------------------------------------
+
+
+def within_change_limits(
+    pr_detail: dict[str, Any],
+    max_files: int = MAX_CHANGED_FILES,
+    max_lines: int = MAX_CHANGED_LINES,
+) -> bool:
+    changed_files = pr_detail.get("changed_files", 0)
+    additions = pr_detail.get("additions", 0)
+    deletions = pr_detail.get("deletions", 0)
+    if changed_files > max_files:
+        return False
+    if additions + deletions > max_lines:
+        return False
+    return True
+
+
+# ---------------------------------------------------------------------------
+# Recent-release check
+# ---------------------------------------------------------------------------
+
+
+def _parse_iso(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def has_recent_release(
+    client: GitHubClient,
+    repo: str,
+    now: datetime,
+    days: int = RELEASE_WINDOW_DAYS,
+) -> bool:
+    """Check whether the repo has a recent release.
+
+    Returns:
+        True if the repo has a release (or tag fallback) within ``days``.
+    """
+    cutoff = now - timedelta(days=days)
+
+    releases = client.list_releases(repo)
+    for release in releases:
+        published = _parse_iso(release.get("published_at") or "")
+        if published and published >= cutoff:
+            return True
+
+    # Fallback: repos that ship via git tags rather than GitHub Releases.
+    for tag_date in client.list_tags_with_dates(repo):
+        parsed = _parse_iso(tag_date)
+        if parsed and parsed >= cutoff:
+            return True
+
+    return False
+
+
+# ---------------------------------------------------------------------------
+# LLM 3-axis assessment (severity / impact / priority)
+# ---------------------------------------------------------------------------
+
+Severity = Literal["critical", "high", "medium", "low"]
+Impact = Literal["security", "correctness", "performance", "maintainability"]
+Priority = Literal["high", "medium", "low"]
+
+
+class ReviewAssessment(BaseModel):
+    """Structured 3-axis assessment of a PR's review findings.
+
+    The three axes are deliberately independent so they do not collapse
+    into one another (the failure mode of keyword-derived scoring):
+
+    - severity: how serious the defect itself is.
+    - impact: which quality attribute it affects.
+    - priority: how urgently it should be fixed.
+    """
+
+    severity: Severity
+    impact: Impact
+    priority: Priority
+    rationale: str
+
+
+ReviewAssessor = Callable[[str, list[str]], "ReviewAssessment | None"]
+
+_ASSESSOR_SYSTEM_PROMPT = """\
+You analyze the review findings on a pull request and classify them along \
+THREE INDEPENDENT axes. Do not let one axis determine another; judge each \
+on its own terms.
+
+1. severity (how serious the underlying defect is):
+   critical | high | medium | low
+2. impact (which software quality attribute the finding primarily affects):
+   security | correctness | performance | maintainability
+3. priority (how urgently the team should act on it, considering severity, \
+blast radius, and reachability together):
+   high | medium | low
+
+A low-severity finding can still be high-priority (e.g. trivial fix, \
+user-facing), and a high-severity finding can be low-priority (e.g. \
+unreachable code path). Provide a brief, non-empty rationale.
+"""
+
+
+def make_llm_assessor(model_id: str, llm_base_url: str | None = None) -> ReviewAssessor:
+    """Build an LLM-backed 3-axis assessor.
+
+    Mirrors the model-selection pattern in
+    ``score_evaluation.py::make_llm_semantic_judge``: a custom
+    ``llm_base_url`` pins a low temperature; the default endpoint is used
+    as-is otherwise. Fails closed -- returns None on any error or missing
+    structured output so the caller can skip that PR.
+
+    Returns:
+        A callable that assesses a PR and returns a ``ReviewAssessment`` or
+        None when the assessment fails.
+    """
+    if llm_base_url:
+        model = OpenAIModel(
+            model_id=model_id,
+            client_args={"base_url": llm_base_url},
+            params={"temperature": 0.0},
+        )
+    else:
+        model = OpenAIModel(model_id=model_id)
+
+    agent = Agent(model=model, system_prompt=_ASSESSOR_SYSTEM_PROMPT, tools=[])
+
+    def assess(pr_title: str, review_texts: list[str]) -> ReviewAssessment | None:
+        joined = "\n\n".join(f"- {t}" for t in review_texts)
+        prompt = f"PR title: {pr_title}\n\nReview findings:\n{joined}"
+        try:
+            result = agent(prompt, structured_output_model=ReviewAssessment)
+        except Exception:
+            logger.warning("LLM assessment call failed; skipping PR", exc_info=True)
+            return None
+        if result.structured_output is None:
+            return None
+        return cast(ReviewAssessment, result.structured_output)
+
+    return assess
 
 
 # ---------------------------------------------------------------------------
@@ -114,22 +309,6 @@ class RepoCandidate:
     repository: str
     repo_type: str
     stack: str
-
-
-@dataclass
-class ScoredPR:
-    repository: str
-    repo_type: str
-    stack: str
-    pr_number: int
-    title: str
-    merged_at: str
-    security_score: float
-    sideeffect_score: float
-    design_penalty: float
-    total_score: float
-    human_comment_count: int
-    sample_comments: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -152,7 +331,7 @@ class GitHubClient:
 
     def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         url = f"{self.BASE}{path}"
-        for attempt in range(3):
+        for _attempt in range(3):
             resp = self._session.get(url, params=params, timeout=30)
             if resp.status_code in (403, 429) and (
                 "rate limit" in resp.text.lower() or resp.status_code == 429
@@ -171,14 +350,29 @@ class GitHubClient:
     def get_repo(self, repo: str) -> dict[str, Any] | None:
         return self._get(f"/repos/{repo}")
 
-    def list_commits(
-        self, repo: str, since: str, per_page: int = 30
-    ) -> list[dict[str, Any]]:
-        result = self._get(
-            f"/repos/{repo}/commits",
-            params={"since": since, "per_page": per_page},
-        )
+    def list_releases(self, repo: str, per_page: int = 10) -> list[dict[str, Any]]:
+        result = self._get(f"/repos/{repo}/releases", params={"per_page": per_page})
         return result or []
+
+    def list_tags_with_dates(self, repo: str, per_page: int = 10) -> list[str]:
+        """Return commit dates (ISO 8601) for the repo's most recent tags."""
+        tags = self._get(f"/repos/{repo}/tags", params={"per_page": per_page}) or []
+        dates: list[str] = []
+        for tag in tags[:per_page]:
+            sha = (tag.get("commit") or {}).get("sha")
+            if not sha:
+                continue
+            commit = self._get(f"/repos/{repo}/commits/{sha}")
+            if not commit:
+                continue
+            date = ((commit.get("commit") or {}).get("committer") or {}).get("date")
+            if date:
+                dates.append(date)
+            time.sleep(0.1)
+        return dates
+
+    def get_pr(self, repo: str, pr_number: int) -> dict[str, Any] | None:
+        return self._get(f"/repos/{repo}/pulls/{pr_number}")
 
     def list_merged_prs(
         self, repo: str, since: str, per_page: int = 50
@@ -213,17 +407,21 @@ class GitHubClient:
             time.sleep(0.3)
         return prs
 
+    def list_pr_files(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
+        files = self._get(
+            f"/repos/{repo}/pulls/{pr_number}/files", params={"per_page": 100}
+        )
+        return files or []
+
     def list_review_comments(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
         comments = self._get(
-            f"/repos/{repo}/pulls/{pr_number}/comments",
-            params={"per_page": 100},
+            f"/repos/{repo}/pulls/{pr_number}/comments", params={"per_page": 100}
         )
         return comments or []
 
     def list_pr_reviews(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
         reviews = self._get(
-            f"/repos/{repo}/pulls/{pr_number}/reviews",
-            params={"per_page": 100},
+            f"/repos/{repo}/pulls/{pr_number}/reviews", params={"per_page": 100}
         )
         return reviews or []
 
@@ -238,135 +436,100 @@ def validate_repo(
     candidate: RepoCandidate,
     now: datetime,
 ) -> tuple[bool, str]:
-    """Return (ok, reason). Checks star count and recent non-bot activity."""
+    """Return (ok, reason). Checks star count and recent release activity."""
     repo_data = client.get_repo(candidate.repository)
     if repo_data is None:
         return False, "repository not found"
+    if repo_data.get("archived"):
+        return False, "repository archived"
 
     stars = repo_data.get("stargazers_count", 0)
-    min_stars = 5000 if candidate.repo_type == "ui-library" else 1000
-    if stars < min_stars:
-        return False, f"stars={stars} < {min_stars}"
+    if stars < MIN_STARS:
+        return False, f"stars={stars} < {MIN_STARS}"
 
-    # Check recent non-bot commit activity
-    if candidate.repo_type == "ui-library":
-        lookback_days = 30
-    else:
-        lookback_days = 90
+    if not has_recent_release(client, candidate.repository, now, RELEASE_WINDOW_DAYS):
+        return False, f"no release in last {RELEASE_WINDOW_DAYS} days"
 
-    since = (now - timedelta(days=lookback_days)).isoformat()
-    commits = client.list_commits(candidate.repository, since=since, per_page=50)
-    non_bot = [
-        c
-        for c in commits
-        if c.get("author")
-        and c["author"].get("login") not in BOT_LOGINS
-        and c.get("committer")
-        and c["committer"].get("login") not in BOT_LOGINS
-    ]
-    if not non_bot:
-        return False, f"no non-bot commits in last {lookback_days} days"
-
-    # For applications, also check continuous activity over 6 months
-    if candidate.repo_type == "application":
-        since_6m = (now - timedelta(days=180)).isoformat()
-        commits_6m = client.list_commits(
-            candidate.repository, since=since_6m, per_page=100
-        )
-        non_bot_6m = [
-            c
-            for c in commits_6m
-            if c.get("author") and c["author"].get("login") not in BOT_LOGINS
-        ]
-        if len(non_bot_6m) < 5:
-            return (
-                False,
-                f"insufficient non-bot commits in 6 months ({len(non_bot_6m)})",
-            )
-
-    return True, f"stars={stars}, recent_non_bot={len(non_bot)}"
+    return True, f"stars={stars}, recent_release=yes"
 
 
 # ---------------------------------------------------------------------------
-# PR scoring
+# PR evaluation
 # ---------------------------------------------------------------------------
 
 
-def _text_score(text: str, keywords: list[str]) -> float:
-    lower = text.lower()
-    return sum(1.0 for kw in keywords if kw in lower)
-
-
-def score_comment(text: str) -> tuple[float, float, float]:
-    sec = _text_score(text, SECURITY_KEYWORDS)
-    side = _text_score(text, SIDEEFFECT_KEYWORDS)
-    design = _text_score(text, DESIGN_KEYWORDS)
-    return sec, side, design
-
-
-def score_pr(
+def build_target(
     client: GitHubClient,
     candidate: RepoCandidate,
     pr: dict[str, Any],
-) -> ScoredPR | None:
-    pr_number = pr["number"]
+    assessor: ReviewAssessor,
+) -> dict[str, Any] | None:
+    """Evaluate one PR against all filters; return a target dict or None.
+
+    Returns:
+        The built target dict, or None (skip) when the PR fails any filter
+        or when the LLM assessment fails (fail-closed).
+    """
     repo = candidate.repository
+    pr_number = pr["number"]
 
-    # Collect review comments (inline) + review bodies.
-    # PRs without inline comments are excluded: inline comments carry file path
-    # and line number, which are required for location-based accuracy evaluation.
+    pr_detail = client.get_pr(repo, pr_number)
+    if pr_detail is None:
+        return None
+    if not within_change_limits(pr_detail):
+        return None
+
+    files = client.list_pr_files(repo, pr_number)
+    if not has_production_code_change(files):
+        return None
+
     inline = client.list_review_comments(repo, pr_number)
-    if not inline:
-        return None
-
     reviews = client.list_pr_reviews(repo, pr_number)
-
-    all_comments: list[tuple[str, str]] = []
-    for c in inline:
-        login = (c.get("user") or {}).get("login", "")
-        if login not in BOT_LOGINS and c.get("body"):
-            all_comments.append((login, c["body"]))
-    for r in reviews:
-        login = (r.get("user") or {}).get("login", "")
-        if login not in BOT_LOGINS and r.get("body") and len(r["body"].strip()) > 10:
-            all_comments.append((login, r["body"]))
-
-    if not all_comments:
+    if not has_review_comments(inline, reviews):
         return None
 
-    total_sec = total_side = total_design = 0.0
-    sample: list[str] = []
-    for _login, body in all_comments:
-        sec, side, design = score_comment(body)
-        total_sec += sec
-        total_side += side
-        total_design += design
-        if sec > 0 or side > 0:
-            preview = body[:200].replace("\n", " ")
-            sample.append(preview)
+    review_texts = collect_review_texts(inline, reviews)
+    assessment = assessor(pr.get("title", ""), review_texts)
+    if assessment is None:
+        return None
 
-    n = len(all_comments)
-    # Normalize by comment count; penalize if design dominates
-    design_ratio = total_design / max(total_design + total_sec + total_side, 1)
-    penalty = design_ratio * 0.5
+    return {
+        "repository": repo,
+        "pr_number": pr_number,
+        "stack": candidate.stack,
+        "repo_type": candidate.repo_type,
+        "severity": assessment.severity,
+        "impact": assessment.impact,
+        "priority": assessment.priority,
+    }
 
-    raw = (total_sec * 2.0 + total_side * 1.5) / max(n, 1)
-    final = max(raw - penalty, 0.0)
 
-    return ScoredPR(
-        repository=repo,
-        repo_type=candidate.repo_type,
-        stack=candidate.stack,
-        pr_number=pr_number,
-        title=pr.get("title", ""),
-        merged_at=pr.get("merged_at", ""),
-        security_score=round(total_sec / max(n, 1), 3),
-        sideeffect_score=round(total_side / max(n, 1), 3),
-        design_penalty=round(penalty, 3),
-        total_score=round(final, 3),
-        human_comment_count=n,
-        sample_comments=sample[:3],
-    )
+# ---------------------------------------------------------------------------
+# Output
+# ---------------------------------------------------------------------------
+
+
+def write_stack_outputs(
+    targets: list[dict[str, Any]],
+    output_dir: str,
+    stacks: tuple[str, ...] | list[str] = DEFAULT_STACKS,
+) -> None:
+    """Write targets grouped by stack to pr_targets_{stack}.json.
+
+    Every stack in `stacks` gets a file, even when it has no targets (an
+    empty JSON array), so downstream consumers see a stable set of files.
+    Any stack present in `targets` but not in `stacks` also gets a file.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    grouped: dict[str, list[dict[str, Any]]] = {stack: [] for stack in stacks}
+    for target in targets:
+        grouped.setdefault(target["stack"], []).append(target)
+
+    for stack, rows in grouped.items():
+        path = os.path.join(output_dir, f"pr_targets_{stack}.json")
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(rows, f, ensure_ascii=False, indent=2)
+            f.write("\n")
 
 
 # ---------------------------------------------------------------------------
@@ -377,44 +540,45 @@ def score_pr(
 def main() -> int:
     load_dotenv()
 
-    parser = argparse.ArgumentParser(description="Discover PR candidates for Gold-set")
+    parser = argparse.ArgumentParser(
+        description="Discover per-stack Gold-set PR targets"
+    )
     parser.add_argument(
         "--repos",
         default="evaluation/input/repo_candidates.json",
         help="Path to repo_candidates.json",
     )
     parser.add_argument(
-        "--output",
-        default="evaluation/input/pr_candidates_raw.json",
-        help="Output path for ranked PR candidates",
-    )
-    parser.add_argument(
-        "--min-score",
-        type=float,
-        default=0.2,
-        help="Minimum total_score to include in output",
+        "--output-dir",
+        default="evaluation/input",
+        help="Directory to write pr_targets_{stack}.json into",
     )
     parser.add_argument(
         "--since",
         default=None,
-        help="Search PRs merged/updated after this date (ISO 8601). Default: 6 months ago.",
+        help="Search PRs merged/updated after this date (ISO 8601). "
+        "Default: 6 months ago.",
     )
     parser.add_argument(
         "--max-prs-per-repo",
         type=int,
-        default=80,
-        help="Max PRs to fetch per repo before scoring",
+        default=60,
+        help="Max PRs to fetch per repo before evaluating",
     )
     parser.add_argument(
-        "--top-n-per-repo",
+        "--max-targets-per-repo",
         type=int,
-        default=20,
-        help="Max top-scoring PRs to keep per repo in output",
+        default=10,
+        help="Max accepted targets to keep per repo",
+    )
+    parser.add_argument("--model-id", default=None, help="LLM model id for assessment")
+    parser.add_argument(
+        "--llm-base-url", default=None, help="OpenAI-compatible base URL"
     )
     parser.add_argument(
         "--skip-repos",
         default="",
-        help="Comma-separated repos to skip (already processed)",
+        help="Comma-separated repos to skip",
     )
     args = parser.parse_args()
 
@@ -423,39 +587,31 @@ def main() -> int:
         print("ERROR: GITHUB_TOKEN not set")
         return 1
 
+    model_id = args.model_id or os.environ.get("CODE_REVIEW_MODEL_ID", "gpt-4o")
+    llm_base_url = args.llm_base_url or os.environ.get("CODE_REVIEW_LLM_BASE_URL")
+    assessor = make_llm_assessor(model_id, llm_base_url)
+
     client = GitHubClient(token)
     now = datetime.now(timezone.utc)
-
-    since = args.since or (now - timedelta(days=180)).strftime("%Y-%m-%dT%H:%M:%SZ")
-
+    since = args.since or (now - timedelta(days=RELEASE_WINDOW_DAYS)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
     skip_repos = {r.strip() for r in args.skip_repos.split(",") if r.strip()}
 
     with open(args.repos, encoding="utf-8") as f:
         raw_repos = json.load(f)
     candidates = [RepoCandidate(**r) for r in raw_repos]
 
-    # Load existing results for append mode
-    all_scored: list[ScoredPR] = []
-    if skip_repos:
-        try:
-            with open(args.output, encoding="utf-8") as f:
-                existing = json.load(f)
-            for item in existing:
-                if item["repository"] in skip_repos:
-                    all_scored.append(ScoredPR(**item))
-            print(f"Loaded {len(all_scored)} existing results from {args.output}")
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass
-
+    all_targets: list[dict[str, Any]] = []
     for candidate in candidates:
         if candidate.repository in skip_repos:
-            print(f"\n[{candidate.repository}] SKIP (already processed)")
+            print(f"\n[{candidate.repository}] SKIP (requested)")
             continue
 
         print(f"\n[{candidate.repository}] validating ...")
         try:
             ok, reason = validate_repo(client, candidate, now)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print(f"  SKIP: validation error: {e}")
             continue
         if not ok:
@@ -463,68 +619,44 @@ def main() -> int:
             continue
         print(f"  OK: {reason}")
 
-        # Use a shorter since window for ui-library (monthly requirement)
-        if candidate.repo_type == "ui-library":
-            pr_since = (now - timedelta(days=35)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        else:
-            pr_since = since
-
-        print(f"  fetching merged PRs since {pr_since[:10]} ...")
         try:
-            prs = client.list_merged_prs(
-                candidate.repository, since=pr_since, per_page=50
-            )
-        except Exception as e:
+            prs = client.list_merged_prs(candidate.repository, since=since, per_page=50)
+        except Exception as e:  # noqa: BLE001
             print(f"  SKIP: failed to list PRs: {e}")
             continue
         print(f"  found {len(prs)} merged PRs")
 
-        repo_scored: list[ScoredPR] = []
+        repo_targets: list[dict[str, Any]] = []
         for pr in prs[: args.max_prs_per_repo]:
-            time.sleep(0.5)
+            time.sleep(0.4)
             try:
-                scored = score_pr(client, candidate, pr)
-            except Exception as e:
-                print(f"  WARN: PR #{pr['number']} scoring failed: {type(e).__name__}")
-                time.sleep(2)
+                target = build_target(client, candidate, pr, assessor)
+            except Exception as e:  # noqa: BLE001
+                print(f"  WARN: PR #{pr['number']} failed: {type(e).__name__}")
+                time.sleep(1)
                 continue
-            if scored is None:
-                continue
-            if scored.total_score >= args.min_score:
-                repo_scored.append(scored)
+            if target is not None:
+                repo_targets.append(target)
+            if len(repo_targets) >= args.max_targets_per_repo:
+                break
 
-        repo_scored.sort(key=lambda x: x.total_score, reverse=True)
-        top = repo_scored[: args.top_n_per_repo]
-        print(f"  scored PRs passing threshold: {len(top)}")
-        all_scored.extend(top)
+        print(f"  accepted targets: {len(repo_targets)}")
+        all_targets.extend(repo_targets)
 
-        # Write incremental results after each repo
-        _write_output(all_scored, args.output)
-        print(f"  → saved to {args.output} (total: {len(all_scored)})")
-
+        write_stack_outputs(all_targets, args.output_dir)
+        print(f"  → wrote per-stack outputs to {args.output_dir}")
         time.sleep(1)
 
-    all_scored.sort(key=lambda x: x.total_score, reverse=True)
-    _write_output(all_scored, args.output)
+    write_stack_outputs(all_targets, args.output_dir)
 
-    print(f"\nTotal candidates written: {len(all_scored)} → {args.output}")
-    print("\nTop 20 by score:")
-    for s in all_scored[:20]:
-        print(
-            f"  [{s.total_score:.3f}] {s.repository}#{s.pr_number}"
-            f" ({s.repo_type}/{s.stack}) {s.title[:60]}"
-        )
+    by_stack: dict[str, int] = {}
+    for target in all_targets:
+        by_stack[target["stack"]] = by_stack.get(target["stack"], 0) + 1
+    print(f"\nTotal targets: {len(all_targets)}")
+    for stack in sorted(by_stack):
+        print(f"  {stack}: {by_stack[stack]}")
 
     return 0
-
-
-def _write_output(scored: list[ScoredPR], path: str) -> None:
-    output = [
-        asdict(s) for s in sorted(scored, key=lambda x: x.total_score, reverse=True)
-    ]
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False, indent=2)
-        f.write("\n")
 
 
 if __name__ == "__main__":
