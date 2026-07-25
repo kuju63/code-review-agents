@@ -249,7 +249,10 @@ class TestMakeLlmAssessor:
             make_llm_assessor("gpt-4o", "http://localhost:11434/v1")
         model_cls.assert_called_once()
         _, kwargs = model_cls.call_args
-        assert kwargs["client_args"] == {"base_url": "http://localhost:11434/v1"}
+        assert kwargs["client_args"] == {
+            "base_url": "http://localhost:11434/v1",
+            "timeout": discover.LLM_TIMEOUT_SECONDS,
+        }
 
 
 class TestWriteStackOutputs:

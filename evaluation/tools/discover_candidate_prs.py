@@ -53,6 +53,9 @@ RELEASE_WINDOW_DAYS = 180
 MAX_CHANGED_FILES = 20
 MAX_CHANGED_LINES = 1000
 
+# Upper bound (seconds) for every LLM call, applied to the OpenAI client.
+LLM_TIMEOUT_SECONDS = 120.0
+
 # ---------------------------------------------------------------------------
 # Production-code detection
 # ---------------------------------------------------------------------------
@@ -276,11 +279,14 @@ def make_llm_assessor(model_id: str, llm_base_url: str | None = None) -> ReviewA
     if llm_base_url:
         model = OpenAIModel(
             model_id=model_id,
-            client_args={"base_url": llm_base_url},
+            client_args={"base_url": llm_base_url, "timeout": LLM_TIMEOUT_SECONDS},
             params={"temperature": 0.0},
         )
     else:
-        model = OpenAIModel(model_id=model_id)
+        model = OpenAIModel(
+            model_id=model_id,
+            client_args={"timeout": LLM_TIMEOUT_SECONDS},
+        )
 
     agent = Agent(model=model, system_prompt=_ASSESSOR_SYSTEM_PROMPT, tools=[])
 
@@ -294,7 +300,16 @@ def make_llm_assessor(model_id: str, llm_base_url: str | None = None) -> ReviewA
             return None
         if result.structured_output is None:
             return None
-        return cast(ReviewAssessment, result.structured_output)
+        assessment = cast(ReviewAssessment, result.structured_output)
+        logger.info(
+            "LLM assessment for PR %r: severity=%s impact=%s priority=%s rationale=%s",
+            pr_title,
+            assessment.severity,
+            assessment.impact,
+            assessment.priority,
+            assessment.rationale,
+        )
+        return assessment
 
     return assess
 
@@ -435,8 +450,15 @@ def validate_repo(
     client: GitHubClient,
     candidate: RepoCandidate,
     now: datetime,
+    min_stars: int = MIN_STARS,
+    release_window_days: int = RELEASE_WINDOW_DAYS,
 ) -> tuple[bool, str]:
-    """Return (ok, reason). Checks star count and recent release activity."""
+    """Return (ok, reason). Checks star count and recent release activity.
+
+    Returns:
+        A (ok, reason) tuple: ok is True when the repo passes star and
+        recent-release checks; reason describes the outcome.
+    """
     repo_data = client.get_repo(candidate.repository)
     if repo_data is None:
         return False, "repository not found"
@@ -444,11 +466,11 @@ def validate_repo(
         return False, "repository archived"
 
     stars = repo_data.get("stargazers_count", 0)
-    if stars < MIN_STARS:
-        return False, f"stars={stars} < {MIN_STARS}"
+    if stars < min_stars:
+        return False, f"stars={stars} < {min_stars}"
 
-    if not has_recent_release(client, candidate.repository, now, RELEASE_WINDOW_DAYS):
-        return False, f"no release in last {RELEASE_WINDOW_DAYS} days"
+    if not has_recent_release(client, candidate.repository, now, release_window_days):
+        return False, f"no release in last {release_window_days} days"
 
     return True, f"stars={stars}, recent_release=yes"
 
@@ -463,6 +485,8 @@ def build_target(
     candidate: RepoCandidate,
     pr: dict[str, Any],
     assessor: ReviewAssessor,
+    max_changed_files: int = MAX_CHANGED_FILES,
+    max_changed_lines: int = MAX_CHANGED_LINES,
 ) -> dict[str, Any] | None:
     """Evaluate one PR against all filters; return a target dict or None.
 
@@ -476,7 +500,7 @@ def build_target(
     pr_detail = client.get_pr(repo, pr_number)
     if pr_detail is None:
         return None
-    if not within_change_limits(pr_detail):
+    if not within_change_limits(pr_detail, max_changed_files, max_changed_lines):
         return None
 
     files = client.list_pr_files(repo, pr_number)
@@ -571,6 +595,30 @@ def main() -> int:
         default=10,
         help="Max accepted targets to keep per repo",
     )
+    parser.add_argument(
+        "--min-stars",
+        type=int,
+        default=MIN_STARS,
+        help="Minimum repository star count",
+    )
+    parser.add_argument(
+        "--release-window-days",
+        type=int,
+        default=RELEASE_WINDOW_DAYS,
+        help="Recent-release window in days",
+    )
+    parser.add_argument(
+        "--max-changed-files",
+        type=int,
+        default=MAX_CHANGED_FILES,
+        help="Maximum changed files per PR",
+    )
+    parser.add_argument(
+        "--max-changed-lines",
+        type=int,
+        default=MAX_CHANGED_LINES,
+        help="Maximum changed lines (additions + deletions) per PR",
+    )
     parser.add_argument("--model-id", default=None, help="LLM model id for assessment")
     parser.add_argument(
         "--llm-base-url", default=None, help="OpenAI-compatible base URL"
@@ -593,7 +641,7 @@ def main() -> int:
 
     client = GitHubClient(token)
     now = datetime.now(timezone.utc)
-    since = args.since or (now - timedelta(days=RELEASE_WINDOW_DAYS)).strftime(
+    since = args.since or (now - timedelta(days=args.release_window_days)).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
     )
     skip_repos = {r.strip() for r in args.skip_repos.split(",") if r.strip()}
@@ -610,7 +658,13 @@ def main() -> int:
 
         print(f"\n[{candidate.repository}] validating ...")
         try:
-            ok, reason = validate_repo(client, candidate, now)
+            ok, reason = validate_repo(
+                client,
+                candidate,
+                now,
+                min_stars=args.min_stars,
+                release_window_days=args.release_window_days,
+            )
         except Exception as e:  # noqa: BLE001
             print(f"  SKIP: validation error: {e}")
             continue
@@ -630,7 +684,14 @@ def main() -> int:
         for pr in prs[: args.max_prs_per_repo]:
             time.sleep(0.4)
             try:
-                target = build_target(client, candidate, pr, assessor)
+                target = build_target(
+                    client,
+                    candidate,
+                    pr,
+                    assessor,
+                    max_changed_files=args.max_changed_files,
+                    max_changed_lines=args.max_changed_lines,
+                )
             except Exception as e:  # noqa: BLE001
                 print(f"  WARN: PR #{pr['number']} failed: {type(e).__name__}")
                 time.sleep(1)
