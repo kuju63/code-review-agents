@@ -90,12 +90,12 @@ _DOC_PATH_PATTERNS = ("/docs/", "/documentation/")
 
 def is_test_file(path: str) -> bool:
     """Determine whether a file path matches a configured test-file pattern.
-    
+
     Parameters:
-    	path (str): File path to inspect.
-    
+        path (str): File path to inspect.
+
     Returns:
-    	bool: `True` if the path contains a test-file pattern, `False` otherwise.
+        bool: `True` if the path contains a test-file pattern, `False` otherwise.
     """
     return any(pat in path for pat in _TEST_PATH_PATTERNS)
 
@@ -103,12 +103,12 @@ def is_test_file(path: str) -> bool:
 def is_doc_file(path: str) -> bool:
     """
     Determine whether a file path identifies a documentation file.
-    
+
     Parameters:
-    	path (str): File path to classify.
-    
+        path (str): File path to classify.
+
     Returns:
-    	bool: `true` if the path has a documentation suffix or contains a documentation path pattern, `false` otherwise.
+        bool: `true` if the path has a documentation suffix or contains a documentation path pattern, `false` otherwise.
     """
     lower = path.lower()
     if lower.endswith(_DOC_SUFFIXES):
@@ -119,10 +119,10 @@ def is_doc_file(path: str) -> bool:
 def has_production_code_change(files: list[dict[str, Any]]) -> bool:
     """
     Determine whether the changed files include production code.
-    
+
     Parameters:
         files (list[dict[str, Any]]): Changed file entries containing file paths.
-    
+
     Returns:
         bool: `True` if at least one changed file is neither a test nor documentation file, `False` otherwise.
     """
@@ -166,7 +166,7 @@ def has_review_comments(
 ) -> bool:
     """
     Determine whether the pull request contains a substantive review comment.
-    
+
     Returns:
         bool: `True` if at least one non-blank review comment exists, `False` otherwise.
     """
@@ -185,12 +185,12 @@ def within_change_limits(
 ) -> bool:
     """
     Determine whether a pull request fits within file and line-change limits.
-    
+
     Parameters:
         pr_detail (dict[str, Any]): Pull request metadata containing change counts.
         max_files (int): Maximum number of changed files allowed.
         max_lines (int): Maximum combined number of added and deleted lines allowed.
-    
+
     Returns:
         bool: `True` if the pull request satisfies both limits, `False` otherwise.
     """
@@ -212,12 +212,12 @@ def within_change_limits(
 def _parse_iso(value: str) -> datetime | None:
     """
     Parse an ISO 8601 timestamp.
-    
+
     Parameters:
-    	value (str): The timestamp string to parse.
-    
+        value (str): The timestamp string to parse.
+
     Returns:
-    	datetime | None: The parsed datetime, or `None` if the value is empty or invalid.
+        datetime | None: The parsed datetime, or `None` if the value is empty or invalid.
     """
     if not value:
         return None
@@ -235,10 +235,10 @@ def has_recent_release(
 ) -> bool:
     """
     Determine whether a repository has released within the specified time window.
-    
+
     Parameters:
         days (int): Number of days before `now` to include in the release window.
-    
+
     Returns:
         bool: `True` if a qualifying release or tag exists, `False` otherwise.
     """
@@ -309,11 +309,11 @@ unreachable code path). Provide a brief, non-empty rationale.
 def make_llm_assessor(model_id: str, llm_base_url: str | None = None) -> ReviewAssessor:
     """
     Build an assessor that classifies pull requests across severity, impact, and priority.
-    
+
     Parameters:
         model_id (str): Identifier of the language model to use.
         llm_base_url (str | None): Optional base URL for the model service.
-    
+
     Returns:
         ReviewAssessor: A callable that returns a structured review assessment, or `None` when assessment fails or structured output is unavailable.
     """
@@ -334,11 +334,11 @@ def make_llm_assessor(model_id: str, llm_base_url: str | None = None) -> ReviewA
     def assess(pr_title: str, review_texts: list[str]) -> ReviewAssessment | None:
         """
         Assess a pull request's review findings across severity, impact, and priority.
-        
+
         Parameters:
             pr_title (str): Title of the pull request.
             review_texts (list[str]): Review findings to assess.
-        
+
         Returns:
             ReviewAssessment | None: The structured assessment, or `None` if assessment fails or produces no structured output.
         """
@@ -398,11 +398,11 @@ class GitHubClient:
     def _get(self, path: str, params: dict[str, Any] | None = None) -> Any:
         """
         Fetch JSON data from a GitHub API path, retrying rate-limited requests up to three times.
-        
+
         Parameters:
             path (str): API path appended to the client's base URL.
             params (dict[str, Any] | None): Optional query parameters.
-        
+
         Returns:
             Any: The decoded JSON response, or `None` if authorization fails, the resource is not found, or all rate-limit retries are exhausted.
         """
@@ -425,24 +425,24 @@ class GitHubClient:
 
     def get_repo(self, repo: str) -> dict[str, Any] | None:
         """Fetch repository metadata from GitHub.
-        
+
         Parameters:
-        	repo (str): The repository name in `owner/name` format.
-        
+                repo (str): The repository name in `owner/name` format.
+
         Returns:
-        	dict[str, Any] | None: Repository metadata, or `None` if the repository cannot be retrieved.
+                dict[str, Any] | None: Repository metadata, or `None` if the repository cannot be retrieved.
         """
         return self._get(f"/repos/{repo}")
 
     def list_releases(self, repo: str, per_page: int = 10) -> list[dict[str, Any]]:
         """Fetches releases for a repository.
-        
+
         Parameters:
-        	repo (str): The repository name in `owner/name` format.
-        	per_page (int): The maximum number of releases to request.
-        
+                repo (str): The repository name in `owner/name` format.
+                per_page (int): The maximum number of releases to request.
+
         Returns:
-        	list[dict[str, Any]]: The repository's release records, or an empty list if unavailable.
+                list[dict[str, Any]]: The repository's release records, or an empty list if unavailable.
         """
         result = self._get(f"/repos/{repo}/releases", params={"per_page": per_page})
         return result or []
@@ -450,13 +450,13 @@ class GitHubClient:
     def list_tags_with_dates(self, repo: str, per_page: int = 10) -> list[str]:
         """
         Return commit dates for the repository's most recent tags.
-        
+
         Parameters:
-        	repo (str): GitHub repository name in `owner/name` format
-        	per_page (int): Maximum number of tags to inspect
-        
+                repo (str): GitHub repository name in `owner/name` format
+                per_page (int): Maximum number of tags to inspect
+
         Returns:
-        	list[str]: ISO 8601 commit dates for tags with available commit metadata
+                list[str]: ISO 8601 commit dates for tags with available commit metadata
         """
         tags = self._get(f"/repos/{repo}/tags", params={"per_page": per_page}) or []
         dates: list[str] = []
@@ -475,13 +475,13 @@ class GitHubClient:
 
     def get_pr(self, repo: str, pr_number: int) -> dict[str, Any] | None:
         """Fetches details for a pull request.
-        
+
         Parameters:
-        	repo (str): Repository name in `owner/name` format.
-        	pr_number (int): Pull request number.
-        
+                repo (str): Repository name in `owner/name` format.
+                pr_number (int): Pull request number.
+
         Returns:
-        	dict[str, Any] | None: Pull request details, or `None` if unavailable.
+                dict[str, Any] | None: Pull request details, or `None` if unavailable.
         """
         return self._get(f"/repos/{repo}/pulls/{pr_number}")
 
@@ -489,12 +489,12 @@ class GitHubClient:
         self, repo: str, since: str, per_page: int = 50
     ) -> list[dict[str, Any]]:
         """Collect merged pull requests updated on or after the specified timestamp.
-        
+
         Parameters:
             repo (str): GitHub repository name in `owner/name` format.
             since (str): ISO 8601 timestamp defining the earliest update time.
             per_page (int): Number of pull requests to request per page.
-        
+
         Returns:
             list[dict[str, Any]]: Merged pull request records updated since `since`.
         """
@@ -529,13 +529,13 @@ class GitHubClient:
 
     def list_pr_files(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
         """Return the files changed by a pull request.
-        
+
         Parameters:
-        	repo (str): GitHub repository in `owner/name` format.
-        	pr_number (int): Pull request number.
-        
+                repo (str): GitHub repository in `owner/name` format.
+                pr_number (int): Pull request number.
+
         Returns:
-        	list[dict[str, Any]]: Pull request file entries, or an empty list if unavailable.
+                list[dict[str, Any]]: Pull request file entries, or an empty list if unavailable.
         """
         files = self._get(
             f"/repos/{repo}/pulls/{pr_number}/files", params={"per_page": 100}
@@ -544,13 +544,13 @@ class GitHubClient:
 
     def list_review_comments(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
         """Retrieve inline review comments for a pull request.
-        
+
         Parameters:
-        	repo (str): GitHub repository name in ``owner/name`` format.
-        	pr_number (int): Pull request number.
-        
+                repo (str): GitHub repository name in ``owner/name`` format.
+                pr_number (int): Pull request number.
+
         Returns:
-        	list[dict[str, Any]]: Inline review comment objects, or an empty list when none are available.
+                list[dict[str, Any]]: Inline review comment objects, or an empty list when none are available.
         """
         comments = self._get(
             f"/repos/{repo}/pulls/{pr_number}/comments", params={"per_page": 100}
@@ -559,13 +559,13 @@ class GitHubClient:
 
     def list_pr_reviews(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
         """Retrieve review submissions for a pull request.
-        
+
         Parameters:
-        	repo (str): Repository name in `owner/name` format.
-        	pr_number (int): Pull request number.
-        
+                repo (str): Repository name in `owner/name` format.
+                pr_number (int): Pull request number.
+
         Returns:
-        	list[dict[str, Any]]: Review objects returned by GitHub, or an empty list if unavailable.
+                list[dict[str, Any]]: Review objects returned by GitHub, or an empty list if unavailable.
         """
         reviews = self._get(
             f"/repos/{repo}/pulls/{pr_number}/reviews", params={"per_page": 100}
@@ -587,16 +587,16 @@ def validate_repo(
 ) -> tuple[bool, str]:
     """
     Validate a repository's availability, archive status, star count, and recent release activity.
-    
+
     Parameters:
-    	client (GitHubClient): Client used to retrieve repository metadata and release information.
-    	candidate (RepoCandidate): Repository candidate to validate.
-    	now (datetime): Reference time for evaluating release recency.
-    	min_stars (int): Minimum required star count.
-    	release_window_days (int): Number of days defining recent release activity.
-    
+        client (GitHubClient): Client used to retrieve repository metadata and release information.
+        candidate (RepoCandidate): Repository candidate to validate.
+        now (datetime): Reference time for evaluating release recency.
+        min_stars (int): Minimum required star count.
+        release_window_days (int): Number of days defining recent release activity.
+
     Returns:
-    	tuple[bool, str]: A validation status and a reason describing the outcome.
+        tuple[bool, str]: A validation status and a reason describing the outcome.
     """
     repo_data = client.get_repo(candidate.repository)
     if repo_data is None:
@@ -629,7 +629,7 @@ def build_target(
 ) -> dict[str, Any] | None:
     """
     Evaluate a pull request against eligibility filters and classify accepted targets.
-    
+
     Parameters:
         client (GitHubClient): Client used to retrieve pull request details, files, and reviews.
         candidate (RepoCandidate): Repository metadata used to populate the target.
@@ -637,7 +637,7 @@ def build_target(
         assessor (ReviewAssessor): Classifier for the pull request's review findings.
         max_changed_files (int): Maximum number of changed files allowed.
         max_changed_lines (int): Maximum combined additions and deletions allowed.
-    
+
     Returns:
         dict[str, Any] | None: A target containing repository, pull request, stack, repository type,
         and assessment categories, or None when the pull request fails a filter or assessment.
@@ -712,9 +712,9 @@ def write_stack_outputs(
 def main() -> int:
     """
     Discover and write per-stack Gold-set pull request targets.
-    
+
     Returns:
-    	int: 1 if GITHUB_TOKEN is missing; otherwise, 0 after processing repositories and writing target files.
+        int: 1 if GITHUB_TOKEN is missing; otherwise, 0 after processing repositories and writing target files.
     """
     load_dotenv()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
