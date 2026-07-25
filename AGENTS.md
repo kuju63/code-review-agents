@@ -41,6 +41,7 @@ Note: `betterleaks` is required for local pre-commit runs. See [README.md](READM
 
 ### Worktree Setup
 
+Be sure to create the worktree under the .claude/worktrees directory.
 After creating a new worktree, copy the local Claude Code hook settings into it and create a symbolic link to the secrets file (`.env`).
 The `.claude/settings.local.json` file is gitignored (personal settings) and must be
 copied manually to each worktree.
@@ -53,6 +54,8 @@ mkdir -p "$WORKTREE_ROOT/.claude"
 [ -f "$PROJECT_ROOT/.claude/settings.local.json" ] && \
   cp "$PROJECT_ROOT/.claude/settings.local.json" "$WORKTREE_ROOT/.claude/"
 [ -f "$PROJECT_ROOT/.env" ] && ln -sf "$PROJECT_ROOT/.env" "$WORKTREE_ROOT/.env"
+uv venv
+uv sync --frozen
 ```
 
 ### Run Application
