@@ -12,7 +12,7 @@ ARG PYTHON_VERSION=3.14
 # ghcr.io/astral-sh/uv:0.11.19 — バージョン+ダイジェスト固定で再現性を確保
 # Renovate が FROM 行を自動更新する (renovate.json config:recommended)
 ###############################################################################
-FROM ghcr.io/astral-sh/uv:0.11.31@sha256:ecd4de2f060c64bea0ff8ecb182ddf46ba3fcccdc8a60cfdbaf20d1a047d7437 AS uv-binary
+FROM ghcr.io/astral-sh/uv:0.11.32@sha256:df4cae8f3a96d175e2e5f992e597550000edbe78fdc2594d5cd8de1a217f504c AS uv-binary
 
 ###############################################################################
 # Stage 1: builder
@@ -20,7 +20,7 @@ FROM ghcr.io/astral-sh/uv:0.11.31@sha256:ecd4de2f060c64bea0ff8ecb182ddf46ba3fccc
 # - ABI 互換: cryptography / cffi / uvloop 等のバイナリ拡張の互換を保証
 # - ダイジェスト固定: タグ更新による意図しない Python バージョン変更を防止
 ###############################################################################
-FROM cgr.dev/chainguard/python:latest-dev@sha256:967409cf4148210d7c1bb872ffdda42a8b73cfc738f95eae7413045d0d6c30ee AS builder
+FROM cgr.dev/chainguard/python:latest-dev@sha256:992d8120f5c96b6b9787b9eb75406f5a40a2e62f8c2bcceadf0e43d09093670f AS builder
 
 USER root
 
@@ -64,7 +64,7 @@ RUN uv sync --frozen --no-dev --no-editable --no-cache && \
 # - nonroot ユーザー (UID 65532) がビルトイン
 # - ダイジェスト固定: Python バージョン変化による site-packages パス破損を防止
 ###############################################################################
-FROM cgr.dev/chainguard/python:latest@sha256:2c6a2e8bdeb1336cd8545d3586d1c1e5b4f7564ef00924b0447ebfbe57a549ee AS runtime
+FROM cgr.dev/chainguard/python:latest@sha256:c72076677480b4c9852b009c6a9942e9d9ce75cd314317e1f0ce2e51d971c9a7 AS runtime
 
 # multi-stage ARG スコープ: pre-FROM で宣言した ARG を runtime ステージで再宣言
 # base image 更新時は ARG PYTHON_VERSION とダイジェストを合わせて更新すること
