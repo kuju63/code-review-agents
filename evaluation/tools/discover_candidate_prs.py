@@ -563,6 +563,7 @@ def write_stack_outputs(
 
 def main() -> int:
     load_dotenv()
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
     parser = argparse.ArgumentParser(
         description="Discover per-stack Gold-set PR targets"
