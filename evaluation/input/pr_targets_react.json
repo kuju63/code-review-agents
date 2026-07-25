@@ -1,0 +1,596 @@
+[
+  {
+    "repository": "facebook/react",
+    "pr_number": 37048,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 37076,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 37049,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 37050,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 37075,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "facebook/react",
+    "pr_number": 37095,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "performance",
+    "priority": "medium"
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "pr_number": 3753,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "pr_number": 58417,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "performance",
+    "priority": "high"
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "pr_number": 58758,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "pr_number": 58746,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "pr_number": 58755,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "ant-design/ant-design",
+    "pr_number": 58756,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "mui/material-ui",
+    "pr_number": 48844,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "mui/material-ui",
+    "pr_number": 48199,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "mui/material-ui",
+    "pr_number": 48651,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "mui/material-ui",
+    "pr_number": 48794,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "mui/material-ui",
+    "pr_number": 48800,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "pr_number": 35541,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "pr_number": 35483,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "pr_number": 35495,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "pr_number": 35525,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "pr_number": 35524,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "storybookjs/storybook",
+    "pr_number": 35206,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "shadcn-ui/ui",
+    "pr_number": 10905,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "shadcn-ui/ui",
+    "pr_number": 11191,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "shadcn-ui/ui",
+    "pr_number": 11138,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "chakra-ui/chakra-ui",
+    "pr_number": 10874,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "chakra-ui/chakra-ui",
+    "pr_number": 10870,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "chakra-ui/chakra-ui",
+    "pr_number": 10063,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "tailwindlabs/headlessui",
+    "pr_number": 3777,
+    "stack": "react",
+    "repo_type": "ui-library",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "calcom/cal.com",
+    "pr_number": 29478,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "calcom/cal.com",
+    "pr_number": 29282,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "calcom/cal.com",
+    "pr_number": 28567,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "calcom/cal.com",
+    "pr_number": 29685,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "calcom/cal.com",
+    "pr_number": 29673,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "calcom/cal.com",
+    "pr_number": 29580,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "makeplane/plane",
+    "pr_number": 9456,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "makeplane/plane",
+    "pr_number": 9410,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "makeplane/plane",
+    "pr_number": 9380,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "critical",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "makeplane/plane",
+    "pr_number": 9374,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "critical",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "makeplane/plane",
+    "pr_number": 9375,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "makeplane/plane",
+    "pr_number": 9373,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "pr_number": 23198,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "pr_number": 23189,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "pr_number": 23181,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "pr_number": 23182,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "pr_number": 23173,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "twentyhq/twenty",
+    "pr_number": 23174,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "pr_number": 17484,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "pr_number": 16839,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "pr_number": 17488,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "pr_number": 17100,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "pr_number": 17487,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
+  },
+  {
+    "repository": "lobehub/lobe-chat",
+    "pr_number": 17470,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 13101,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "performance",
+    "priority": "high"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 13098,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "high"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 13097,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 13094,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "medium"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 13088,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "outline/outline",
+    "pr_number": 13092,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41996,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "security",
+    "priority": "low"
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41985,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41995,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "security",
+    "priority": "high"
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41997,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41972,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "low",
+    "impact": "maintainability",
+    "priority": "low"
+  },
+  {
+    "repository": "appsmithorg/appsmith",
+    "pr_number": 41970,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "performance",
+    "priority": "high"
+  }
+]

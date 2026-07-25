@@ -1,22 +1,47 @@
 [
   {
-    "repository": "rails/rails",
-    "pr_number": 50000
+    "repository": "makeplane/plane",
+    "pr_number": 9297,
+    "stack": "react",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
   },
   {
-    "repository": "spring-projects/spring-boot",
-    "pr_number": 40000
+    "repository": "hoppscotch/hoppscotch",
+    "pr_number": 6171,
+    "stack": "vue",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
   },
   {
-    "repository": "facebook/react",
-    "pr_number": 29000
+    "repository": "bitwarden/clients",
+    "pr_number": 20848,
+    "stack": "angular",
+    "repo_type": "application",
+    "severity": "medium",
+    "impact": "correctness",
+    "priority": "medium"
   },
   {
-    "repository": "vuejs/core",
-    "pr_number": 10000
+    "repository": "gitbutlerapp/gitbutler",
+    "pr_number": 14481,
+    "stack": "svelte",
+    "repo_type": "application",
+    "severity": "high",
+    "impact": "security",
+    "priority": "high"
   },
   {
-    "repository": "sveltejs/svelte",
-    "pr_number": 15000
+    "repository": "element-plus/element-plus",
+    "pr_number": 24385,
+    "stack": "vue",
+    "repo_type": "ui-library",
+    "severity": "low",
+    "impact": "correctness",
+    "priority": "low"
   }
 ]

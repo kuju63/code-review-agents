@@ -71,8 +71,28 @@ class TestAgentCard:
 
 class TestSendTask:
     def test_returns_202_with_task_id(self) -> None:
+        from code_review_agent.models.review import (
+            ReviewOutput,
+            ReviewPerspective,
+            ReviewResult,
+        )
+
+        mock_result = ReviewResult(
+            reviewer_id="security",
+            perspective=ReviewPerspective.SECURITY,
+            project_type=None,
+            output=ReviewOutput(summary="No issues.", findings=[]),
+        )
+
         app, _ = _make_app()
-        with TestClient(app) as client:
+        with (
+            patch(f"{_MOD}.SecurityReviewer") as mock_reviewer_cls,
+            TestClient(app) as client,
+        ):
+            mock_instance = MagicMock()
+            mock_instance.review.return_value = mock_result
+            mock_reviewer_cls.return_value = mock_instance
+
             resp = client.post("/security-reviewer/tasks/send", json=_send_payload())
         assert resp.status_code == 202
         data = resp.json()

@@ -55,8 +55,48 @@ class TestAgentCard:
 
 class TestSendTask:
     def test_returns_202_with_task_id(self) -> None:
+        from code_review_agent.models.lead_engineer import LeadEngineerReport
+        from code_review_agent.models.pr_info import (
+            PRInfo,
+            PRInfoResult,
+            RepositoryInfo,
+        )
+        from code_review_agent.models.review import ReviewReport
+
+        mock_pr_info = PRInfoResult(
+            repository_info=RepositoryInfo(owner="octocat", repository="hello"),
+            project_summary="A project.",
+            pr_info=PRInfo(
+                title="Fix", pr_number=1, body="", labels=[], file_changes=[]
+            ),
+            dependency_files=[],
+        )
+        mock_review_report = ReviewReport(results=[], errors=[])
+        mock_le_report = LeadEngineerReport(
+            overall_summary="All clear.",
+            decisions=[],
+            reviewer_errors=[],
+        )
+
         app, _ = _make_app()
-        with TestClient(app) as client:
+        with (
+            patch(f"{_MOD}.PRInfoCollector") as mock_collector_cls,
+            patch(f"{_MOD}.ReviewOrchestrator") as mock_orchestrator_cls,
+            patch(f"{_MOD}.LeadEngineerAgent") as mock_le_cls,
+            TestClient(app) as client,
+        ):
+            mock_collector = MagicMock()
+            mock_collector.collect.return_value = mock_pr_info
+            mock_collector_cls.return_value = mock_collector
+
+            mock_orchestrator = MagicMock()
+            mock_orchestrator.run_async = AsyncMock(return_value=mock_review_report)
+            mock_orchestrator_cls.return_value = mock_orchestrator
+
+            mock_le = MagicMock()
+            mock_le.evaluate.return_value = mock_le_report
+            mock_le_cls.return_value = mock_le
+
             resp = client.post("/orchestrator/tasks/send", json=_send_payload())
         assert resp.status_code == 202
         data = resp.json()
