@@ -142,6 +142,7 @@ class TestWithinChangeLimits:
 
 class TestHasRecentRelease:
     def _client_with_releases(self, published_at):
+        """Create a mock client with an optional published release date."""
         client = MagicMock()
         client.list_releases.return_value = (
             [{"published_at": published_at}] if published_at else []
@@ -307,6 +308,15 @@ class TestWriteStackOutputs:
 
 
 def _fake_client(**overrides):
+    """
+    Create a mock client with default repository, release, and tag responses.
+    
+    Parameters:
+    	**overrides: Mock method return values keyed by client method name.
+    
+    Returns:
+    	MagicMock: A configured mock client.
+    """
     client = MagicMock()
     client.get_repo.return_value = {"stargazers_count": 10000, "archived": False}
     client.list_releases.return_value = []
@@ -318,6 +328,7 @@ def _fake_client(**overrides):
 
 class TestValidateRepo:
     def _candidate(self):
+        """Create a sample repository candidate for testing."""
         return RepoCandidate(repository="o/r", repo_type="application", stack="react")
 
     def test_ok_when_stars_and_recent_release(self):
@@ -359,6 +370,7 @@ class TestValidateRepo:
 
 class TestBuildTarget:
     def _candidate(self):
+        """Create a sample repository candidate for testing."""
         return RepoCandidate(repository="o/r", repo_type="application", stack="react")
 
     def _assessor(self, assessment):
