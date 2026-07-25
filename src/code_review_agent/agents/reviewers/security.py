@@ -1,7 +1,7 @@
 """Security reviewer for front-end applications.
 
 Reviews PR changes from a security perspective.  Review criteria are supplied
-via the ``web-security-review`` AgentSkill (OWASP Top 10 / CWE coverage).
+via the ``reviewing-web-security`` AgentSkill (OWASP Top 10 / CWE coverage).
 """
 
 from ...models.review import ProjectType, ReviewPerspective
