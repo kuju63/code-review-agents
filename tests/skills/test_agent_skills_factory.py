@@ -4,11 +4,16 @@ from enum import StrEnum
 from pathlib import Path
 
 import pytest
-from strands import AgentSkills
+from strands import AgentSkills, Skill
 
 from code_review_agent.skills.agent_skills_factory import (
+    _SKILLS_DIR,
     AgentSkillType,
     create_agent_skills,
+)
+
+_SKILL_DIRS = sorted(
+    p for p in _SKILLS_DIR.iterdir() if p.is_dir() and (p / "SKILL.md").is_file()
 )
 
 
@@ -187,6 +192,19 @@ class TestCreateAgentSkills:
         def test_skill_name(self):
             result = create_agent_skills(AgentSkillType.WEB_SECURITY_REVIEW)
             assert "reviewing-web-security" in result._skills
+
+    class TestSkillNameMatchesDirectory:
+        """Guards against #143: a skill's declared name and its parent
+        directory name silently drifted apart (Strands only logs a warning
+        for this today, but raises ValueError if ever loaded with
+        strict=True)."""
+
+        @pytest.mark.parametrize(
+            "skill_dir", _SKILL_DIRS, ids=[p.name for p in _SKILL_DIRS]
+        )
+        def test_name_matches_directory(self, skill_dir):
+            skill = Skill.from_file(skill_dir)
+            assert skill.name == skill_dir.name
 
     class TestErrorPropagation:
         def test_file_not_found_propagates_for_frontend_review(self, monkeypatch):

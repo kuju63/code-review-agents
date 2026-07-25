@@ -84,7 +84,14 @@ async function isAdmin(userId) {
     const role = await fetchRole(userId);
     return role === 'admin';
   } catch (e) {
-    logger.error('Role check failed', { userId, error: e.message });
+    // Avoid logging userId/e.message raw — a masked identifier plus a safe
+    // error code and correlation ID trace the incident without leaking PII
+    // or raw exception internals into the log store.
+    logger.error('Role check failed', {
+      correlationId: randomUUID(),
+      userId: maskIdentifier(userId),
+      errorCode: e.code ?? 'ROLE_CHECK_FAILED',
+    });
     return false;  // ← error means "not admin"
   }
 }

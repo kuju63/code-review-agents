@@ -98,12 +98,16 @@ console.log('Login failed');
 // Functions as a security event
 logger.warn({
   event: 'auth.login.failed',
-  userId: req.body.username,
-  ip: req.ip,
-  userAgent: req.headers['user-agent'],
+  userId: maskIdentifier(req.body.username),               // masked, not raw PII
+  ip: maskIp(req.ip),                                       // masked (e.g. last octet redacted)
+  userAgent: sanitizeLogValue(req.headers['user-agent']),   // strip CR/LF — log injection
   attemptedAt: new Date().toISOString(),
 });
 // → who, from where, when — reconstructible; threshold-based alerting is possible
+// Never log passwords or tokens (see 05_secrets_exposure.md). Structured JSON
+// output like this also blocks CRLF-based log injection by construction — a
+// string-concatenated log line would not. Apply a defined retention policy
+// (e.g. 90 days) and restrict access to the log store.
 ```
 
 **"Does this log connect to an alert?" is the design question:**

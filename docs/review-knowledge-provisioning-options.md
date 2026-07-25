@@ -135,7 +135,7 @@ CONTRIBUTING.md の Spec-Driven + TDD プロセスを通る。Markdownの文言�
 
 ### B. 知識コンテンツの別リポジトリ/別配布物への分離
 
-- **このコードベースでの変更点**: `skills/reviewing-*` と `skills/web-security-review/` を
+- **このコードベースでの変更点**: `skills/reviewing-*` と `skills/reviewing-web-security/` を
   別リポジトリ(例: `code-review-knowledge`)へ移し、git submodule あるいはバージョン付き
   配布物(OCIアーティファクト等)としてDockerビルド時に取り込む。`agent_skills_factory.py` は
   `_SKILLS_DIR` の解決先を変えるだけの小変更で済む。本リポジトリのCIはコンテンツpathを対象外にし、

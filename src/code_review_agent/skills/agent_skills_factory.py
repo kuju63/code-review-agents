@@ -111,4 +111,4 @@ def _build_web_security_review_skills() -> list[SkillSource]:
     Returns:
         list[SkillSource]: Skill instances loaded for web security review.
     """
-    return [Skill.from_file(_SKILLS_DIR / "web-security-review")]
+    return [Skill.from_file(_SKILLS_DIR / "reviewing-web-security")]
