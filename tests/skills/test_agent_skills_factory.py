@@ -7,11 +7,11 @@ import pytest
 from strands import AgentSkills, Skill
 
 from code_review_agent.skills.agent_skills_factory import (
+    _SKILLS_DIR,
     AgentSkillType,
     create_agent_skills,
 )
 
-_SKILLS_DIR = Path("src/code_review_agent/skills")
 _SKILL_DIRS = sorted(
     p for p in _SKILLS_DIR.iterdir() if p.is_dir() and (p / "SKILL.md").is_file()
 )
@@ -194,9 +194,10 @@ class TestCreateAgentSkills:
             assert "reviewing-web-security" in result._skills
 
     class TestSkillNameMatchesDirectory:
-        """Guards against #143: Strands raises ValueError under strict=True
-        when a skill's declared name does not match its parent directory
-        name."""
+        """Guards against #143: a skill's declared name and its parent
+        directory name silently drifted apart (Strands only logs a warning
+        for this today, but raises ValueError if ever loaded with
+        strict=True)."""
 
         @pytest.mark.parametrize(
             "skill_dir", _SKILL_DIRS, ids=[p.name for p in _SKILL_DIRS]
