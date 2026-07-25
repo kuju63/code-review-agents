@@ -57,8 +57,30 @@ class TestAgentCard:
 
 class TestSendTask:
     def test_returns_202_with_task_id(self) -> None:
+        from code_review_agent.models.pr_info import (
+            PRInfo,
+            PRInfoResult,
+            RepositoryInfo,
+        )
+
+        mock_result = PRInfoResult(
+            repository_info=RepositoryInfo(owner="octocat", repository="hello"),
+            project_summary="A project.",
+            pr_info=PRInfo(
+                title="Fix", pr_number=1, body="", labels=[], file_changes=[]
+            ),
+            dependency_files=[],
+        )
+
         app, _ = _make_app()
-        with TestClient(app) as client:
+        with (
+            patch(f"{_MOD}.PRInfoCollector") as mock_collector_cls,
+            TestClient(app) as client,
+        ):
+            mock_instance = MagicMock()
+            mock_instance.collect.return_value = mock_result
+            mock_collector_cls.return_value = mock_instance
+
             resp = client.post(
                 "/pr-info-collector/tasks/send",
                 json=_send_payload(),
