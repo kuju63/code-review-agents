@@ -8,6 +8,20 @@
     {
       "matchUpdateTypes": ["patch", "pin", "digest"],
       "automerge": true
+    },
+    {
+      "matchPackageNames": ["serena-agent"],
+      "allowedVersions": "/^[0-9]+(?:\\.[0-9]+)*$/"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^opencode\\.jsonc$/"],
+      "matchStrings": [
+        "renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s\"]+)\\s*\"serena-agent==(?<currentValue>[0-9.]+)\""
+      ],
+      "versioningTemplate": "pep440"
     }
   ],
   "semanticCommits": "enabled"
