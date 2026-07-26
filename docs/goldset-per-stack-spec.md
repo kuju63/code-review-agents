@@ -119,13 +119,23 @@ repository ごとの処理完了時に逐次書き込むため、長時間実行
 保持する。指定していない repository の古い target は再処理結果で置き換える。skip対象の
 既存 JSON が配列でない場合は上書きせず停止する。
 
-実行例:
+全候補を再探索・再分類する実行例:
 
 ```bash
 uv run python evaluation/tools/discover_candidate_prs.py \
   --model-id "$SEEDED_GEN_MODEL_ID" \
   --llm-base-url "$SEEDED_GEN_LLM_BASE_URL"
 ```
+
+既存ターゲットの3軸分類を保持し、共通criteriaだけをGitHub APIで再検証する場合:
+
+```bash
+uv run python evaluation/tools/discover_candidate_prs.py \
+  --revalidate-existing
+```
+
+`--revalidate-existing` はLLMを呼ばず、4ファイルをすべて読み込んで全件検証が成功した後に
+一括で書き戻す。API失敗時は書込前に停止するため、部分的な削除は発生しない。
 
 ## 7. 評価実行対象の抽出
 

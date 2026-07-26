@@ -67,14 +67,24 @@ _DOC_SUFFIXES = (".md", ".mdx", ".rst", ".txt")
 _DOC_PATH_PATTERNS = ("/docs/", "/documentation/")
 
 
+def _normalized_path(path: str) -> str:
+    """Normalize a repository-relative path for directory-pattern matching.
+
+    Returns:
+        A slash-prefixed path using forward separators.
+    """
+    return f"/{path.replace('\\\\', '/').lstrip('/')}"
+
+
 def is_test_file(path: str) -> bool:
     """Return ``True`` when the path matches a configured test-file pattern."""
-    return any(pat in path for pat in _TEST_PATH_PATTERNS)
+    normalized = _normalized_path(path)
+    return any(pat in normalized for pat in _TEST_PATH_PATTERNS)
 
 
 def is_doc_file(path: str) -> bool:
     """Return ``True`` when the path is a documentation file."""
-    lower = path.lower()
+    lower = _normalized_path(path).lower()
     if lower.endswith(_DOC_SUFFIXES):
         return True
     return any(pat in lower for pat in _DOC_PATH_PATTERNS)

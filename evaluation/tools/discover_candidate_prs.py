@@ -23,8 +23,8 @@ Usage:
 
 Required env (loaded from .env):
   GITHUB_TOKEN
-  CODE_REVIEW_MODEL_ID       (optional, default: gpt-4o)
-  CODE_REVIEW_LLM_BASE_URL   (optional; OpenAI-compatible endpoint)
+  SEEDED_GEN_MODEL_ID       (optional, default: gpt-4o)
+  SEEDED_GEN_LLM_BASE_URL   (optional; OpenAI-compatible endpoint)
 """
 
 from __future__ import annotations
@@ -607,6 +607,30 @@ def build_target(
 # ---------------------------------------------------------------------------
 
 
+def revalidate_existing_targets(
+    client: GitHubClient,
+    targets: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Revalidate existing classified targets against shared Gold criteria.
+
+    Returns:
+        Existing target rows that still have a frontend patch and qualifying
+        inline review comment, preserving their classifications.
+    """
+    accepted: list[dict[str, Any]] = []
+    for target in targets:
+        repository = str(target["repository"])
+        pr_number = int(target["pr_number"])
+        files = client.list_pr_files(repository, pr_number)
+        if not has_production_code_change(files):
+            continue
+        inline = client.list_review_comments(repository, pr_number)
+        if not has_inline_review_comments(inline):
+            continue
+        accepted.append(target)
+    return accepted
+
+
 def load_skipped_targets(
     output_dir: str,
     candidates: list[RepoCandidate],
@@ -679,6 +703,32 @@ def write_stack_outputs(
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+
+def load_stack_outputs(
+    output_dir: str,
+    stacks: tuple[str, ...] | list[str] = DEFAULT_STACKS,
+) -> list[dict[str, Any]]:
+    """Load all existing stack target files for atomic revalidation.
+
+    Returns:
+        Concatenated target rows in stack order.
+
+    Raises:
+        FileNotFoundError: If any required stack file is absent.
+        ValueError: If a stack file is not a JSON array.
+    """
+    targets: list[dict[str, Any]] = []
+    for stack in stacks:
+        path = os.path.join(output_dir, f"pr_targets_{stack}.json")
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Required target file not found: {path}")
+        with open(path, encoding="utf-8") as f:
+            rows = json.load(f)
+        if not isinstance(rows, list):
+            raise ValueError(f"Existing target file is not a JSON array: {path}")
+        targets.extend(rows)
+    return targets
 
 
 def main() -> int:
@@ -755,6 +805,11 @@ def main() -> int:
         default="",
         help="Comma-separated repos to skip",
     )
+    parser.add_argument(
+        "--revalidate-existing",
+        action="store_true",
+        help="Reapply shared Gold criteria to existing per-stack targets without LLM reclassification",
+    )
     args = parser.parse_args()
 
     token = os.environ.get("GITHUB_TOKEN")
@@ -762,11 +817,24 @@ def main() -> int:
         print("ERROR: GITHUB_TOKEN not set")
         return 1
 
-    model_id = args.model_id or os.environ.get("CODE_REVIEW_MODEL_ID", "gpt-4o")
-    llm_base_url = args.llm_base_url or os.environ.get("CODE_REVIEW_LLM_BASE_URL")
+    client = GitHubClient(token)
+    if args.revalidate_existing:
+        targets = load_stack_outputs(args.output_dir)
+        accepted = revalidate_existing_targets(client, targets)
+        write_stack_outputs(accepted, args.output_dir)
+        print(
+            f"Revalidated targets: before={len(targets)}, "
+            f"after={len(accepted)}, removed={len(targets) - len(accepted)}"
+        )
+        return 0
+
+    model_id = args.model_id or os.environ.get("SEEDED_GEN_MODEL_ID")
+    if not model_id:
+        print("ERROR: --model-id or SEEDED_GEN_MODEL_ID is required")
+        return 1
+    llm_base_url = args.llm_base_url or os.environ.get("SEEDED_GEN_LLM_BASE_URL")
     assessor = make_llm_assessor(model_id, llm_base_url)
 
-    client = GitHubClient(token)
     now = datetime.now(timezone.utc)
     since = args.since or (now - timedelta(days=args.release_window_days)).strftime(
         "%Y-%m-%dT%H:%M:%SZ"

@@ -121,7 +121,7 @@ uv run python evaluation/tools/build_gold_set.py \
 Expected output:
 
 - `evaluation/data/gold_pr_set.jsonl`
-- Each row contains filtered file diffs and normalized human findings
+- Each row contains filtered frontend diffs and normalized inline-review findings (human or AI review bot)
 
 ## 3) Build Seeded set automatically
 

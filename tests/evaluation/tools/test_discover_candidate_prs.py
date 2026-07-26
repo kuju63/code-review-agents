@@ -35,6 +35,7 @@ build_target = discover.build_target
 ReviewAssessment = discover.ReviewAssessment
 make_llm_assessor = discover.make_llm_assessor
 load_skipped_targets = discover.load_skipped_targets
+revalidate_existing_targets = discover.revalidate_existing_targets
 write_stack_outputs = discover.write_stack_outputs
 collect_review_texts = discover.collect_review_texts
 main = discover.main
@@ -283,6 +284,49 @@ class TestMakeLlmAssessor:
             "base_url": "http://localhost:11434/v1",
             "timeout": discover.LLM_TIMEOUT_SECONDS,
         }
+
+
+class TestRevalidateExistingTargets:
+    def _target(self, pr_number):
+        return {
+            "repository": "o/r",
+            "pr_number": pr_number,
+            "stack": "react",
+            "repo_type": "application",
+            "severity": "high",
+            "impact": "security",
+            "priority": "medium",
+        }
+
+    def test_keeps_only_targets_matching_shared_criteria(self):
+        client = MagicMock()
+        client.list_pr_files.side_effect = [
+            [{"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}],
+            [{"filename": "backend/app.py", "patch": "@@ -1 +1 @@"}],
+            [{"filename": "src/other.ts", "patch": "@@ -1 +1 @@"}],
+        ]
+        client.list_review_comments.side_effect = [
+            [{"body": "fix", "path": "src/app.ts"}],
+            [{"body": "fix", "path": "backend/app.py"}],
+            [],
+        ]
+        targets = [self._target(1), self._target(2), self._target(3)]
+        assert revalidate_existing_targets(client, targets) == [targets[0]]
+
+    def test_preserves_existing_classifications(self):
+        client = MagicMock()
+        client.list_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
+        client.list_review_comments.return_value = [
+            {"body": "fix", "path": "src/app.ts"}
+        ]
+        target = self._target(1)
+        result = revalidate_existing_targets(client, [target])
+        assert result[0] is target
+        assert result[0]["severity"] == "high"
+        assert result[0]["impact"] == "security"
+        assert result[0]["priority"] == "medium"
 
 
 class TestWriteStackOutputs:
@@ -634,8 +678,72 @@ class TestMain:
         )
         assert main() == 1
 
+    def test_returns_1_without_generation_model(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "tok")
+        monkeypatch.delenv("SEEDED_GEN_MODEL_ID", raising=False)
+        monkeypatch.setattr(discover, "load_dotenv", lambda: None)
+        repos = tmp_path / "repos.json"
+        repos.write_text("[]")
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "discover_candidate_prs.py",
+                "--repos",
+                str(repos),
+                "--output-dir",
+                str(tmp_path),
+            ],
+        )
+        assert main() == 1
+
+    def test_revalidate_existing_does_not_require_model(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "tok")
+        monkeypatch.delenv("SEEDED_GEN_MODEL_ID", raising=False)
+        monkeypatch.setattr(discover, "load_dotenv", lambda: None)
+        existing = {
+            "repository": "o/r",
+            "pr_number": 1,
+            "stack": "react",
+            "repo_type": "application",
+            "severity": "high",
+            "impact": "security",
+            "priority": "medium",
+        }
+        (tmp_path / "pr_targets_react.json").write_text(json.dumps([existing]))
+        for stack in ("vue", "angular", "svelte"):
+            (tmp_path / f"pr_targets_{stack}.json").write_text("[]")
+        client = MagicMock()
+        client.list_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
+        client.list_review_comments.return_value = [
+            {"body": "fix", "path": "src/app.ts"}
+        ]
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "discover_candidate_prs.py",
+                "--output-dir",
+                str(tmp_path),
+                "--revalidate-existing",
+            ],
+        )
+        with (
+            patch.object(discover, "GitHubClient", return_value=client),
+            patch.object(discover, "make_llm_assessor") as assessor_factory,
+        ):
+            assert main() == 0
+        assessor_factory.assert_not_called()
+        assert json.loads((tmp_path / "pr_targets_react.json").read_text()) == [
+            existing
+        ]
+
     def test_generates_outputs_end_to_end(self, tmp_path, monkeypatch):
         monkeypatch.setenv("GITHUB_TOKEN", "tok")
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "test-model")
+        monkeypatch.setenv("SEEDED_GEN_LLM_BASE_URL", "http://llm.test/v1")
         monkeypatch.setattr(discover, "load_dotenv", lambda: None)
 
         now_recent = datetime.now(timezone.utc) - timedelta(days=5)
@@ -692,10 +800,11 @@ class TestMain:
             patch.object(discover, "GitHubClient", return_value=fake_client),
             patch.object(
                 discover, "make_llm_assessor", return_value=lambda t, x: assessment
-            ),
+            ) as assessor_factory,
             patch.object(discover.time, "sleep", lambda *a: None),
         ):
             rc = main()
+        assessor_factory.assert_called_once_with("test-model", "http://llm.test/v1")
         assert rc == 0
         react = json.loads((tmp_path / "pr_targets_react.json").read_text())
         assert len(react) == 1
@@ -703,6 +812,7 @@ class TestMain:
 
     def test_skip_repos_preserves_existing_targets(self, tmp_path, monkeypatch):
         monkeypatch.setenv("GITHUB_TOKEN", "tok")
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "test-model")
         monkeypatch.setattr(discover, "load_dotenv", lambda: None)
         existing = {
             "repository": "o/react-app",

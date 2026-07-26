@@ -33,7 +33,7 @@ The evaluation strategy must validate:
 
 To avoid overfitting and false confidence, use hybrid evaluation:
 
-- Gold PR set (real-world human review comparison)
+- Gold PR set (real-world inline-review comparison, including human and AI review-bot findings)
 - Seeded set (must-find vulnerability and quality traps)
 
 ### 1.1 Quality / Feature Requirement Goal

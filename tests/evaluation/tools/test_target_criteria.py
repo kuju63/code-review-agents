@@ -21,8 +21,14 @@ class TestProductionCodeCriteria:
     def test_rejects_frontend_test(self):
         assert criteria.is_production_code_file("src/app.test.ts") is False
 
+    def test_rejects_root_test_directory(self):
+        assert criteria.is_production_code_file("tests/fixture.ts") is False
+
     def test_rejects_documentation(self):
         assert criteria.is_production_code_file("docs/app.ts.md") is False
+
+    def test_rejects_frontend_file_under_root_docs_directory(self):
+        assert criteria.is_production_code_file("docs/example.ts") is False
 
     def test_change_requires_patch_like_gold_builder(self):
         files = [{"filename": "src/app.ts", "patch": None}]
