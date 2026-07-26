@@ -34,6 +34,7 @@ validate_repo = discover.validate_repo
 build_target = discover.build_target
 ReviewAssessment = discover.ReviewAssessment
 make_llm_assessor = discover.make_llm_assessor
+load_skipped_targets = discover.load_skipped_targets
 write_stack_outputs = discover.write_stack_outputs
 collect_review_texts = discover.collect_review_texts
 main = discover.main
@@ -333,6 +334,19 @@ class TestWriteStackOutputs:
         write_stack_outputs(targets, str(tmp_path), stacks=["react"])
         solid = json.loads((tmp_path / "pr_targets_solid.json").read_text())
         assert len(solid) == 1
+
+    def test_load_skipped_targets_keeps_only_requested_repositories(self, tmp_path):
+        targets = [
+            {"repository": "o/keep", "pr_number": 1, "stack": "react"},
+            {"repository": "o/refresh", "pr_number": 2, "stack": "react"},
+        ]
+        write_stack_outputs(targets, str(tmp_path), stacks=["react"])
+        candidates = [
+            RepoCandidate("o/keep", "application", "react"),
+            RepoCandidate("o/refresh", "application", "react"),
+        ]
+        loaded = load_skipped_targets(str(tmp_path), candidates, {"o/keep"})
+        assert loaded == [targets[0]]
 
 
 def _fake_client(**overrides):
@@ -686,4 +700,50 @@ class TestMain:
         react = json.loads((tmp_path / "pr_targets_react.json").read_text())
         assert len(react) == 1
         assert react[0]["pr_number"] == 7
+
+    def test_skip_repos_preserves_existing_targets(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "tok")
+        monkeypatch.setattr(discover, "load_dotenv", lambda: None)
+        existing = {
+            "repository": "o/react-app",
+            "pr_number": 7,
+            "stack": "react",
+            "repo_type": "application",
+            "severity": "high",
+            "impact": "security",
+            "priority": "high",
+        }
+        (tmp_path / "pr_targets_react.json").write_text(json.dumps([existing]))
+        repos = tmp_path / "repos.json"
+        repos.write_text(
+            json.dumps(
+                [
+                    {
+                        "repository": "o/react-app",
+                        "repo_type": "application",
+                        "stack": "react",
+                    }
+                ]
+            )
+        )
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "discover_candidate_prs.py",
+                "--repos",
+                str(repos),
+                "--output-dir",
+                str(tmp_path),
+                "--skip-repos",
+                "o/react-app",
+            ],
+        )
+        with (
+            patch.object(discover, "GitHubClient"),
+            patch.object(discover, "make_llm_assessor", return_value=MagicMock()),
+        ):
+            assert main() == 0
+        react = json.loads((tmp_path / "pr_targets_react.json").read_text())
+        assert react == [existing]
         assert react[0]["severity"] == "high"

@@ -607,6 +607,52 @@ def build_target(
 # ---------------------------------------------------------------------------
 
 
+def load_skipped_targets(
+    output_dir: str,
+    candidates: list[RepoCandidate],
+    skip_repos: set[str],
+) -> list[dict[str, Any]]:
+    """Load existing targets only for repositories explicitly being skipped.
+
+    Returns:
+        list[dict[str, Any]]: Existing targets for the skipped repositories,
+        de-duplicated by (repository, pr_number).
+
+    Raises:
+        ValueError: If a skipped stack's target file is not a JSON array.
+    """
+    skipped_by_stack: dict[str, set[str]] = {}
+    for candidate in candidates:
+        if candidate.repository in skip_repos:
+            skipped_by_stack.setdefault(candidate.stack, set()).add(
+                candidate.repository
+            )
+
+    existing: list[dict[str, Any]] = []
+    seen: set[tuple[str, int]] = set()
+    for stack, repositories in skipped_by_stack.items():
+        path = os.path.join(output_dir, f"pr_targets_{stack}.json")
+        if not os.path.exists(path):
+            continue
+        with open(path, encoding="utf-8") as f:
+            rows = json.load(f)
+        if not isinstance(rows, list):
+            raise ValueError(f"Existing target file is not a JSON array: {path}")
+        for row in rows:
+            if not isinstance(row, dict) or row.get("repository") not in repositories:
+                continue
+            try:
+                key = (str(row["repository"]), int(row["pr_number"]))
+            except (KeyError, TypeError, ValueError):
+                logger.warning("Ignoring invalid existing target in %s", path)
+                continue
+            if key in seen:
+                continue
+            seen.add(key)
+            existing.append(row)
+    return existing
+
+
 def write_stack_outputs(
     targets: list[dict[str, Any]],
     output_dir: str,
@@ -731,7 +777,7 @@ def main() -> int:
         raw_repos = json.load(f)
     candidates = [RepoCandidate(**r) for r in raw_repos]
 
-    all_targets: list[dict[str, Any]] = []
+    all_targets = load_skipped_targets(args.output_dir, candidates, skip_repos)
     for candidate in candidates:
         if candidate.repository in skip_repos:
             print(f"\n[{candidate.repository}] SKIP (requested)")
