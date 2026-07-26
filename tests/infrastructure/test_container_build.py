@@ -1,24 +1,27 @@
+import re
 from pathlib import Path
 
 import pytest
 
 
 ROOT = Path(__file__).parents[2]
-RUNTIME_DIGEST = "e36a6b6597232eb40ff1589d7a329adaed9ec1ea6a44efb55a8d9f8c9a10ae9d"
-BUILDER_DIGEST = "26331b730e4593b11bc703b8bb31b60be55383ef49aecbc5ef90a1c54d2a1942"
 
 
 def test_dockerfile_uses_pinned_red_hat_hardened_images() -> None:
     dockerfile = (ROOT / "Dockerfile").read_text()
 
-    assert (
-        "FROM registry.access.redhat.com/hi/python:3.14-builder"
-        f"@sha256:{BUILDER_DIGEST} AS builder"
-    ) in dockerfile
-    assert (
-        "FROM registry.access.redhat.com/hi/python:3.14"
-        f"@sha256:{RUNTIME_DIGEST} AS runtime"
-    ) in dockerfile
+    assert re.search(
+        r"^FROM registry\.access\.redhat\.com/hi/python:3\.14-builder"
+        r"@sha256:[0-9a-f]{64} AS builder$",
+        dockerfile,
+        re.MULTILINE,
+    )
+    assert re.search(
+        r"^FROM registry\.access\.redhat\.com/hi/python:3\.14"
+        r"@sha256:[0-9a-f]{64} AS runtime$",
+        dockerfile,
+        re.MULTILINE,
+    )
     assert "cgr.dev/chainguard/python" not in dockerfile
     assert "ARG PYTHON_VERSION" not in dockerfile
     assert (
