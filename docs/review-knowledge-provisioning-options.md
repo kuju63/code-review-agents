@@ -52,7 +52,7 @@ CONTRIBUTING.md の Spec-Driven + TDD プロセスを通る。Markdownの文言�
 ### 1.3 デプロイはビルド時焼き込み、ホットリロードの仕組みがない
 
 [`deploy/pod.yaml`](../deploy/pod.yaml) の通り、デプロイは単一Pod
-(`podman kube play` 想定、Chainguard distrolessイメージ、シェル/curlなし)構成であり、
+(`podman kube play` 想定、Red Hat Hardened Image、シェル/curlなし)構成であり、
 スキル内容はDockerイメージにビルド時に焼き込まれる。`deploy/configmap.yaml` は環境変数の
 `envFrom` のみでファイル配信のボリュームマウントは組まれていないため、内容を直しても
 イメージの再ビルド・再デプロイなしに反映することはできない。
