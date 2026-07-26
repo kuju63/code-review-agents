@@ -73,7 +73,7 @@ def _normalized_path(path: str) -> str:
     Returns:
         A slash-prefixed path using forward separators.
     """
-    return f"/{path.replace('\\\\', '/').lstrip('/')}"
+    return f"/{path.replace(chr(92), '/').lstrip('/')}"
 
 
 def is_test_file(path: str) -> bool:

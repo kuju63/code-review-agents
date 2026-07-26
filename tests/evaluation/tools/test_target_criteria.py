@@ -24,6 +24,10 @@ class TestProductionCodeCriteria:
     def test_rejects_root_test_directory(self):
         assert criteria.is_production_code_file("tests/fixture.ts") is False
 
+    def test_normalizes_windows_separators(self):
+        assert criteria.is_test_file("src\\__tests__\\a.ts") is True
+        assert criteria.is_production_code_file("src\\__tests__\\a.ts") is False
+
     def test_rejects_documentation(self):
         assert criteria.is_production_code_file("docs/app.ts.md") is False
 

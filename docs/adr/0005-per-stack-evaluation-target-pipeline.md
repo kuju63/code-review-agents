@@ -1,6 +1,6 @@
 # ADR-0005: スタック別 Gold-set ターゲット選定の正規経路化
 
-- Status: Proposed(未実装・レビュー待ち)
+- Status: Accepted(実装済み・事前レビュー完了)
 - Date: 2026-07-26
 - Related: PR #145, [docs/goldset-per-stack-spec.md](../goldset-per-stack-spec.md), [docs/evaluation-pipeline-design.md](../evaluation-pipeline-design.md)
 
