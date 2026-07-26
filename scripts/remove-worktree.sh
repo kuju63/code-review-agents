@@ -67,8 +67,8 @@ while index < len(lines):
     stripped = lines[index].strip()
     if stripped and not stripped.startswith("#") and not lines[index].startswith((" ", "\t", "-")):
         break
-    if lines[index].startswith("-"):
-        value = scalar_value(lines[index][1:])
+    if stripped.startswith("-"):
+        value = scalar_value(stripped[1:])
         if os.path.realpath(value) == target:
             del lines[index]
             removed = True
