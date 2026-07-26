@@ -41,14 +41,16 @@ Chainguard は distroless でセキュリティ面の利点がある一方、dig
 python 実行パス・site-packages パス・nonroot UID (65532) は互換であり、Dockerfile /
 deploy manifest の変更は最小限で済む。
 
-### 固定する digest (multi-arch index)
+### 移行時点で固定した digest (multi-arch index)
 
 - runtime: `registry.access.redhat.com/hi/python:3.14`
   index digest = `sha256:e36a6b6597232eb40ff1589d7a329adaed9ec1ea6a44efb55a8d9f8c9a10ae9d`
 - builder: `registry.access.redhat.com/hi/python:3.14-builder`
   index digest = `sha256:26331b730e4593b11bc703b8bb31b60be55383ef49aecbc5ef90a1c54d2a1942`
 
-いずれも `application/vnd.oci.image.index.v1+json` で amd64 / arm64 を含む。
+いずれも移行時点では `application/vnd.oci.image.index.v1+json` で amd64 / arm64 を含む。
+現在の digest は `Dockerfile` を唯一の正として Renovate が更新する。テストでは具体的な
+値を複製せず、対象イメージが `sha256` digest で固定されていることを検証する。
 
 ## 変更対象
 
