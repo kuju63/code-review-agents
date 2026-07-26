@@ -57,7 +57,7 @@ RUN uv sync --frozen --no-dev --no-editable --no-cache && \
 # - nonroot UID 65532 がビルトイン
 # - multi-arch index ダイジェスト固定: amd64 / arm64 を同一参照で提供
 ###############################################################################
-FROM registry.access.redhat.com/hi/python:3.14@sha256:e36a6b6597232eb40ff1589d7a329adaed9ec1ea6a44efb55a8d9f8c9a10ae9d AS runtime
+FROM registry.access.redhat.com/hi/python:3.14@sha256:0958f7b15ce1ffc098dbb6da85a06bc7541e4a04e675b272a57415709974d653 AS runtime
 
 WORKDIR /app
 
