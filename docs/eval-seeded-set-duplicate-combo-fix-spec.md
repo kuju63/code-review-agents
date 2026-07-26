@@ -120,7 +120,7 @@ Gold item ごとに (ファイル, ルール) の有効な組み合わせを**�
   clamping to N seeded item(s).`) を合わせて返す。
 
 警告の出力先は stderr、プレフィックスは `[SEEDED-WARN]` とする。これは同ディレクトリの
-`convert_tagged_targets.py` の `[COVERAGE-WARN]` パターン (`check_coverage_thresholds()` が
+`select_stack_targets.py` の `[COVERAGE-WARN]` パターン (`check_coverage_thresholds()` が
 警告文字列を返し、`main()` が `print(warning, file=sys.stderr)`) を踏襲したもの。
 
 `main()` の変更は、ループ内で `build_seeded_item()` を直接呼ぶ代わりに
@@ -171,6 +171,7 @@ load_eval_tool_module` でロード) に以下を追加する:
 3. `uv run ruff check`
 4. `uv run ruff format --check`
 5. `evaluation/data/seeded_set.jsonl` を再生成:
+
    ```bash
    uv run python evaluation/tools/build_seeded_set.py \
      --gold evaluation/data/gold_pr_set.jsonl \
@@ -178,6 +179,7 @@ load_eval_tool_module` でロード) に以下を追加する:
      --output evaluation/data/seeded_set.jsonl \
      --multiplier 2
    ```
+
 6. 再生成後、重複チェックのワンライナーで `total=10 unique=10 duplicates={}` を確認し、
    標準エラー出力に `[SEEDED-WARN]` が出ていないことを確認する (全 Gold item の
    プールサイズが `multiplier=2` を上回るため、出ないのが期待値)。

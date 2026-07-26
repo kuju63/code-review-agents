@@ -23,15 +23,15 @@ Main business domain:
 - Gold builder: `evaluation/tools/build_gold_set.py`
 - Seeded builder: `evaluation/tools/build_seeded_set.py`
 - Scorer: `evaluation/tools/score_evaluation.py`
-- Target converter: `evaluation/tools/convert_tagged_targets.py`
+- Target selector: `evaluation/tools/select_stack_targets.py`
 - Pipeline runner: `evaluation/tools/run_evaluation_pipeline.sh`
 - Mutation catalog: `evaluation/config/seeded_mutations.json`
 
 ## Recommended Entry Point
 
-If you already have tagged candidates, start here:
+Start from the canonical per-stack target files:
 
-1. Convert tagged list into execution target list
+1. Select an execution target list from `pr_targets_{stack}.json`
 2. Build Gold set
 3. Build Seeded set
 4. Run agent and score
@@ -52,14 +52,14 @@ Security-focused variant:
 bash evaluation/tools/run_evaluation_pipeline.sh \
   --profile security \
   --limit 30 \
-  --min-risk medium
+  --min-severity medium
 ```
 
 If you already have `evaluation/data/pr_targets.json` and only want Gold+Seeded:
 
 ```bash
 bash evaluation/tools/run_evaluation_pipeline.sh \
-  --skip-convert
+  --skip-select
 ```
 
 ## Quickstart (Solo Developer Friendly)
@@ -68,58 +68,44 @@ bash evaluation/tools/run_evaluation_pipeline.sh \
 
 `evaluation/data/pr_targets.json` is the generated execution target list
 (derived data — see [docs/evaluation-pipeline-design.md](../docs/evaluation-pipeline-design.md)
-for the `input/` vs `data/` directory split). Create it manually with 30-50 PRs:
+for the `input/` vs `data/` directory split). The canonical source data are
+`evaluation/input/pr_targets_{react,vue,angular,svelte}.json`.
 
-```json
-[
-  {"repository": "vercel/next.js", "pr_number": 10000},
-  {"repository": "facebook/react", "pr_number": 20000}
-]
-```
-
-Tip:
-
-- Start from repos similar to your target stack
-- Prefer PRs that include code review comments
-- Avoid gigantic PRs in early phase
-- You can copy from `evaluation/input/pr_targets.example.json`
-- Keep stack balance across React/Vue/Angular/Svelte per the Domain Coverage
-  Policy in `EVALUATION_PLAN.md` §2.0
-- For B2B2C, prioritize auth, tenant, billing, PII, and workflow-related PRs
-
-Alternative: generate `pr_targets.json` from tagged candidates automatically.
-
-Example 1: convert all tagged items
+Example 1: select all targets
 
 ```bash
-python evaluation/tools/convert_tagged_targets.py \
-  --input evaluation/input/pr_targets_b2b2c_tagged.json \
+uv run python evaluation/tools/select_stack_targets.py \
+  --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
   --output evaluation/data/pr_targets.json \
   --print-summary
 ```
 
-Example 2: pick top 30, balanced by stack, medium risk or higher
+Example 2: pick 30 targets, balanced by stack, medium severity or higher
 
 ```bash
-python evaluation/tools/convert_tagged_targets.py \
-  --input evaluation/input/pr_targets_b2b2c_tagged.json \
+uv run python evaluation/tools/select_stack_targets.py \
+  --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
   --output evaluation/data/pr_targets.json \
   --limit 30 \
   --balanced \
-  --min-risk medium \
+  --min-severity medium \
   --print-summary
 ```
 
-Example 3: focus on security and tenant themes
+Example 3: focus on security impact and high/medium priority
 
 ```bash
-python evaluation/tools/convert_tagged_targets.py \
-  --input evaluation/input/pr_targets_b2b2c_tagged.json \
+uv run python evaluation/tools/select_stack_targets.py \
+  --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
   --output evaluation/data/pr_targets_security.json \
-  --themes-any security,tenant,isolation,auth \
-  --min-risk medium \
+  --impact security \
+  --priority high,medium \
+  --min-severity medium \
   --print-summary
 ```
+
+To refresh the source pools, run `discover_candidate_prs.py` as documented in
+[docs/goldset-per-stack-spec.md](../docs/goldset-per-stack-spec.md).
 
 ## 2) Build Gold set automatically
 
@@ -127,7 +113,7 @@ Set token and run:
 
 ```bash
 export GITHUB_TOKEN=your_token
-python evaluation/tools/build_gold_set.py \
+uv run python evaluation/tools/build_gold_set.py \
   --input evaluation/data/pr_targets.json \
   --output evaluation/data/gold_pr_set.jsonl
 ```
@@ -140,7 +126,7 @@ Expected output:
 ## 3) Build Seeded set automatically
 
 ```bash
-python evaluation/tools/build_seeded_set.py \
+uv run python evaluation/tools/build_seeded_set.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --catalog evaluation/config/seeded_mutations.json \
   --output evaluation/data/seeded_set.jsonl \
@@ -154,7 +140,7 @@ Expected output:
 
 ## 4) Run your review agents against both sets
 
-Use your existing Langflow/agent pipeline to produce structured review output.
+Use `evaluation/tools/run_agent_evaluation.py` with the local A2A server to produce structured review output.
 
 Recommended output format per sample:
 
@@ -187,7 +173,7 @@ Use `evaluation/EVALUATION_PLAN.md` thresholds as release gates.
 Example scoring run:
 
 ```bash
-python evaluation/tools/score_evaluation.py \
+uv run python evaluation/tools/score_evaluation.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --pred evaluation/data/agent_predictions.jsonl

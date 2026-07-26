@@ -11,7 +11,7 @@ Gold set・Seeded setの準備 → A2Aサーバー起動 → 評価実行 → �
 ## ステップ概要
 
 ```text
-1. 前提チェック（.env, pr_targets_b2b2c_tagged.json の存在）
+1. 前提チェック（.env, pr_targets_{stack}.json の存在）
 2. Gold set / Seeded set の準備（なければビルド）
 3. A2A サーバーをバックグラウンドで起動（PID を記録）
 4. 評価スクリプトを実行
@@ -26,20 +26,27 @@ Gold set・Seeded setの準備 → A2Aサーバー起動 → 評価実行 → �
 作業ディレクトリがリポジトリルートであることを確認する。
 
 ```bash
-# .env の存在確認（GITHUB_TOKEN, CODE_REVIEW_MODEL_ID が必要）
+# .env の存在確認（GITHUB_TOKEN と SEEDED_GEN_MODEL_ID が必要）
 if [ ! -f .env ]; then
-  echo "ERROR: .env not found. Create it with GITHUB_TOKEN and CODE_REVIEW_MODEL_ID."
+  echo "ERROR: .env not found. Create it with GITHUB_TOKEN and SEEDED_GEN_MODEL_ID."
   exit 1
 fi
-grep -q "GITHUB_TOKEN" .env || { echo "ERROR: GITHUB_TOKEN not set in .env"; exit 1; }
+set -a
+source .env
+set +a
+[ -n "${GITHUB_TOKEN:-}" ] || { echo "ERROR: GITHUB_TOKEN not set in .env"; exit 1; }
+[ -n "${SEEDED_GEN_MODEL_ID:-}" ] || { echo "ERROR: SEEDED_GEN_MODEL_ID not set in .env"; exit 1; }
 echo ".env OK"
 
-# pr_targets_b2b2c_tagged.json（タグ付きPR候補プール、Step2の変換元データ）の存在確認
-if [ ! -f evaluation/input/pr_targets_b2b2c_tagged.json ]; then
-  echo "ERROR: evaluation/input/pr_targets_b2b2c_tagged.json not found."
-  exit 1
-fi
-echo "pr_targets_b2b2c_tagged.json OK"
+# canonical per-stack target filesの存在確認
+for stack in react vue angular svelte; do
+  path="evaluation/input/pr_targets_${stack}.json"
+  if [ ! -f "$path" ]; then
+    echo "ERROR: $path not found."
+    exit 1
+  fi
+done
+echo "per-stack target files OK"
 ```
 
 ---
@@ -48,8 +55,8 @@ echo "pr_targets_b2b2c_tagged.json OK"
 
 ### 実行対象リストの生成（なければ実行）
 
-タグ付きPR候補プール（39件、`pr_targets_b2b2c_tagged.json`）を無条件に全件使うと、後段の
-評価実行（Step 4）が非常に遅くなる。既定では`--sample-n 15`でランダムにn件（`repo_type`で層化）
+4つのスタック別ターゲットファイルを無条件に全件使うと、後段の評価実行（Step 4）が
+非常に遅くなる。既定では`--sample-n 15`でランダムにn件（`repo_type`で層化、stackで均衡）
 に絞り込んでから使う。フル評価（週次/リリースゲート判定）が必要な場合は`--limit`に切り替えること。
 
 ```bash
@@ -72,7 +79,7 @@ fi
 ```bash
 if [ ! -s evaluation/data/gold_pr_set.jsonl ]; then
   source .venv/bin/activate
-  python evaluation/tools/build_gold_set.py \
+  uv run python evaluation/tools/build_gold_set.py \
     --input evaluation/data/pr_targets.json \
     --output evaluation/data/gold_pr_set.jsonl
 else
@@ -86,11 +93,12 @@ fi
 
 ```bash
 if [ ! -s evaluation/data/seeded_set.jsonl ]; then
-  python evaluation/tools/build_seeded_set.py \
+  uv run python evaluation/tools/build_seeded_set.py \
     --gold evaluation/data/gold_pr_set.jsonl \
     --catalog evaluation/config/seeded_mutations.json \
     --output evaluation/data/seeded_set.jsonl \
-    --multiplier 2
+    --multiplier 2 \
+    --model-id "$SEEDED_GEN_MODEL_ID"
 else
   echo "Seeded set already exists, skipping build."
 fi
