@@ -41,31 +41,47 @@ main = discover.main
 
 class TestHasReviewComments:
     def test_human_only(self):
-        inline = [{"user": {"login": "alice"}, "body": "please fix"}]
+        inline = [
+            {"user": {"login": "alice"}, "body": "please fix", "path": "src/a.ts"}
+        ]
         assert has_review_comments(inline, []) is True
 
     def test_ai_bot_only(self):
-        inline = [{"user": {"login": "coderabbitai[bot]"}, "body": "nit"}]
+        inline = [
+            {
+                "user": {"login": "coderabbitai[bot]"},
+                "body": "nit",
+                "path": "src/a.ts",
+            }
+        ]
         assert has_review_comments(inline, []) is True
 
     def test_both(self):
         inline = [
-            {"user": {"login": "alice"}, "body": "please fix"},
-            {"user": {"login": "coderabbitai[bot]"}, "body": "nit"},
+            {"user": {"login": "alice"}, "body": "please fix", "path": "src/a.ts"},
+            {
+                "user": {"login": "coderabbitai[bot]"},
+                "body": "nit",
+                "path": "src/b.ts",
+            },
         ]
         assert has_review_comments(inline, []) is True
 
-    def test_review_body_only(self):
+    def test_review_body_only_does_not_count(self):
         reviews = [{"user": {"login": "bob"}, "body": "looks risky here"}]
-        assert has_review_comments([], reviews) is True
+        assert has_review_comments([], reviews) is False
 
     def test_none(self):
         assert has_review_comments([], []) is False
 
     def test_empty_bodies_do_not_count(self):
-        inline = [{"user": {"login": "alice"}, "body": ""}]
+        inline = [{"user": {"login": "alice"}, "body": "", "path": "src/a.ts"}]
         reviews = [{"user": {"login": "bob"}, "body": "   "}]
         assert has_review_comments(inline, reviews) is False
+
+    def test_comment_on_test_file_does_not_count(self):
+        inline = [{"user": {"login": "alice"}, "body": "fix", "path": "src/a.test.ts"}]
+        assert has_review_comments(inline, []) is False
 
 
 class TestCollectReviewTexts:
@@ -105,8 +121,8 @@ class TestIsDocFile:
 class TestHasProductionCodeChange:
     def test_true_when_prod_file_present(self):
         files = [
-            {"filename": "src/foo.ts"},
-            {"filename": "src/foo.test.ts"},
+            {"filename": "src/foo.ts", "patch": "@@ -1 +1 @@"},
+            {"filename": "src/foo.test.ts", "patch": "@@ -1 +1 @@"},
         ]
         assert has_production_code_change(files) is True
 
@@ -117,6 +133,14 @@ class TestHasProductionCodeChange:
     def test_false_when_only_docs(self):
         files = [{"filename": "README.md"}]
         assert has_production_code_change(files) is False
+
+    def test_false_when_only_backend_code(self):
+        files = [{"filename": "backend/app.py"}]
+        assert has_production_code_change(files) is False
+
+    def test_true_for_special_frontend_file(self):
+        files = [{"filename": "package.json", "patch": "@@ -1 +1 @@"}]
+        assert has_production_code_change(files) is True
 
     def test_false_when_empty(self):
         assert has_production_code_change([]) is False
@@ -400,9 +424,11 @@ class TestBuildTarget:
             "additions": 10,
             "deletions": 5,
         }
-        client.list_pr_files.return_value = [{"filename": "src/app.ts"}]
+        client.list_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
         client.list_review_comments.return_value = [
-            {"user": {"login": "alice"}, "body": "fix this"}
+            {"user": {"login": "alice"}, "body": "fix this", "path": "src/app.ts"}
         ]
         client.list_pr_reviews.return_value = []
         target = build_target(
@@ -470,7 +496,9 @@ class TestBuildTarget:
             "additions": 1,
             "deletions": 0,
         }
-        client.list_pr_files.return_value = [{"filename": "src/app.ts"}]
+        client.list_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
         client.list_review_comments.return_value = []
         client.list_pr_reviews.return_value = []
         target = build_target(
@@ -488,9 +516,11 @@ class TestBuildTarget:
             "additions": 1,
             "deletions": 0,
         }
-        client.list_pr_files.return_value = [{"filename": "src/app.ts"}]
+        client.list_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
         client.list_review_comments.return_value = [
-            {"user": {"login": "a"}, "body": "fix"}
+            {"user": {"login": "a"}, "body": "fix", "path": "src/app.ts"}
         ]
         client.list_pr_reviews.return_value = []
         target = build_target(
@@ -609,9 +639,11 @@ class TestMain:
             "additions": 5,
             "deletions": 5,
         }
-        fake_client.list_pr_files.return_value = [{"filename": "src/app.ts"}]
+        fake_client.list_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
         fake_client.list_review_comments.return_value = [
-            {"user": {"login": "a"}, "body": "fix"}
+            {"user": {"login": "a"}, "body": "fix", "path": "src/app.ts"}
         ]
         fake_client.list_pr_reviews.return_value = []
 

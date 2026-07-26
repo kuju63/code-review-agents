@@ -43,6 +43,12 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from strands import Agent
 from strands.models.openai import OpenAIModel
+from target_criteria import (
+    has_inline_review_comments,
+    has_production_code_change,
+    is_doc_file as is_doc_file,
+    is_test_file as is_test_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,86 +61,6 @@ MAX_CHANGED_LINES = 1000
 
 # Upper bound (seconds) for every LLM call, applied to the OpenAI client.
 LLM_TIMEOUT_SECONDS = 120.0
-
-# ---------------------------------------------------------------------------
-# Production-code detection
-# ---------------------------------------------------------------------------
-
-_TEST_PATH_PATTERNS = (
-    "/__tests__/",
-    "/__test__/",
-    ".test.js",
-    ".test.ts",
-    ".test.jsx",
-    ".test.tsx",
-    ".spec.js",
-    ".spec.ts",
-    ".spec.jsx",
-    ".spec.tsx",
-    ".test.vue",
-    ".spec.vue",
-    ".test.svelte",
-    ".spec.svelte",
-    "/test_",
-    "_test.py",
-    "/tests/",
-    "/test/",
-    "/e2e/",
-    "/cypress/",
-    "/__mocks__/",
-)
-
-_DOC_SUFFIXES = (".md", ".mdx", ".rst", ".txt")
-_DOC_PATH_PATTERNS = ("/docs/", "/documentation/")
-
-
-def is_test_file(path: str) -> bool:
-    """Determine whether a file path matches a configured test-file pattern.
-
-    Parameters:
-        path (str): File path to inspect.
-
-    Returns:
-        bool: `True` if the path contains a test-file pattern, `False` otherwise.
-    """
-    return any(pat in path for pat in _TEST_PATH_PATTERNS)
-
-
-def is_doc_file(path: str) -> bool:
-    """
-    Determine whether a file path identifies a documentation file.
-
-    Parameters:
-        path (str): File path to classify.
-
-    Returns:
-        bool: `true` if the path has a documentation suffix or contains a documentation path pattern, `false` otherwise.
-    """
-    lower = path.lower()
-    if lower.endswith(_DOC_SUFFIXES):
-        return True
-    return any(pat in lower for pat in _DOC_PATH_PATTERNS)
-
-
-def has_production_code_change(files: list[dict[str, Any]]) -> bool:
-    """
-    Determine whether the changed files include production code.
-
-    Parameters:
-        files (list[dict[str, Any]]): Changed file entries containing file paths.
-
-    Returns:
-        bool: `True` if at least one changed file is neither a test nor documentation file, `False` otherwise.
-    """
-    for file_item in files:
-        path = file_item.get("filename", "")
-        if not path:
-            continue
-        if is_test_file(path) or is_doc_file(path):
-            continue
-        return True
-    return False
-
 
 # ---------------------------------------------------------------------------
 # Review-comment presence (human or AI bot)
@@ -164,13 +90,13 @@ def collect_review_texts(
 def has_review_comments(
     inline: list[dict[str, Any]], reviews: list[dict[str, Any]]
 ) -> bool:
-    """
-    Determine whether the pull request contains a substantive review comment.
+    """Return whether the PR has a qualifying inline review comment.
 
-    Returns:
-        bool: `True` if at least one non-blank review comment exists, `False` otherwise.
+    Review bodies are still collected as LLM context after a PR qualifies, but
+    they cannot qualify a PR on their own because they have no file location.
     """
-    return bool(collect_review_texts(inline, reviews))
+    del reviews
+    return has_inline_review_comments(inline)
 
 
 # ---------------------------------------------------------------------------
