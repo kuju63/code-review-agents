@@ -58,6 +58,22 @@ uv venv
 uv sync --frozen
 ```
 
+OpenCode starts the Serena MCP server from `opencode.jsonc` with the `ide` context and registers the current worktree as a Serena project. The Serena version in that file is tracked by Renovate. Existing memories under `.serena/memories/` satisfy Serena's onboarding check and should be reused.
+
+### Worktree Teardown
+
+Always remove worktrees with the project script so that the matching absolute path is also removed from Serena's project registry. Do not run `git worktree remove` directly.
+
+```bash
+scripts/remove-worktree.sh .claude/worktrees/<worktree-name>
+```
+
+Use `--force` only when intentionally discarding uncommitted work:
+
+```bash
+scripts/remove-worktree.sh --force .claude/worktrees/<worktree-name>
+```
+
 ### Run Application
 
 ```bash
