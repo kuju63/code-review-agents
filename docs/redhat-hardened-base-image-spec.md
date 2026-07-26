@@ -35,7 +35,7 @@ Chainguard は distroless でセキュリティ面の利点がある一方、dig
 | runtime shell | なし | なし (`/bin/sh` なし) | exec 形式を維持 |
 | builder の uv | 外部ステージから注入 | 同梱なし | uv-binary ステージを維持 |
 | builder の sed / sh | あり | あり (`/usr/sbin`) | shebang 修正を維持 |
-| Python バージョン | 3.14 系 | 3.14.5 | `ARG PYTHON_VERSION=3.14` を維持 |
+| Python バージョン | 3.14 系 | 3.14.5 | `ARG PYTHON_VERSION` は削除し、実測済みの minor version path を使用 |
 
 結論: レジストリ名・イメージの実体 (distroless→UBI 系) は変わるが、runtime が依存する
 python 実行パス・site-packages パス・nonroot UID (65532) は互換であり、Dockerfile /
@@ -66,9 +66,9 @@ deploy manifest の変更は最小限で済む。
    - build 前に Red Hat レジストリへの login ステップを追加。
    - base image に関するコメントを更新。
 5. `renovate.json`
-   - `registry.access.redhat.com` の digest 自動更新のための `hostRules` を追加。
+   - `registry.access.redhat.com` は匿名 pull 可能であり、Docker datasource が `FROM` を検出できるため変更しない。
 6. ドキュメント整合
-   - `README.md` / `.serena/memories/tech_stack.md` の Chainguard 記述を Red Hat へ更新。
+   - `.serena/memories/tech_stack.md` / 関連設計文書の Chainguard 記述を Red Hat へ更新。
 
 ## 受入条件
 
@@ -82,8 +82,8 @@ deploy manifest の変更は最小限で済む。
 
 ## リスクと留意点
 
-- Red Hat が index digest を更新した場合、Renovate が追従する必要がある
-  (`hostRules` 未設定だと digest 更新が停止する)。
+- Red Hat が index digest を更新した場合、Renovate の Docker datasource が追従する必要がある。
+  匿名 pull が使えなくなった場合は Renovate 側にもレジストリ認証設定が必要になる。
 - `registry.access.redhat.com` は匿名 pull 可能であることを実測で確認したが、
   将来認証必須化された場合に備えて CI に login を残す。
 - HEALTHCHECK / probe の python パスは runtime image に依存するため、
@@ -92,4 +92,4 @@ deploy manifest の変更は最小限で済む。
 ## ロールバック
 
 - 本 spec のコミットが rollback baseline。
-- 問題発生時は Dockerfile / workflow / renovate.json を Chainguard 版へ revert する。
+- 問題発生時は Dockerfile / workflow / deploy manifest を Chainguard 版へ revert する。
