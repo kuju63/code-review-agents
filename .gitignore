@@ -343,3 +343,8 @@ deploy/secrets.yaml
 
 # worktree
 .worktrees
+
+# Graphify local-only metadata
+graphify-out/cost.json
+graphify-out/cache/
+graphify-out/.graphify_root

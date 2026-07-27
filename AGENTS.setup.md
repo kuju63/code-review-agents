@@ -90,6 +90,29 @@ uv sync --frozen
 pre-commit install
 ```
 
+### Graphifyのセットアップ
+
+[`Graphify`](https://github.com/Graphify-Labs/graphify)はコードベースをナレッジグラフ化し、AIエージェントがファイルを逐次検索せずに構造や依存関係を参照できるようにするツールである。
+CLIはプロジェクトの`.venv`ではなく、`uv tool`が管理する独立した環境へインストールする。
+
+共有された `.opencode/skills/graphify/.graphify_version` を単一の版ソースとしてインストールする（コミット済みグラフとスキルの整合を保つため）。
+
+```shell
+GRAPHIFY_VERSION=$(tr -d '[:space:]' < .opencode/skills/graphify/.graphify_version)
+uv tool install "graphifyy==$GRAPHIFY_VERSION"
+graphify --version
+graphify hook install
+```
+
+OpenCode用のスキルとフック、および初期グラフはリポジトリの`.opencode/`と`graphify-out/`で共有されるため、`graphify install`や初回グラフ生成を各自で実行する必要はない。
+OpenCodeが起動中の場合は、設定を読み込むために再起動すること。
+
+コード変更後にグラフを手動更新する場合は、リポジトリルートで以下を実行する。
+
+```shell
+graphify update .
+```
+
 ### betterleaksのインストール
 
 [`betterleaks`](https://github.com/betterleaks/betterleaks)はシークレットがソースコードに混入していないかをチェックするツールである。
