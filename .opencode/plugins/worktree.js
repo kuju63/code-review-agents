@@ -5,12 +5,17 @@
 // so working inside (or leaving) a worktree never requires starting a new
 // opencode session.
 import { tool } from "@opencode-ai/plugin";
-import { createOpencodeClient } from "@opencode-ai/sdk/v2/client";
+import { createOpencodeClient } from "@opencode-ai/sdk/v2";
 import path from "node:path";
 
 const slugify = (branch) => branch.replace(/[^a-zA-Z0-9_.-]/g, "-");
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Matches the "workspace ready" wait timeout described below. WorkspaceCreateError
+// carries no machine-readable error code, only this message, so detection is
+// necessarily string-based.
+const isWorkspaceReadyTimeout = (message) => /timed out waiting for/i.test(message ?? "");
 
 // opencode's workspace.create() waits on an internal "workspace ready" event
 // with a short (~5s) budget and reports a timeout error even when the
@@ -87,17 +92,26 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
             extra: { base },
           });
           let workspace = created.data;
+          let recovered = false;
           if (created.error) {
+            const message = created.error.data?.message;
+            if (!isWorkspaceReadyTimeout(message)) {
+              throw new Error(message ?? "failed to create worktree");
+            }
             workspace = await findWorkspaceByBranch(v2, branch);
+            recovered = true;
             if (!workspace) {
-              throw new Error(created.error.data?.message ?? "failed to create worktree");
+              throw new Error(message ?? "failed to create worktree");
             }
           }
           const warped = await v2.experimental.workspace.warp({ id: workspace.id, sessionID: context.sessionID });
           if (warped.error) {
             throw new Error(warped.error.data?.message ?? "failed to switch session scope");
           }
-          return `Created worktree '${branch}' at ${workspace.directory}. This session's file scope is now that worktree.`;
+          const status = recovered
+            ? `Worktree '${branch}' is ready at ${workspace.directory} (confirmed via polling after the create request timed out)`
+            : `Created worktree '${branch}' at ${workspace.directory}`;
+          return `${status}. This session's file scope is now that worktree.`;
         },
       }),
       worktree_remove: tool({
