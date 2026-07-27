@@ -99,7 +99,7 @@ Security-focused dataset build example:
 bash evaluation/tools/run_evaluation_pipeline.sh \
   --profile security \
   --limit 30 \
-  --min-risk medium
+  --min-severity medium
 ```
 
 ## Coding Rules

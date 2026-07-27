@@ -30,22 +30,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from dotenv import load_dotenv
-
-
-ALLOWED_EXTENSIONS = {
-    ".js",
-    ".jsx",
-    ".ts",
-    ".tsx",
-    ".vue",
-    ".svelte",
-    ".css",
-    ".scss",
-    ".html",
-}
-SPECIAL_FILES = {
-    "package.json",
-}
+from target_criteria import is_production_code_file
 
 
 def _api_get(url: str, token: str) -> Any:
@@ -63,13 +48,7 @@ def _api_get(url: str, token: str) -> Any:
 
 
 def _is_target_file(path: str) -> bool:
-    for filename in SPECIAL_FILES:
-        if path.endswith(filename):
-            return True
-    for ext in ALLOWED_EXTENSIONS:
-        if path.endswith(ext):
-            return True
-    return False
+    return is_production_code_file(path)
 
 
 def _normalize_severity(text: str) -> str:

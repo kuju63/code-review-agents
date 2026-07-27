@@ -18,6 +18,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from tests.evaluation.conftest import load_eval_tool_module
 
 discover = load_eval_tool_module("discover_candidate_prs", "discover_candidate_prs.py")
@@ -34,6 +36,8 @@ validate_repo = discover.validate_repo
 build_target = discover.build_target
 ReviewAssessment = discover.ReviewAssessment
 make_llm_assessor = discover.make_llm_assessor
+load_skipped_targets = discover.load_skipped_targets
+revalidate_existing_targets = discover.revalidate_existing_targets
 write_stack_outputs = discover.write_stack_outputs
 collect_review_texts = discover.collect_review_texts
 main = discover.main
@@ -41,31 +45,47 @@ main = discover.main
 
 class TestHasReviewComments:
     def test_human_only(self):
-        inline = [{"user": {"login": "alice"}, "body": "please fix"}]
+        inline = [
+            {"user": {"login": "alice"}, "body": "please fix", "path": "src/a.ts"}
+        ]
         assert has_review_comments(inline, []) is True
 
     def test_ai_bot_only(self):
-        inline = [{"user": {"login": "coderabbitai[bot]"}, "body": "nit"}]
+        inline = [
+            {
+                "user": {"login": "coderabbitai[bot]"},
+                "body": "nit",
+                "path": "src/a.ts",
+            }
+        ]
         assert has_review_comments(inline, []) is True
 
     def test_both(self):
         inline = [
-            {"user": {"login": "alice"}, "body": "please fix"},
-            {"user": {"login": "coderabbitai[bot]"}, "body": "nit"},
+            {"user": {"login": "alice"}, "body": "please fix", "path": "src/a.ts"},
+            {
+                "user": {"login": "coderabbitai[bot]"},
+                "body": "nit",
+                "path": "src/b.ts",
+            },
         ]
         assert has_review_comments(inline, []) is True
 
-    def test_review_body_only(self):
+    def test_review_body_only_does_not_count(self):
         reviews = [{"user": {"login": "bob"}, "body": "looks risky here"}]
-        assert has_review_comments([], reviews) is True
+        assert has_review_comments([], reviews) is False
 
     def test_none(self):
         assert has_review_comments([], []) is False
 
     def test_empty_bodies_do_not_count(self):
-        inline = [{"user": {"login": "alice"}, "body": ""}]
+        inline = [{"user": {"login": "alice"}, "body": "", "path": "src/a.ts"}]
         reviews = [{"user": {"login": "bob"}, "body": "   "}]
         assert has_review_comments(inline, reviews) is False
+
+    def test_comment_on_test_file_does_not_count(self):
+        inline = [{"user": {"login": "alice"}, "body": "fix", "path": "src/a.test.ts"}]
+        assert has_review_comments(inline, []) is False
 
 
 class TestCollectReviewTexts:
@@ -105,8 +125,8 @@ class TestIsDocFile:
 class TestHasProductionCodeChange:
     def test_true_when_prod_file_present(self):
         files = [
-            {"filename": "src/foo.ts"},
-            {"filename": "src/foo.test.ts"},
+            {"filename": "src/foo.ts", "patch": "@@ -1 +1 @@"},
+            {"filename": "src/foo.test.ts", "patch": "@@ -1 +1 @@"},
         ]
         assert has_production_code_change(files) is True
 
@@ -117,6 +137,14 @@ class TestHasProductionCodeChange:
     def test_false_when_only_docs(self):
         files = [{"filename": "README.md"}]
         assert has_production_code_change(files) is False
+
+    def test_false_when_only_backend_code(self):
+        files = [{"filename": "backend/app.py"}]
+        assert has_production_code_change(files) is False
+
+    def test_true_for_special_frontend_file(self):
+        files = [{"filename": "package.json", "patch": "@@ -1 +1 @@"}]
+        assert has_production_code_change(files) is True
 
     def test_false_when_empty(self):
         assert has_production_code_change([]) is False
@@ -260,6 +288,74 @@ class TestMakeLlmAssessor:
         }
 
 
+class TestRevalidateExistingTargets:
+    def _target(self, pr_number):
+        return {
+            "repository": "o/r",
+            "pr_number": pr_number,
+            "stack": "react",
+            "repo_type": "application",
+            "severity": "high",
+            "impact": "security",
+            "priority": "medium",
+        }
+
+    def test_keeps_only_targets_matching_shared_criteria(self):
+        client = MagicMock()
+        client.require_pr_files.side_effect = [
+            [{"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}],
+            [{"filename": "backend/app.py", "patch": "@@ -1 +1 @@"}],
+            [{"filename": "src/other.ts", "patch": "@@ -1 +1 @@"}],
+        ]
+        client.require_review_comments.side_effect = [
+            [{"body": "fix", "path": "src/app.ts"}],
+            [{"body": "fix", "path": "backend/app.py"}],
+            [],
+        ]
+        targets = [self._target(1), self._target(2), self._target(3)]
+        assert revalidate_existing_targets(client, targets) == [targets[0]]
+
+    def test_aborts_when_github_fetch_fails(self):
+        client = GitHubClient("tok")
+        target = self._target(1)
+        with (
+            patch.object(client, "_get", return_value=None),
+            pytest.raises(RuntimeError, match=r"o/r#1.*files"),
+        ):
+            revalidate_existing_targets(client, [target])
+
+    def test_aborts_when_review_comment_fetch_fails(self):
+        client = GitHubClient("tok")
+        target = self._target(1)
+        with (
+            patch.object(
+                client,
+                "_get",
+                side_effect=[
+                    [{"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}],
+                    None,
+                ],
+            ),
+            pytest.raises(RuntimeError, match=r"o/r#1.*review comments"),
+        ):
+            revalidate_existing_targets(client, [target])
+
+    def test_preserves_existing_classifications(self):
+        client = MagicMock()
+        client.require_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
+        client.require_review_comments.return_value = [
+            {"body": "fix", "path": "src/app.ts"}
+        ]
+        target = self._target(1)
+        result = revalidate_existing_targets(client, [target])
+        assert result[0] is target
+        assert result[0]["severity"] == "high"
+        assert result[0]["impact"] == "security"
+        assert result[0]["priority"] == "medium"
+
+
 class TestWriteStackOutputs:
     def test_routes_targets_by_stack(self, tmp_path):
         targets = [
@@ -309,6 +405,19 @@ class TestWriteStackOutputs:
         write_stack_outputs(targets, str(tmp_path), stacks=["react"])
         solid = json.loads((tmp_path / "pr_targets_solid.json").read_text())
         assert len(solid) == 1
+
+    def test_load_skipped_targets_keeps_only_requested_repositories(self, tmp_path):
+        targets = [
+            {"repository": "o/keep", "pr_number": 1, "stack": "react"},
+            {"repository": "o/refresh", "pr_number": 2, "stack": "react"},
+        ]
+        write_stack_outputs(targets, str(tmp_path), stacks=["react"])
+        candidates = [
+            RepoCandidate("o/keep", "application", "react"),
+            RepoCandidate("o/refresh", "application", "react"),
+        ]
+        loaded = load_skipped_targets(str(tmp_path), candidates, {"o/keep"})
+        assert loaded == [targets[0]]
 
 
 def _fake_client(**overrides):
@@ -400,9 +509,11 @@ class TestBuildTarget:
             "additions": 10,
             "deletions": 5,
         }
-        client.list_pr_files.return_value = [{"filename": "src/app.ts"}]
+        client.list_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
         client.list_review_comments.return_value = [
-            {"user": {"login": "alice"}, "body": "fix this"}
+            {"user": {"login": "alice"}, "body": "fix this", "path": "src/app.ts"}
         ]
         client.list_pr_reviews.return_value = []
         target = build_target(
@@ -470,7 +581,9 @@ class TestBuildTarget:
             "additions": 1,
             "deletions": 0,
         }
-        client.list_pr_files.return_value = [{"filename": "src/app.ts"}]
+        client.list_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
         client.list_review_comments.return_value = []
         client.list_pr_reviews.return_value = []
         target = build_target(
@@ -488,9 +601,11 @@ class TestBuildTarget:
             "additions": 1,
             "deletions": 0,
         }
-        client.list_pr_files.return_value = [{"filename": "src/app.ts"}]
+        client.list_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
         client.list_review_comments.return_value = [
-            {"user": {"login": "a"}, "body": "fix"}
+            {"user": {"login": "a"}, "body": "fix", "path": "src/app.ts"}
         ]
         client.list_pr_reviews.return_value = []
         target = build_target(
@@ -590,8 +705,72 @@ class TestMain:
         )
         assert main() == 1
 
+    def test_returns_1_without_generation_model(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "tok")
+        monkeypatch.delenv("SEEDED_GEN_MODEL_ID", raising=False)
+        monkeypatch.setattr(discover, "load_dotenv", lambda: None)
+        repos = tmp_path / "repos.json"
+        repos.write_text("[]")
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "discover_candidate_prs.py",
+                "--repos",
+                str(repos),
+                "--output-dir",
+                str(tmp_path),
+            ],
+        )
+        assert main() == 1
+
+    def test_revalidate_existing_does_not_require_model(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "tok")
+        monkeypatch.delenv("SEEDED_GEN_MODEL_ID", raising=False)
+        monkeypatch.setattr(discover, "load_dotenv", lambda: None)
+        existing = {
+            "repository": "o/r",
+            "pr_number": 1,
+            "stack": "react",
+            "repo_type": "application",
+            "severity": "high",
+            "impact": "security",
+            "priority": "medium",
+        }
+        (tmp_path / "pr_targets_react.json").write_text(json.dumps([existing]))
+        for stack in ("vue", "angular", "svelte"):
+            (tmp_path / f"pr_targets_{stack}.json").write_text("[]")
+        client = MagicMock()
+        client.require_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
+        client.require_review_comments.return_value = [
+            {"body": "fix", "path": "src/app.ts"}
+        ]
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "discover_candidate_prs.py",
+                "--output-dir",
+                str(tmp_path),
+                "--revalidate-existing",
+            ],
+        )
+        with (
+            patch.object(discover, "GitHubClient", return_value=client),
+            patch.object(discover, "make_llm_assessor") as assessor_factory,
+        ):
+            assert main() == 0
+        assessor_factory.assert_not_called()
+        assert json.loads((tmp_path / "pr_targets_react.json").read_text()) == [
+            existing
+        ]
+
     def test_generates_outputs_end_to_end(self, tmp_path, monkeypatch):
         monkeypatch.setenv("GITHUB_TOKEN", "tok")
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "test-model")
+        monkeypatch.setenv("SEEDED_GEN_LLM_BASE_URL", "http://llm.test/v1")
         monkeypatch.setattr(discover, "load_dotenv", lambda: None)
 
         now_recent = datetime.now(timezone.utc) - timedelta(days=5)
@@ -609,9 +788,11 @@ class TestMain:
             "additions": 5,
             "deletions": 5,
         }
-        fake_client.list_pr_files.return_value = [{"filename": "src/app.ts"}]
+        fake_client.list_pr_files.return_value = [
+            {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
+        ]
         fake_client.list_review_comments.return_value = [
-            {"user": {"login": "a"}, "body": "fix"}
+            {"user": {"login": "a"}, "body": "fix", "path": "src/app.ts"}
         ]
         fake_client.list_pr_reviews.return_value = []
 
@@ -646,12 +827,60 @@ class TestMain:
             patch.object(discover, "GitHubClient", return_value=fake_client),
             patch.object(
                 discover, "make_llm_assessor", return_value=lambda t, x: assessment
-            ),
+            ) as assessor_factory,
             patch.object(discover.time, "sleep", lambda *a: None),
         ):
             rc = main()
+        assessor_factory.assert_called_once_with("test-model", "http://llm.test/v1")
         assert rc == 0
         react = json.loads((tmp_path / "pr_targets_react.json").read_text())
         assert len(react) == 1
         assert react[0]["pr_number"] == 7
+
+    def test_skip_repos_preserves_existing_targets(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "tok")
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "test-model")
+        monkeypatch.setattr(discover, "load_dotenv", lambda: None)
+        existing = {
+            "repository": "o/react-app",
+            "pr_number": 7,
+            "stack": "react",
+            "repo_type": "application",
+            "severity": "high",
+            "impact": "security",
+            "priority": "high",
+        }
+        (tmp_path / "pr_targets_react.json").write_text(json.dumps([existing]))
+        repos = tmp_path / "repos.json"
+        repos.write_text(
+            json.dumps(
+                [
+                    {
+                        "repository": "o/react-app",
+                        "repo_type": "application",
+                        "stack": "react",
+                    }
+                ]
+            )
+        )
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "discover_candidate_prs.py",
+                "--repos",
+                str(repos),
+                "--output-dir",
+                str(tmp_path),
+                "--skip-repos",
+                "o/react-app",
+            ],
+        )
+        with (
+            patch.object(discover, "GitHubClient"),
+            patch.object(discover, "make_llm_assessor", return_value=MagicMock()),
+        ):
+            assert main() == 0
+        react = json.loads((tmp_path / "pr_targets_react.json").read_text())
+        assert react == [existing]
         assert react[0]["severity"] == "high"

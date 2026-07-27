@@ -23,8 +23,8 @@ Usage:
 
 Required env (loaded from .env):
   GITHUB_TOKEN
-  CODE_REVIEW_MODEL_ID       (optional, default: gpt-4o)
-  CODE_REVIEW_LLM_BASE_URL   (optional; OpenAI-compatible endpoint)
+  SEEDED_GEN_MODEL_ID       (required unless --model-id is provided)
+  SEEDED_GEN_LLM_BASE_URL   (optional; OpenAI-compatible endpoint)
 """
 
 from __future__ import annotations
@@ -43,6 +43,12 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from strands import Agent
 from strands.models.openai import OpenAIModel
+from target_criteria import (
+    has_inline_review_comments,
+    has_production_code_change,
+    is_doc_file as is_doc_file,
+    is_test_file as is_test_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,86 +61,6 @@ MAX_CHANGED_LINES = 1000
 
 # Upper bound (seconds) for every LLM call, applied to the OpenAI client.
 LLM_TIMEOUT_SECONDS = 120.0
-
-# ---------------------------------------------------------------------------
-# Production-code detection
-# ---------------------------------------------------------------------------
-
-_TEST_PATH_PATTERNS = (
-    "/__tests__/",
-    "/__test__/",
-    ".test.js",
-    ".test.ts",
-    ".test.jsx",
-    ".test.tsx",
-    ".spec.js",
-    ".spec.ts",
-    ".spec.jsx",
-    ".spec.tsx",
-    ".test.vue",
-    ".spec.vue",
-    ".test.svelte",
-    ".spec.svelte",
-    "/test_",
-    "_test.py",
-    "/tests/",
-    "/test/",
-    "/e2e/",
-    "/cypress/",
-    "/__mocks__/",
-)
-
-_DOC_SUFFIXES = (".md", ".mdx", ".rst", ".txt")
-_DOC_PATH_PATTERNS = ("/docs/", "/documentation/")
-
-
-def is_test_file(path: str) -> bool:
-    """Determine whether a file path matches a configured test-file pattern.
-
-    Parameters:
-        path (str): File path to inspect.
-
-    Returns:
-        bool: `True` if the path contains a test-file pattern, `False` otherwise.
-    """
-    return any(pat in path for pat in _TEST_PATH_PATTERNS)
-
-
-def is_doc_file(path: str) -> bool:
-    """
-    Determine whether a file path identifies a documentation file.
-
-    Parameters:
-        path (str): File path to classify.
-
-    Returns:
-        bool: `true` if the path has a documentation suffix or contains a documentation path pattern, `false` otherwise.
-    """
-    lower = path.lower()
-    if lower.endswith(_DOC_SUFFIXES):
-        return True
-    return any(pat in lower for pat in _DOC_PATH_PATTERNS)
-
-
-def has_production_code_change(files: list[dict[str, Any]]) -> bool:
-    """
-    Determine whether the changed files include production code.
-
-    Parameters:
-        files (list[dict[str, Any]]): Changed file entries containing file paths.
-
-    Returns:
-        bool: `True` if at least one changed file is neither a test nor documentation file, `False` otherwise.
-    """
-    for file_item in files:
-        path = file_item.get("filename", "")
-        if not path:
-            continue
-        if is_test_file(path) or is_doc_file(path):
-            continue
-        return True
-    return False
-
 
 # ---------------------------------------------------------------------------
 # Review-comment presence (human or AI bot)
@@ -164,13 +90,13 @@ def collect_review_texts(
 def has_review_comments(
     inline: list[dict[str, Any]], reviews: list[dict[str, Any]]
 ) -> bool:
-    """
-    Determine whether the pull request contains a substantive review comment.
+    """Return whether the PR has a qualifying inline review comment.
 
-    Returns:
-        bool: `True` if at least one non-blank review comment exists, `False` otherwise.
+    Review bodies are still collected as LLM context after a PR qualifies, but
+    they cannot qualify a PR on their own because they have no file location.
     """
-    return bool(collect_review_texts(inline, reviews))
+    del reviews
+    return has_inline_review_comments(inline)
 
 
 # ---------------------------------------------------------------------------
@@ -542,6 +468,23 @@ class GitHubClient:
         )
         return files or []
 
+    def require_pr_files(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
+        """Return changed files or raise when GitHub cannot provide a response.
+
+        Returns:
+            Pull request file entries, including an empty list when GitHub
+            successfully reports no files.
+
+        Raises:
+            RuntimeError: If the GitHub request returns no response.
+        """
+        files = self._get(
+            f"/repos/{repo}/pulls/{pr_number}/files", params={"per_page": 100}
+        )
+        if files is None:
+            raise RuntimeError(f"GitHub fetch failed for {repo}#{pr_number} files")
+        return files
+
     def list_review_comments(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
         """Retrieve inline review comments for a pull request.
 
@@ -556,6 +499,27 @@ class GitHubClient:
             f"/repos/{repo}/pulls/{pr_number}/comments", params={"per_page": 100}
         )
         return comments or []
+
+    def require_review_comments(
+        self, repo: str, pr_number: int
+    ) -> list[dict[str, Any]]:
+        """Return inline comments or raise when GitHub cannot provide a response.
+
+        Returns:
+            Inline comments, including an empty list when GitHub successfully
+            reports no comments.
+
+        Raises:
+            RuntimeError: If the GitHub request returns no response.
+        """
+        comments = self._get(
+            f"/repos/{repo}/pulls/{pr_number}/comments", params={"per_page": 100}
+        )
+        if comments is None:
+            raise RuntimeError(
+                f"GitHub fetch failed for {repo}#{pr_number} review comments"
+            )
+        return comments
 
     def list_pr_reviews(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
         """Retrieve review submissions for a pull request.
@@ -681,6 +645,76 @@ def build_target(
 # ---------------------------------------------------------------------------
 
 
+def revalidate_existing_targets(
+    client: GitHubClient,
+    targets: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Revalidate existing classified targets against shared Gold criteria.
+
+    Returns:
+        Existing target rows that still have a frontend patch and qualifying
+        inline review comment, preserving their classifications.
+    """
+    accepted: list[dict[str, Any]] = []
+    for target in targets:
+        repository = str(target["repository"])
+        pr_number = int(target["pr_number"])
+        files = client.require_pr_files(repository, pr_number)
+        if not has_production_code_change(files):
+            continue
+        inline = client.require_review_comments(repository, pr_number)
+        if not has_inline_review_comments(inline):
+            continue
+        accepted.append(target)
+    return accepted
+
+
+def load_skipped_targets(
+    output_dir: str,
+    candidates: list[RepoCandidate],
+    skip_repos: set[str],
+) -> list[dict[str, Any]]:
+    """Load existing targets only for repositories explicitly being skipped.
+
+    Returns:
+        list[dict[str, Any]]: Existing targets for the skipped repositories,
+        de-duplicated by (repository, pr_number).
+
+    Raises:
+        ValueError: If a skipped stack's target file is not a JSON array.
+    """
+    skipped_by_stack: dict[str, set[str]] = {}
+    for candidate in candidates:
+        if candidate.repository in skip_repos:
+            skipped_by_stack.setdefault(candidate.stack, set()).add(
+                candidate.repository
+            )
+
+    existing: list[dict[str, Any]] = []
+    seen: set[tuple[str, int]] = set()
+    for stack, repositories in skipped_by_stack.items():
+        path = os.path.join(output_dir, f"pr_targets_{stack}.json")
+        if not os.path.exists(path):
+            continue
+        with open(path, encoding="utf-8") as f:
+            rows = json.load(f)
+        if not isinstance(rows, list):
+            raise ValueError(f"Existing target file is not a JSON array: {path}")
+        for row in rows:
+            if not isinstance(row, dict) or row.get("repository") not in repositories:
+                continue
+            try:
+                key = (str(row["repository"]), int(row["pr_number"]))
+            except (KeyError, TypeError, ValueError):
+                logger.warning("Ignoring invalid existing target in %s", path)
+                continue
+            if key in seen:
+                continue
+            seen.add(key)
+            existing.append(row)
+    return existing
+
+
 def write_stack_outputs(
     targets: list[dict[str, Any]],
     output_dir: str,
@@ -707,6 +741,32 @@ def write_stack_outputs(
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+
+def load_stack_outputs(
+    output_dir: str,
+    stacks: tuple[str, ...] | list[str] = DEFAULT_STACKS,
+) -> list[dict[str, Any]]:
+    """Load all existing stack target files for atomic revalidation.
+
+    Returns:
+        Concatenated target rows in stack order.
+
+    Raises:
+        FileNotFoundError: If any required stack file is absent.
+        ValueError: If a stack file is not a JSON array.
+    """
+    targets: list[dict[str, Any]] = []
+    for stack in stacks:
+        path = os.path.join(output_dir, f"pr_targets_{stack}.json")
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Required target file not found: {path}")
+        with open(path, encoding="utf-8") as f:
+            rows = json.load(f)
+        if not isinstance(rows, list):
+            raise ValueError(f"Existing target file is not a JSON array: {path}")
+        targets.extend(rows)
+    return targets
 
 
 def main() -> int:
@@ -783,6 +843,11 @@ def main() -> int:
         default="",
         help="Comma-separated repos to skip",
     )
+    parser.add_argument(
+        "--revalidate-existing",
+        action="store_true",
+        help="Reapply shared Gold criteria to existing per-stack targets without LLM reclassification",
+    )
     args = parser.parse_args()
 
     token = os.environ.get("GITHUB_TOKEN")
@@ -790,11 +855,24 @@ def main() -> int:
         print("ERROR: GITHUB_TOKEN not set")
         return 1
 
-    model_id = args.model_id or os.environ.get("CODE_REVIEW_MODEL_ID", "gpt-4o")
-    llm_base_url = args.llm_base_url or os.environ.get("CODE_REVIEW_LLM_BASE_URL")
+    client = GitHubClient(token)
+    if args.revalidate_existing:
+        targets = load_stack_outputs(args.output_dir)
+        accepted = revalidate_existing_targets(client, targets)
+        write_stack_outputs(accepted, args.output_dir)
+        print(
+            f"Revalidated targets: before={len(targets)}, "
+            f"after={len(accepted)}, removed={len(targets) - len(accepted)}"
+        )
+        return 0
+
+    model_id = args.model_id or os.environ.get("SEEDED_GEN_MODEL_ID")
+    if not model_id:
+        print("ERROR: --model-id or SEEDED_GEN_MODEL_ID is required")
+        return 1
+    llm_base_url = args.llm_base_url or os.environ.get("SEEDED_GEN_LLM_BASE_URL")
     assessor = make_llm_assessor(model_id, llm_base_url)
 
-    client = GitHubClient(token)
     now = datetime.now(timezone.utc)
     since = args.since or (now - timedelta(days=args.release_window_days)).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
@@ -805,7 +883,7 @@ def main() -> int:
         raw_repos = json.load(f)
     candidates = [RepoCandidate(**r) for r in raw_repos]
 
-    all_targets: list[dict[str, Any]] = []
+    all_targets = load_skipped_targets(args.output_dir, candidates, skip_repos)
     for candidate in candidates:
         if candidate.repository in skip_repos:
             print(f"\n[{candidate.repository}] SKIP (requested)")

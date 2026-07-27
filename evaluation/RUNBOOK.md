@@ -15,8 +15,8 @@ export GITHUB_TOKEN=your_token
 ## Quick Start (recommended)
 
 Run all dataset preparation steps in one command. By default this samples n=15
-targets at random (stratified ~50/50 by repo_type) instead of processing the
-whole tagged pool, which keeps day-to-day iteration fast:
+targets at random (stratified ~50/50 by repo_type) from the four per-stack
+target files, which keeps day-to-day iteration fast:
 
 bash evaluation/tools/run_evaluation_pipeline.sh
 
@@ -30,54 +30,67 @@ For a full, deterministic run (weekly refresh / release-gate evaluation per
 
 bash evaluation/tools/run_evaluation_pipeline.sh \
   --limit 30 \
-  --min-risk medium
+  --min-severity medium
 
 For security-focused sample selection:
 
 bash evaluation/tools/run_evaluation_pipeline.sh \
   --profile security \
   --limit 30 \
-  --min-risk medium
+  --min-severity medium
 
 This executes Step 1 to Step 3 below. See
 [docs/evaluation-pipeline-design.md](../docs/evaluation-pipeline-design.md)
 for the full data flow diagram and the `input/` vs `data/` directory split.
 
-## 1. Build execution target list from tagged candidates
+## 1. Build execution target list from per-stack targets
+
+The canonical inputs are:
+
+- `evaluation/input/pr_targets_react.json`
+- `evaluation/input/pr_targets_vue.json`
+- `evaluation/input/pr_targets_angular.json`
+- `evaluation/input/pr_targets_svelte.json`
 
 Fast sampling (recommended for local iteration; n=15, stratified by repo_type):
 
-python evaluation/tools/convert_tagged_targets.py \
-  --input evaluation/input/pr_targets_b2b2c_tagged.json \
+```bash
+uv run python evaluation/tools/select_stack_targets.py \
+  --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
   --output evaluation/data/pr_targets.json \
   --limit 15 \
   --shuffle \
   --stratify-repo-type \
   --balanced \
-  --min-risk medium \
+  --min-severity medium \
   --print-summary
+```
 
 Full/deterministic selection (weekly refresh / release-gate evaluation):
 
-python evaluation/tools/convert_tagged_targets.py \
-  --input evaluation/input/pr_targets_b2b2c_tagged.json \
+```bash
+uv run python evaluation/tools/select_stack_targets.py \
+  --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
   --output evaluation/data/pr_targets.json \
   --limit 30 \
   --balanced \
-  --min-risk medium \
+  --min-severity medium \
   --print-summary
+```
+
+Security-only selection adds `--impact security`. Priority can be restricted
+with `--priority high,medium`.
 
 Checkpoint:
 
 - `evaluation/data/pr_targets.json` exists
-- Stack distribution in summary is reasonable
+- Stack, repository-type, severity, impact, and priority distributions are reasonable
 - Any `[COVERAGE-WARN]` lines on stderr are non-blocking; review them, don't
-  treat them as a failure (see EVALUATION_PLAN.md §2.0.3 for known population
-  constraints in the current tagged pool)
+  treat them as a failure (see EVALUATION_PLAN.md §2.0.3)
 
 ## 2. Build Gold set
 
-python evaluation/tools/build_gold_set.py \
+uv run python evaluation/tools/build_gold_set.py \
   --input evaluation/data/pr_targets.json \
   --output evaluation/data/gold_pr_set.jsonl
 
@@ -105,7 +118,7 @@ once (§9.6, §9.9). If your configured model's fallback rate stays high
 despite `--llm-max-attempts 3`, try a larger/more capable model before
 assuming the pipeline itself is broken.
 
-python evaluation/tools/build_seeded_set.py \
+uv run python evaluation/tools/build_seeded_set.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --catalog evaluation/config/seeded_mutations.json \
   --output evaluation/data/seeded_set.jsonl \
@@ -154,7 +167,7 @@ generation model, delete and rebuild manually -- it will not happen
 automatically:
 
 rm evaluation/data/seeded_set.jsonl
-python evaluation/tools/build_seeded_set.py \
+uv run python evaluation/tools/build_seeded_set.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --catalog evaluation/config/seeded_mutations.json \
   --output evaluation/data/seeded_set.jsonl \
@@ -166,7 +179,7 @@ Run the review agent on both Gold and Seeded inputs via the A2A server
 (see [.claude/skills/run-evaluation/SKILL.md](../.claude/skills/run-evaluation/SKILL.md)
 for the full start/stop sequence):
 
-python evaluation/tools/run_agent_evaluation.py \
+uv run python evaluation/tools/run_agent_evaluation.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --output evaluation/data/agent_predictions.jsonl \
@@ -196,7 +209,7 @@ Minimum record format:
 
 ## 5. Score evaluation
 
-python evaluation/tools/score_evaluation.py \
+uv run python evaluation/tools/score_evaluation.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --pred evaluation/data/agent_predictions.jsonl
@@ -225,9 +238,9 @@ Check against [evaluation/EVALUATION_PLAN.md](evaluation/EVALUATION_PLAN.md) gat
 
 If Gold rows are too few:
 
-- Use PRs with more review comments
-- Lower `--min-risk` in converter
-- Add more PR candidates in tagged input
+- Lower `--min-severity` or relax `--impact` / `--priority` in the selector
+- Confirm selected PRs still satisfy the shared production-file and inline-comment criteria
+- Add repositories to `repo_candidates.json` and regenerate the per-stack targets
 
 If Seeded recall is unstable:
 
@@ -244,8 +257,8 @@ If `build_seeded_set.py` exits with
 
 If stack balance is broken:
 
-- Use `--balanced` in converter
-- Increase candidate pool in underrepresented stack
+- Use `--balanced` in `select_stack_targets.py`
+- Add repositories for the underrepresented stack and regenerate its target file
 
 If `[COVERAGE-WARN]` keeps appearing:
 
