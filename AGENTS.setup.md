@@ -95,8 +95,10 @@ pre-commit install
 [`Graphify`](https://github.com/Graphify-Labs/graphify)はコードベースをナレッジグラフ化し、AIエージェントがファイルを逐次検索せずに構造や依存関係を参照できるようにするツールである。
 CLIはプロジェクトの`.venv`ではなく、`uv tool`が管理する独立した環境へインストールする。
 
+共有された `.opencode/skills/graphify/.graphify_version` の版に合わせてインストールする（コミット済みグラフとスキルの整合を保つため。版を更新する際はこのファイルを唯一の基準とすること）。
+
 ```shell
-uv tool install graphifyy
+uv tool install graphifyy==0.9.27
 graphify --version
 graphify hook install
 ```
