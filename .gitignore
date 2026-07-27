@@ -346,4 +346,4 @@ deploy/secrets.yaml
 
 # Graphify local-only metadata
 graphify-out/cost.json
-graphify-out/cache/stat-index.json
+graphify-out/cache/
