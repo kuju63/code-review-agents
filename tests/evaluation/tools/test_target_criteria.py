@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from tests.evaluation.conftest import load_eval_tool_module
 
 criteria = load_eval_tool_module("target_criteria", "target_criteria.py")
@@ -20,6 +22,14 @@ class TestProductionCodeCriteria:
 
     def test_rejects_frontend_test(self):
         assert criteria.is_production_code_file("src/app.test.ts") is False
+
+    @pytest.mark.parametrize(
+        "path",
+        ["test.ts", "src/theme.test.scss", "src/layout.spec.css"],
+    )
+    def test_rejects_generic_test_filename_patterns(self, path):
+        assert criteria.is_test_file(path) is True
+        assert criteria.is_production_code_file(path) is False
 
     def test_rejects_root_test_directory(self):
         assert criteria.is_production_code_file("tests/fixture.ts") is False

@@ -68,7 +68,32 @@ class TestLoadTargets:
     def test_rejects_invalid_enum(self, tmp_path):
         path = tmp_path / "bad.json"
         path.write_text(json.dumps([row_dict(severity="urgent")]))
-        with pytest.raises(ValueError, match="severity"):
+        with pytest.raises(ValueError, match=r"bad\.json\[0\].*severity"):
+            load_targets([str(path)])
+
+    def test_rejects_unknown_stack(self, tmp_path):
+        path = tmp_path / "bad.json"
+        path.write_text(json.dumps([row_dict(stack="solid")]))
+        with pytest.raises(ValueError, match=r"bad\.json\[0\].*stack"):
+            load_targets([str(path)])
+
+    def test_preserves_missing_field_message(self, tmp_path):
+        path = tmp_path / "bad.json"
+        row = row_dict()
+        del row["impact"]
+        path.write_text(json.dumps([row]))
+        with pytest.raises(ValueError, match=r"missing impact at .*bad\.json\[0\]"):
+            load_targets([str(path)])
+
+    @pytest.mark.parametrize("invalid_pr_number", [None, "not-a-number"])
+    def test_qualifies_invalid_pr_number_with_path_and_index(
+        self, tmp_path, invalid_pr_number
+    ):
+        path = tmp_path / "bad.json"
+        row = row_dict()
+        row["pr_number"] = invalid_pr_number
+        path.write_text(json.dumps([row]))
+        with pytest.raises(ValueError, match=r"bad\.json\[0\].*pr_number"):
             load_targets([str(path)])
 
 
@@ -231,6 +256,39 @@ class TestMain:
         ]
         summary = json.loads(capsys.readouterr().out)
         assert summary["total"] == 1
+
+    def test_shuffle_balanced_preserves_shuffled_order(self, tmp_path, monkeypatch):
+        path = tmp_path / "input.json"
+        output = tmp_path / "out.json"
+        path.write_text(
+            json.dumps(
+                [
+                    row_dict(pr_number=1, severity="critical", priority="high"),
+                    row_dict(pr_number=2, severity="high", priority="medium"),
+                    row_dict(pr_number=3, severity="low", priority="low"),
+                    row_dict(pr_number=4, severity="low", priority="low"),
+                ]
+            )
+        )
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "select_stack_targets.py",
+                "--inputs",
+                str(path),
+                "--output",
+                str(output),
+                "--limit",
+                "2",
+                "--shuffle",
+                "--balanced",
+                "--seed",
+                "42",
+            ],
+        )
+        assert main() == 0
+        assert [row["pr_number"] for row in json.loads(output.read_text())] == [3, 2]
 
     def test_stratify_requires_shuffle(self, tmp_path, monkeypatch):
         path = tmp_path / "input.json"

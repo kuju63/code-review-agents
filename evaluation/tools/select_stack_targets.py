@@ -12,12 +12,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
-from dotenv import load_dotenv
-
 SEVERITY_SCORE = {"low": 1, "medium": 2, "high": 3, "critical": 4}
 PRIORITIES = {"low", "medium", "high"}
 IMPACTS = {"security", "correctness", "performance", "maintainability"}
 REPO_TYPES = {"ui-library", "application"}
+KNOWN_STACKS = {"react", "vue", "angular", "svelte"}
 DOMAIN_MIN_RATIOS: dict[str, Any] = {
     "repo_type_balance_tolerance_pp": 15,
     "stack_within_ui-library": {"react": 0.50, "vue": 0.30},
@@ -82,23 +81,38 @@ def load_targets(paths: list[str]) -> list[StackTarget]:
             if not isinstance(item, dict):
                 raise ValueError(f"invalid target at {path}[{index}]")
             try:
-                repository = str(item["repository"])
-                pr_number = int(item["pr_number"])
-                stack = str(item["stack"])
-                repo_type = _validate_choice(
-                    "repo_type", str(item["repo_type"]), REPO_TYPES
-                )
-                severity = _validate_choice(
-                    "severity", str(item["severity"]), set(SEVERITY_SCORE)
-                )
-                impact = _validate_choice("impact", str(item["impact"]), IMPACTS)
-                priority = _validate_choice(
-                    "priority", str(item["priority"]), PRIORITIES
-                )
+                raw_repository = item["repository"]
+                raw_pr_number = item["pr_number"]
+                raw_stack = item["stack"]
+                raw_repo_type = item["repo_type"]
+                raw_severity = item["severity"]
+                raw_impact = item["impact"]
+                raw_priority = item["priority"]
             except KeyError as exc:
                 raise ValueError(f"missing {exc.args[0]} at {path}[{index}]") from exc
-            if not repository or pr_number < 1 or not stack:
-                raise ValueError(f"invalid target identity at {path}[{index}]")
+
+            location = f"{path}[{index}]"
+            try:
+                pr_number = int(raw_pr_number)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"invalid target at {location}: pr_number={raw_pr_number!r}"
+                ) from exc
+            try:
+                repository = str(raw_repository)
+                stack = _validate_choice("stack", str(raw_stack), KNOWN_STACKS)
+                repo_type = _validate_choice(
+                    "repo_type", str(raw_repo_type), REPO_TYPES
+                )
+                severity = _validate_choice(
+                    "severity", str(raw_severity), set(SEVERITY_SCORE)
+                )
+                impact = _validate_choice("impact", str(raw_impact), IMPACTS)
+                priority = _validate_choice("priority", str(raw_priority), PRIORITIES)
+            except ValueError as exc:
+                raise ValueError(f"invalid target at {location}: {exc}") from exc
+            if not repository or pr_number < 1:
+                raise ValueError(f"invalid target identity at {location}")
             targets.append(
                 StackTarget(
                     repository=repository,
@@ -383,7 +397,6 @@ def main() -> int:
     Returns:
         Process exit status.
     """
-    load_dotenv()
     parser = argparse.ArgumentParser(
         description="Select execution targets from per-stack Gold-set inputs"
     )
@@ -436,7 +449,7 @@ def main() -> int:
             rows.sort(key=_rank, reverse=True)
         if args.limit > 0:
             if args.balanced:
-                rows = select_balanced(rows, args.limit)
+                rows = select_balanced(rows, args.limit, sort_by_rank=not args.shuffle)
             else:
                 rows = rows[: args.limit]
 

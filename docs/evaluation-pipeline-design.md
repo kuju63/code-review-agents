@@ -113,10 +113,14 @@ exit code 1 で停止する。詳細は [evaluation/RUNBOOK.md](../evaluation/RU
 
 ## 4. サンプリングと構成比率の可視化
 
-`select_stack_targets.py`は`--sample-n <n>`(既定15、`run_evaluation_pipeline.sh`経由)または`--limit`で
-件数を絞り込む。既定の`--sample-n`パスでは`--stratify-repo-type`が有効になり、`repo_type`
-(ui-library/application)でほぼ50/50に層化しつつ、層内はstack round-robin(`select_balanced`)と
-固定シード(`--seed`、既定42)によるランダム選択を組み合わせる。`--limit`を明示指定した場合は
+`--sample-n <n>`は`run_evaluation_pipeline.sh`だけが受け付けるoptionで、既定値は15である。
+スクリプトはこの値を`--limit <n> --shuffle --stratify-repo-type`へ変換して
+`select_stack_targets.py`を呼び出す。これにより`repo_type`(ui-library/application)を
+ほぼ50/50に層化しつつ、層内はstack round-robin(`select_balanced`)と固定シード
+(`--seed`、既定42)によるランダム選択を組み合わせる。
+
+`select_stack_targets.py`自体が件数指定として受け付けるのは`--limit`だけである。
+`run_evaluation_pipeline.sh`へ`--limit`を明示指定した場合はshuffleと層化を付けずに渡し、
 severity/priority降順の決定的選択パスを使う。
 
 抽出後、`summarize()`が`repo_type_distribution` / `stack_distribution_by_repo_type` /

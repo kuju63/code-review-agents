@@ -42,20 +42,8 @@ SPECIAL_FILES = ("package.json",)
 _TEST_PATH_PATTERNS = (
     "/__tests__/",
     "/__test__/",
-    ".test.js",
-    ".test.ts",
-    ".test.jsx",
-    ".test.tsx",
-    ".spec.js",
-    ".spec.ts",
-    ".spec.jsx",
-    ".spec.tsx",
-    ".test.vue",
-    ".spec.vue",
-    ".test.svelte",
-    ".spec.svelte",
     "/test_",
-    "_test.py",
+    "_test.",
     "/tests/",
     "/test/",
     "/e2e/",
@@ -77,9 +65,13 @@ def _normalized_path(path: str) -> str:
 
 
 def is_test_file(path: str) -> bool:
-    """Return ``True`` when the path matches a configured test-file pattern."""
-    normalized = _normalized_path(path)
-    return any(pat in normalized for pat in _TEST_PATH_PATTERNS)
+    """Return ``True`` when the path matches a test directory or filename."""
+    normalized = _normalized_path(path).lower()
+    if any(pat in normalized for pat in _TEST_PATH_PATTERNS):
+        return True
+    basename = normalized.rsplit("/", 1)[-1]
+    parts = basename.split(".")
+    return len(parts) > 1 and any(part in {"test", "spec"} for part in parts[:-1])
 
 
 def is_doc_file(path: str) -> bool:

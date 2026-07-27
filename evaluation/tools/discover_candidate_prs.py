@@ -23,7 +23,7 @@ Usage:
 
 Required env (loaded from .env):
   GITHUB_TOKEN
-  SEEDED_GEN_MODEL_ID       (optional, default: gpt-4o)
+  SEEDED_GEN_MODEL_ID       (required unless --model-id is provided)
   SEEDED_GEN_LLM_BASE_URL   (optional; OpenAI-compatible endpoint)
 """
 
