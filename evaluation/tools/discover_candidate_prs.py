@@ -468,6 +468,23 @@ class GitHubClient:
         )
         return files or []
 
+    def require_pr_files(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
+        """Return changed files or raise when GitHub cannot provide a response.
+
+        Returns:
+            Pull request file entries, including an empty list when GitHub
+            successfully reports no files.
+
+        Raises:
+            RuntimeError: If the GitHub request returns no response.
+        """
+        files = self._get(
+            f"/repos/{repo}/pulls/{pr_number}/files", params={"per_page": 100}
+        )
+        if files is None:
+            raise RuntimeError(f"GitHub fetch failed for {repo}#{pr_number} files")
+        return files
+
     def list_review_comments(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
         """Retrieve inline review comments for a pull request.
 
@@ -482,6 +499,27 @@ class GitHubClient:
             f"/repos/{repo}/pulls/{pr_number}/comments", params={"per_page": 100}
         )
         return comments or []
+
+    def require_review_comments(
+        self, repo: str, pr_number: int
+    ) -> list[dict[str, Any]]:
+        """Return inline comments or raise when GitHub cannot provide a response.
+
+        Returns:
+            Inline comments, including an empty list when GitHub successfully
+            reports no comments.
+
+        Raises:
+            RuntimeError: If the GitHub request returns no response.
+        """
+        comments = self._get(
+            f"/repos/{repo}/pulls/{pr_number}/comments", params={"per_page": 100}
+        )
+        if comments is None:
+            raise RuntimeError(
+                f"GitHub fetch failed for {repo}#{pr_number} review comments"
+            )
+        return comments
 
     def list_pr_reviews(self, repo: str, pr_number: int) -> list[dict[str, Any]]:
         """Retrieve review submissions for a pull request.
@@ -621,10 +659,10 @@ def revalidate_existing_targets(
     for target in targets:
         repository = str(target["repository"])
         pr_number = int(target["pr_number"])
-        files = client.list_pr_files(repository, pr_number)
+        files = client.require_pr_files(repository, pr_number)
         if not has_production_code_change(files):
             continue
-        inline = client.list_review_comments(repository, pr_number)
+        inline = client.require_review_comments(repository, pr_number)
         if not has_inline_review_comments(inline):
             continue
         accepted.append(target)

@@ -18,6 +18,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from tests.evaluation.conftest import load_eval_tool_module
 
 discover = load_eval_tool_module("discover_candidate_prs", "discover_candidate_prs.py")
@@ -300,12 +302,12 @@ class TestRevalidateExistingTargets:
 
     def test_keeps_only_targets_matching_shared_criteria(self):
         client = MagicMock()
-        client.list_pr_files.side_effect = [
+        client.require_pr_files.side_effect = [
             [{"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}],
             [{"filename": "backend/app.py", "patch": "@@ -1 +1 @@"}],
             [{"filename": "src/other.ts", "patch": "@@ -1 +1 @@"}],
         ]
-        client.list_review_comments.side_effect = [
+        client.require_review_comments.side_effect = [
             [{"body": "fix", "path": "src/app.ts"}],
             [{"body": "fix", "path": "backend/app.py"}],
             [],
@@ -313,12 +315,37 @@ class TestRevalidateExistingTargets:
         targets = [self._target(1), self._target(2), self._target(3)]
         assert revalidate_existing_targets(client, targets) == [targets[0]]
 
+    def test_aborts_when_github_fetch_fails(self):
+        client = GitHubClient("tok")
+        target = self._target(1)
+        with (
+            patch.object(client, "_get", return_value=None),
+            pytest.raises(RuntimeError, match=r"o/r#1.*files"),
+        ):
+            revalidate_existing_targets(client, [target])
+
+    def test_aborts_when_review_comment_fetch_fails(self):
+        client = GitHubClient("tok")
+        target = self._target(1)
+        with (
+            patch.object(
+                client,
+                "_get",
+                side_effect=[
+                    [{"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}],
+                    None,
+                ],
+            ),
+            pytest.raises(RuntimeError, match=r"o/r#1.*review comments"),
+        ):
+            revalidate_existing_targets(client, [target])
+
     def test_preserves_existing_classifications(self):
         client = MagicMock()
-        client.list_pr_files.return_value = [
+        client.require_pr_files.return_value = [
             {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
         ]
-        client.list_review_comments.return_value = [
+        client.require_review_comments.return_value = [
             {"body": "fix", "path": "src/app.ts"}
         ]
         target = self._target(1)
@@ -714,10 +741,10 @@ class TestMain:
         for stack in ("vue", "angular", "svelte"):
             (tmp_path / f"pr_targets_{stack}.json").write_text("[]")
         client = MagicMock()
-        client.list_pr_files.return_value = [
+        client.require_pr_files.return_value = [
             {"filename": "src/app.ts", "patch": "@@ -1 +1 @@"}
         ]
-        client.list_review_comments.return_value = [
+        client.require_review_comments.return_value = [
             {"body": "fix", "path": "src/app.ts"}
         ]
         monkeypatch.setattr(
