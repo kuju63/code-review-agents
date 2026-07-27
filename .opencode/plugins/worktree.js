@@ -10,6 +10,26 @@ import path from "node:path";
 
 const slugify = (branch) => branch.replace(/[^a-zA-Z0-9_.-]/g, "-");
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// opencode's workspace.create() waits on an internal "workspace ready" event
+// with a short (~5s) budget and reports a timeout error even when the
+// underlying git worktree creation succeeds moments later in the background
+// (observed for both the built-in "worktree" adapter and this custom one, so
+// it isn't specific to this plugin). Poll workspace.list() briefly instead of
+// treating that timeout as fatal.
+async function findWorkspaceByBranch(v2, branch, { attempts = 20, intervalMs = 1000 } = {}) {
+  for (let i = 0; i < attempts; i++) {
+    const listed = await v2.experimental.workspace.list();
+    if (!listed.error) {
+      const workspace = listed.data.find((w) => w.type === "git-worktree" && w.branch === branch);
+      if (workspace) return workspace;
+    }
+    await sleep(intervalMs);
+  }
+  return undefined;
+}
+
 export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_workspace }) => {
   const v2 = createOpencodeClient({ baseUrl: serverUrl.toString() });
 
@@ -34,7 +54,14 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
         const base = config.extra?.base || "main";
         await $`git -C ${directory} worktree add ${config.directory} -b ${config.branch} ${base}`.env(shellEnv);
       }
-      await $`bash scripts/setup-worktree.sh`.cwd(config.directory).env(shellEnv);
+      // Deliberately not awaited: opencode waits on a "workspace ready" event
+      // with a short timeout, and scripts/setup-worktree.sh's venv/uv sync can
+      // run well past that. The worktree itself (from `git worktree add` above)
+      // is already usable; setup finishes in the background.
+      $`bash scripts/setup-worktree.sh`
+        .cwd(config.directory)
+        .env(shellEnv)
+        .catch((err) => console.error(`[git-worktree] setup-worktree.sh failed for ${config.directory}:`, err));
     },
     async remove(config) {
       await $`bash scripts/remove-worktree.sh --force ${config.directory}`.cwd(directory);
@@ -59,10 +86,13 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
             branch,
             extra: { base },
           });
+          let workspace = created.data;
           if (created.error) {
-            throw new Error(created.error.data?.message ?? "failed to create worktree");
+            workspace = await findWorkspaceByBranch(v2, branch);
+            if (!workspace) {
+              throw new Error(created.error.data?.message ?? "failed to create worktree");
+            }
           }
-          const workspace = created.data;
           const warped = await v2.experimental.workspace.warp({ id: workspace.id, sessionID: context.sessionID });
           if (warped.error) {
             throw new Error(warped.error.data?.message ?? "failed to switch session scope");
