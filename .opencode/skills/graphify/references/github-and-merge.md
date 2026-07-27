@@ -2,7 +2,7 @@
 
 Load this when the user passed one or more `https://github.com/...` URLs, or named several local subfolders to merge into one graph.
 
-### Step 0 - Clone GitHub repo(s) (only if a GitHub URL was given)
+## Step 0 - Clone GitHub repo(s) (only if a GitHub URL was given)
 
 **Single repo:**
 ```bash
@@ -33,7 +33,7 @@ The skill pipeline writes all intermediate and final outputs to `graphify-out/` 
 graphify extract ./core/     # → ./core/graphify-out/graph.json
 graphify extract ./service/  # → ./service/graphify-out/graph.json
 graphify extract ./platform/ # → ./platform/graphify-out/graph.json
-# Add --backend gemini|kimi|openai|deepseek|claude-cli depending on which API key you have set
+# Add an external --backend only after explicit user selection; first show the provider, model, and files that will be uploaded
 
 # Then merge at the project root:
 graphify merge-graphs \

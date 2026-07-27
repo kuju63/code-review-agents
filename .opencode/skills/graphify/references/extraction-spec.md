@@ -14,10 +14,7 @@ Rules:
 - INFERRED: reasonable inference (shared data structure, implied dependency)
 - AMBIGUOUS: uncertain - flag for review, do not omit
 
-Code files: focus on semantic edges AST cannot find (call relationships, shared data, arch patterns).
-  Do not re-extract imports - AST already has those.
 Doc/paper files: extract named concepts, entities, citations. For rationale (WHY decisions were made, trade-offs, design intent): store as a `rationale` attribute on the relevant concept node — do NOT create a separate rationale node or fragment node. Only create a node for something that is itself a named entity or concept. Use `file_type:"rationale"` for concept-like nodes (ideas, principles, mechanisms, design patterns). `file_type` MUST be one of exactly these six values: `code`, `document`, `paper`, `image`, `rationale`, `concept`. Any other value is invalid and will be rejected.
-Code files: when adding `calls` edges, source MUST be the caller (the function/class doing the calling), target MUST be the callee. Never reverse this direction. `calls` edges MUST stay within one language: a Python function cannot `calls` a JS/TS/Go/Rust/Java symbol and vice versa — cross-language call edges are phantom artifacts, never emit them.
 Image files: use vision to understand what the image IS - do not just OCR.
   UI screenshot: layout patterns, design decisions, key elements, purpose.
   Chart: metric, trend/insight, data source.
@@ -29,15 +26,15 @@ Image files: use vision to understand what the image IS - do not just OCR.
 DEEP_MODE (if --mode deep was given): be aggressive with INFERRED edges - indirect deps,
   shared assumptions, latent couplings. Mark uncertain ones AMBIGUOUS instead of omitting.
 
-Semantic similarity: if two concepts in this chunk solve the same problem or represent the same idea without any structural link (no import, no call, no citation), add a `semantically_similar_to` edge marked INFERRED with a confidence_score reflecting how similar they are (0.6-0.95). Examples:
-- Two functions that both validate user input but never call each other
-- A class in code and a concept in a paper that describe the same algorithm
-- Two error types that handle the same failure mode differently
+Semantic similarity: if two concepts in this chunk solve the same problem or represent the same idea without any structural link (no citation, no shared reference), add a `semantically_similar_to` edge marked INFERRED with a confidence_score reflecting how similar they are (0.6-0.95). Examples:
+- Two documents that describe the same mechanism in different words
+- A concept in a paper and a concept in an image (diagram) that depict the same algorithm
+- Two rationale notes that justify the same design decision differently
 Only add these when the similarity is genuinely non-obvious and cross-cutting. Do not add them for trivially similar things.
 
 Hyperedges: if 3 or more nodes clearly participate together in a shared concept, flow, or pattern that is not captured by pairwise edges alone, add a hyperedge to a top-level `hyperedges` array. Examples:
-- All classes that implement a common protocol or interface
-- All functions in an authentication flow (even if they don't all call each other)
+- All concepts that describe a common protocol or standard
+- All entities named across an authentication flow described in the docs
 - All concepts from a paper section that form one coherent idea
 Use sparingly — only when the group relationship adds information beyond the pairwise edges. Maximum 3 hyperedges per chunk.
 

@@ -20,7 +20,7 @@ if not Path('graphify-out/graph.json').exists():
 ```
 If it fails, stop and tell the user to run `/graphify <path>` first.
 
-### Step 0 — Constrained query expansion (REQUIRED before traversal)
+## Step 0 — Constrained query expansion (REQUIRED before traversal)
 
 graphify's `query` CLI matches nodes via case-folded substring + IDF — there is **no stemming, no synonyms, no cross-language match** inside the binary, and the inline fallback below matches the same way. If the user's question uses different language or different domain vocabulary than the graph's labels (user says "обработчик" / graph says "handler"; user says "authentication" / graph says "Guardian"), the literal matcher returns 0 hits and the answer collapses to noise.
 
@@ -53,12 +53,12 @@ print(f'vocab: {len(vocab)} tokens')
    - Morphology: "handlers" maps to `handler` IFF present; "todos" maps to `todo` IFF present.
 
 3. Print the selection explicitly to the user before running the query, so the expansion is auditable:
-```
+```text
 Query expanded to (from graph vocab, N tokens): [token1, token2, ...]
 ```
 If the list is empty, say so plainly and stop — do not proceed to traversal.
 
-### Step 1 — Traversal
+## Step 1 — Traversal
 
 Build the **expanded query string** by joining the selected tokens with spaces. Use this string as `QUESTION` below — NOT the original user question. (The original question is preserved only for `save-result` at the end.)
 
@@ -165,13 +165,19 @@ print(output)
 
 Replace `QUESTION` with the **expanded** query string, `MODE` with `bfs` or `dfs`, and `BUDGET` with the token budget (default `2000`, or whatever `--budget N` specifies). Then answer based on the subgraph output above, using only what the graph contains.
 
-After writing the answer, save it back into the graph so it improves future queries. Include the expanded tokens inside the `--answer` text (e.g. `"Expanded from original query via vocab: [tokens]. Then traversed..."`) so the next `--update` extracts the expansion history as a graph node:
+After writing the answer, ask whether the user wants this Q&A saved into the local graph. Saving is opt-in: without explicit consent, do not invoke `save-result` and do not persist the question or answer. Before saving, remove credentials, tokens, personal data, confidential code, unnecessary absolute paths, and any other sensitive content. Include the expanded-token trace only when it contains no sensitive information.
+
+When consent is given, pass question and answer through the execution tool's environment and each cited node as a separately quoted argument:
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify save-result --question "ORIGINAL_QUESTION" --answer "ANSWER" --type query --nodes NODE1 NODE2
+"$(cat graphify-out/.graphify_python)" -m graphify save-result \
+  --question "$GRAPHIFY_SAVE_QUESTION" \
+  --answer "$GRAPHIFY_SAVE_ANSWER" \
+  --type query \
+  --nodes "$GRAPHIFY_SAVE_NODE_1" "$GRAPHIFY_SAVE_NODE_2"
 ```
 
-Replace `ORIGINAL_QUESTION` with the user's verbatim question, `ANSWER` with your full answer text (containing the expanded-token trace), `NODE1 NODE2` with the list of node labels you cited. This closes the feedback loop: the next `--update` will extract this Q&A as a node in the graph.
+Set the `GRAPHIFY_SAVE_*` values through the execution tool's environment after redaction; never splice question, answer, or node labels into command text. Omit unused node arguments. This closes the feedback loop without persisting sensitive input.
 
 **Work memory (self-improving loop).** Add an `--outcome` so future sessions learn from this one — append `--outcome useful|dead_end|corrected` to the `save-result` command (and `--correction "the right answer"` when correcting):
 
@@ -243,10 +249,14 @@ except nx.NodeNotFound as e:
 
 Replace `NODE_A` and `NODE_B` with the actual concept names from the user. Then explain the path in plain language - what each hop means, why it's significant.
 
-After writing the explanation, save it back:
+After writing the explanation, offer to save it using the same explicit-consent and redaction rules as query results. If consent is given, set the following environment variables and quote both path targets:
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify save-result --question "Path from NODE_A to NODE_B" --answer "ANSWER" --type path_query --nodes NODE_A NODE_B
+"$(cat graphify-out/.graphify_python)" -m graphify save-result \
+  --question "$GRAPHIFY_SAVE_QUESTION" \
+  --answer "$GRAPHIFY_SAVE_ANSWER" \
+  --type path_query \
+  --nodes "$GRAPHIFY_PATH_NODE_A" "$GRAPHIFY_PATH_NODE_B"
 ```
 
 ---
@@ -304,8 +314,12 @@ for neighbor in G.neighbors(nid):
 
 Replace `NODE_NAME` with the concept the user asked about. Then write a 3-5 sentence explanation of what this node is, what it connects to, and why those connections are significant. Use the source locations as citations.
 
-After writing the explanation, save it back:
+After writing the explanation, offer to save it using the same explicit-consent and redaction rules as query results. If consent is given, set the following environment variables and quote the node label:
 
 ```bash
-$(cat graphify-out/.graphify_python) -m graphify save-result --question "Explain NODE_NAME" --answer "ANSWER" --type explain --nodes NODE_NAME
+"$(cat graphify-out/.graphify_python)" -m graphify save-result \
+  --question "$GRAPHIFY_SAVE_QUESTION" \
+  --answer "$GRAPHIFY_SAVE_ANSWER" \
+  --type explain \
+  --nodes "$GRAPHIFY_EXPLAIN_NODE"
 ```

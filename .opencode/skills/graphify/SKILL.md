@@ -68,9 +68,14 @@ Only when the path is one or more `https://github.com/...` URLs, or several loca
 # Detect the correct Python interpreter (handles uv tool, pipx, venv, system installs)
 PYTHON=""
 GRAPHIFY_BIN=$(which graphify 2>/dev/null)
+GRAPHIFY_VERSION=$(tr -d '[:space:]' < .opencode/skills/graphify/.graphify_version)
+case "$GRAPHIFY_VERSION" in
+    ''|*[!0-9.]*) echo 'error: invalid .graphify_version' >&2; exit 1 ;;
+esac
+GRAPHIFY_REQUIREMENT="graphifyy==$GRAPHIFY_VERSION"
 # 1. uv tool installs — most reliable on modern Mac/Linux
 if [ -z "$PYTHON" ] && command -v uv >/dev/null 2>&1; then
-    _UV_PY=$(uv tool run --from graphifyy python -c "import sys; print(sys.executable)" 2>/dev/null)
+    _UV_PY=$(uv tool run --from "$GRAPHIFY_REQUIREMENT" python -c "import sys; print(sys.executable)" 2>/dev/null)
     if [ -n "$_UV_PY" ]; then PYTHON="$_UV_PY"; fi
 fi
 # 2. Read shebang from graphify binary (pipx and direct pip installs)
@@ -78,27 +83,32 @@ if [ -z "$PYTHON" ] && [ -n "$GRAPHIFY_BIN" ]; then
     _SHEBANG=$(head -1 "$GRAPHIFY_BIN" | tr -d '#!')
     case "$_SHEBANG" in
         *[!a-zA-Z0-9/_.@-]*) ;;
-        *) "$_SHEBANG" -c "import graphify" 2>/dev/null && PYTHON="$_SHEBANG" ;;
+        *) GRAPHIFY_VERSION="$GRAPHIFY_VERSION" "$_SHEBANG" -c "import os; from importlib.metadata import version; raise SystemExit(version('graphifyy') != os.environ['GRAPHIFY_VERSION'])" 2>/dev/null && PYTHON="$_SHEBANG" ;;
     esac
 fi
 # 3. Fall back to python3
 if [ -z "$PYTHON" ]; then PYTHON="python3"; fi
-if ! "$PYTHON" -c "import graphify" 2>/dev/null; then
+if ! GRAPHIFY_VERSION="$GRAPHIFY_VERSION" "$PYTHON" -c "import os; from importlib.metadata import version; raise SystemExit(version('graphifyy') != os.environ['GRAPHIFY_VERSION'])" 2>/dev/null; then
     if command -v uv >/dev/null 2>&1; then
-        uv tool install --upgrade graphifyy -q 2>&1 | tail -3
-        _UV_PY=$(uv tool run --from graphifyy python -c "import sys; print(sys.executable)" 2>/dev/null)
+        uv tool install --upgrade "$GRAPHIFY_REQUIREMENT" -q 2>&1 | tail -3
+        _UV_PY=$(uv tool run --from "$GRAPHIFY_REQUIREMENT" python -c "import sys; print(sys.executable)" 2>/dev/null)
         if [ -n "$_UV_PY" ]; then PYTHON="$_UV_PY"; fi
     else
-        "$PYTHON" -m pip install graphifyy -q 2>/dev/null \
-          || "$PYTHON" -m pip install graphifyy -q --break-system-packages 2>&1 | tail -3
+        "$PYTHON" -m pip install "$GRAPHIFY_REQUIREMENT" -q 2>/dev/null \
+          || "$PYTHON" -m pip install "$GRAPHIFY_REQUIREMENT" -q --break-system-packages 2>&1 | tail -3
     fi
 fi
 # Write interpreter path for all subsequent steps (persists across invocations)
 mkdir -p graphify-out
 "$PYTHON" -c "import sys; open('graphify-out/.graphify_python', 'w', encoding='utf-8').write(sys.executable)"
-# Save scan root so `graphify update` (no args) knows where to look next time
-echo "$(cd INPUT_PATH && pwd)" > graphify-out/.graphify_root
+# Save scan root so `graphify update` (no args) knows where to look next time.
+# GRAPHIFY_INPUT_PATH must be supplied through the execution tool's environment,
+# never spliced into this shell/Python source.
+: "${GRAPHIFY_INPUT_PATH:?Set GRAPHIFY_INPUT_PATH to the scan root}"
+"$PYTHON" -c "import os; from pathlib import Path; Path('graphify-out/.graphify_root').write_text(str(Path(os.environ['GRAPHIFY_INPUT_PATH']).resolve()), encoding='utf-8')"
 ```
+
+Set `GRAPHIFY_INPUT_PATH` to the exact user-provided path through the execution tool's environment before running the block. The Python process reads it from `os.environ`, so spaces and metacharacters are data rather than shell or Python syntax.
 
 If the import succeeds, print nothing and move straight to Step 2.
 
@@ -151,14 +161,13 @@ Skip this step entirely if `detect` returned zero `video` files. When the corpus
 
 This step has two parts: **structural extraction** (deterministic, free) and **semantic extraction** (LLM, costs tokens).
 
-> **graphify needs no API key. Never ask the user for one, and never block on one.** Code is extracted structurally (AST) with no LLM and no key at all — a code-only corpus (the common `/graphify .` on a repo) skips semantic extraction entirely, so it needs nothing here: go straight to Part A and skip Part B. Semantic extraction (only for docs, papers, and images) uses Gemini **only if** `GEMINI_API_KEY`/`GOOGLE_API_KEY` is already set; otherwise the host agent itself is the LLM. graphify does **not** read `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or any other provider key. If you catch yourself about to prompt for, wait on, or stop because of a missing API key, that is a misread of this skill — proceed without one.
+> **graphify needs no API key. Never ask the user for one, and never block on one.** Code is extracted structurally (AST) with no LLM and no key at all — a code-only corpus (the common `/graphify .` on a repo) skips semantic extraction entirely, so it needs nothing here: go straight to Part A and skip Part B. Semantic extraction handles docs, papers, and images. The presence of `GEMINI_API_KEY`/`GOOGLE_API_KEY` alone is never consent to upload files; without explicit Gemini opt-in, the host agent itself is the LLM. graphify does **not** read `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or any other provider key. If you catch yourself about to prompt for, wait on, or stop because of a missing API key, that is a misread of this skill — proceed without one.
 
-**Before semantic extraction:** check whether `GEMINI_API_KEY` or `GOOGLE_API_KEY` is set. If neither is set, print this one-liner to the user:
-> Tip: set `GEMINI_API_KEY` or `GOOGLE_API_KEY` to use Gemini for semantic extraction (`pip install 'graphifyy[gemini]'`).
+**Before semantic extraction:** Gemini may be used only when the user explicitly passed `--gemini` or explicitly confirmed its use for this run. Before calling `graphify.llm.extract_corpus_parallel(files, backend="gemini")`, print the provider (`Gemini`), model, and complete list of docs/papers/images that will be sent, explain that their content leaves the machine, and obtain confirmation unless `--gemini` already supplied it. A configured `GEMINI_API_KEY` or `GOOGLE_API_KEY` without that opt-in must not trigger external upload.
 
-Print it once, then continue — do not wait for the user to supply a key. If `GEMINI_API_KEY` or `GOOGLE_API_KEY` IS set, use `graphify.llm.extract_corpus_parallel(files, backend="gemini")` for semantic extraction instead of dispatching subagents. The default Gemini model is `gemini-3-flash-preview`; set `GRAPHIFY_GEMINI_MODEL` or pass `--model` in headless CLI flows to override it.
+If Gemini was not explicitly selected, continue with host-agent extraction and do not wait for a key. If Gemini was selected but neither key is set, report that the selected backend is unavailable and offer host-agent extraction; do not prompt for a credential. The default Gemini model is `gemini-3-flash-preview`; set `GRAPHIFY_GEMINI_MODEL` or pass `--model` in headless CLI flows to override it.
 
-> **No other API keys are read.** When `GEMINI_API_KEY`/`GOOGLE_API_KEY` are unset, semantic extraction falls to the host agent itself — the running session is the LLM. On a host that dispatches subagents (e.g. Claude Code), dispatch them as written in Part B. On a host that runs the CLI directly in a terminal and cannot dispatch subagents, do not stall: a code-only corpus has no semantic work, so write the empty semantic file (Part B "Fast path") and continue to Part C; for a corpus with docs/papers/images, either set a Gemini key or extract those inline yourself, but in no case prompt for `ANTHROPIC_API_KEY` — that prompt is a misread of this skill.
+> **No other API keys are read.** Semantic extraction otherwise falls to the host agent itself — the running session is the LLM. On a host that dispatches subagents (e.g. Claude Code), dispatch them as written in Part B. On a host that runs the CLI directly in a terminal and cannot dispatch subagents, do not stall: a code-only corpus has no semantic work, so write the empty semantic file (Part B "Fast path") and continue to Part C; for a corpus with docs/papers/images, extract those inline yourself or use an explicitly selected Gemini backend, but in no case prompt for `ANTHROPIC_API_KEY` — that prompt is a misread of this skill.
 
 **Run Part A (AST) and Part B (semantic) in parallel. Dispatch all semantic subagents AND start AST extraction in the same message. Both can run simultaneously since they operate on different file types. Merge results in Part C as before.**
 
@@ -222,7 +231,17 @@ import json
 from graphify.cache import check_semantic_cache
 from pathlib import Path
 
-detect = json.loads(Path('graphify-out/.graphify_detect.json').read_text(encoding=\"utf-8\"))
+detect_path = Path('graphify-out/.graphify_detect.json')
+detect = json.loads(detect_path.read_text(encoding=\"utf-8\"))
+# Persist transcript outputs as documents before selecting semantic inputs. This
+# also repairs a partially completed Step 2.5 without feeding raw media to agents.
+transcript_path = Path('graphify-out/.graphify_transcripts.json')
+if transcript_path.exists():
+    documents = detect.setdefault('files', {}).setdefault('document', [])
+    for transcript in json.loads(transcript_path.read_text(encoding=\"utf-8\")):
+        if transcript not in documents:
+            documents.append(transcript)
+    detect_path.write_text(json.dumps(detect, ensure_ascii=False), encoding=\"utf-8\")
 # Only content files go to semantic extraction. Code is already covered structurally
 # by the AST pass (Part A); flattening every category here makes subagents re-read
 # every source file (#1392). Video is transcribed to a document in Step 2.5 first.
@@ -247,6 +266,13 @@ Only dispatch subagents for files listed in `graphify-out/.graphify_uncached.txt
 
 Load files from `graphify-out/.graphify_uncached.txt`. Split into chunks of 20-25 files each. Each image gets its own chunk (vision needs separate context). When splitting, group files from the same directory together so related artifacts land in the same chunk and cross-file relationships are more likely to be extracted.
 
+Before dispatch, remove prior-run temporary results. After calculating `TOTAL_CHUNKS`, write that integer to `.graphify_total_chunks`; Step B3 will read only the expected chunk numbers from this run:
+
+```bash
+rm -f graphify-out/.graphify_chunk_*.json graphify-out/.graphify_semantic_new.json
+printf '%s' "$TOTAL_CHUNKS" > graphify-out/.graphify_total_chunks
+```
+
 **Step B2 - Dispatch ALL subagents in a single message (OpenCode)**
 
 > **OpenCode platform:** Uses `@mention` dispatch instead of the Agent tool. All mentions in a single message run in parallel.
@@ -259,7 +285,7 @@ Dispatch one `@mention` per chunk — ALL in the same response:
 @agent Chunk 2 of TOTAL_CHUNKS: [next chunk]
 ```
 
-Wait for all agents to return. Parse each response as JSON. Accumulate nodes/edges/hyperedges across all results and write to `graphify-out/.graphify_semantic_new.json`. If the `@agent` path cannot write chunk files, fall back to the serial path that writes each `graphify-out/.graphify_chunk_NN.json` before merge.
+Wait for all agents to return. Parse each response as JSON and write response N to the current run's expected `graphify-out/.graphify_chunk_NN.json`; do not write `.graphify_semantic_new.json` directly. If the `@agent` path cannot produce these files, use the serial path to materialize each validated response at its expected chunk number before Step B3 merges them.
 
 Subagent prompt template:
 
@@ -275,27 +301,42 @@ Wait for all subagents. For each result:
 
 If more than half the chunks failed or are missing, stop and tell the user to re-run and ensure `subagent_type="general-purpose"` is used.
 
-Merge all chunk files into `.graphify_semantic_new.json`. **After each Agent call completes, read the real token counts from the Agent tool result's `usage` field and write them back into the chunk JSON before merging** — the chunk JSON itself always has placeholder zeros. Then run:
+Merge all chunk files into `.graphify_semantic_new.json`. **After each Agent call completes, read the real token counts from the Agent tool result's `usage` field and write them back into the chunk JSON before merging** — the chunk JSON itself always has placeholder zeros. The merge below reads only this run's expected chunk numbers (`1..TOTAL_CHUNKS`), never a wildcard, so a stale file left by an aborted prior run cannot slip in. Invalid JSON is warned and skipped rather than aborting the merge:
 ```bash
 $(cat graphify-out/.graphify_python) -c "
-import json, glob
+import json
 from pathlib import Path
 
-chunks = sorted(glob.glob('graphify-out/.graphify_chunk_*.json'))
+total = int(Path('graphify-out/.graphify_total_chunks').read_text(encoding=\"utf-8\").strip())
 all_nodes, all_edges, all_hyperedges = [], [], []
 total_in, total_out = 0, 0
-for c in chunks:
-    d = json.loads(Path(c).read_text(encoding=\"utf-8\"))
-    all_nodes += d.get('nodes', [])
-    all_edges += d.get('edges', [])
+merged = 0
+for i in range(1, total + 1):
+    c = Path(f'graphify-out/.graphify_chunk_{i:02d}.json')
+    if not c.exists():
+        print(f'warning: chunk {i} missing - skipping')
+        continue
+    try:
+        d = json.loads(c.read_text(encoding=\"utf-8\"))
+    except (ValueError, OSError) as e:
+        print(f'warning: chunk {i} invalid JSON ({e}) - skipping')
+        continue
+    if not isinstance(d, dict) or not isinstance(d.get('nodes'), list) or not isinstance(d.get('edges'), list):
+        print(f'warning: chunk {i} missing valid nodes/edges arrays - skipping')
+        continue
+    all_nodes += d['nodes']
+    all_edges += d['edges']
     all_hyperedges += d.get('hyperedges', [])
     total_in += d.get('input_tokens', 0)
     total_out += d.get('output_tokens', 0)
+    merged += 1
+if total and merged * 2 < total:
+    raise SystemExit(f'error: more than half the chunks failed ({merged}/{total}); rerun with writable general-purpose agents')
 Path('graphify-out/.graphify_semantic_new.json').write_text(json.dumps({
     'nodes': all_nodes, 'edges': all_edges, 'hyperedges': all_hyperedges,
     'input_tokens': total_in, 'output_tokens': total_out,
 }, indent=2, ensure_ascii=False), encoding=\"utf-8\")
-print(f'Merged {len(chunks)} chunks: {total_in:,} in / {total_out:,} out tokens')
+print(f'Merged {merged}/{total} chunks: {total_in:,} in / {total_out:,} out tokens')
 "
 ```
 
@@ -522,10 +563,14 @@ graphify export obsidian
 # or with custom dir: graphify export obsidian --dir ~/vaults/my-project
 ```
 
-Generate the HTML graph (always, unless `--no-viz`):
+Generate the HTML graph (always, unless `--no-viz`). First read the node count from `graphify-out/graph.json`. If it exceeds 5,000, print `Warning: this graph has N nodes; HTML export will use the aggregated community view.` before proceeding:
 
 ```bash
-graphify export html  # auto-aggregates to community view if graph > 5000 nodes
+GRAPHIFY_NODE_COUNT=$("$(cat graphify-out/.graphify_python)" -c "import json; print(len(json.load(open('graphify-out/graph.json', encoding='utf-8')).get('nodes', [])))")
+if [ "$GRAPHIFY_NODE_COUNT" -gt 5000 ]; then
+    printf 'Warning: this graph has %s nodes; HTML export will use the aggregated community view.\n' "$GRAPHIFY_NODE_COUNT"
+fi
+graphify export html
 # or: graphify export html --no-viz
 ```
 
@@ -599,7 +644,7 @@ cost_path.write_text(json.dumps(cost, indent=2, ensure_ascii=False), encoding=\"
 print(f'This run: {input_tok:,} input tokens, {output_tok:,} output tokens')
 print(f'All time: {cost[\"total_input_tokens\"]:,} input, {cost[\"total_output_tokens\"]:,} output ({len(cost[\"runs\"])} runs)')
 "
-rm -f graphify-out/.graphify_detect.json graphify-out/.graphify_extract.json graphify-out/.graphify_ast.json graphify-out/.graphify_semantic.json graphify-out/.graphify_analysis.json
+rm -f graphify-out/.graphify_detect.json graphify-out/.graphify_extract.json graphify-out/.graphify_ast.json graphify-out/.graphify_semantic.json graphify-out/.graphify_analysis.json graphify-out/.graphify_transcripts.json graphify-out/.graphify_total_chunks
 find graphify-out -maxdepth 1 -name '.graphify_chunk_*.json' -delete 2>/dev/null
 rm -f graphify-out/.needs_update 2>/dev/null || true
 ```

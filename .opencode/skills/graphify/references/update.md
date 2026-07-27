@@ -6,13 +6,15 @@ Load this only when the user passed `--update` or `--cluster-only`. A first-time
 
 Use when you've added or modified files since the last run. Only re-extracts changed files - saves tokens and time.
 
+Set `GRAPHIFY_INPUT_PATH` (and, when `--directed` was given, `GRAPHIFY_DIRECTED=1`) through the execution tool's environment for every block below. The values are read from `os.environ`, never spliced into shell or Python source.
+
 ```bash
 $(cat graphify-out/.graphify_python) -c "
-import sys, json
+import os, sys, json
 from graphify.detect import detect_incremental, save_manifest
 from pathlib import Path
 
-result = detect_incremental(Path('INPUT_PATH'))
+result = detect_incremental(Path(os.environ['GRAPHIFY_INPUT_PATH']))
 new_total = result.get('new_total', 0)
 print(json.dumps(result, indent=2, ensure_ascii=False))
 Path('graphify-out/.graphify_incremental.json').write_text(json.dumps(result, ensure_ascii=False), encoding=\"utf-8\")
@@ -84,7 +86,7 @@ Then:
 
 ```bash
 $(cat graphify-out/.graphify_python) -c "
-import json
+import json, os
 from pathlib import Path
 from graphify.build import build_merge
 from graphify.detect import save_manifest
@@ -106,15 +108,16 @@ prune = list(deleted) or None
 # Pass root= so prune_sources (absolute paths from detect_incremental) are
 # relativized to match the graph's relative source_file values; without it
 # nothing is pruned and stale nodes accumulate on every update (#1361).
-# directed=IS_DIRECTED: replace IS_DIRECTED with True if --directed was given, else
-# False. Without it a --directed --update silently rebuilds undirected and collapses
-# reciprocal A<->B edges (#1392).
+# GRAPHIFY_DIRECTED is parsed as a typed boolean. Without it a --directed --update
+# silently rebuilds undirected and collapses reciprocal A<->B edges (#1392).
+input_path = Path(os.environ['GRAPHIFY_INPUT_PATH'])
+is_directed = os.environ.get('GRAPHIFY_DIRECTED', '').lower() in ('1', 'true', 'yes')
 G = build_merge(
     [new_extraction],
     graph_path='graphify-out/graph.json',
     prune_sources=prune,
-    root='INPUT_PATH',
-    directed=IS_DIRECTED,
+    root=input_path,
+    directed=is_directed,
 )
 print(f'[graphify update] Merged: {G.number_of_nodes()} nodes, {G.number_of_edges()} edges')
 
@@ -150,7 +153,7 @@ print(f'[graphify update] Merged extraction written ({len(merged_out[\"nodes\"])
 # is lost forever (#2015). Mirrors the library extract path
 # (cli._stamped_manifest_files + clear_semantic + scan_corpus).
 from graphify.cli import _stamped_manifest_files
-_manifest_files = _stamped_manifest_files(incremental['files'], new_extraction, Path('INPUT_PATH'))
+_manifest_files = _stamped_manifest_files(incremental['files'], new_extraction, input_path)
 # Changed semantic files dispatched this run but NOT stamped had their chunk fail
 # or be omitted; clear any stale semantic_hash so they are re-queued (#1948).
 _sem_types = ('document', 'paper', 'image')
@@ -160,7 +163,7 @@ _cleared = _dispatched - _stamped
 # scan_corpus = the RAW full corpus so in-root files newly excluded since last run
 # are dropped rather than masquerading as deletions; untouched rows preserved (#1908).
 _scan = {f for fl in incremental['files'].values() for f in fl}
-save_manifest(_manifest_files, root='INPUT_PATH', scan_corpus=_scan, clear_semantic=_cleared or None)
+save_manifest(_manifest_files, root=input_path, scan_corpus=_scan, clear_semantic=_cleared or None)
 print('[graphify update] Manifest saved.')
 "
 ```
@@ -171,7 +174,7 @@ After Step 4, show the graph diff:
 
 ```bash
 $(cat graphify-out/.graphify_python) -c "
-import json
+import json, os
 from graphify.analyze import graph_diff
 from graphify.build import build_from_json
 from networkx.readwrite import json_graph
@@ -181,7 +184,8 @@ from pathlib import Path
 # Load old graph (before update) from backup written before merge
 old_data = json.loads(Path('graphify-out/.graphify_old.json').read_text(encoding=\"utf-8\")) if Path('graphify-out/.graphify_old.json').exists() else None
 new_extract = json.loads(Path('graphify-out/.graphify_extract.json').read_text(encoding=\"utf-8\"))
-G_new = build_from_json(new_extract, directed=IS_DIRECTED)
+is_directed = os.environ.get('GRAPHIFY_DIRECTED', '').lower() in ('1', 'true', 'yes')
+G_new = build_from_json(new_extract, directed=is_directed)
 
 if old_data:
     G_old = json_graph.node_link_graph(old_data, edges='links')

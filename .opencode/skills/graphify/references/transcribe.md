@@ -2,7 +2,7 @@
 
 Load this only when `detect` reported one or more `video` files. A corpus with no video never reads this.
 
-### Step 2.5 - Transcribe video / audio files (only if video files detected)
+## Step 2.5 - Transcribe video / audio files (only if video files detected)
 
 Skip this step entirely if `detect` returned zero `video` files.
 
@@ -39,13 +39,19 @@ transcript_paths = transcribe_all(video_files, initial_prompt=prompt)
 # Write the JSON from Python (NOT a shell '>' redirect): transcribe_all/Whisper
 # print progress to stdout, which would otherwise corrupt the JSON file (#1392).
 Path('graphify-out/.graphify_transcripts.json').write_text(json.dumps(transcript_paths, ensure_ascii=False), encoding=\"utf-8\")
+# Persist transcripts as documents so Step 3B sees them, including video-only runs.
+documents = detect.setdefault('files', {}).setdefault('document', [])
+for transcript in transcript_paths:
+    if transcript not in documents:
+        documents.append(transcript)
+Path('graphify-out/.graphify_detect.json').write_text(json.dumps(detect, ensure_ascii=False), encoding=\"utf-8\")
 print(f'Transcribed {len(transcript_paths)} file(s)', file=sys.stderr)
 "
 ```
 
 After transcription:
-- Read the transcript paths from `graphify-out/.graphify_transcripts.json`
-- Add them to the docs list before dispatching semantic subagents in Step 3B
+- Confirm that every path in `graphify-out/.graphify_transcripts.json` was appended to `detect['files']['document']` and that the updated object was saved back to `graphify-out/.graphify_detect.json`
+- Step 3B must reload that persisted detection JSON and include those document paths in semantic extraction
 - Print how many transcripts were created: `Transcribed N video file(s) -> treating as docs`
 - If transcription fails for a file, print a warning and continue with the rest
 
