@@ -12,6 +12,7 @@ PROJECT_ROOT=$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)
 
 # Claude Codeの設定をリンク
 if [ -f "$PROJECT_ROOT/.claude/settings.local.json" ]; then
+    mkdir -p "$WORKTREE_ROOT/.claude"
     ln -sf "$PROJECT_ROOT/.claude/settings.local.json" "$WORKTREE_ROOT/.claude/settings.local.json"
     echo "[INFO] Link claude code local setting file."
 fi

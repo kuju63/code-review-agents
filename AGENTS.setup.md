@@ -9,7 +9,7 @@
 ### リポジトリのクローン
 
 ```shell
-git clone https://github.com/kuju63/code-review-agent.git
+git clone https://github.com/kuju63/code-review-agents.git
 ```
 
 ### GitHub CLIのインストール
@@ -38,7 +38,10 @@ gh auth login
 Homebrewを使用してpyenvをインストールする。pyenvはPythonのバージョン管理を行うツールであり、プロジェクト毎にPythonバージョンを切り替えることができる
 
 ```shell
-brew install python@3.14
+brew install pyenv
+pyenv init --install
+exec "$SHELL"
+pyenv install 3.14.6
 ```
 
 #### uvのインストール
@@ -50,12 +53,12 @@ brew install uv
 
 uv venv
 source .venv/bin/activate
-uv sync --forzen
+uv sync --frozen
 ```
 
 #### pre-commitのインストール
 
-[pre-commit]()はGitへのコミット都度、最低限のチェックを行い、品質を担保することができるツールである。
+[pre-commit](https://pre-commit.com/)はGitへのコミット都度、最低限のチェックを行い、品質を担保することができるツールである。
 
 ```shell
 pre-commit install
