@@ -28,51 +28,9 @@ Runtime integrations:
 
 For shared development commands (initial setup, test, lint/format, build), refer to [CONTRIBUTING.md](CONTRIBUTING.md#3-local-development-commands).
 
-### Initial Setup
+### Setup
 
-```bash
-uv venv
-source .venv/bin/activate
-uv sync
-pre-commit install
-```
-
-Note: `betterleaks` is required for local pre-commit runs. See [README.md](README.md#0-requirements).
-
-### Worktree Setup
-
-Be sure to create the worktree under the .claude/worktrees directory.
-After creating a new worktree, copy the local Claude Code hook settings into it and create a symbolic link to the secrets file (`.env`).
-The `.claude/settings.local.json` file is gitignored (personal settings) and must be
-copied manually to each worktree.
-The `.env` file should not be copied into a worktree; create a symbolic link from the project root into the worktree instead.
-
-```bash
-WORKTREE_ROOT=$(git rev-parse --show-toplevel)
-PROJECT_ROOT=$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)
-mkdir -p "$WORKTREE_ROOT/.claude"
-[ -f "$PROJECT_ROOT/.claude/settings.local.json" ] && \
-  cp "$PROJECT_ROOT/.claude/settings.local.json" "$WORKTREE_ROOT/.claude/"
-[ -f "$PROJECT_ROOT/.env" ] && ln -sf "$PROJECT_ROOT/.env" "$WORKTREE_ROOT/.env"
-uv venv
-uv sync --frozen
-```
-
-OpenCode starts the Serena MCP server from `opencode.jsonc` with the `ide` context and registers the current worktree as a Serena project. The Serena version in that file is tracked by Renovate. Existing memories under `.serena/memories/` satisfy Serena's onboarding check and should be reused.
-
-### Worktree Teardown
-
-Always remove worktrees with the project script so that the matching absolute path is also removed from Serena's project registry. Do not run `git worktree remove` directly.
-
-```bash
-scripts/remove-worktree.sh .claude/worktrees/<worktree-name>
-```
-
-Use `--force` only when intentionally discarding uncommitted work:
-
-```bash
-scripts/remove-worktree.sh --force .claude/worktrees/<worktree-name>
-```
+For setup instructions, see [AGENTS.setup.md](AGENTS.setup.md).
 
 ### Run Application
 
