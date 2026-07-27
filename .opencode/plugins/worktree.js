@@ -8,7 +8,14 @@ import { tool } from "@opencode-ai/plugin";
 import { createOpencodeClient } from "@opencode-ai/sdk/v2";
 import path from "node:path";
 
-const slugify = (branch) => branch.replace(/[^a-zA-Z0-9_.-]/g, "-");
+// Escapes every literal '-' to '--' first, then replaces each disallowed
+// character with a '-<hex codepoint>-' escape. Because a raw '-' can only
+// ever appear doubled, single-'-' escape delimiters never collide with an
+// escaped literal dash, so distinct branch names always slugify to distinct
+// paths (e.g. "feature/foo" and "feature-foo" no longer collapse to the same
+// directory).
+const slugify = (branch) =>
+  branch.replace(/-/g, "--").replace(/[^a-zA-Z0-9_.-]/g, (ch) => `-${ch.codePointAt(0).toString(16)}-`);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -16,6 +23,17 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // carries no machine-readable error code, only this message, so detection is
 // necessarily string-based.
 const isWorkspaceReadyTimeout = (message) => /timed out waiting for/i.test(message ?? "");
+
+// Throws with the SDK's error message (falling back to a generic one) when a
+// v2 experimental_workspace call reports an error; otherwise returns its data.
+// Centralizes the `result.error ? throw ... : result.data` shape repeated
+// across both tools below.
+function unwrap(result, fallback) {
+  if (result.error) {
+    throw new Error(result.error.data?.message ?? fallback);
+  }
+  return result.data;
+}
 
 // opencode's workspace.create() waits on an internal "workspace ready" event
 // with a short (~5s) budget and reports a timeout error even when the
@@ -50,7 +68,10 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
     },
     async create(config, env) {
       const shellEnv = { ...process.env, ...env };
-      const existing = await $`git -C ${directory} rev-parse --verify --quiet ${config.branch}`
+      // show-ref (not rev-parse --verify, which also resolves tags/remote refs/raw
+      // SHAs) so a branch name colliding with a tag or commit-ish still gets a real
+      // local branch via `-b` below instead of a silent detached-HEAD checkout.
+      const existing = await $`git -C ${directory} show-ref --verify --quiet refs/heads/${config.branch}`
         .nothrow()
         .quiet();
       if (existing.exitCode === 0) {
@@ -104,10 +125,10 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
               throw new Error(message ?? "failed to create worktree");
             }
           }
-          const warped = await v2.experimental.workspace.warp({ id: workspace.id, sessionID: context.sessionID });
-          if (warped.error) {
-            throw new Error(warped.error.data?.message ?? "failed to switch session scope");
-          }
+          unwrap(
+            await v2.experimental.workspace.warp({ id: workspace.id, sessionID: context.sessionID }),
+            "failed to switch session scope",
+          );
           const status = recovered
             ? `Worktree '${branch}' is ready at ${workspace.directory} (confirmed via polling after the create request timed out)`
             : `Created worktree '${branch}' at ${workspace.directory}`;
@@ -121,20 +142,29 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
           branch: tool.schema.string(),
         },
         async execute({ branch }, context) {
-          const listed = await v2.experimental.workspace.list();
-          if (listed.error) {
-            throw new Error(listed.error.data?.message ?? "failed to list worktrees");
-          }
-          const workspace = listed.data.find((w) => w.type === "git-worktree" && w.branch === branch);
+          const workspaces = unwrap(await v2.experimental.workspace.list(), "failed to list worktrees");
+          const workspace = workspaces.find((w) => w.type === "git-worktree" && w.branch === branch);
           if (!workspace) {
             throw new Error(`No git-worktree workspace found for branch '${branch}'`);
           }
-          const warped = await v2.experimental.workspace.warp({ id: null, sessionID: context.sessionID });
-          if (warped.error) {
-            throw new Error(warped.error.data?.message ?? "failed to switch session scope back to main");
-          }
+          unwrap(
+            await v2.experimental.workspace.warp({ id: null, sessionID: context.sessionID }),
+            "failed to switch session scope back to main",
+          );
           const removed = await v2.experimental.workspace.remove({ id: workspace.id });
           if (removed.error) {
+            // The session was already warped out of this workspace above so the
+            // worktree directory could be deleted; if deletion itself failed, try
+            // to restore the session's scope rather than leaving it silently
+            // detached from a worktree that still exists on disk and in the
+            // workspace registry.
+            const restored = await v2.experimental.workspace.warp({ id: workspace.id, sessionID: context.sessionID });
+            if (restored.error) {
+              console.error(
+                `[git-worktree] failed to restore session scope into '${branch}' after remove failure:`,
+                restored.error.data?.message,
+              );
+            }
             throw new Error(removed.error.data?.message ?? "failed to remove worktree");
           }
           return `Session file scope moved back to the main project. Worktree '${branch}' removed.`;
