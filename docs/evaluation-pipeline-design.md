@@ -3,20 +3,21 @@
 本ドキュメントは、Code Review Agent の性能評価に使うデータ(Gold-set / Seeded-set)が
 どこで生成され、どこに置かれ、どう実行に使われるかを一枚で見渡せるようにするための構造説明である。
 「何を測るか・合否基準は何か」は [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md) が扱う。
-本ドキュメントは扱わない。
+本ドキュメントは扱わない。ターゲット選定そのものの仕様は
+[docs/goldset-per-stack-spec.md](goldset-per-stack-spec.md) が扱う。
 
 ---
 
 ## 1. 背景と狙い
 
-タグ付けされたPR候補プール(`pr_targets_b2b2c_tagged.json`、39件)から全件を対象に評価を実行すると、
+スタック別ターゲットプール(`pr_targets_{stack}.json`)から全件を対象に評価を実行すると、
 Gold-set/Seeded-setの生成そのものよりも、生成後にレビューエージェントを実際に走らせる**評価実行フェーズ
 (`run_agent_evaluation.py`)**の所要時間が支配的になる。この実行フェーズは各項目についてPR収集→並列レビュー
 →Lead Engineer評価という多段のLLM呼び出しを伴うため、項目数に対してほぼ線形に時間がかかる。
 
 これに対して次の2つの対策を取る。
 
-- **母数(N)を減らす**: 全39件ではなくランダムにn件(既定15件)を抽出して評価する。ただし精度評価の
+- **母数(N)を減らす**: 全件ではなくランダムにn件(既定15件)を抽出して評価する。ただし精度評価の
   妥当性を保つため、`repo_type`(UI Component Library / Application)で層化しつつ抽出し、抽出後の構成比率を
   可視化する。
 - **実行を並列化する**: 項目単位・レビュアー単位で本来並列実行可能な処理を、実際に並列で実行する。
@@ -27,12 +28,12 @@ Gold-set/Seeded-setの生成そのものよりも、生成後にレビューエ�
 
 | ディレクトリ | 役割 | 例 |
 |---|---|---|
-| `evaluation/input/` | 評価の**元データ**。人手でキュレーションし、パイプラインが書き換えない | `pr_targets_b2b2c_tagged.json`, `pr_candidates_raw.json`, `repo_candidates.json` |
+| `evaluation/input/` | 評価の**元データ**。`discover_candidate_prs.py`が生成/更新し、後段パイプラインは書き換えない | `repo_candidates.json`, `pr_targets_react.json`, `pr_targets_vue.json`, `pr_targets_angular.json`, `pr_targets_svelte.json` |
 | `evaluation/data/` | パイプラインが**生成する導出データ**。実行のたびに再生成されうる | `pr_targets.json`, `gold_pr_set.jsonl`, `seeded_set.jsonl`, `agent_predictions.jsonl`, `report_*.md` |
 
-`pr_targets.json`(実行対象PRのリスト)は`convert_tagged_targets.py`が元データから生成する導出データであり、
-`evaluation/data/`に置く。以前は`evaluation/input/pr_targets.json`に出力していたが、ディレクトリの意味論に
-反するため`evaluation/data/pr_targets.json`に変更した。
+`pr_targets_{stack}.json`は`discover_candidate_prs.py`がGitHubとLLMを使って生成する元データであり、
+`evaluation/input/`に置く。`pr_targets.json`(実行対象PRのリスト)は`select_stack_targets.py`が
+その元データから抽出する導出データであり、`evaluation/data/`に置く。
 
 ---
 
@@ -41,11 +42,16 @@ Gold-set/Seeded-setの生成そのものよりも、生成後にレビューエ�
 ```mermaid
 flowchart TD
     subgraph INPUT["evaluation/input/ 〈元データ〉"]
-        TAGGED["pr_targets_b2b2c_tagged.json<br/>(タグ付きPR候補プール, 39件)"]
+        REPOS["repo_candidates.json"]
+        PERSTACK["pr_targets_{react,vue,angular,svelte}.json<br/>(スタック別ターゲット)"]
     end
 
-    subgraph STEP1["Step 1: convert_tagged_targets.py"]
-        FILTER["フィルタ<br/>--min-risk / --themes-any"]
+    subgraph STEP0["Step 0: discover_candidate_prs.py（随時）"]
+        DISCOVER["repository検証 + PRフィルタ<br/>+ LLM 3軸分類 (severity/impact/priority)"]
+    end
+
+    subgraph STEP1["Step 1: select_stack_targets.py"]
+        FILTER["フィルタ<br/>--min-severity / --impact / --priority"]
         SAMPLE["サンプリング<br/>--sample-n(既定15) + --stratify-repo-type<br/>(repo_type層化 + stack round-robin + seed固定)"]
         WARN["構成比率チェック<br/>(警告のみ・非ブロッキング)"]
     end
@@ -60,18 +66,19 @@ flowchart TD
 
     subgraph STEP23["Step 2-3: build_gold_set.py / build_seeded_set.py"]
         GHAPI[("GitHub API<br/>(PR詳細/files/review comments)")]
-        MUTATE["seeded_mutations.json 適用<br/>(ローカル処理のみ)"]
+        MUTATE["Phase2 LLM生成 + 検証<br/>(SEEDED_GEN_MODEL_ID 必須)<br/>失敗時のみ Phase1 決定的フォールバック"]
     end
 
     subgraph STEP4["Step 4: run_agent_evaluation.py<br/>--concurrency 2(既定)"]
-        A2A["A2Aサーバー<br/>/orchestrator, /pr-info-collector,<br/>/frontend-reviewer, /security-reviewer, /lead-engineer"]
+        A2A["A2Aサーバー<br/>/orchestrator, /pr-info-collector,<br/>/frontend-reviewer, /security-reviewer,<br/>/svelte-reviewer, /lead-engineer, /health"]
     end
 
     subgraph STEP5["Step 5: score_evaluation.py"]
         SCORE["Issue Recall/Precision,<br/>Must-Find Recall, Critical Miss Rate 等"]
     end
 
-    TAGGED --> FILTER --> SAMPLE --> WARN --> TARGETS
+    REPOS --> DISCOVER --> PERSTACK
+    PERSTACK --> FILTER --> SAMPLE --> WARN --> TARGETS
     TARGETS --> GHAPI --> GOLD
     GOLD --> MUTATE --> SEEDED
     GOLD --> A2A
@@ -87,31 +94,40 @@ flowchart TD
 
 | Step | スクリプト | 入力 | 出力 | 備考 |
 |---|---|---|---|---|
-| 1 | `convert_tagged_targets.py` | `pr_targets_b2b2c_tagged.json` | `data/pr_targets.json` | フィルタ・サンプリング・構成比率警告 |
+| 0 | `discover_candidate_prs.py` | `repo_candidates.json` | `input/pr_targets_{stack}.json` | GitHubとLLMで随時生成。`GITHUB_TOKEN`と生成モデルが必要 |
+| 1 | `select_stack_targets.py` | `input/pr_targets_{stack}.json` | `data/pr_targets.json` | フィルタ・サンプリング・構成比率警告 |
 | 2 | `build_gold_set.py` | `data/pr_targets.json` | `data/gold_pr_set.jsonl` | GitHub APIでPR詳細・files・review commentsを取得 |
-| 3 | `build_seeded_set.py` | `data/gold_pr_set.jsonl` | `data/seeded_set.jsonl` | ローカルでmutationカタログを適用(外部通信なし) |
+| 3 | `build_seeded_set.py` | `data/gold_pr_set.jsonl` | `data/seeded_set.jsonl` | Phase2 LLM生成（`SEEDED_GEN_MODEL_ID` 必須）→検証→失敗時のみPhase1決定的フォールバック |
 | 4 | `run_agent_evaluation.py` | `data/gold_pr_set.jsonl`, `data/seeded_set.jsonl` | `data/agent_predictions.jsonl`, `data/report_*.md` | A2Aサーバー経由でレビューエージェントを実行 |
 | 5 | `score_evaluation.py` | 上記3ファイル | スコアJSON | `run_agent_evaluation.py`内から呼び出される |
 
-Step 1-3は`evaluation/tools/run_evaluation_pipeline.sh`が一括実行する。Step 4-5は`run_agent_evaluation.py`が
-担う(A2Aサーバーの起動・停止を含む一連の流れは`.claude/skills/run-evaluation/SKILL.md`がオーケストレーションする)。
+Step 1-3は`evaluation/tools/run_evaluation_pipeline.sh`が一括実行する。Step 0はターゲットプールの
+更新が必要なときにのみ個別実行する。Step 4-5は`run_agent_evaluation.py`が担う(A2Aサーバーの起動・停止を
+含む一連の流れは`.claude/skills/run-evaluation/SKILL.md`がオーケストレーションする)。
+
+`build_seeded_set.py`は生成モデルが未設定のとき(`SEEDED_GEN_MODEL_ID`未設定かつ`--model-id`未指定)、
+exit code 1 で停止する。詳細は [evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md) §3 と
+[docs/eval-seeded-mutation-injection-design.md](eval-seeded-mutation-injection-design.md) を参照。
 
 ---
 
 ## 4. サンプリングと構成比率の可視化
 
-`convert_tagged_targets.py`は`--sample-n <n>`(既定15、`run_evaluation_pipeline.sh`経由)または`--limit`で
-件数を絞り込む。既定の`--sample-n`パスでは`--stratify-repo-type`が有効になり、`repo_type`
-(ui-library/application)でほぼ50/50に層化しつつ、層内は既存のstack round-robin(`select_balanced`)と
-固定シード(`--seed`、既定42)によるランダム選択を組み合わせる。`--limit`を明示指定した場合は既存の
-決定的選択(risk降順)パスをそのまま使う(後方互換)。
+`--sample-n <n>`は`run_evaluation_pipeline.sh`だけが受け付けるoptionで、既定値は15である。
+スクリプトはこの値を`--limit <n> --shuffle --stratify-repo-type`へ変換して
+`select_stack_targets.py`を呼び出す。これにより`repo_type`(ui-library/application)を
+ほぼ50/50に層化しつつ、層内はstack round-robin(`select_balanced`)と固定シード
+(`--seed`、既定42)によるランダム選択を組み合わせる。
+
+`select_stack_targets.py`自体が件数指定として受け付けるのは`--limit`だけである。
+`run_evaluation_pipeline.sh`へ`--limit`を明示指定した場合はshuffleと層化を付けずに渡し、
+severity/priority降順の決定的選択パスを使う。
 
 抽出後、`summarize()`が`repo_type_distribution` / `stack_distribution_by_repo_type` /
-`theme_category_distribution`を出力し、`EVALUATION_PLAN.md` §2.0 の下限比率と比較した警告
-(`[COVERAGE-WARN]`)をstderrに出す。**この警告は非ブロッキングであり、パイプラインは停止しない。**
-タグ付けプール自体の絶対数制約(Angular/Svelteの母数不足、performance/maintainability系タグの実質0件)
-により、どのようにサンプリングしても構造的に警告が出続ける項目があることが分かっている
-(詳細は `EVALUATION_PLAN.md` §2.0.3)。
+`severity_distribution` / `impact_distribution` / `priority_distribution`を出力し、
+`EVALUATION_PLAN.md` §2.0 の下限比率と比較した警告(`[COVERAGE-WARN]`)をstderrに出す。
+**この警告は非ブロッキングであり、パイプラインは停止しない。** ターゲットプール自体の
+絶対数制約により、どのようにサンプリングしても構造的に警告が出続ける項目がありうる。
 
 N削減は生成フェーズの時間だけでなく、Step 4(`run_agent_evaluation.py`)が処理する項目数そのものを
 減らすため、実行フェーズの所要時間短縮に直接効いてくる。
@@ -125,6 +141,10 @@ N削減は生成フェーズの時間だけでなく、Step 4(`run_agent_evaluat
 uvicornだが、各エンドポイントはリクエストを`BackgroundTasks`に登録して即座に応答し、実処理は
 `asyncio.to_thread`でワーカースレッドにオフロードされる設計になっている。そのため、複数のPR評価を
 同時に受け付けて実際に並行処理できる。
+
+A2Aサーバーが公開するエンドポイントは
+`/orchestrator`, `/pr-info-collector`, `/frontend-reviewer`, `/security-reviewer`,
+`/svelte-reviewer`, `/lead-engineer`, `/health` である。
 
 ```mermaid
 sequenceDiagram
@@ -152,6 +172,15 @@ sequenceDiagram
     end
     A2A-->>W1: 両方completed後 → /lead-engineer
 ```
+
+### Gold と Seeded のレビュアー経路の非対称性
+
+Gold項目は`/orchestrator`経由で評価され、orchestratorがproject-type検出に基づいて
+レビュアーを選ぶ(例: Svelte項目には`/svelte-reviewer`)。一方Seeded項目は
+`/frontend-reviewer`と`/security-reviewer`を直接・固定で呼び出し、orchestratorを経由しない。
+したがってSeeded項目にはstack固有レビュアー(svelte等)が適用されない。これはSeeded生成が
+frontend共通のtrapに絞られていることと整合するが、非React/Vue stackのSeeded recallに影響しうる
+既知の非対称性である。
 
 ### なぜ既定を2並列にするか
 
@@ -184,6 +213,8 @@ Seeded項目内のfrontend-reviewer/security-reviewer呼び出しの並列化は
 
 ## 7. 関連ドキュメント
 
+- [docs/goldset-per-stack-spec.md](goldset-per-stack-spec.md) — スタック別ターゲット選定の仕様
+- [docs/adr/0005-per-stack-evaluation-target-pipeline.md](adr/0005-per-stack-evaluation-target-pipeline.md) — 正規経路化の設計判断
 - [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md) — 何を測るか・合否基準・データセット戦略
 - [evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md) — 評価実行の具体的な手順
 - [.claude/skills/run-evaluation/SKILL.md](../.claude/skills/run-evaluation/SKILL.md) — 本パイプラインをオーケストレーションするスキル

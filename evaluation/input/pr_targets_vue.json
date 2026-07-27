@@ -1,25 +1,7 @@
 [
   {
     "repository": "vuejs/core",
-    "pr_number": 15147,
-    "stack": "vue",
-    "repo_type": "ui-library",
-    "severity": "critical",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "vuejs/core",
     "pr_number": 15127,
-    "stack": "vue",
-    "repo_type": "ui-library",
-    "severity": "high",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "vuejs/core",
-    "pr_number": 15111,
     "stack": "vue",
     "repo_type": "ui-library",
     "severity": "high",
@@ -73,15 +55,6 @@
   },
   {
     "repository": "nuxt/nuxt",
-    "pr_number": 35729,
-    "stack": "vue",
-    "repo_type": "ui-library",
-    "severity": "high",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "nuxt/nuxt",
     "pr_number": 35799,
     "stack": "vue",
     "repo_type": "ui-library",
@@ -96,24 +69,6 @@
     "repo_type": "ui-library",
     "severity": "low",
     "impact": "maintainability",
-    "priority": "low"
-  },
-  {
-    "repository": "nuxt/nuxt",
-    "pr_number": 35791,
-    "stack": "vue",
-    "repo_type": "ui-library",
-    "severity": "low",
-    "impact": "maintainability",
-    "priority": "low"
-  },
-  {
-    "repository": "vuetifyjs/vuetify",
-    "pr_number": 22987,
-    "stack": "vue",
-    "repo_type": "ui-library",
-    "severity": "low",
-    "impact": "correctness",
     "priority": "low"
   },
   {
@@ -145,39 +100,12 @@
   },
   {
     "repository": "element-plus/element-plus",
-    "pr_number": 23394,
-    "stack": "vue",
-    "repo_type": "ui-library",
-    "severity": "medium",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "element-plus/element-plus",
     "pr_number": 24579,
     "stack": "vue",
     "repo_type": "ui-library",
     "severity": "low",
     "impact": "correctness",
     "priority": "high"
-  },
-  {
-    "repository": "element-plus/element-plus",
-    "pr_number": 24558,
-    "stack": "vue",
-    "repo_type": "ui-library",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "element-plus/element-plus",
-    "pr_number": 20079,
-    "stack": "vue",
-    "repo_type": "ui-library",
-    "severity": "low",
-    "impact": "maintainability",
-    "priority": "low"
   },
   {
     "repository": "element-plus/element-plus",
@@ -190,34 +118,7 @@
   },
   {
     "repository": "hoppscotch/hoppscotch",
-    "pr_number": 4039,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
-  },
-  {
-    "repository": "hoppscotch/hoppscotch",
-    "pr_number": 6508,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
-  },
-  {
-    "repository": "hoppscotch/hoppscotch",
     "pr_number": 6463,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "medium",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "hoppscotch/hoppscotch",
-    "pr_number": 6496,
     "stack": "vue",
     "repo_type": "application",
     "severity": "medium",
@@ -232,15 +133,6 @@
     "severity": "high",
     "impact": "correctness",
     "priority": "high"
-  },
-  {
-    "repository": "hoppscotch/hoppscotch",
-    "pr_number": 6481,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "low",
-    "impact": "maintainability",
-    "priority": "low"
   },
   {
     "repository": "n8n-io/n8n",
@@ -262,61 +154,7 @@
   },
   {
     "repository": "n8n-io/n8n",
-    "pr_number": 34768,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
-  },
-  {
-    "repository": "n8n-io/n8n",
-    "pr_number": 34627,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "medium",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "n8n-io/n8n",
     "pr_number": 34685,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "high",
-    "impact": "correctness",
-    "priority": "high"
-  },
-  {
-    "repository": "n8n-io/n8n",
-    "pr_number": 34664,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
-  },
-  {
-    "repository": "directus/directus",
-    "pr_number": 27964,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
-  },
-  {
-    "repository": "directus/directus",
-    "pr_number": 27962,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
-  },
-  {
-    "repository": "directus/directus",
-    "pr_number": 27816,
     "stack": "vue",
     "repo_type": "application",
     "severity": "high",
@@ -331,15 +169,6 @@
     "severity": "medium",
     "impact": "performance",
     "priority": "high"
-  },
-  {
-    "repository": "directus/directus",
-    "pr_number": 27958,
-    "stack": "vue",
-    "repo_type": "application",
-    "severity": "low",
-    "impact": "correctness",
-    "priority": "low"
   },
   {
     "repository": "directus/directus",
