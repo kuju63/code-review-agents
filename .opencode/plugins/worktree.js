@@ -107,6 +107,19 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
           base: tool.schema.string().optional(),
         },
         async execute({ branch, base }, context) {
+          // Check before create() so a workspace that already existed for this
+          // branch (created earlier, or by a concurrent request) isn't reported
+          // as "recovered from a timeout" below -- that label is reserved for
+          // workspaces this specific create() call actually produced.
+          const preexisting = await findWorkspaceByBranch(v2, branch, { attempts: 1, intervalMs: 0 });
+          if (preexisting) {
+            unwrap(
+              await v2.experimental.workspace.warp({ id: preexisting.id, sessionID: context.sessionID }),
+              "failed to switch session scope",
+            );
+            return `Worktree '${branch}' already exists at ${preexisting.directory}. This session's file scope is now that worktree.`;
+          }
+
           const created = await v2.experimental.workspace.create({
             type: "git-worktree",
             branch,
