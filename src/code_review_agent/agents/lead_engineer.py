@@ -16,6 +16,9 @@ from ..models.lead_engineer import (
     DecisionVerdict,
     FindingDecision,
     FindingDecisionOutput,
+    FindingImpact,
+    FindingPriority,
+    FindingSeverity,
     LeadEngineerOutput,
     LeadEngineerReport,
 )
@@ -48,9 +51,12 @@ Rules — you MUST follow every rule without exception:
 - Return the finding_index as a plain integer matching the Finding # label —
   for "Finding #1" return 1, not "Finding #1" or "1" (a string). It must
   always be a JSON number.
-- Assign final_priority; it may differ from the reviewer's original priority
-  when the overall PR context justifies it.
-- Provide a concise reason for each decision and an impact assessment.
+- Assign severity, impact_category, and final_priority independently.
+- severity must be critical, high, medium, or low.
+- impact_category must be security, correctness, performance, or maintainability.
+- final_priority must be high, medium, or low; it may differ from the reviewer's
+  original priority when the overall PR context justifies it.
+- Provide a concise reason for each decision and a prose impact assessment.
 """
 
 
@@ -246,6 +252,8 @@ class LeadEngineerAgent:
                     verdict=d.verdict,
                     reason=d.reason,
                     impact=d.impact,
+                    severity=d.severity,
+                    impact_category=d.impact_category,
                     final_priority=d.final_priority,
                 )
             )
@@ -264,7 +272,17 @@ class LeadEngineerAgent:
                         verdict=DecisionVerdict.REJECT,
                         reason="No decision provided by lead engineer.",
                         impact="Unknown — no evaluation provided.",
-                        final_priority=finding.priority,
+                        severity=FindingSeverity(finding.priority.value),
+                        impact_category=(
+                            FindingImpact.SECURITY
+                            if perspective is ReviewPerspective.SECURITY
+                            else FindingImpact.CORRECTNESS
+                        ),
+                        final_priority=(
+                            FindingPriority.HIGH
+                            if finding.priority.value == "critical"
+                            else FindingPriority(finding.priority.value)
+                        ),
                     )
                 )
 

@@ -200,12 +200,16 @@ Minimum record format:
     {
       "category": "security",
       "severity": "high",
+      "impact": "security",
+      "priority": "high",
       "path": "src/a.ts",
       "line": 123,
       "summary": "..."
     }
   ]
 }
+
+Axis agreement uses only matched pairs where both sides contain canonical values. Missing, `unknown`, or invalid axis values are excluded independently, and a reported `0.0` with `n=0` means no eligible labels rather than complete disagreement.
 
 ## 5. Score evaluation
 

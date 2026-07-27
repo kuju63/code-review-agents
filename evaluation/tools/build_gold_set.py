@@ -157,6 +157,9 @@ def _extract_line(comment: dict[str, Any]) -> int:
 class Target:
     repository: str
     pr_number: int
+    severity: str = "unknown"
+    impact: str = "unknown"
+    priority: str = "unknown"
 
 
 def load_targets(path: str) -> list[Target]:
@@ -166,7 +169,15 @@ def load_targets(path: str) -> list[Target]:
     for item in raw:
         repo = item["repository"]
         pr = int(item["pr_number"])
-        targets.append(Target(repository=repo, pr_number=pr))
+        targets.append(
+            Target(
+                repository=repo,
+                pr_number=pr,
+                severity=item.get("severity", "unknown"),
+                impact=item.get("impact", "unknown"),
+                priority=item.get("priority", "unknown"),
+            )
+        )
     return targets
 
 
@@ -199,7 +210,9 @@ def build_gold_item(target: Target, token: str) -> dict[str, Any]:
         summary = re.sub(r"\s+", " ", body)
         finding = {
             "category": _normalize_category(summary),
-            "severity": _normalize_severity(summary),
+            "severity": target.severity,
+            "impact": target.impact,
+            "priority": target.priority,
             "path": path,
             "line": _extract_line(comment),
             "summary": summary,

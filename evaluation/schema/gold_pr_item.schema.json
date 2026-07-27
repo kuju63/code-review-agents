@@ -72,6 +72,20 @@
             "type": "string",
             "enum": ["critical", "high", "medium", "low", "unknown"]
           },
+          "impact": {
+            "type": "string",
+            "enum": [
+              "security",
+              "correctness",
+              "performance",
+              "maintainability",
+              "unknown"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low", "unknown"]
+          },
           "path": {
             "type": "string"
           },

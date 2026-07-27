@@ -3,6 +3,11 @@
 import pytest
 from pydantic import ValidationError
 
+from code_review_agent.models.lead_engineer import (
+    FindingImpact,
+    FindingPriority,
+    FindingSeverity,
+)
 from code_review_agent.models.review import (
     ReviewError,
     ReviewFinding,
@@ -36,7 +41,11 @@ def _make_decision(
         verdict=DecisionVerdict(verdict_str),
         reason="reason",
         impact="impact",
-        final_priority=priority,
+        severity=FindingSeverity(priority.value),
+        impact_category=FindingImpact.CORRECTNESS,
+        final_priority=FindingPriority.HIGH
+        if priority is ReviewPriority.CRITICAL
+        else FindingPriority(priority.value),
     )
 
 
@@ -88,28 +97,84 @@ class TestFindingDecisionOutput:
             verdict=DecisionVerdict.ACCEPT,
             reason="Critical security issue.",
             impact="Data breach if not fixed.",
-            final_priority=ReviewPriority.CRITICAL,
+            severity=FindingSeverity.CRITICAL,
+            impact_category=FindingImpact.SECURITY,
+            final_priority=FindingPriority.HIGH,
         )
 
         assert output.finding_index == 1
         assert output.verdict == DecisionVerdict.ACCEPT
         assert output.reason == "Critical security issue."
         assert output.impact == "Data breach if not fixed."
-        assert output.final_priority == ReviewPriority.CRITICAL
+        assert output.final_priority.value == "high"
 
-    def test_missing_required_field_raises(self):
+    def test_independent_axes_are_required_and_typed(self):
+        from code_review_agent.models.lead_engineer import (
+            DecisionVerdict,
+            FindingDecisionOutput,
+            FindingImpact,
+            FindingPriority,
+            FindingSeverity,
+        )
+
+        output = FindingDecisionOutput(
+            finding_index=1,
+            verdict=DecisionVerdict.ACCEPT,
+            reason="Critical security issue.",
+            impact="Data breach if not fixed.",
+            severity=FindingSeverity.CRITICAL,
+            impact_category=FindingImpact.SECURITY,
+            final_priority=FindingPriority.HIGH,
+        )
+
+        assert output.severity is FindingSeverity.CRITICAL
+        assert output.impact_category is FindingImpact.SECURITY
+        assert output.final_priority is FindingPriority.HIGH
+
+    @pytest.mark.parametrize(
+        "missing", ["severity", "impact_category", "final_priority"]
+    )
+    def test_each_axis_is_required(self, missing):
         from code_review_agent.models.lead_engineer import FindingDecisionOutput
 
+        payload = {
+            "finding_index": 1,
+            "verdict": "accept",
+            "reason": "ok",
+            "impact": "none",
+            "severity": "high",
+            "impact_category": "correctness",
+            "final_priority": "medium",
+        }
+        del payload[missing]
+
         with pytest.raises(ValidationError):
-            # finding_index is intentionally omitted to trigger ValidationError
-            FindingDecisionOutput.model_validate(
-                {
-                    "verdict": "accept",
-                    "reason": "ok",
-                    "impact": "none",
-                    "final_priority": "low",
-                }
-            )
+            FindingDecisionOutput.model_validate(payload)
+
+    @pytest.mark.parametrize(
+        ("field", "value"),
+        [
+            ("severity", "unknown"),
+            ("impact_category", "style"),
+            ("final_priority", "critical"),
+        ],
+    )
+    def test_rejects_out_of_vocabulary_axis(self, field, value):
+        from code_review_agent.models.lead_engineer import FindingDecisionOutput
+
+        payload = {
+            "finding_index": 1,
+            "verdict": "accept",
+            "reason": "ok",
+            "impact": "none",
+            "severity": "high",
+            "impact_category": "correctness",
+            "final_priority": "medium",
+        }
+        payload[field] = value
+
+        with pytest.raises(ValidationError):
+            FindingDecisionOutput.model_validate(payload)
 
 
 class TestLeadEngineerOutput:
@@ -152,7 +217,9 @@ class TestFindingDecision:
             verdict=DecisionVerdict.ACCEPT,
             reason="High severity XSS vector.",
             impact="User accounts can be compromised.",
-            final_priority=ReviewPriority.HIGH,
+            severity=FindingSeverity.HIGH,
+            impact_category=FindingImpact.SECURITY,
+            final_priority=FindingPriority.HIGH,
         )
 
         assert decision.finding is finding
@@ -174,7 +241,9 @@ class TestFindingDecision:
             verdict=DecisionVerdict.REJECT,
             reason="False positive.",
             impact="None.",
-            final_priority=ReviewPriority.LOW,
+            severity=FindingSeverity.LOW,
+            impact_category=FindingImpact.CORRECTNESS,
+            final_priority=FindingPriority.LOW,
         )
 
         assert decision.reason == "False positive."
@@ -194,7 +263,7 @@ class TestLeadEngineerReport:
             reviewer_errors=errors or [],
         )
 
-    def test_accepted_sorted_by_priority(self):
+    def test_accepted_sorted_by_severity(self):
         decisions = [
             _make_decision("accept", ReviewPriority.LOW),
             _make_decision("accept", ReviewPriority.CRITICAL),
@@ -204,15 +273,14 @@ class TestLeadEngineerReport:
         report = self._make_report(decisions=decisions)
         result = report.accepted()
 
-        priorities = [d.final_priority for d in result]
-        assert priorities == [
-            ReviewPriority.CRITICAL,
-            ReviewPriority.HIGH,
-            ReviewPriority.MEDIUM,
-            ReviewPriority.LOW,
+        assert [d.severity.value for d in result] == [
+            "critical",
+            "high",
+            "medium",
+            "low",
         ]
 
-    def test_rejected_sorted_by_priority(self):
+    def test_rejected_sorted_by_severity(self):
         decisions = [
             _make_decision("reject", ReviewPriority.LOW),
             _make_decision("reject", ReviewPriority.HIGH),
@@ -249,6 +317,24 @@ class TestLeadEngineerReport:
         assert "src/App.tsx" in md
         assert "XSS issue" in md
         assert "L42" in md
+
+    def test_to_markdown_distinguishes_all_three_axes_and_prose_impact(self):
+        report = self._make_report(
+            decisions=[
+                _make_decision(
+                    "accept",
+                    ReviewPriority.CRITICAL,
+                    file_path="src/App.tsx",
+                )
+            ]
+        )
+
+        md = report.to_markdown()
+
+        assert "**Severity**: critical" in md
+        assert "**Impact category**: correctness" in md
+        assert "**Priority**: high" in md
+        assert "**Impact if not fixed**: impact" in md
 
     def test_to_markdown_accepted_with_proposed_fix_shows_suggested_fix(self):
         decisions = [
@@ -342,6 +428,23 @@ class TestLeadEngineerReport:
         summaries = [f["summary"] for f in result["agent_findings"]]
         assert "Accepted finding" in summaries
         assert "Rejected finding" not in summaries
+
+    def test_to_evaluation_format_keeps_three_axes_independent(self):
+        decisions = [
+            _make_decision(
+                "accept",
+                ReviewPriority.CRITICAL,
+                perspective=ReviewPerspective.SECURITY,
+                file_path="src/A.tsx",
+            )
+        ]
+        report = self._make_report(decisions=decisions)
+
+        finding = report.to_evaluation_format("owner/repo#1")["agent_findings"][0]
+
+        assert finding["severity"] == "critical"
+        assert finding["impact"] == "correctness"
+        assert finding["priority"] == "high"
 
     def test_to_evaluation_format_lead_decisions_all(self):
         decisions = [
