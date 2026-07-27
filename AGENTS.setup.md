@@ -41,6 +41,19 @@ Homebrewを使用してpyenvをインストールする。pyenvはPythonのバ�
 brew install pyenv
 pyenv init --install
 exec "$SHELL"
+```
+
+`pyenv install`はソースからPythonをビルドするため、Ubuntu/Debian/WSL環境では事前にビルド依存関係のインストールが必要となる（macOSはHomebrewのみで完結するため不要）。
+
+```shell
+# Ubuntu/Debian/WSLの場合のみ実行する
+sudo apt-get update
+sudo apt-get install -y build-essential libssl-dev zlib1g-dev libbz2-dev \
+  libreadline-dev libsqlite3-dev libncursesw5-dev xz-utils tk-dev \
+  libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+```
+
+```shell
 pyenv install 3.14.6
 ```
 
