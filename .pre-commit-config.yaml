@@ -29,7 +29,13 @@ repos:
     hooks:
       - id: no-commit-to-branch
 
-  - repo: https://github.com/koalaman/shellcheck-precommit
-    rev: v0.11.0
+  - name: shellcheck
+    repo: local
     hooks:
       - id: shellcheck
+        name: shellcheck
+        types: [shell]
+        language: unsupported
+        entry: shellcheck
+        args:
+          - -x
