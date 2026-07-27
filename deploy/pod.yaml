@@ -47,7 +47,7 @@ spec:
       #
       # NOTE: httpGet ではなく exec プローブを使用する。
       #   podman kube play は httpGet を "curl -f URL" に変換するが、
-      #   Chainguard イメージにはシェルも curl も存在しないため失敗する。
+      #   runtime イメージにはシェルも curl も存在しないため失敗する。
       #   exec プローブは CMD-SHELL を経由せず Python を直接実行するため動作する。
       livenessProbe:
         exec:
@@ -71,7 +71,7 @@ spec:
         failureThreshold: 3
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65532   # Chainguard nonroot (Dockerfile USER nonroot)
+        runAsUser: 65532   # Red Hat Hardened Image nonroot UID
         allowPrivilegeEscalation: false
         seccompProfile:
           type: RuntimeDefault
