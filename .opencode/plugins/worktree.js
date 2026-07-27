@@ -160,21 +160,31 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
           if (!workspace) {
             throw new Error(`No git-worktree workspace found for branch '${branch}'`);
           }
+          // The session invoking this tool isn't necessarily scoped into the
+          // worktree being removed (it could already be on main, or on a
+          // different worktree entirely). Capture wherever it actually is
+          // before warping to main, so a failed remove() below restores that
+          // -- not the (possibly now-gone) workspace we tried to remove.
+          const sessionBefore = await v2.session.get({ sessionID: context.sessionID });
+          const previousWorkspaceID = sessionBefore.error ? workspace.id : (sessionBefore.data.workspaceID ?? null);
+
           unwrap(
             await v2.experimental.workspace.warp({ id: null, sessionID: context.sessionID }),
             "failed to switch session scope back to main",
           );
           const removed = await v2.experimental.workspace.remove({ id: workspace.id });
           if (removed.error) {
-            // The session was already warped out of this workspace above so the
-            // worktree directory could be deleted; if deletion itself failed, try
-            // to restore the session's scope rather than leaving it silently
-            // detached from a worktree that still exists on disk and in the
-            // workspace registry.
-            const restored = await v2.experimental.workspace.warp({ id: workspace.id, sessionID: context.sessionID });
+            // The session was already warped out of its prior scope above so
+            // the worktree directory could be deleted; if deletion itself
+            // failed, try to restore the session's scope rather than leaving
+            // it silently detached from where it actually was.
+            const restored = await v2.experimental.workspace.warp({
+              id: previousWorkspaceID,
+              sessionID: context.sessionID,
+            });
             if (restored.error) {
               console.error(
-                `[git-worktree] failed to restore session scope into '${branch}' after remove failure:`,
+                `[git-worktree] failed to restore session scope (was ${previousWorkspaceID ?? "main"}) after removing '${branch}' failed:`,
                 restored.error.data?.message,
               );
             }
