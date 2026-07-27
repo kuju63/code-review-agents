@@ -12,6 +12,27 @@
 git clone https://github.com/kuju63/code-review-agents.git
 ```
 
+### Homebrewのインストール
+
+全環境で同一の手順となるようにするため、[`Homebrew`](https://brew.sh/)のインストールを行う。
+以降の手順で`brew`コマンドを使用するため、このセクションを最初に実施すること。
+
+```shell
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+インストール後、`brew`コマンドをPATHに追加するために`brew shellenv`を実行する必要がある。パスはOS・アーキテクチャにより異なるため、インストール完了時に表示される案内に従うこと（代表例は以下の通り）。
+
+```shell
+# Linux/WSLの場合
+echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> ~/.bashrc
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+# macOS(Apple Silicon)の場合
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv)"
+```
+
 ### GitHub CLIのインストール
 
 GitHub MCPを使用する代わりにGitHub CLIを使用することでコンテキストの圧縮を行えるほか、PR作成やIssue作成をAIエージェントがコマンドから実行できるようになる
@@ -24,14 +45,6 @@ gh auth login
 ```
 
 ### Python環境のセットアップ
-
-#### Homebrewのインストール
-
-全環境で同一の手順となるようにするため、[`Homebrew`](https://brew.sh/)のインストールを行う。 
-
-```shell
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
 
 #### pyenvのインストール
 
