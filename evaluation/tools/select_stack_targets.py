@@ -92,12 +92,11 @@ def load_targets(paths: list[str]) -> list[StackTarget]:
                 raise ValueError(f"missing {exc.args[0]} at {path}[{index}]") from exc
 
             location = f"{path}[{index}]"
-            try:
-                pr_number = int(raw_pr_number)
-            except (TypeError, ValueError) as exc:
+            if isinstance(raw_pr_number, bool) or not isinstance(raw_pr_number, int):
                 raise ValueError(
                     f"invalid target at {location}: pr_number={raw_pr_number!r}"
-                ) from exc
+                )
+            pr_number = raw_pr_number
             try:
                 repository = str(raw_repository)
                 stack = _validate_choice("stack", str(raw_stack), KNOWN_STACKS)

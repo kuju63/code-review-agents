@@ -85,7 +85,7 @@ class TestLoadTargets:
         with pytest.raises(ValueError, match=r"missing impact at .*bad\.json\[0\]"):
             load_targets([str(path)])
 
-    @pytest.mark.parametrize("invalid_pr_number", [None, "not-a-number"])
+    @pytest.mark.parametrize("invalid_pr_number", [None, "not-a-number", True, 1.5])
     def test_qualifies_invalid_pr_number_with_path_and_index(
         self, tmp_path, invalid_pr_number
     ):
