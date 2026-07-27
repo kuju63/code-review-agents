@@ -1,4 +1,6 @@
-#!/bin/bash -e
+#!/bin/bash
+
+set -euo pipefa
 
 # Python環境のセットアップ
 uv venv
