@@ -29,8 +29,7 @@ repos:
     hooks:
       - id: no-commit-to-branch
 
-  - name: shellcheck
-    repo: local
+  - repo: local
     hooks:
       - id: shellcheck
         name: shellcheck
