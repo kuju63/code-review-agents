@@ -2805,8 +2805,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_collect_review_texts",
-      "community": 30,
-      "community_name": "make_llm_assessor",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "collect_review_texts()"
     },
     {
@@ -3157,8 +3157,8 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_rationale_73",
-      "community": 30,
-      "community_name": "make_llm_assessor",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "aggregate non-blank inline comment and review bodies (any author).      returns:"
     },
     {
@@ -18361,8 +18361,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs",
-      "community": 30,
-      "community_name": "make_llm_assessor",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "test_discover_candidate_prs.py"
     },
     {
@@ -18460,8 +18460,8 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testcollectreviewtexts",
-      "community": 30,
-      "community_name": "make_llm_assessor",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "testcollectreviewtexts"
     },
     {
@@ -18471,8 +18471,8 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testcollectreviewtexts_test_aggregates_inline_and_review_bodies",
-      "community": 30,
-      "community_name": "make_llm_assessor",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": ".test_aggregates_inline_and_review_bodies()"
     },
     {
@@ -18482,8 +18482,8 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testcollectreviewtexts_test_skips_blank",
-      "community": 30,
-      "community_name": "make_llm_assessor",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": ".test_skips_blank()"
     },
     {
@@ -18493,8 +18493,8 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testistestfile",
-      "community": 30,
-      "community_name": "make_llm_assessor",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "testistestfile"
     },
     {
@@ -18504,8 +18504,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testistestfile_test_detects_test_paths",
-      "community": 30,
-      "community_name": "make_llm_assessor",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": ".test_detects_test_paths()"
     },
     {
@@ -18515,8 +18515,8 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testistestfile_test_non_test_path",
-      "community": 30,
-      "community_name": "make_llm_assessor",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": ".test_non_test_path()"
     },
     {
@@ -19307,8 +19307,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_rationale_1",
-      "community": 30,
-      "community_name": "make_llm_assessor",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "tests for evaluation/tools/discover_candidate_prs.py.  covers the per-stack gold"
     },
     {
@@ -64256,7 +64256,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/code_review_agent/agents/lead_engineer.py",
-      "source_location": "L284",
+      "source_location": "L288",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_code_review_agent_agents_lead_engineer_leadengineeragent_resolve_decisions",
@@ -64268,7 +64268,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "src/code_review_agent/agents/lead_engineer.py",
-      "source_location": "L275",
+      "source_location": "L279",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_code_review_agent_agents_lead_engineer_leadengineeragent_resolve_decisions",
@@ -122624,5 +122624,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "04cc7e4bbf89966ff7adc615d26a0adb8878fdee"
+  "built_at_commit": "8259f55bb5774da4c9a95f1170125499369201cc"
 }

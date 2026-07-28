@@ -1,7 +1,7 @@
 # Graph Report - finding-axis-evaluation  (2026-07-28)
 
 ## Corpus Check
-- 353 files · ~256,060 words
+- 353 files · ~256,091 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `04cc7e4b`
+- Built from commit: `8259f55b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -507,8 +507,8 @@ Cohesion: 0.13
 Nodes (9): count_new_lines_before(), parse_hunk_new_start(), Deterministically recompute the new-file line number of the     injected block,, Extract the new-file start line `c` from `@@ -a,b +c,d @@`.      Falls back to 1, Count new-file lines consumed between the hunk header and insertion_idx.      Co, recompute_injected_line(), TestCountNewLinesBefore, TestParseHunkNewStart (+1 more)
 
 ### Community 30 - "make_llm_assessor"
-Cohesion: 0.09
-Nodes (14): collect_review_texts(), make_llm_assessor(), BaseModel, Structured 3-axis assessment of a PR's review findings.      The three axes are, Build an assessor that classifies pull requests across severity, impact, and pri, Aggregate non-blank inline comment and review bodies (any author).      Returns:, ReviewAssessment, ReviewAssessor (+6 more)
+Cohesion: 0.13
+Nodes (9): make_llm_assessor(), BaseModel, Structured 3-axis assessment of a PR's review findings.      The three axes are, Build an assessor that classifies pull requests across severity, impact, and pri, ReviewAssessment, ReviewAssessor, TestMain, TestMakeLlmAssessor (+1 more)
 
 ### Community 31 - "TestLeadEngineerReport"
 Cohesion: 0.23
@@ -1339,8 +1339,8 @@ Cohesion: 0.36
 Nodes (3): parametrize, Tests for the LLM output schema (finding_index reference style)., TestFindingDecisionOutput
 
 ### Community 353 - "write_stack_outputs"
-Cohesion: 0.43
-Nodes (3): Write targets grouped by stack to pr_targets_{stack}.json.      Every stack in `, write_stack_outputs(), TestWriteStackOutputs
+Cohesion: 0.15
+Nodes (8): collect_review_texts(), Write targets grouped by stack to pr_targets_{stack}.json.      Every stack in `, Aggregate non-blank inline comment and review bodies (any author).      Returns:, write_stack_outputs(), Tests for evaluation/tools/discover_candidate_prs.py.  Covers the per-stack gold, TestCollectReviewTexts, TestIsTestFile, TestWriteStackOutputs
 
 ### Community 354 - "opencode.json"
 Cohesion: 0.50
@@ -1358,7 +1358,7 @@ _Questions this graph is uniquely positioned to answer:_
   _High betweenness centrality (0.040) - this node is a cross-community bridge._
 - **Why does `ReviewerConfig` connect `ReviewerConfig` to `ReviewPerspective`, `ReviewResult`, `TestLeadEngineerAgentEvaluate`, `base_reviewer.py`, `models.py`, `PRInfo`, `TestStructuredOutputDirective`, `TestAnnotatePatch`, `ReviewOrchestrator`, `api/agents/test_pr_info_collector.py`, `.__init__`, `.__init__`, `TestResolveDecisions`?**
   _High betweenness centrality (0.024) - this node is a cross-community bridge._
-- **Why does `load_eval_tool_module()` connect `load_eval_tool_module` to `make_finding`, `make_raw_finding`, `test_build_seeded_set.py`, `test_select_stack_targets.py`, `test_discord_notify.py`, `test_run_agent_evaluation.py`, `build_gold_set.py`, `make_llm_assessor`?**
+- **Why does `load_eval_tool_module()` connect `load_eval_tool_module` to `make_finding`, `write_stack_outputs`, `make_raw_finding`, `test_build_seeded_set.py`, `test_select_stack_targets.py`, `test_discord_notify.py`, `test_run_agent_evaluation.py`, `build_gold_set.py`?**
   _High betweenness centrality (0.020) - this node is a cross-community bridge._
 - **Are the 36 inferred relationships involving `ReviewerConfig` (e.g. with `StructuredOutputMissingError` and `LeadEngineerAgent`) actually correct?**
   _`ReviewerConfig` has 36 INFERRED edges - model-reasoned connections that need verification._

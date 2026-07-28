@@ -212,9 +212,13 @@ class LeadEngineerAgent:
         1. Unknown indexes (not in ``index_map``) are logged and skipped.
         2. Duplicate indexes use only the first occurrence; later duplicates are
            logged and discarded.
-        3. Findings with no LLM decision receive a deterministic default:
-           ``REJECT`` with ``final_priority`` set to the original
-           ``finding.priority``.
+        3. Findings with no LLM decision receive a deterministic ``REJECT``
+           default whose three axes are derived from the original finding:
+           ``severity`` from ``finding.priority``; ``impact_category`` from the
+           reviewer perspective (``SECURITY`` for a security perspective, else
+           ``CORRECTNESS``); and ``final_priority`` from ``finding.priority``,
+           except ``critical`` (which has no priority counterpart) maps to
+           ``FindingPriority.HIGH``.
 
         Args:
             raw: LLM-generated decision outputs using finding indexes.
