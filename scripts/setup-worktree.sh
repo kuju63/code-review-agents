@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefa
+set -euo pipefail
 
 # Python環境のセットアップ
 uv venv
