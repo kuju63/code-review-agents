@@ -175,7 +175,7 @@ for now to focus on improving frontend review accuracy.
 
 - Issue Recall: matched_gold_issues / all_gold_issues
 - Issue Precision: matched_gold_issues / all_agent_issues
-- Severity Agreement: matched_severity / matched_gold_issues
+- Severity Agreement: severity_exact_matched / severity_labeled_pairs
   — Retained as a backward-compatible alias of `severity_exact_agreement`
     (see Finding-Level Axis Agreement below).
 - Location Hit Rate: matched_file_line / matched_gold_issues

@@ -360,9 +360,9 @@ class TestResolveDecisions:
 
         decision = self._agent()._resolve_decisions([], index_map)[0]
 
-        assert decision.severity.value == "critical"
-        assert decision.impact_category.value == "security"
-        assert decision.final_priority.value == "high"
+        assert decision.severity is FindingSeverity.CRITICAL
+        assert decision.impact_category is FindingImpact.SECURITY
+        assert decision.final_priority is FindingPriority.HIGH
 
     def test_mixed_valid_and_invalid_indexes(self):
         from code_review_agent.models.lead_engineer import (

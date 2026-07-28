@@ -139,18 +139,18 @@ class LeadEngineerReport(BaseModel):
     )
 
     def accepted(self) -> list[FindingDecision]:
-        """Return accepted findings sorted CRITICAL → HIGH → MEDIUM → LOW.
+        """Return accepted findings ordered by severity, highest first.
 
         Returns:
-            Accepted findings in descending priority order.
+            Accepted findings in descending severity order.
         """
         return self._by_verdict(DecisionVerdict.ACCEPT)
 
     def rejected(self) -> list[FindingDecision]:
-        """Return rejected findings sorted CRITICAL → HIGH → MEDIUM → LOW.
+        """Return rejected findings ordered by severity, highest first.
 
         Returns:
-            Rejected findings in descending priority order.
+            Rejected findings in descending severity order.
         """
         return self._by_verdict(DecisionVerdict.REJECT)
 
@@ -164,8 +164,9 @@ class LeadEngineerReport(BaseModel):
     def to_markdown(self) -> str:
         """Render the report as Markdown for chat output.
 
-        Accepted findings are listed first, sorted by final_priority.
-        Rejected findings follow inside a collapsible ``<details>`` block.
+        Accepted findings are listed first, ordered by severity.
+        Rejected findings follow in severity order inside a collapsible
+        ``<details>`` block.
         Reviewer errors are appended at the end if present.
 
         Returns:

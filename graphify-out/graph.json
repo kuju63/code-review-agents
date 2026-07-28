@@ -60,6 +60,50 @@
       "norm_label": "start-mcp-server"
     },
     {
+      "label": "opencode.json",
+      "file_type": "code",
+      "source_file": ".opencode/opencode.json",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "opencode_opencode",
+      "community": 354,
+      "community_name": "opencode.json",
+      "norm_label": "opencode.json"
+    },
+    {
+      "label": "$schema",
+      "file_type": "code",
+      "source_file": ".opencode/opencode.json",
+      "source_location": "L2",
+      "_origin": "ast",
+      "id": "opencode_opencode_schema",
+      "community": 354,
+      "community_name": "opencode.json",
+      "norm_label": "$schema"
+    },
+    {
+      "label": "plugin",
+      "file_type": "code",
+      "source_file": ".opencode/opencode.json",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "opencode_opencode_plugin",
+      "community": 354,
+      "community_name": "opencode.json",
+      "norm_label": "plugin"
+    },
+    {
+      "label": ".opencode/plugins/graphify.js",
+      "file_type": "concept",
+      "source_file": ".opencode/opencode.json",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "ref_opencode_plugins_graphify_js",
+      "community": 354,
+      "community_name": "opencode.json",
+      "norm_label": ".opencode/plugins/graphify.js"
+    },
+    {
       "label": "graphify.js",
       "file_type": "code",
       "source_file": ".opencode/plugins/graphify.js",
@@ -1834,7 +1878,7 @@
       "label": "_api_get()",
       "file_type": "code",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L36",
+      "source_location": "L40",
       "_origin": "ast",
       "id": "evaluation_tools_build_gold_set_api_get",
       "community": 122,
@@ -1856,7 +1900,7 @@
       "label": "_is_target_file()",
       "file_type": "code",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L50",
+      "source_location": "L54",
       "_origin": "ast",
       "id": "evaluation_tools_build_gold_set_is_target_file",
       "community": 122,
@@ -1867,7 +1911,7 @@
       "label": "_normalize_severity()",
       "file_type": "code",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L54",
+      "source_location": "L58",
       "_origin": "ast",
       "id": "evaluation_tools_build_gold_set_normalize_severity",
       "community": 122,
@@ -1878,7 +1922,7 @@
       "label": "_normalize_category()",
       "file_type": "code",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L91",
+      "source_location": "L95",
       "_origin": "ast",
       "id": "evaluation_tools_build_gold_set_normalize_category",
       "community": 122,
@@ -1889,7 +1933,7 @@
       "label": "_extract_line()",
       "file_type": "code",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L146",
+      "source_location": "L150",
       "_origin": "ast",
       "id": "evaluation_tools_build_gold_set_extract_line",
       "community": 122,
@@ -1900,7 +1944,7 @@
       "label": "Target",
       "file_type": "code",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L157",
+      "source_location": "L161",
       "_origin": "ast",
       "id": "evaluation_tools_build_gold_set_target",
       "community": 122,
@@ -1908,10 +1952,21 @@
       "norm_label": "target"
     },
     {
+      "label": "_normalize_axis()",
+      "file_type": "code",
+      "source_file": "evaluation/tools/build_gold_set.py",
+      "source_location": "L169",
+      "_origin": "ast",
+      "id": "evaluation_tools_build_gold_set_normalize_axis",
+      "community": 122,
+      "community_name": "build_gold_set.py",
+      "norm_label": "_normalize_axis()"
+    },
+    {
       "label": "load_targets()",
       "file_type": "code",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L165",
+      "source_location": "L176",
       "_origin": "ast",
       "id": "evaluation_tools_build_gold_set_load_targets",
       "community": 122,
@@ -1922,7 +1977,7 @@
       "label": "build_gold_item()",
       "file_type": "code",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L184",
+      "source_location": "L195",
       "_origin": "ast",
       "id": "evaluation_tools_build_gold_set_build_gold_item",
       "community": 122,
@@ -1933,7 +1988,7 @@
       "label": "main()",
       "file_type": "code",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L237",
+      "source_location": "L248",
       "_origin": "ast",
       "id": "evaluation_tools_build_gold_set_main",
       "community": 122,
@@ -3069,8 +3124,8 @@
       "source_location": "L718",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_write_stack_outputs",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "write_stack_outputs()"
     },
     {
@@ -3080,8 +3135,8 @@
       "source_location": "L746",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_load_stack_outputs",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": "load_stack_outputs()"
     },
     {
@@ -3091,8 +3146,8 @@
       "source_location": "L772",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_main",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": "main()"
     },
     {
@@ -3344,8 +3399,8 @@
       "source_location": "L723",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_rationale_723",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "write targets grouped by stack to pr_targets_{stack}.json.      every stack in `"
     },
     {
@@ -3355,8 +3410,8 @@
       "source_location": "L750",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_rationale_750",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": "load all existing stack target files for atomic revalidation.      returns:"
     },
     {
@@ -3366,8 +3421,8 @@
       "source_location": "L773",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_rationale_773",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": "discover and write per-stack gold-set pull request targets.      returns:"
     },
     {
@@ -4148,8 +4203,8 @@
       "source_location": "L140",
       "_origin": "ast",
       "id": "evaluation_tools_select_stack_targets_filter_rows",
-      "community": 71,
-      "community_name": "make_row",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "filter_rows()"
     },
     {
@@ -4159,8 +4214,8 @@
       "source_location": "L163",
       "_origin": "ast",
       "id": "evaluation_tools_select_stack_targets_dedupe_rows",
-      "community": 28,
-      "community_name": "select_stack_targets.py",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "dedupe_rows()"
     },
     {
@@ -4313,8 +4368,8 @@
       "source_location": "L147",
       "_origin": "ast",
       "id": "evaluation_tools_select_stack_targets_rationale_147",
-      "community": 71,
-      "community_name": "make_row",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "filter targets by stack and the three classification axes.      returns:"
     },
     {
@@ -4324,8 +4379,8 @@
       "source_location": "L164",
       "_origin": "ast",
       "id": "evaluation_tools_select_stack_targets_rationale_164",
-      "community": 28,
-      "community_name": "select_stack_targets.py",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "remove duplicate repository and pull-request pairs.      returns:         de-dup"
     },
     {
@@ -4952,8 +5007,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "models.py"
     },
     {
@@ -4985,8 +5040,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_a2atextpart",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "a2atextpart"
     },
     {
@@ -4996,8 +5051,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_py_basemodel",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "basemodel"
     },
     {
@@ -5029,8 +5084,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_a2atask",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "a2atask"
     },
     {
@@ -5040,8 +5095,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_a2asendtaskrequest",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "a2asendtaskrequest"
     },
     {
@@ -5062,8 +5117,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_agentcapability",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "agentcapability"
     },
     {
@@ -5095,8 +5150,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_rationale_1",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "pydantic models for the a2a (agent-to-agent) protocol.  covers task lifecycle (:"
     },
     {
@@ -5117,8 +5172,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_rationale_26",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "a plain-text segment of an :class:`a2amessage`."
     },
     {
@@ -5150,8 +5205,8 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_rationale_50",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "a unit of work tracked by :class:`~code_review_agent.a2a.task_store.taskstore`."
     },
     {
@@ -5161,8 +5216,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_rationale_59",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "request body for submitting a new task with its initial message."
     },
     {
@@ -5183,8 +5238,8 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_rationale_71",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "optional protocol features an agent supports, advertised on its :class:`agentcar"
     },
     {
@@ -5216,8 +5271,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_sanitizers",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "sanitizers.py"
     },
     {
@@ -5227,8 +5282,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_sanitizers_sanitize_error",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "sanitize_error()"
     },
     {
@@ -5238,8 +5293,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "baseexception",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "baseexception"
     },
     {
@@ -5249,8 +5304,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_sanitizers_rationale_1",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "helpers for stripping credential-like strings from error messages."
     },
     {
@@ -5260,8 +5315,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_sanitizers_rationale_9",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "remove token-like strings from exception messages to prevent credential leakage."
     },
     {
@@ -5271,8 +5326,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_task_store",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "task_store.py"
     },
     {
@@ -5370,8 +5425,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_task_store_rationale_1",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "in-memory storage for a2a tasks, with lock-guarded mutation and ttl expiry."
     },
     {
@@ -5546,8 +5601,8 @@
       "source_location": "L170",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_base_reviewer_reviewagent_init",
-      "community": 272,
-      "community_name": ".__init__",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": ".__init__()"
     },
     {
@@ -5557,8 +5612,8 @@
       "source_location": "L180",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_base_reviewer_reviewagent_review",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".review()"
     },
     {
@@ -5656,8 +5711,8 @@
       "source_location": "L171",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_base_reviewer_rationale_171",
-      "community": 272,
-      "community_name": ".__init__",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "store the shared runtime configuration for this reviewer instance.          args"
     },
     {
@@ -5667,8 +5722,8 @@
       "source_location": "L185",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_base_reviewer_rationale_185",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "review the change described by ``context``.          args:             context:"
     },
     {
@@ -5799,8 +5854,8 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_lead_engineer_leadengineeragent",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": "leadengineeragent"
     },
     {
@@ -5821,8 +5876,8 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_lead_engineer_leadengineeragent_evaluate",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": ".evaluate()"
     },
     {
@@ -5832,8 +5887,8 @@
       "source_location": "L131",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_lead_engineer_leadengineeragent_build_prompt_and_index",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "._build_prompt_and_index()"
     },
     {
@@ -5865,8 +5920,8 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_lead_engineer_rationale_64",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": "evaluates parallel reviewer outputs and produces final decisions.      consumes"
     },
     {
@@ -5887,8 +5942,8 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_lead_engineer_rationale_92",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "evaluate all reviewer findings and produce a final report.          args:"
     },
     {
@@ -5898,8 +5953,8 @@
       "source_location": "L134",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_lead_engineer_rationale_134",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "build the evaluation prompt and a finding-index map simultaneously.          eac"
     },
     {
@@ -6338,8 +6393,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_registry_get_reviewer_classes",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "get_reviewer_classes()"
     },
     {
@@ -6415,8 +6470,8 @@
       "source_location": "L122",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_registry_rationale_122",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "select reviewer classes applicable to a project type.      args:         project"
     },
     {
@@ -6448,8 +6503,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_run_reviewer",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "_run_reviewer()"
     },
     {
@@ -6459,8 +6514,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_py_mcpclient",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "mcpclient"
     },
     {
@@ -6492,8 +6547,8 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_revieworchestrator_run",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".run()"
     },
     {
@@ -6503,8 +6558,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_revieworchestrator_run_async",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".run_async()"
     },
     {
@@ -6514,8 +6569,8 @@
       "source_location": "L249",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_revieworchestrator_select_reviewers",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "._select_reviewers()"
     },
     {
@@ -6536,8 +6591,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_rationale_35",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "run a reviewer and release its shared-client placeholder afterward.      the pla"
     },
     {
@@ -6569,8 +6624,8 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_rationale_92",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "run the parallel review stage synchronously.          convenience wrapper around"
     },
     {
@@ -6580,8 +6635,8 @@
       "source_location": "L114",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_rationale_114",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "run the parallel review stage concurrently.          each reviewer's synchronous"
     },
     {
@@ -6591,8 +6646,8 @@
       "source_location": "L255",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_rationale_255",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "resolve which reviewers to run and the project type each targets.          a rev"
     },
     {
@@ -6866,8 +6921,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "common.py"
     },
     {
@@ -6877,8 +6932,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_reviewerskillinput",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "reviewerskillinput"
     },
     {
@@ -6888,8 +6943,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_py_basemodel",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "basemodel"
     },
     {
@@ -6899,8 +6954,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_leadengineerskillinput",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "leadengineerskillinput"
     },
     {
@@ -6910,8 +6965,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_extract_data",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "_extract_data()"
     },
     {
@@ -6921,8 +6976,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_py_any",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "any"
     },
     {
@@ -6932,8 +6987,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_verify_github_token",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 351,
+      "community_name": "verify_github_token",
       "norm_label": "verify_github_token()"
     },
     {
@@ -6943,8 +6998,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_rationale_1",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "shared request/response schemas and dependencies for the per-agent routers."
     },
     {
@@ -6954,8 +7009,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_rationale_15",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "input payload schema for reviewer skills (frontend / svelte / security).      de"
     },
     {
@@ -6965,8 +7020,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_rationale_27",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "input payload schema for the lead engineer skill."
     },
     {
@@ -6976,8 +7031,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_rationale_45",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 351,
+      "community_name": "verify_github_token",
       "norm_label": "fastapi dependency that authenticates a request against the github api.      arg"
     },
     {
@@ -6987,8 +7042,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_frontend_reviewer",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "frontend_reviewer.py"
     },
     {
@@ -6998,8 +7053,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_frontend_reviewer_run",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "_run()"
     },
     {
@@ -7031,8 +7086,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_frontend_reviewer_rationale_1",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "a2a router exposing the frontend reviewer as an independently callable agent."
     },
     {
@@ -7053,8 +7108,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_lead_engineer",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "api/agents/lead_engineer.py"
     },
     {
@@ -7064,8 +7119,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_lead_engineer_run",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "_run()"
     },
     {
@@ -7097,8 +7152,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_lead_engineer_rationale_1",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "a2a router exposing the lead engineer agent as an independently callable service"
     },
     {
@@ -7119,8 +7174,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_orchestrator",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "orchestrator.py"
     },
     {
@@ -7163,8 +7218,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_orchestrator_rationale_1",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "a2a router that runs the full 3-stage review pipeline as a single background a2a"
     },
     {
@@ -7185,8 +7240,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "api/agents/pr_info_collector.py"
     },
     {
@@ -7196,8 +7251,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector_run",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "_run()"
     },
     {
@@ -7229,8 +7284,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector_rationale_1",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "a2a router exposing the pr info collector agent as an independently callable ser"
     },
     {
@@ -7251,8 +7306,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_security_reviewer",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "security_reviewer.py"
     },
     {
@@ -7262,8 +7317,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_security_reviewer_run",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "_run()"
     },
     {
@@ -7295,8 +7350,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_security_reviewer_rationale_1",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "a2a router exposing the security reviewer as an independently callable agent."
     },
     {
@@ -7317,8 +7372,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_svelte_reviewer",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "svelte_reviewer.py"
     },
     {
@@ -7328,8 +7383,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_svelte_reviewer_run",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "_run()"
     },
     {
@@ -7361,8 +7416,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_svelte_reviewer_rationale_1",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "a2a router exposing the svelte reviewer as an independently callable agent."
     },
     {
@@ -7438,8 +7493,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_config",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "config.py"
     },
     {
@@ -7482,8 +7537,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_config_rationale_1",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "runtime configuration for the fastapi service, sourced from the environment."
     },
     {
@@ -7515,8 +7570,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_models_init",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "code_review_agent/models/__init__.py"
     },
     {
@@ -7526,8 +7581,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_models_init_rationale_1",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "data models for code review agent."
     },
     {
@@ -7625,8 +7680,8 @@
       "source_location": "L77",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_leadengineeroutput",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": "leadengineeroutput"
     },
     {
@@ -7699,7 +7754,7 @@
       "label": ".to_evaluation_format()",
       "file_type": "code",
       "source_file": "src/code_review_agent/models/lead_engineer.py",
-      "source_location": "L243",
+      "source_location": "L244",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_leadengineerreport_to_evaluation_format",
       "community": 3,
@@ -7790,8 +7845,8 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_rationale_78",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": "top-level llm output schema passed to ``agent.structured_output``.      attribut"
     },
     {
@@ -7817,7 +7872,7 @@
       "norm_label": "final output of the lead engineer synthesis stage.      attributes:         over"
     },
     {
-      "label": "Return accepted findings sorted CRITICAL \u2192 HIGH \u2192 MEDIUM \u2192 LOW.          Returns",
+      "label": "Return accepted findings ordered by severity, highest first.          Returns:",
       "file_type": "rationale",
       "source_file": "src/code_review_agent/models/lead_engineer.py",
       "source_location": "L142",
@@ -7825,10 +7880,10 @@
       "id": "src_code_review_agent_models_lead_engineer_rationale_142",
       "community": 3,
       "community_name": "ReviewPerspective",
-      "norm_label": "return accepted findings sorted critical \u2192 high \u2192 medium \u2192 low.          returns"
+      "norm_label": "return accepted findings ordered by severity, highest first.          returns:"
     },
     {
-      "label": "Return rejected findings sorted CRITICAL \u2192 HIGH \u2192 MEDIUM \u2192 LOW.          Returns",
+      "label": "Return rejected findings ordered by severity, highest first.          Returns:",
       "file_type": "rationale",
       "source_file": "src/code_review_agent/models/lead_engineer.py",
       "source_location": "L150",
@@ -7836,7 +7891,7 @@
       "id": "src_code_review_agent_models_lead_engineer_rationale_150",
       "community": 3,
       "community_name": "ReviewPerspective",
-      "norm_label": "return rejected findings sorted critical \u2192 high \u2192 medium \u2192 low.          returns"
+      "norm_label": "return rejected findings ordered by severity, highest first.          returns:"
     },
     {
       "label": "Render the report as Markdown for chat output.          Accepted findings are li",
@@ -7853,9 +7908,9 @@
       "label": "Serialise to the evaluation script's prediction format.          Args:",
       "file_type": "rationale",
       "source_file": "src/code_review_agent/models/lead_engineer.py",
-      "source_location": "L244",
+      "source_location": "L245",
       "_origin": "ast",
-      "id": "src_code_review_agent_models_lead_engineer_rationale_244",
+      "id": "src_code_review_agent_models_lead_engineer_rationale_245",
       "community": 3,
       "community_name": "ReviewPerspective",
       "norm_label": "serialise to the evaluation script's prediction format.          args:"
@@ -7999,8 +8054,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_projecttype",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "projecttype"
     },
     {
@@ -8010,8 +8065,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_py_strenum",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "strenum"
     },
     {
@@ -8021,8 +8076,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_reviewperspective",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "reviewperspective"
     },
     {
@@ -8032,8 +8087,8 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_reviewpriority",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "reviewpriority"
     },
     {
@@ -8043,8 +8098,8 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_reviewfinding",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "reviewfinding"
     },
     {
@@ -8098,8 +8153,8 @@
       "source_location": "L141",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_reviewerror",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "reviewerror"
     },
     {
@@ -8109,8 +8164,8 @@
       "source_location": "L155",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_reviewreport",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "reviewreport"
     },
     {
@@ -8131,8 +8186,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_rationale_18",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "project technology stack a reviewer applies to.      ``react_ts``, ``angular``,"
     },
     {
@@ -8142,8 +8197,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_rationale_35",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "the lens a reviewer evaluates a change through.      :attr:`technical` and :attr"
     },
     {
@@ -8153,8 +8208,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_rationale_49",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "severity/priority assigned to an individual finding."
     },
     {
@@ -8164,8 +8219,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_rationale_58",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "a single issue raised by a reviewer.      attributes:         file_path: target"
     },
     {
@@ -8208,8 +8263,8 @@
       "source_location": "L142",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_rationale_142",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "record of a reviewer that failed, kept isolated from successes.      attributes:"
     },
     {
@@ -8219,8 +8274,8 @@
       "source_location": "L156",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_rationale_156",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "aggregated output of the parallel review stage.      this is the hand-off to the"
     },
     {
@@ -8571,8 +8626,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_a2a_test_models",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "test_models.py"
     },
     {
@@ -8582,8 +8637,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2ataskstatus",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "testa2ataskstatus"
     },
     {
@@ -8593,8 +8648,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2ataskstatus_test_values",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_values()"
     },
     {
@@ -8604,8 +8659,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2aparts",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "testa2aparts"
     },
     {
@@ -8615,8 +8670,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2aparts_test_text_part",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_text_part()"
     },
     {
@@ -8626,8 +8681,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2aparts_test_data_part",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_data_part()"
     },
     {
@@ -8637,8 +8692,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2aparts_test_union_discriminated_by_kind_text",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_union_discriminated_by_kind_text()"
     },
     {
@@ -8648,8 +8703,8 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2aparts_test_union_discriminated_by_kind_data",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_union_discriminated_by_kind_data()"
     },
     {
@@ -8659,8 +8714,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2amessage",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "testa2amessage"
     },
     {
@@ -8670,8 +8725,8 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2amessage_test_user_message",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_user_message()"
     },
     {
@@ -8692,8 +8747,8 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2amessage_test_serialization",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_serialization()"
     },
     {
@@ -8703,8 +8758,8 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2atask",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "testa2atask"
     },
     {
@@ -8714,8 +8769,8 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2atask_test_submitted_task",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_submitted_task()"
     },
     {
@@ -8725,8 +8780,8 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2atask_test_completed_task_with_message",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_completed_task_with_message()"
     },
     {
@@ -8736,8 +8791,8 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2atask_test_failed_task_with_error",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_failed_task_with_error()"
     },
     {
@@ -8747,8 +8802,8 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2asendtaskrequest",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "testa2asendtaskrequest"
     },
     {
@@ -8758,8 +8813,8 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2asendtaskrequest_test_request_roundtrip",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_request_roundtrip()"
     },
     {
@@ -8769,8 +8824,8 @@
       "source_location": "L93",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2asendtaskresponse",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "testa2asendtaskresponse"
     },
     {
@@ -8780,8 +8835,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testa2asendtaskresponse_test_response",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_response()"
     },
     {
@@ -8791,8 +8846,8 @@
       "source_location": "L100",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testagentcard",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "testagentcard"
     },
     {
@@ -8813,8 +8868,8 @@
       "source_location": "L120",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testagentcard_test_agent_capability_defaults",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_agent_capability_defaults()"
     },
     {
@@ -8824,8 +8879,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_a2a_test_sanitizers",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "test_sanitizers.py"
     },
     {
@@ -8835,8 +8890,8 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "tests_a2a_test_sanitizers_testsanitizeerror",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "testsanitizeerror"
     },
     {
@@ -8846,8 +8901,8 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "tests_a2a_test_sanitizers_testsanitizeerror_test_redacts_bearer_token",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_redacts_bearer_token()"
     },
     {
@@ -8857,8 +8912,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "tests_a2a_test_sanitizers_testsanitizeerror_test_redacts_ghp_token_standalone",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_redacts_ghp_token_standalone()"
     },
     {
@@ -8868,8 +8923,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "tests_a2a_test_sanitizers_testsanitizeerror_test_redacts_github_pat_token",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_redacts_github_pat_token()"
     },
     {
@@ -8879,8 +8934,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tests_a2a_test_sanitizers_testsanitizeerror_test_case_insensitive_bearer",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_case_insensitive_bearer()"
     },
     {
@@ -8890,8 +8945,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "tests_a2a_test_sanitizers_testsanitizeerror_test_preserves_message_without_token",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_preserves_message_without_token()"
     },
     {
@@ -8901,8 +8956,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "tests_a2a_test_sanitizers_testsanitizeerror_test_returns_string",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_returns_string()"
     },
     {
@@ -10562,8 +10617,8 @@
       "source_location": "L455",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": "testleadengineeragentevaluate"
     },
     {
@@ -10584,8 +10639,8 @@
       "source_location": "L463",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate_test_system_prompt_forbids_speculation",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_system_prompt_forbids_speculation()"
     },
     {
@@ -10595,8 +10650,8 @@
       "source_location": "L469",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate_test_no_github_mcp_tools_passed",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_no_github_mcp_tools_passed()"
     },
     {
@@ -10606,8 +10661,8 @@
       "source_location": "L486",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate_test_structured_output_receives_lead_engineer_output_schema",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_structured_output_receives_lead_engineer_output_schema()"
     },
     {
@@ -10617,8 +10672,8 @@
       "source_location": "L503",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate_test_agent_called_with_default_limits",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_agent_called_with_default_limits()"
     },
     {
@@ -10628,8 +10683,8 @@
       "source_location": "L521",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate_test_agent_called_with_custom_max_agent_turns",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_agent_called_with_custom_max_agent_turns()"
     },
     {
@@ -10650,8 +10705,8 @@
       "source_location": "L557",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate_test_returns_lead_engineer_report",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_returns_lead_engineer_report()"
     },
     {
@@ -10661,8 +10716,8 @@
       "source_location": "L577",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate_test_report_errors_forwarded_to_reviewer_errors",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_report_errors_forwarded_to_reviewer_errors()"
     },
     {
@@ -10672,8 +10727,8 @@
       "source_location": "L601",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate_test_model_id_passed_to_openai_model",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_model_id_passed_to_openai_model()"
     },
     {
@@ -10683,8 +10738,8 @@
       "source_location": "L620",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate_test_passes_llm_base_url_to_openai_model_when_set",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_passes_llm_base_url_to_openai_model_when_set()"
     },
     {
@@ -10694,8 +10749,8 @@
       "source_location": "L646",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_testleadengineeragentevaluate_test_omits_base_url_from_openai_model_when_not_set",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_omits_base_url_from_openai_model_when_not_set()"
     },
     {
@@ -10738,8 +10793,8 @@
       "source_location": "L456",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_rationale_456",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": "tests for leadengineeragent.evaluate() (strands agent mocked)."
     },
     {
@@ -10749,8 +10804,8 @@
       "source_location": "L504",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_rationale_504",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": "agent() receives limits={\"turns\": 30} by default."
     },
     {
@@ -10760,8 +10815,8 @@
       "source_location": "L522",
       "_origin": "ast",
       "id": "tests_agents_test_lead_engineer_rationale_522",
-      "community": 5,
-      "community_name": "TestLeadEngineerAgentEvaluate",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": "custom max_agent_turns from config is forwarded to limits."
     },
     {
@@ -11816,8 +11871,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "tests_agents_test_registry_testregistration",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "testregistration"
     },
     {
@@ -11827,8 +11882,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "tests_agents_test_registry_testregistration_test_register_and_select_by_project_type",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_register_and_select_by_project_type()"
     },
     {
@@ -11838,8 +11893,8 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "tests_agents_test_registry_testregistration_test_select_excludes_other_project_types",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_select_excludes_other_project_types()"
     },
     {
@@ -11849,8 +11904,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "tests_agents_test_registry_testregistration_test_perspective_filter",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_perspective_filter()"
     },
     {
@@ -11860,8 +11915,8 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "tests_agents_test_registry_testregistration_test_reviewer_can_target_multiple_project_types",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_reviewer_can_target_multiple_project_types()"
     },
     {
@@ -11871,8 +11926,8 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "tests_agents_test_registry_testregistration_test_decorator_returns_class",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_decorator_returns_class()"
     },
     {
@@ -12135,8 +12190,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "tests_agents_test_registry_rationale_47",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "register_reviewer adds classes; get_reviewer_classes selects them."
     },
     {
@@ -12245,8 +12300,8 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_eventloopfailingreviewer",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "_eventloopfailingreviewer"
     },
     {
@@ -12256,8 +12311,8 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_eventloopfailingreviewer_review",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".review()"
     },
     {
@@ -12289,8 +12344,8 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_transportfailingreviewer",
-      "community": 14,
-      "community_name": "ReviewOrchestrator",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "_transportfailingreviewer"
     },
     {
@@ -12300,8 +12355,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_transportfailingreviewer_review",
-      "community": 14,
-      "community_name": "ReviewOrchestrator",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".review()"
     },
     {
@@ -12806,8 +12861,8 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testfrontendreviewer",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "testfrontendreviewer"
     },
     {
@@ -12817,8 +12872,8 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testfrontendreviewer_test_is_llm_review_agent",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_is_llm_review_agent()"
     },
     {
@@ -12828,8 +12883,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testfrontendreviewer_test_metadata",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_metadata()"
     },
     {
@@ -12839,8 +12894,8 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testfrontendreviewer_test_system_prompt_mentions_frontend",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_system_prompt_mentions_frontend()"
     },
     {
@@ -12850,8 +12905,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testfrontendreviewer_test_skill_type_is_frontend_review",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_skill_type_is_frontend_review()"
     },
     {
@@ -12861,8 +12916,8 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testfrontendreviewer_test_frontend_review_skills_resolve",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_frontend_review_skills_resolve()"
     },
     {
@@ -13103,8 +13158,8 @@
       "source_location": "L187",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testregistration",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "testregistration"
     },
     {
@@ -13114,8 +13169,8 @@
       "source_location": "L190",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testregistration_test_both_registered_for_react_ts",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_both_registered_for_react_ts()"
     },
     {
@@ -13125,8 +13180,8 @@
       "source_location": "L195",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testregistration_test_selected_for_react_ts",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_selected_for_react_ts()"
     },
     {
@@ -13136,8 +13191,8 @@
       "source_location": "L200",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testregistration_test_both_perspectives_present",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_both_perspectives_present()"
     },
     {
@@ -13147,8 +13202,8 @@
       "source_location": "L206",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testregistration_test_angular_reviewers_registered_and_selected",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_angular_reviewers_registered_and_selected()"
     },
     {
@@ -13158,8 +13213,8 @@
       "source_location": "L215",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testregistration_test_svelte_reviewers_registered_and_selected",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": ".test_svelte_reviewers_registered_and_selected()"
     },
     {
@@ -13180,8 +13235,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_rationale_54",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "frontend technical reviewer metadata and prompt."
     },
     {
@@ -13235,8 +13290,8 @@
       "source_location": "L188",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_rationale_188",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 272,
+      "community_name": ".__init__",
       "norm_label": "importing the reviewers package registers both reviewers."
     },
     {
@@ -13268,8 +13323,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_api_agents_test_common",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 351,
+      "community_name": "verify_github_token",
       "norm_label": "test_common.py"
     },
     {
@@ -13334,8 +13389,8 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 351,
+      "community_name": "verify_github_token",
       "norm_label": "testverifygithubtoken"
     },
     {
@@ -13345,8 +13400,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_py_asyncio",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 351,
+      "community_name": "verify_github_token",
       "norm_label": "asyncio"
     },
     {
@@ -13356,8 +13411,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_returns_token_on_valid_response",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 351,
+      "community_name": "verify_github_token",
       "norm_label": ".test_returns_token_on_valid_response()"
     },
     {
@@ -13367,8 +13422,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_raises_401_on_invalid_token",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 351,
+      "community_name": "verify_github_token",
       "norm_label": ".test_raises_401_on_invalid_token()"
     },
     {
@@ -13378,8 +13433,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_raises_401_on_missing_bearer_prefix",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 351,
+      "community_name": "verify_github_token",
       "norm_label": ".test_raises_401_on_missing_bearer_prefix()"
     },
     {
@@ -13389,8 +13444,8 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_raises_503_when_github_unreachable",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 351,
+      "community_name": "verify_github_token",
       "norm_label": ".test_raises_503_when_github_unreachable()"
     },
     {
@@ -13444,8 +13499,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_send_payload",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": "_send_payload()"
     },
     {
@@ -13477,8 +13532,8 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testsendtask",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": "testsendtask"
     },
     {
@@ -13488,8 +13543,8 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testsendtask_test_returns_202_with_task_id",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": ".test_returns_202_with_task_id()"
     },
     {
@@ -13499,8 +13554,8 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testgettask",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": "testgettask"
     },
     {
@@ -13521,8 +13576,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_py_asyncio",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": "asyncio"
     },
     {
@@ -13532,8 +13587,8 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testgettask_test_background_task_completes",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": ".test_background_task_completes()"
     },
     {
@@ -13543,8 +13598,8 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testgettask_test_forwards_mcp_retry_settings_to_reviewer_config",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": ".test_forwards_mcp_retry_settings_to_reviewer_config()"
     },
     {
@@ -13752,8 +13807,8 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testsendtask",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": "testsendtask"
     },
     {
@@ -13763,8 +13818,8 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testsendtask_test_returns_202_with_task_id",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_returns_202_with_task_id()"
     },
     {
@@ -13862,8 +13917,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_send_payload",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": "_send_payload()"
     },
     {
@@ -13906,8 +13961,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_testsendtask_test_returns_202_with_task_id",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_returns_202_with_task_id()"
     },
     {
@@ -13950,8 +14005,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_py_asyncio",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": "asyncio"
     },
     {
@@ -13961,8 +14016,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_testgettask_test_background_task_completes",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_background_task_completes()"
     },
     {
@@ -13972,8 +14027,8 @@
       "source_location": "L157",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_testgettask_test_forwards_mcp_retry_settings_to_collector",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_forwards_mcp_retry_settings_to_collector()"
     },
     {
@@ -13983,8 +14038,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": "test_security_reviewer.py"
     },
     {
@@ -14016,8 +14071,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_send_payload",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": "_send_payload()"
     },
     {
@@ -14049,8 +14104,8 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testsendtask",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": "testsendtask"
     },
     {
@@ -14060,8 +14115,8 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testsendtask_test_returns_202_with_task_id",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": ".test_returns_202_with_task_id()"
     },
     {
@@ -14071,8 +14126,8 @@
       "source_location": "L103",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testgettask",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": "testgettask"
     },
     {
@@ -14093,8 +14148,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_py_asyncio",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": "asyncio"
     },
     {
@@ -14104,8 +14159,8 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testgettask_test_background_task_completes",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": ".test_background_task_completes()"
     },
     {
@@ -14115,8 +14170,8 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testgettask_test_forwards_mcp_retry_settings_to_reviewer_config",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": ".test_forwards_mcp_retry_settings_to_reviewer_config()"
     },
     {
@@ -14225,8 +14280,8 @@
       "source_location": "L77",
       "_origin": "ast",
       "id": "tests_api_agents_test_svelte_reviewer_testgettask",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 66,
+      "community_name": "task_store.py",
       "norm_label": "testgettask"
     },
     {
@@ -14258,8 +14313,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "tests_api_agents_test_svelte_reviewer_testgettask_test_background_task_completes",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 66,
+      "community_name": "task_store.py",
       "norm_label": ".test_background_task_completes()"
     },
     {
@@ -14912,10 +14967,21 @@
       "norm_label": ".test_legacy_target_defaults_axes_to_unknown()"
     },
     {
+      "label": ".test_normalizes_axes_and_replaces_invalid_values_with_unknown()",
+      "file_type": "code",
+      "source_file": "tests/evaluation/tools/test_build_gold_set.py",
+      "source_location": "L71",
+      "_origin": "ast",
+      "id": "tests_evaluation_tools_test_build_gold_set_testloadtargets_test_normalizes_axes_and_replaces_invalid_values_with_unknown",
+      "community": 122,
+      "community_name": "build_gold_set.py",
+      "norm_label": ".test_normalizes_axes_and_replaces_invalid_values_with_unknown()"
+    },
+    {
       "label": "TestBuildGoldItem",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_gold_set.py",
-      "source_location": "L72",
+      "source_location": "L96",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_gold_set_testbuildgolditem",
       "community": 122,
@@ -14937,7 +15003,7 @@
       "label": ".test_inherits_target_axes_to_every_finding()",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_gold_set.py",
-      "source_location": "L74",
+      "source_location": "L98",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_gold_set_testbuildgolditem_test_inherits_target_axes_to_every_finding",
       "community": 122,
@@ -15399,7 +15465,7 @@
       "label": ".test_detail_table_contains_impact_and_priority()",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L340",
+      "source_location": "L338",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_detail_table_contains_impact_and_priority",
       "community": 46,
@@ -15410,7 +15476,7 @@
       "label": ".test_seeded_detail_has_no_human_review_wording()",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L356",
+      "source_location": "L354",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_has_no_human_review_wording",
       "community": 46,
@@ -15421,7 +15487,7 @@
       "label": ".test_seeded_detail_uses_must_find_label()",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L372",
+      "source_location": "L370",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_uses_must_find_label",
       "community": 46,
@@ -15432,7 +15498,7 @@
       "label": ".test_seeded_detail_cross_references_gold_title_via_base_source()",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L379",
+      "source_location": "L377",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_cross_references_gold_title_via_base_source",
       "community": 46,
@@ -15443,7 +15509,7 @@
       "label": ".test_empty_items_renders_placeholder_text()",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L393",
+      "source_location": "L391",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_empty_items_renders_placeholder_text",
       "community": 46,
@@ -15454,7 +15520,7 @@
       "label": ".test_failure_section_still_appended_when_failed_ids_present()",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L397",
+      "source_location": "L395",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failure_section_still_appended_when_failed_ids_present",
       "community": 46,
@@ -15465,7 +15531,7 @@
       "label": ".test_failed_gold_item_excluded_from_gold_detail_section()",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L402",
+      "source_location": "L400",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_gold_item_excluded_from_gold_detail_section",
       "community": 46,
@@ -15476,7 +15542,7 @@
       "label": ".test_failed_seeded_item_excluded_from_seeded_detail_section()",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L421",
+      "source_location": "L419",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_seeded_item_excluded_from_seeded_detail_section",
       "community": 46,
@@ -15487,7 +15553,7 @@
       "label": ".test_non_failed_items_unaffected_by_unrelated_failed_ids()",
       "file_type": "code",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L441",
+      "source_location": "L439",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_non_failed_items_unaffected_by_unrelated_failed_ids",
       "community": 46,
@@ -18845,8 +18911,8 @@
       "source_location": "L359",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testwritestackoutputs",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "testwritestackoutputs"
     },
     {
@@ -18856,8 +18922,8 @@
       "source_location": "L360",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testwritestackoutputs_test_routes_targets_by_stack",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": ".test_routes_targets_by_stack()"
     },
     {
@@ -18867,8 +18933,8 @@
       "source_location": "L387",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testwritestackoutputs_test_empty_stack_produces_empty_file",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": ".test_empty_stack_produces_empty_file()"
     },
     {
@@ -18878,8 +18944,8 @@
       "source_location": "L393",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testwritestackoutputs_test_stack_outside_default_still_written",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": ".test_stack_outside_default_still_written()"
     },
     {
@@ -18889,8 +18955,8 @@
       "source_location": "L409",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testwritestackoutputs_test_load_skipped_targets_keeps_only_requested_repositories",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": ".test_load_skipped_targets_keeps_only_requested_repositories()"
     },
     {
@@ -20726,8 +20792,8 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput",
-      "community": 124,
-      "community_name": "TestResolveDecisions",
+      "community": 352,
+      "community_name": "TestFindingDecisionOutput",
       "norm_label": "testfindingdecisionoutput"
     },
     {
@@ -20737,8 +20803,8 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_required_fields",
-      "community": 124,
-      "community_name": "TestResolveDecisions",
+      "community": 352,
+      "community_name": "TestFindingDecisionOutput",
       "norm_label": ".test_required_fields()"
     },
     {
@@ -20748,9 +20814,20 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_independent_axes_are_required_and_typed",
-      "community": 124,
-      "community_name": "TestResolveDecisions",
+      "community": 352,
+      "community_name": "TestFindingDecisionOutput",
       "norm_label": ".test_independent_axes_are_required_and_typed()"
+    },
+    {
+      "label": "._valid_axis_payload()",
+      "file_type": "code",
+      "source_file": "tests/models/test_lead_engineer.py",
+      "source_location": "L135",
+      "_origin": "ast",
+      "id": "tests_models_test_lead_engineer_testfindingdecisionoutput_valid_axis_payload",
+      "community": 352,
+      "community_name": "TestFindingDecisionOutput",
+      "norm_label": "._valid_axis_payload()"
     },
     {
       "label": "parametrize",
@@ -20759,70 +20836,70 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_py_parametrize",
-      "community": 124,
-      "community_name": "TestResolveDecisions",
+      "community": 352,
+      "community_name": "TestFindingDecisionOutput",
       "norm_label": "parametrize"
     },
     {
       "label": ".test_each_axis_is_required()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L137",
+      "source_location": "L149",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_each_axis_is_required",
-      "community": 124,
-      "community_name": "TestResolveDecisions",
+      "community": 352,
+      "community_name": "TestFindingDecisionOutput",
       "norm_label": ".test_each_axis_is_required()"
     },
     {
       "label": ".test_rejects_out_of_vocabulary_axis()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L162",
+      "source_location": "L166",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_rejects_out_of_vocabulary_axis",
-      "community": 124,
-      "community_name": "TestResolveDecisions",
+      "community": 352,
+      "community_name": "TestFindingDecisionOutput",
       "norm_label": ".test_rejects_out_of_vocabulary_axis()"
     },
     {
       "label": "TestLeadEngineerOutput",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L180",
+      "source_location": "L176",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineeroutput",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": "testleadengineeroutput"
     },
     {
       "label": ".test_required_fields()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L183",
+      "source_location": "L179",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineeroutput_test_required_fields",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_required_fields()"
     },
     {
       "label": ".test_decisions_default_empty()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L194",
+      "source_location": "L190",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineeroutput_test_decisions_default_empty",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": ".test_decisions_default_empty()"
     },
     {
       "label": "TestFindingDecision",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L201",
+      "source_location": "L197",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecision",
       "community": 76,
@@ -20833,7 +20910,7 @@
       "label": ".test_holds_original_finding()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L204",
+      "source_location": "L200",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecision_test_holds_original_finding",
       "community": 76,
@@ -20844,7 +20921,7 @@
       "label": ".test_all_fields_present()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L231",
+      "source_location": "L227",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecision_test_all_fields_present",
       "community": 76,
@@ -20855,7 +20932,7 @@
       "label": "TestLeadEngineerReport",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L254",
+      "source_location": "L250",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport",
       "community": 31,
@@ -20866,7 +20943,7 @@
       "label": "._make_report()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L257",
+      "source_location": "L253",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_make_report",
       "community": 31,
@@ -20877,7 +20954,7 @@
       "label": ".test_accepted_sorted_by_severity()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L266",
+      "source_location": "L262",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_accepted_sorted_by_severity",
       "community": 31,
@@ -20888,7 +20965,7 @@
       "label": ".test_rejected_sorted_by_severity()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L283",
+      "source_location": "L279",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_rejected_sorted_by_severity",
       "community": 31,
@@ -20899,7 +20976,7 @@
       "label": ".test_accepted_excludes_rejected()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L294",
+      "source_location": "L290",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_accepted_excludes_rejected",
       "community": 31,
@@ -20910,7 +20987,7 @@
       "label": ".test_to_markdown_contains_accepted_file_and_comment()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L304",
+      "source_location": "L300",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_contains_accepted_file_and_comment",
       "community": 31,
@@ -20921,7 +20998,7 @@
       "label": ".test_to_markdown_distinguishes_all_three_axes_and_prose_impact()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L321",
+      "source_location": "L317",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_distinguishes_all_three_axes_and_prose_impact",
       "community": 31,
@@ -20932,7 +21009,7 @@
       "label": ".test_to_markdown_accepted_with_proposed_fix_shows_suggested_fix()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L339",
+      "source_location": "L335",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_accepted_with_proposed_fix_shows_suggested_fix",
       "community": 31,
@@ -20943,7 +21020,7 @@
       "label": ".test_to_markdown_accepted_without_proposed_fix_omits_suggested_fix()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L356",
+      "source_location": "L352",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_accepted_without_proposed_fix_omits_suggested_fix",
       "community": 31,
@@ -20954,7 +21031,7 @@
       "label": ".test_to_markdown_rejected_in_details_block()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L372",
+      "source_location": "L368",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_rejected_in_details_block",
       "community": 31,
@@ -20965,7 +21042,7 @@
       "label": ".test_to_markdown_errors_at_end()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L382",
+      "source_location": "L378",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_errors_at_end",
       "community": 31,
@@ -20976,7 +21053,7 @@
       "label": ".test_to_markdown_no_accepted_shows_placeholder()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L396",
+      "source_location": "L392",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_no_accepted_shows_placeholder",
       "community": 31,
@@ -20987,7 +21064,7 @@
       "label": ".test_to_evaluation_format_keys()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L402",
+      "source_location": "L398",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_keys",
       "community": 31,
@@ -20998,7 +21075,7 @@
       "label": ".test_to_evaluation_format_agent_findings_accepted_only()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L410",
+      "source_location": "L406",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_agent_findings_accepted_only",
       "community": 31,
@@ -21009,7 +21086,7 @@
       "label": ".test_to_evaluation_format_keeps_three_axes_independent()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L432",
+      "source_location": "L428",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_keeps_three_axes_independent",
       "community": 31,
@@ -21020,7 +21097,7 @@
       "label": ".test_to_evaluation_format_lead_decisions_all()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L449",
+      "source_location": "L445",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_lead_decisions_all",
       "community": 31,
@@ -21031,7 +21108,7 @@
       "label": ".test_to_evaluation_format_excludes_empty_file_path_from_agent_findings()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L461",
+      "source_location": "L457",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_empty_file_path_from_agent_findings",
       "community": 31,
@@ -21042,7 +21119,7 @@
       "label": ".test_to_evaluation_format_excludes_missing_line_from_agent_findings()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L472",
+      "source_location": "L468",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_missing_line_from_agent_findings",
       "community": 31,
@@ -21053,7 +21130,7 @@
       "label": ".test_to_evaluation_format_excludes_empty_file_path_from_lead_decisions()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L483",
+      "source_location": "L479",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_empty_file_path_from_lead_decisions",
       "community": 31,
@@ -21064,7 +21141,7 @@
       "label": ".test_to_evaluation_format_excludes_missing_line_from_lead_decisions()",
       "file_type": "code",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L494",
+      "source_location": "L490",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_missing_line_from_lead_decisions",
       "community": 31,
@@ -21100,28 +21177,28 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_rationale_87",
-      "community": 124,
-      "community_name": "TestResolveDecisions",
+      "community": 352,
+      "community_name": "TestFindingDecisionOutput",
       "norm_label": "tests for the llm output schema (finding_index reference style)."
     },
     {
       "label": "Tests for the top-level LLM output schema.",
       "file_type": "rationale",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L181",
+      "source_location": "L177",
       "_origin": "ast",
-      "id": "tests_models_test_lead_engineer_rationale_181",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "id": "tests_models_test_lead_engineer_rationale_177",
+      "community": 273,
+      "community_name": ".__init__",
       "norm_label": "tests for the top-level llm output schema."
     },
     {
       "label": "Tests for the resolved FindingDecision object.",
       "file_type": "rationale",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L202",
+      "source_location": "L198",
       "_origin": "ast",
-      "id": "tests_models_test_lead_engineer_rationale_202",
+      "id": "tests_models_test_lead_engineer_rationale_198",
       "community": 76,
       "community_name": "has_production_code_change",
       "norm_label": "tests for the resolved findingdecision object."
@@ -21130,9 +21207,9 @@
       "label": "Tests for LeadEngineerReport output, sorting, and serialisation.",
       "file_type": "rationale",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L255",
+      "source_location": "L251",
       "_origin": "ast",
-      "id": "tests_models_test_lead_engineer_rationale_255",
+      "id": "tests_models_test_lead_engineer_rationale_251",
       "community": 31,
       "community_name": "TestLeadEngineerReport",
       "norm_label": "tests for leadengineerreport output, sorting, and serialisation."
@@ -21452,8 +21529,8 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewfinding",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "testreviewfinding"
     },
     {
@@ -21463,8 +21540,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewfinding_test_minimal_finding",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": ".test_minimal_finding()"
     },
     {
@@ -21474,8 +21551,8 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewfinding_test_full_finding",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": ".test_full_finding()"
     },
     {
@@ -21485,8 +21562,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewfinding_test_priority_is_required",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_priority_is_required()"
     },
     {
@@ -21496,8 +21573,8 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewfinding_test_priority_accepts_string_value",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_priority_accepts_string_value()"
     },
     {
@@ -21628,8 +21705,8 @@
       "source_location": "L164",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewreport_test_defaults_empty",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_defaults_empty()"
     },
     {
@@ -21672,8 +21749,8 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "tests_models_test_review_rationale_68",
-      "community": 76,
-      "community_name": "has_production_code_change",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "tests for the reviewfinding model."
     },
     {
@@ -27103,7 +27180,7 @@
       "label": "4. Gold\u30e9\u30d9\u30eb\u306e\u751f\u6210",
       "file_type": "document",
       "source_file": "docs/finding-axis-evaluation-spec.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "_origin": "ast",
       "id": "docs_finding_axis_evaluation_spec_4_gold\u30e9\u30d9\u30eb\u306e\u751f\u6210",
       "community": 190,
@@ -27114,7 +27191,7 @@
       "label": "5. Lead Engineer\u51fa\u529b",
       "file_type": "document",
       "source_file": "docs/finding-axis-evaluation-spec.md",
-      "source_location": "L58",
+      "source_location": "L60",
       "_origin": "ast",
       "id": "docs_finding_axis_evaluation_spec_5_lead_engineer\u51fa\u529b",
       "community": 190,
@@ -27125,7 +27202,7 @@
       "label": "6. \u7167\u5408\u3068\u63a1\u70b9",
       "file_type": "document",
       "source_file": "docs/finding-axis-evaluation-spec.md",
-      "source_location": "L76",
+      "source_location": "L78",
       "_origin": "ast",
       "id": "docs_finding_axis_evaluation_spec_6_\u7167\u5408\u3068\u63a1\u70b9",
       "community": 190,
@@ -27136,7 +27213,7 @@
       "label": "7. \u53d7\u5165\u6761\u4ef6",
       "file_type": "document",
       "source_file": "docs/finding-axis-evaluation-spec.md",
-      "source_location": "L96",
+      "source_location": "L98",
       "_origin": "ast",
       "id": "docs_finding_axis_evaluation_spec_7_\u53d7\u5165\u6761\u4ef6",
       "community": 190,
@@ -27147,7 +27224,7 @@
       "label": "8. \u30c6\u30b9\u30c8\u65b9\u91dd",
       "file_type": "document",
       "source_file": "docs/finding-axis-evaluation-spec.md",
-      "source_location": "L107",
+      "source_location": "L109",
       "_origin": "ast",
       "id": "docs_finding_axis_evaluation_spec_8_\u30c6\u30b9\u30c8\u65b9\u91dd",
       "community": 190,
@@ -42803,6 +42880,40 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": ".opencode/opencode.json",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_opencode",
+      "target": "opencode_opencode_plugin",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/opencode.json",
+      "source_location": "L2",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_opencode",
+      "target": "opencode_opencode_schema",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/opencode.json",
+      "source_location": "L3",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "opencode_opencode_plugin",
+      "target": "ref_opencode_plugins_graphify_js",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": ".opencode/plugins/graphify.js",
       "source_location": "L12",
       "weight": 1.0,
@@ -44944,7 +45055,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L36",
+      "source_location": "L40",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set",
@@ -44955,7 +45066,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L184",
+      "source_location": "L195",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set",
@@ -44966,7 +45077,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L146",
+      "source_location": "L150",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set",
@@ -44977,7 +45088,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L50",
+      "source_location": "L54",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set",
@@ -44988,7 +45099,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L165",
+      "source_location": "L176",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set",
@@ -44999,7 +45110,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L237",
+      "source_location": "L248",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set",
@@ -45010,7 +45121,18 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L91",
+      "source_location": "L169",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "evaluation_tools_build_gold_set",
+      "target": "evaluation_tools_build_gold_set_normalize_axis",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "evaluation/tools/build_gold_set.py",
+      "source_location": "L95",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set",
@@ -45021,7 +45143,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L54",
+      "source_location": "L58",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set",
@@ -45032,7 +45154,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L157",
+      "source_location": "L161",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set",
@@ -45068,7 +45190,7 @@
       "context": "return_type",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L36",
+      "source_location": "L40",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set_api_get",
@@ -45080,7 +45202,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L191",
+      "source_location": "L202",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set_build_gold_item",
@@ -45092,7 +45214,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L184",
+      "source_location": "L195",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set_build_gold_item",
@@ -45104,7 +45226,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L146",
+      "source_location": "L150",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set_extract_line",
@@ -45112,27 +45234,15 @@
       "confidence_score": 1.0
     },
     {
-      "relation": "calls",
-      "context": "call",
+      "relation": "references",
+      "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L201",
+      "source_location": "L169",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "evaluation_tools_build_gold_set_build_gold_item",
-      "target": "evaluation_tools_build_gold_set_is_target_file",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L51",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "evaluation_tools_build_gold_set_is_target_file",
-      "target": "evaluation_tools_target_criteria_is_production_code_file",
+      "source": "evaluation_tools_build_gold_set_normalize_axis",
+      "target": "evaluation_tools_build_gold_set_py_any",
       "confidence_score": 1.0
     },
     {
@@ -45144,6 +45254,30 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set_build_gold_item",
+      "target": "evaluation_tools_build_gold_set_is_target_file",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "evaluation/tools/build_gold_set.py",
+      "source_location": "L55",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "evaluation_tools_build_gold_set_is_target_file",
+      "target": "evaluation_tools_target_criteria_is_production_code_file",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "evaluation/tools/build_gold_set.py",
+      "source_location": "L223",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "evaluation_tools_build_gold_set_build_gold_item",
       "target": "evaluation_tools_build_gold_set_normalize_category",
       "confidence_score": 1.0
     },
@@ -45152,7 +45286,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L217",
+      "source_location": "L228",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set_build_gold_item",
@@ -45164,7 +45298,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L184",
+      "source_location": "L195",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set_build_gold_item",
@@ -45176,7 +45310,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L165",
+      "source_location": "L176",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set_load_targets",
@@ -45189,7 +45323,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_gold_set.py",
-      "source_location": "L75",
+      "source_location": "L99",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_gold_set_testbuildgolditem_test_inherits_target_axes_to_every_finding",
@@ -45212,7 +45346,19 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L253",
+      "source_location": "L187",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "evaluation_tools_build_gold_set_load_targets",
+      "target": "evaluation_tools_build_gold_set_normalize_axis",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "evaluation/tools/build_gold_set.py",
+      "source_location": "L264",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set_main",
@@ -45224,7 +45370,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/build_gold_set.py",
-      "source_location": "L260",
+      "source_location": "L271",
       "weight": 1.0,
       "_origin": "ast",
       "source": "evaluation_tools_build_gold_set_main",
@@ -45237,7 +45383,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_gold_set.py",
-      "source_location": "L83",
+      "source_location": "L107",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_gold_set_testbuildgolditem_test_inherits_target_axes_to_every_finding",
@@ -52135,7 +52281,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L348",
+      "source_location": "L346",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_detail_table_contains_impact_and_priority",
@@ -52147,7 +52293,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L394",
+      "source_location": "L392",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_empty_items_renders_placeholder_text",
@@ -52171,7 +52317,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L410",
+      "source_location": "L408",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_gold_item_excluded_from_gold_detail_section",
@@ -52183,7 +52329,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L429",
+      "source_location": "L427",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_seeded_item_excluded_from_seeded_detail_section",
@@ -52195,7 +52341,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L398",
+      "source_location": "L396",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failure_section_still_appended_when_failed_ids_present",
@@ -52219,7 +52365,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L449",
+      "source_location": "L447",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_non_failed_items_unaffected_by_unrelated_failed_ids",
@@ -52243,7 +52389,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L382",
+      "source_location": "L380",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_cross_references_gold_title_via_base_source",
@@ -52255,7 +52401,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L364",
+      "source_location": "L362",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_has_no_human_review_wording",
@@ -52267,7 +52413,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L374",
+      "source_location": "L372",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_uses_must_find_label",
@@ -71787,7 +71933,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L197",
+      "source_location": "L193",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineeroutput_test_decisions_default_empty",
@@ -71799,7 +71945,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L186",
+      "source_location": "L182",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineeroutput_test_required_fields",
@@ -71903,7 +72049,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L237",
+      "source_location": "L233",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testfindingdecision_test_all_fields_present",
@@ -71915,7 +72061,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L213",
+      "source_location": "L209",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testfindingdecision_test_holds_original_finding",
@@ -71958,7 +72104,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "src/code_review_agent/models/lead_engineer.py",
-      "source_location": "L243",
+      "source_location": "L244",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_code_review_agent_models_lead_engineer_leadengineerreport",
@@ -72074,7 +72220,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L260",
+      "source_location": "L256",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_make_report",
@@ -72097,7 +72243,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/code_review_agent/models/lead_engineer.py",
-      "source_location": "L263",
+      "source_location": "L264",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_code_review_agent_models_lead_engineer_leadengineerreport_to_evaluation_format",
@@ -72109,7 +72255,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/code_review_agent/models/lead_engineer.py",
-      "source_location": "L183",
+      "source_location": "L184",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_code_review_agent_models_lead_engineer_leadengineerreport_to_markdown",
@@ -72144,7 +72290,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "src/code_review_agent/models/lead_engineer.py",
-      "source_location": "L215",
+      "source_location": "L216",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_code_review_agent_models_lead_engineer_leadengineerreport_to_markdown",
@@ -72178,7 +72324,7 @@
       "context": "generic_arg",
       "confidence": "EXTRACTED",
       "source_file": "src/code_review_agent/models/lead_engineer.py",
-      "source_location": "L243",
+      "source_location": "L244",
       "weight": 1.0,
       "_origin": "ast",
       "source": "src_code_review_agent_models_lead_engineer_leadengineerreport_to_evaluation_format",
@@ -72189,10 +72335,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "src/code_review_agent/models/lead_engineer.py",
-      "source_location": "L244",
+      "source_location": "L245",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "src_code_review_agent_models_lead_engineer_rationale_244",
+      "source": "src_code_review_agent_models_lead_engineer_rationale_245",
       "target": "src_code_review_agent_models_lead_engineer_leadengineerreport_to_evaluation_format",
       "confidence_score": 1.0
     },
@@ -78976,7 +79122,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L384",
+      "source_location": "L380",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_errors_at_end",
@@ -91846,7 +91992,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_gold_set.py",
-      "source_location": "L72",
+      "source_location": "L96",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_gold_set",
@@ -91901,7 +92047,18 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_gold_set.py",
-      "source_location": "L74",
+      "source_location": "L71",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_evaluation_tools_test_build_gold_set_testloadtargets",
+      "target": "tests_evaluation_tools_test_build_gold_set_testloadtargets_test_normalizes_axes_and_replaces_invalid_values_with_unknown",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/evaluation/tools/test_build_gold_set.py",
+      "source_location": "L98",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_gold_set_testbuildgolditem",
@@ -91912,7 +92069,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_gold_set.py",
-      "source_location": "L73",
+      "source_location": "L97",
       "weight": 1.0,
       "context": "decorator",
       "_origin": "ast",
@@ -92070,7 +92227,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L349",
+      "source_location": "L347",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_detail_table_contains_impact_and_priority",
@@ -92082,7 +92239,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L412",
+      "source_location": "L410",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_gold_item_excluded_from_gold_detail_section",
@@ -92094,7 +92251,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L431",
+      "source_location": "L429",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_seeded_item_excluded_from_seeded_detail_section",
@@ -92118,7 +92275,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L451",
+      "source_location": "L449",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_non_failed_items_unaffected_by_unrelated_failed_ids",
@@ -92130,7 +92287,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L388",
+      "source_location": "L386",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_cross_references_gold_title_via_base_source",
@@ -92142,7 +92299,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L365",
+      "source_location": "L363",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_has_no_human_review_wording",
@@ -92154,7 +92311,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L375",
+      "source_location": "L373",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_uses_must_find_label",
@@ -92166,7 +92323,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L342",
+      "source_location": "L340",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_detail_table_contains_impact_and_priority",
@@ -92178,7 +92335,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L404",
+      "source_location": "L402",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_gold_item_excluded_from_gold_detail_section",
@@ -92190,7 +92347,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L423",
+      "source_location": "L421",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_seeded_item_excluded_from_seeded_detail_section",
@@ -92214,7 +92371,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L443",
+      "source_location": "L441",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_non_failed_items_unaffected_by_unrelated_failed_ids",
@@ -92226,7 +92383,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L380",
+      "source_location": "L378",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_cross_references_gold_title_via_base_source",
@@ -92238,7 +92395,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L358",
+      "source_location": "L356",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_has_no_human_review_wording",
@@ -92250,7 +92407,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L373",
+      "source_location": "L371",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_uses_must_find_label",
@@ -92334,7 +92491,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L344",
+      "source_location": "L342",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_detail_table_contains_impact_and_priority",
@@ -92346,7 +92503,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L406",
+      "source_location": "L404",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_gold_item_excluded_from_gold_detail_section",
@@ -92358,7 +92515,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L425",
+      "source_location": "L423",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_seeded_item_excluded_from_seeded_detail_section",
@@ -92382,7 +92539,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L445",
+      "source_location": "L443",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_non_failed_items_unaffected_by_unrelated_failed_ids",
@@ -92394,7 +92551,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L360",
+      "source_location": "L358",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_has_no_human_review_wording",
@@ -92835,7 +92992,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L340",
+      "source_location": "L338",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration",
@@ -92846,7 +93003,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L393",
+      "source_location": "L391",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration",
@@ -92868,7 +93025,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L402",
+      "source_location": "L400",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration",
@@ -92879,7 +93036,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L421",
+      "source_location": "L419",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration",
@@ -92890,7 +93047,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L397",
+      "source_location": "L395",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration",
@@ -92912,7 +93069,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L441",
+      "source_location": "L439",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration",
@@ -92934,7 +93091,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L379",
+      "source_location": "L377",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration",
@@ -92945,7 +93102,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L356",
+      "source_location": "L354",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration",
@@ -92956,7 +93113,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L372",
+      "source_location": "L370",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration",
@@ -92968,7 +93125,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L349",
+      "source_location": "L347",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_detail_table_contains_impact_and_priority",
@@ -92980,7 +93137,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L394",
+      "source_location": "L392",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_empty_items_renders_placeholder_text",
@@ -93004,7 +93161,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L411",
+      "source_location": "L409",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_gold_item_excluded_from_gold_detail_section",
@@ -93016,7 +93173,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L430",
+      "source_location": "L428",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failed_seeded_item_excluded_from_seeded_detail_section",
@@ -93028,7 +93185,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L398",
+      "source_location": "L396",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_failure_section_still_appended_when_failed_ids_present",
@@ -93052,7 +93209,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L450",
+      "source_location": "L448",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_non_failed_items_unaffected_by_unrelated_failed_ids",
@@ -93076,7 +93233,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L383",
+      "source_location": "L381",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_cross_references_gold_title_via_base_source",
@@ -93088,7 +93245,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L365",
+      "source_location": "L363",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_has_no_human_review_wording",
@@ -93100,7 +93257,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/evaluation/tools/test_build_report.py",
-      "source_location": "L375",
+      "source_location": "L373",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_evaluation_tools_test_build_report_testbuildreportintegration_test_seeded_detail_uses_must_find_label",
@@ -100933,7 +101090,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L201",
+      "source_location": "L197",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer",
@@ -100955,7 +101112,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L180",
+      "source_location": "L176",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer",
@@ -100966,7 +101123,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L254",
+      "source_location": "L250",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer",
@@ -101001,7 +101158,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L296",
+      "source_location": "L292",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_accepted_excludes_rejected",
@@ -101013,7 +101170,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L268",
+      "source_location": "L264",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_accepted_sorted_by_severity",
@@ -101025,7 +101182,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L285",
+      "source_location": "L281",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_rejected_sorted_by_severity",
@@ -101037,7 +101194,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L412",
+      "source_location": "L408",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_agent_findings_accepted_only",
@@ -101049,7 +101206,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L463",
+      "source_location": "L459",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_empty_file_path_from_agent_findings",
@@ -101061,7 +101218,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L485",
+      "source_location": "L481",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_empty_file_path_from_lead_decisions",
@@ -101073,7 +101230,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L474",
+      "source_location": "L470",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_missing_line_from_agent_findings",
@@ -101085,7 +101242,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L496",
+      "source_location": "L492",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_missing_line_from_lead_decisions",
@@ -101097,7 +101254,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L434",
+      "source_location": "L430",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_keeps_three_axes_independent",
@@ -101109,7 +101266,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L451",
+      "source_location": "L447",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_lead_decisions_all",
@@ -101121,7 +101278,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L341",
+      "source_location": "L337",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_accepted_with_proposed_fix_shows_suggested_fix",
@@ -101133,7 +101290,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L358",
+      "source_location": "L354",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_accepted_without_proposed_fix_omits_suggested_fix",
@@ -101145,7 +101302,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L306",
+      "source_location": "L302",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_contains_accepted_file_and_comment",
@@ -101157,7 +101314,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L324",
+      "source_location": "L320",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_distinguishes_all_three_axes_and_prose_impact",
@@ -101169,7 +101326,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L374",
+      "source_location": "L370",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_rejected_in_details_block",
@@ -101181,7 +101338,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L240",
+      "source_location": "L236",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testfindingdecision_test_all_fields_present",
@@ -101193,7 +101350,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L210",
+      "source_location": "L206",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testfindingdecision_test_holds_original_finding",
@@ -101248,7 +101405,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L137",
+      "source_location": "L149",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testfindingdecisionoutput",
@@ -101270,7 +101427,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L162",
+      "source_location": "L166",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testfindingdecisionoutput",
@@ -101289,10 +101446,45 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/models/test_lead_engineer.py",
+      "source_location": "L135",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_models_test_lead_engineer_testfindingdecisionoutput",
+      "target": "tests_models_test_lead_engineer_testfindingdecisionoutput_valid_axis_payload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/models/test_lead_engineer.py",
+      "source_location": "L152",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_each_axis_is_required",
+      "target": "tests_models_test_lead_engineer_testfindingdecisionoutput_valid_axis_payload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "tests/models/test_lead_engineer.py",
+      "source_location": "L169",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_rejects_out_of_vocabulary_axis",
+      "target": "tests_models_test_lead_engineer_testfindingdecisionoutput_valid_axis_payload",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L134",
+      "source_location": "L146",
       "weight": 1.0,
       "context": "decorator",
       "_origin": "ast",
@@ -101304,7 +101496,7 @@
       "relation": "references",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L154",
+      "source_location": "L158",
       "weight": 1.0,
       "context": "decorator",
       "_origin": "ast",
@@ -101316,10 +101508,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L181",
+      "source_location": "L177",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tests_models_test_lead_engineer_rationale_181",
+      "source": "tests_models_test_lead_engineer_rationale_177",
       "target": "tests_models_test_lead_engineer_testleadengineeroutput",
       "confidence_score": 1.0
     },
@@ -101327,7 +101519,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L194",
+      "source_location": "L190",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineeroutput",
@@ -101338,7 +101530,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L183",
+      "source_location": "L179",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineeroutput",
@@ -101349,10 +101541,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L202",
+      "source_location": "L198",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tests_models_test_lead_engineer_rationale_202",
+      "source": "tests_models_test_lead_engineer_rationale_198",
       "target": "tests_models_test_lead_engineer_testfindingdecision",
       "confidence_score": 1.0
     },
@@ -101360,7 +101552,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L231",
+      "source_location": "L227",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testfindingdecision",
@@ -101371,7 +101563,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L204",
+      "source_location": "L200",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testfindingdecision",
@@ -101382,10 +101574,10 @@
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L255",
+      "source_location": "L251",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "tests_models_test_lead_engineer_rationale_255",
+      "source": "tests_models_test_lead_engineer_rationale_251",
       "target": "tests_models_test_lead_engineer_testleadengineerreport",
       "confidence_score": 1.0
     },
@@ -101393,7 +101585,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L257",
+      "source_location": "L253",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101404,7 +101596,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L294",
+      "source_location": "L290",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101415,7 +101607,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L266",
+      "source_location": "L262",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101426,7 +101618,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L283",
+      "source_location": "L279",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101437,7 +101629,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L410",
+      "source_location": "L406",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101448,7 +101640,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L461",
+      "source_location": "L457",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101459,7 +101651,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L483",
+      "source_location": "L479",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101470,7 +101662,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L472",
+      "source_location": "L468",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101481,7 +101673,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L494",
+      "source_location": "L490",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101492,7 +101684,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L432",
+      "source_location": "L428",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101503,7 +101695,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L402",
+      "source_location": "L398",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101514,7 +101706,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L449",
+      "source_location": "L445",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101525,7 +101717,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L339",
+      "source_location": "L335",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101536,7 +101728,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L356",
+      "source_location": "L352",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101547,7 +101739,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L304",
+      "source_location": "L300",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101558,7 +101750,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L321",
+      "source_location": "L317",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101569,7 +101761,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L382",
+      "source_location": "L378",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101580,7 +101772,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L396",
+      "source_location": "L392",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101591,7 +101783,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L372",
+      "source_location": "L368",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport",
@@ -101603,7 +101795,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L299",
+      "source_location": "L295",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_accepted_excludes_rejected",
@@ -101615,7 +101807,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L273",
+      "source_location": "L269",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_accepted_sorted_by_severity",
@@ -101627,7 +101819,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L288",
+      "source_location": "L284",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_rejected_sorted_by_severity",
@@ -101639,7 +101831,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L425",
+      "source_location": "L421",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_agent_findings_accepted_only",
@@ -101651,7 +101843,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L466",
+      "source_location": "L462",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_empty_file_path_from_agent_findings",
@@ -101663,7 +101855,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L488",
+      "source_location": "L484",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_empty_file_path_from_lead_decisions",
@@ -101675,7 +101867,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L477",
+      "source_location": "L473",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_missing_line_from_agent_findings",
@@ -101687,7 +101879,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L499",
+      "source_location": "L495",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_excludes_missing_line_from_lead_decisions",
@@ -101699,7 +101891,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L441",
+      "source_location": "L437",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_keeps_three_axes_independent",
@@ -101711,7 +101903,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L403",
+      "source_location": "L399",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_keys",
@@ -101723,7 +101915,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L454",
+      "source_location": "L450",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_evaluation_format_lead_decisions_all",
@@ -101735,7 +101927,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L350",
+      "source_location": "L346",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_accepted_with_proposed_fix_shows_suggested_fix",
@@ -101747,7 +101939,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L367",
+      "source_location": "L363",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_accepted_without_proposed_fix_omits_suggested_fix",
@@ -101759,7 +101951,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L314",
+      "source_location": "L310",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_contains_accepted_file_and_comment",
@@ -101771,7 +101963,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L322",
+      "source_location": "L318",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_distinguishes_all_three_axes_and_prose_impact",
@@ -101783,7 +101975,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L390",
+      "source_location": "L386",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_errors_at_end",
@@ -101795,7 +101987,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L397",
+      "source_location": "L393",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_no_accepted_shows_placeholder",
@@ -101807,7 +101999,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "tests/models/test_lead_engineer.py",
-      "source_location": "L376",
+      "source_location": "L372",
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testleadengineerreport_test_to_markdown_rejected_in_details_block",
@@ -107804,7 +107996,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/finding-axis-evaluation-spec.md",
-      "source_location": "L50",
+      "source_location": "L52",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_finding_axis_evaluation_spec_\u6307\u6458\u5358\u4f4d3\u8ef8\u8a55\u4fa1\u4ed5\u69d8_issue_168",
@@ -107815,7 +108007,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/finding-axis-evaluation-spec.md",
-      "source_location": "L58",
+      "source_location": "L60",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_finding_axis_evaluation_spec_\u6307\u6458\u5358\u4f4d3\u8ef8\u8a55\u4fa1\u4ed5\u69d8_issue_168",
@@ -107826,7 +108018,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/finding-axis-evaluation-spec.md",
-      "source_location": "L76",
+      "source_location": "L78",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_finding_axis_evaluation_spec_\u6307\u6458\u5358\u4f4d3\u8ef8\u8a55\u4fa1\u4ed5\u69d8_issue_168",
@@ -107837,7 +108029,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/finding-axis-evaluation-spec.md",
-      "source_location": "L96",
+      "source_location": "L98",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_finding_axis_evaluation_spec_\u6307\u6458\u5358\u4f4d3\u8ef8\u8a55\u4fa1\u4ed5\u69d8_issue_168",
@@ -107848,7 +108040,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/finding-axis-evaluation-spec.md",
-      "source_location": "L107",
+      "source_location": "L109",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_finding_axis_evaluation_spec_\u6307\u6458\u5358\u4f4d3\u8ef8\u8a55\u4fa1\u4ed5\u69d8_issue_168",
@@ -122432,5 +122624,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "32ce2097f4b8ac34bf81a5b0e1254aff9952b9da"
+  "built_at_commit": "9cfdf0de5d2def9d1c37f402f4ba7108246a1208"
 }

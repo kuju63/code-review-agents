@@ -32,20 +32,22 @@ exact / within-one agreement
 | 軸 | 値域 | 意味 |
 |---|---|---|
 | severity | `critical` / `high` / `medium` / `low` | 問題そのものの深刻度 |
-| impact | `security` / `correctness` / `performance` / `maintainability` | 主に影響を受ける品質特性 |
+| impact（分類） | `security` / `correctness` / `performance` / `maintainability` | 主に影響を受ける品質特性 |
 | priority | `high` / `medium` / `low` | 当該PRで対応する緊急度 |
+
+この表の `impact` は4値の分類軸を指す。Lead Engineer出力ではこの分類を `impact_category` フィールドで保持し、評価用の `agent_findings` では `impact` キーとして直列化する。これは修正しない場合の影響を説明する自由記述フィールド `impact`（下記）とは別物である。自由記述の `impact` は評価軸ではなく、Markdownの「Impact if not fixed」にのみ現れる。
 
 Gold schema は既存データとの互換性のため、各軸で `unknown` とフィールド欠落を許容する。Lead Engineer の構造化出力は3軸すべてを必須とし、`unknown` を許容しない。
 
 既存Reviewerの `ReviewFinding.priority` は severity と priority を兼ねた4段階の初期評価である。この契約は変更せず、Lead Engineer が次を独立して出力する。
 
 - `severity`: 4段階の最終severity
-- `impact_category`: 4分類のimpact
+- `impact_category`: 4分類のimpact。`agent_findings.impact` へ直列化する
 - `final_priority`: 3段階の最終priority
 - `reason`: 判断根拠
-- `impact`: 修正しない場合の影響を説明する既存の自由記述
+- `impact`: 修正しない場合の影響を説明する既存の自由記述。`agent_findings` には出力しない
 
-Reviewerの初期priorityが `critical` で、Lead Engineerの判定が欠落した場合、フォールバックする最終priorityは `high` とする。最終severityはReviewerの初期priorityをそのまま使用する。impactは元findingのperspectiveに基づき、securityなら`security`、それ以外は`correctness`を保守的な既定値とする。
+Reviewerの初期priorityが `critical` で、Lead Engineerの判定が欠落した場合、フォールバックする最終priorityは `high` とする。最終severityはReviewerの初期priorityをそのまま使用する。`impact_category` は元findingのperspectiveに基づき、securityなら`security`、それ以外は`correctness`を保守的な既定値とする。
 
 ## 4. Goldラベルの生成
 
@@ -57,7 +59,7 @@ Reviewerの初期priorityが `critical` で、Lead Engineerの判定が欠落し
 
 ## 5. Lead Engineer出力
 
-Lead Engineerはaccept/rejectと同時に、全findingへ独立3軸を付与する。acceptされたfindingだけが`agent_findings`へ出力され、次のフィールドを持つ。
+Lead Engineerはaccept/rejectと同時に、全findingへ独立3軸を付与する。acceptされたfindingだけが`agent_findings`へ出力され、`impact_category` の4値分類を評価形式の `impact` キーへ変換して次のフィールドを持つ。自由記述の `impact` は含めない。
 
 ```json
 {

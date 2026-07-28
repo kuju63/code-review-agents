@@ -33,7 +33,7 @@ def make_scores(
             "issue_precision": 0.5,
             "severity_agreement": 0.5,
             "severity_exact_agreement": 0.5,
-            "severity_within_one_agreement": 0.75,
+            "severity_within_one_agreement": 1.0,
             "impact_exact_agreement": 0.6,
             "priority_exact_agreement": 0.4,
             "priority_within_one_agreement": 0.8,
@@ -329,13 +329,11 @@ class TestBuildReportIntegration:
     def test_report_contains_all_finding_axis_metrics_with_denominators(self):
         report = _build_report(**self._base_kwargs())
 
-        assert "Severity Exact Agreement" in report
-        assert "Severity Within-One Agreement" in report
-        assert "Impact Exact Agreement" in report
-        assert "Priority Exact Agreement" in report
-        assert "Priority Within-One Agreement" in report
-        assert "n=2" in report
-        assert "n=5" in report
+        assert "| Severity Exact Agreement | 0.500 (n=2) |" in report
+        assert "| Severity Within-One Agreement | 1.000 (n=2) |" in report
+        assert "| Impact Exact Agreement | 0.600 (n=5) |" in report
+        assert "| Priority Exact Agreement | 0.400 (n=5) |" in report
+        assert "| Priority Within-One Agreement | 0.800 (n=5) |" in report
 
     def test_detail_table_contains_impact_and_priority(self):
         gold_items = [

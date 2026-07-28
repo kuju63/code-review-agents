@@ -349,5 +349,9 @@
   "347": "server-serialization.md",
   "348": "vercel-react-best-practices/rules/_template.md",
   "349": "bug_report.md",
-  "350": "feature_request.md"
+  "350": "feature_request.md",
+  "351": "verify_github_token",
+  "352": "TestFindingDecisionOutput",
+  "353": "write_stack_outputs",
+  "354": "opencode.json"
 }

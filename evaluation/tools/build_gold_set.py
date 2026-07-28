@@ -32,6 +32,10 @@ from typing import Any
 from dotenv import load_dotenv
 from target_criteria import is_production_code_file
 
+_SEVERITIES = {"critical", "high", "medium", "low", "unknown"}
+_IMPACTS = {"security", "correctness", "performance", "maintainability", "unknown"}
+_PRIORITIES = {"high", "medium", "low", "unknown"}
+
 
 def _api_get(url: str, token: str) -> Any:
     request = urllib.request.Request(
@@ -162,6 +166,13 @@ class Target:
     priority: str = "unknown"
 
 
+def _normalize_axis(value: Any, choices: set[str]) -> str:
+    if not isinstance(value, str):
+        return "unknown"
+    normalized = value.strip().lower()
+    return normalized if normalized in choices else "unknown"
+
+
 def load_targets(path: str) -> list[Target]:
     with open(path, encoding="utf-8") as f:
         raw = json.load(f)
@@ -173,9 +184,9 @@ def load_targets(path: str) -> list[Target]:
             Target(
                 repository=repo,
                 pr_number=pr,
-                severity=item.get("severity", "unknown"),
-                impact=item.get("impact", "unknown"),
-                priority=item.get("priority", "unknown"),
+                severity=_normalize_axis(item.get("severity"), _SEVERITIES),
+                impact=_normalize_axis(item.get("impact"), _IMPACTS),
+                priority=_normalize_axis(item.get("priority"), _PRIORITIES),
             )
         )
     return targets

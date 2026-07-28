@@ -68,6 +68,30 @@ class TestLoadTargets:
             "unknown",
         )
 
+    def test_normalizes_axes_and_replaces_invalid_values_with_unknown(self, tmp_path):
+        path = tmp_path / "targets.json"
+        path.write_text(
+            json.dumps(
+                [
+                    {
+                        "repository": "owner/repo",
+                        "pr_number": 1,
+                        "severity": " HIGH ",
+                        "impact": None,
+                        "priority": "urgent",
+                    }
+                ]
+            )
+        )
+
+        target = load_targets(str(path))[0]
+
+        assert (target.severity, target.impact, target.priority) == (
+            "high",
+            "unknown",
+            "unknown",
+        )
+
 
 class TestBuildGoldItem:
     @patch.object(build_gold_set, "_api_get", side_effect=_api_payload)

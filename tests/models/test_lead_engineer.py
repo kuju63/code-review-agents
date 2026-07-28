@@ -131,13 +131,9 @@ class TestFindingDecisionOutput:
         assert output.impact_category is FindingImpact.SECURITY
         assert output.final_priority is FindingPriority.HIGH
 
-    @pytest.mark.parametrize(
-        "missing", ["severity", "impact_category", "final_priority"]
-    )
-    def test_each_axis_is_required(self, missing):
-        from code_review_agent.models.lead_engineer import FindingDecisionOutput
-
-        payload = {
+    @staticmethod
+    def _valid_axis_payload() -> dict:
+        return {
             "finding_index": 1,
             "verdict": "accept",
             "reason": "ok",
@@ -146,6 +142,14 @@ class TestFindingDecisionOutput:
             "impact_category": "correctness",
             "final_priority": "medium",
         }
+
+    @pytest.mark.parametrize(
+        "missing", ["severity", "impact_category", "final_priority"]
+    )
+    def test_each_axis_is_required(self, missing):
+        from code_review_agent.models.lead_engineer import FindingDecisionOutput
+
+        payload = self._valid_axis_payload()
         del payload[missing]
 
         with pytest.raises(ValidationError):
@@ -162,15 +166,7 @@ class TestFindingDecisionOutput:
     def test_rejects_out_of_vocabulary_axis(self, field, value):
         from code_review_agent.models.lead_engineer import FindingDecisionOutput
 
-        payload = {
-            "finding_index": 1,
-            "verdict": "accept",
-            "reason": "ok",
-            "impact": "none",
-            "severity": "high",
-            "impact_category": "correctness",
-            "final_priority": "medium",
-        }
+        payload = self._valid_axis_payload()
         payload[field] = value
 
         with pytest.raises(ValidationError):
