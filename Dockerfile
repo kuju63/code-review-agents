@@ -13,7 +13,7 @@ FROM ghcr.io/astral-sh/uv:0.11.32@sha256:df4cae8f3a96d175e2e5f992e597550000edbe7
 # - ABI 互換: cryptography / cffi / uvloop 等のバイナリ拡張の互換を保証
 # - multi-arch index ダイジェスト固定: amd64 / arm64 を同一参照で提供
 ###############################################################################
-FROM registry.access.redhat.com/hi/python:3.14-builder@sha256:e645aad880648e6afe865b36bddcff5f8e8a6bc738b9d28955a7544b9c6f5da1 AS builder
+FROM registry.access.redhat.com/hi/python:3.14-builder@sha256:6bbc9449f1a42fd50f29b59a28930fcdef79da9b82d1b0d923ff531d795b443b AS builder
 
 USER root
 
@@ -57,7 +57,7 @@ RUN uv sync --frozen --no-dev --no-editable --no-cache && \
 # - nonroot UID 65532 がビルトイン
 # - multi-arch index ダイジェスト固定: amd64 / arm64 を同一参照で提供
 ###############################################################################
-FROM registry.access.redhat.com/hi/python:3.14@sha256:0958f7b15ce1ffc098dbb6da85a06bc7541e4a04e675b272a57415709974d653 AS runtime
+FROM registry.access.redhat.com/hi/python:3.14@sha256:a1cf57c4021e835237c14b82f92d46a931f75913c2c4307a72329636cc399124 AS runtime
 
 WORKDIR /app
 
