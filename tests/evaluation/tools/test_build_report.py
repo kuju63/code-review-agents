@@ -32,6 +32,11 @@ def make_scores(
             "issue_recall": 0.5,
             "issue_precision": 0.5,
             "severity_agreement": 0.5,
+            "severity_exact_agreement": 0.5,
+            "severity_within_one_agreement": 1.0,
+            "impact_exact_agreement": 0.6,
+            "priority_exact_agreement": 0.4,
+            "priority_within_one_agreement": 0.8,
             "location_hit_rate": 0.5,
             "counts": gold_counts
             or {
@@ -39,6 +44,14 @@ def make_scores(
                 "gold_matched": 1,
                 "pred_total_for_gold": 1,
                 "location_matched_exact": 1,
+                "severity_labeled_pairs": 2,
+                "severity_exact_matched": 1,
+                "severity_within_one_matched": 2,
+                "impact_labeled_pairs": 5,
+                "impact_exact_matched": 3,
+                "priority_labeled_pairs": 5,
+                "priority_exact_matched": 2,
+                "priority_within_one_matched": 4,
             },
             "items": gold_items or [],
         },
@@ -80,6 +93,8 @@ def make_raw_finding(
     line: int = 10,
     category: str = "security",
     severity: str = "high",
+    impact: str = "security",
+    priority: str = "high",
     summary: str | None = "xss via innerHTML",
     **extra,
 ):
@@ -88,6 +103,8 @@ def make_raw_finding(
         "line": line,
         "category": category,
         "severity": severity,
+        "impact": impact,
+        "priority": priority,
         "summary": summary,
         **extra,
     }
@@ -144,7 +161,7 @@ class TestFindingRow:
         raw = make_raw_finding(path="src/a|b.ts")
         row = _finding_row("✅ マッチ", raw)
         assert "src/a\\|b.ts" in row
-        assert row.count("|") == row.count("\\|") + 7
+        assert row.count("|") == row.count("\\|") + 9
 
     def test_newline_in_category_is_collapsed(self):
         raw = make_raw_finding(category="security\ninjected")
@@ -308,6 +325,31 @@ class TestBuildReportIntegration:
         assert "found by both" in report
         assert "only human" in report
         assert "only agent" in report
+
+    def test_report_contains_all_finding_axis_metrics_with_denominators(self):
+        report = _build_report(**self._base_kwargs())
+
+        assert "| Severity Exact Agreement | 0.500 (n=2) |" in report
+        assert "| Severity Within-One Agreement | 1.000 (n=2) |" in report
+        assert "| Impact Exact Agreement | 0.600 (n=5) |" in report
+        assert "| Priority Exact Agreement | 0.400 (n=5) |" in report
+        assert "| Priority Within-One Agreement | 0.800 (n=5) |" in report
+
+    def test_detail_table_contains_impact_and_priority(self):
+        gold_items = [
+            make_gold_item_row(
+                item_id="pr1",
+                missed=[make_raw_finding(impact="performance", priority="medium")],
+                expected_total=1,
+            )
+        ]
+        report = _build_report(
+            **self._base_kwargs(scores=make_scores(gold_items=gold_items))
+        )
+
+        assert "| Impact | Priority |" in report
+        assert "performance" in report
+        assert "medium" in report
 
     def test_seeded_detail_has_no_human_review_wording(self):
         seeded_items = [

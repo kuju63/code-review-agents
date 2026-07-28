@@ -13,8 +13,9 @@ Lead Engineer は、並列レビュー段が生成した `ReviewReport` を受�
 ### Lead Engineer がすること
 
 - 各レビュアーの指摘（`ReviewFinding`）を評価し、accept / reject を判定する
-- 判定理由（`reason`）と修正しない場合のインパクト（`impact`）を明示する
-- accept した指摘に最終優先度（`final_priority`）を割り当てる（レビュアーの優先度と異なっても良い）
+- 判定理由（`reason`）と修正しない場合の自由記述インパクト（`impact`）を明示する
+- 指摘ごとにseverity（`severity`）と品質特性（`impact_category`）を分類する
+- accept した指摘に3段階の最終優先度（`final_priority`）を割り当てる（レビュアーの優先度と異なっても良い）
 - 全指摘の評価を踏まえた総合サマリー（`overall_summary`）を生成する
 
 ### Lead Engineer がしてはならないこと
@@ -79,8 +80,10 @@ class FindingDecisionOutput(BaseModel):
     finding_index: int          # 1-based。プロンプト中の Finding #N と対応
     verdict: DecisionVerdict
     reason: str                 # 判断理由
-    impact: str                 # 修正しない場合のインパクト
-    final_priority: ReviewPriority
+    impact: str                 # 修正しない場合の自由記述インパクト
+    severity: FindingSeverity   # critical / high / medium / low
+    impact_category: FindingImpact  # security / correctness / performance / maintainability
+    final_priority: FindingPriority # high / medium / low
 ```
 
 ### 4.3 `LeadEngineerOutput`（LLM 生成用）
@@ -103,7 +106,9 @@ class FindingDecision(BaseModel):
     verdict: DecisionVerdict
     reason: str
     impact: str
-    final_priority: ReviewPriority
+    severity: FindingSeverity
+    impact_category: FindingImpact
+    final_priority: FindingPriority
 ```
 
 ### 4.5 `LeadEngineerReport`（最終出力）

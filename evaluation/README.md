@@ -151,6 +151,8 @@ Recommended output format per sample:
     {
       "category": "security",
       "severity": "high",
+      "impact": "security",
+      "priority": "high",
       "path": "src/a.ts",
       "line": 123,
       "summary": "..."
@@ -165,6 +167,8 @@ Recommended output format per sample:
   ]
 }
 ```
+
+`severity`, `impact`, and `priority` are scored only after findings match. Missing, `unknown`, or invalid axis values are excluded from that axis denominator; the report includes each denominator count.
 
 ## 5) Evaluate with gates
 

@@ -305,9 +305,14 @@ def _finding_row(kind: str, raw: dict[str, Any]) -> str:
     line = _sanitize_cell(raw.get("line", ""))
     category = _sanitize_cell(raw.get("category", "unknown"))
     severity = _sanitize_cell(raw.get("severity", "unknown"))
+    impact = _sanitize_cell(raw.get("impact", "unknown"))
+    priority = _sanitize_cell(raw.get("priority", "unknown"))
     summary = _sanitize_cell(raw.get("summary", ""))
     ref = _sanitize_cell(_ref_cell(raw))
-    return f"| {kind} | `{path}:{line}` | {category} | {severity} | {summary} | {ref} |"
+    return (
+        f"| {kind} | `{path}:{line}` | {category} | {severity} | {impact} | "
+        f"{priority} | {summary} | {ref} |"
+    )
 
 
 def _render_item_detail(item: dict[str, Any], heading: str, expected_label: str) -> str:
@@ -326,8 +331,8 @@ def _render_item_detail(item: dict[str, Any], heading: str, expected_label: str)
         rows.append(_finding_row("➕ Agentのみ（誤検知とは限らない）", f))
 
     body = (
-        "| 種別 | Path:Line | Category | Severity | Summary | Ref |\n"
-        "|---|---|---|---|---|---|\n" + "\n".join(rows)
+        "| 種別 | Path:Line | Category | Severity | Impact | Priority | Summary | Ref |\n"
+        "|---|---|---|---|---|---|---|---|\n" + "\n".join(rows)
         if rows
         else "_findings なし_"
     )
@@ -476,6 +481,11 @@ def _build_report(
 | Issue Recall | {g["issue_recall"]:.3f} | ≥ 0.70 |
 | Issue Precision | {g["issue_precision"]:.3f} | ≥ 0.60 |
 | Severity Agreement | {g["severity_agreement"]:.3f} | ≥ 0.70 |
+| Severity Exact Agreement | {g["severity_exact_agreement"]:.3f} (n={g["counts"]["severity_labeled_pairs"]}) | - |
+| Severity Within-One Agreement | {g["severity_within_one_agreement"]:.3f} (n={g["counts"]["severity_labeled_pairs"]}) | - |
+| Impact Exact Agreement | {g["impact_exact_agreement"]:.3f} (n={g["counts"]["impact_labeled_pairs"]}) | - |
+| Priority Exact Agreement | {g["priority_exact_agreement"]:.3f} (n={g["counts"]["priority_labeled_pairs"]}) | - |
+| Priority Within-One Agreement | {g["priority_within_one_agreement"]:.3f} (n={g["counts"]["priority_labeled_pairs"]}) | - |
 | Gold findings 総数 | {g["counts"]["gold_total"]} | - |
 | マッチ数 | {g["counts"]["gold_matched"]} | - |
 | Agent predictions 数 | {g["counts"]["pred_total_for_gold"]} | - |

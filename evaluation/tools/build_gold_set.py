@@ -32,6 +32,10 @@ from typing import Any
 from dotenv import load_dotenv
 from target_criteria import is_production_code_file
 
+_SEVERITIES = {"critical", "high", "medium", "low", "unknown"}
+_IMPACTS = {"security", "correctness", "performance", "maintainability", "unknown"}
+_PRIORITIES = {"high", "medium", "low", "unknown"}
+
 
 def _api_get(url: str, token: str) -> Any:
     request = urllib.request.Request(
@@ -157,6 +161,16 @@ def _extract_line(comment: dict[str, Any]) -> int:
 class Target:
     repository: str
     pr_number: int
+    severity: str = "unknown"
+    impact: str = "unknown"
+    priority: str = "unknown"
+
+
+def _normalize_axis(value: Any, choices: set[str]) -> str:
+    if not isinstance(value, str):
+        return "unknown"
+    normalized = value.strip().lower()
+    return normalized if normalized in choices else "unknown"
 
 
 def load_targets(path: str) -> list[Target]:
@@ -166,7 +180,15 @@ def load_targets(path: str) -> list[Target]:
     for item in raw:
         repo = item["repository"]
         pr = int(item["pr_number"])
-        targets.append(Target(repository=repo, pr_number=pr))
+        targets.append(
+            Target(
+                repository=repo,
+                pr_number=pr,
+                severity=_normalize_axis(item.get("severity"), _SEVERITIES),
+                impact=_normalize_axis(item.get("impact"), _IMPACTS),
+                priority=_normalize_axis(item.get("priority"), _PRIORITIES),
+            )
+        )
     return targets
 
 
@@ -199,7 +221,9 @@ def build_gold_item(target: Target, token: str) -> dict[str, Any]:
         summary = re.sub(r"\s+", " ", body)
         finding = {
             "category": _normalize_category(summary),
-            "severity": _normalize_severity(summary),
+            "severity": target.severity,
+            "impact": target.impact,
+            "priority": target.priority,
             "path": path,
             "line": _extract_line(comment),
             "summary": summary,

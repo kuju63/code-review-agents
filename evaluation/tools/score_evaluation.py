@@ -90,10 +90,17 @@ def read_jsonl(path: str) -> list[dict[str, Any]]:
     return rows
 
 
+SEVERITY_RANK = {"low": 0, "medium": 1, "high": 2, "critical": 3}
+IMPACTS = {"security", "correctness", "performance", "maintainability"}
+PRIORITY_RANK = {"low": 0, "medium": 1, "high": 2}
+
+
 @dataclass(frozen=True)
 class Finding:
     category: str
-    severity: str
+    severity: Any
+    impact: Any
+    priority: Any
     path: str
     line: int
     summary: str
@@ -104,6 +111,11 @@ class MatchedPair:
     gold: Finding
     pred: Finding
     severity_match: bool
+    severity_exact_match: bool | None
+    severity_within_one_match: bool | None
+    impact_exact_match: bool | None
+    priority_exact_match: bool | None
+    priority_within_one_match: bool | None
     exact_line: bool
 
 
@@ -121,6 +133,8 @@ def to_findings(items: list[dict[str, Any]]) -> list[Finding]:
             Finding(
                 category=i.get("category", "unknown"),
                 severity=i.get("severity", "unknown"),
+                impact=i.get("impact", "unknown"),
+                priority=i.get("priority", "unknown"),
                 path=i.get("path", ""),
                 line=int(i.get("line", 1)),
                 summary=i.get("summary", ""),
@@ -144,6 +158,22 @@ def is_match(
     if semantic_judge is not None and a.summary and b.summary:
         return semantic_judge(a.summary, b.summary)
     return True
+
+
+def _exact_match(a: Any, b: Any, choices: set[str]) -> bool | None:
+    if not isinstance(a, str) or not isinstance(b, str):
+        return None
+    if a not in choices or b not in choices:
+        return None
+    return a == b
+
+
+def _within_one_match(a: Any, b: Any, ranks: dict[str, int]) -> bool | None:
+    if not isinstance(a, str) or not isinstance(b, str):
+        return None
+    if a not in ranks or b not in ranks:
+        return None
+    return abs(ranks[a] - ranks[b]) <= 1
 
 
 def match_findings_detailed(
@@ -179,14 +209,22 @@ def match_findings_detailed(
             continue
         used_pred.add(hit_index)
         p = pred[hit_index]
+        severity_exact_match = _exact_match(g.severity, p.severity, set(SEVERITY_RANK))
         pairs.append(
             MatchedPair(
                 gold=g,
                 pred=p,
-                severity_match=(
-                    g.severity != "unknown"
-                    and p.severity != "unknown"
-                    and g.severity == p.severity
+                severity_match=severity_exact_match is True,
+                severity_exact_match=severity_exact_match,
+                severity_within_one_match=_within_one_match(
+                    g.severity, p.severity, SEVERITY_RANK
+                ),
+                impact_exact_match=_exact_match(g.impact, p.impact, IMPACTS),
+                priority_exact_match=_exact_match(
+                    g.priority, p.priority, set(PRIORITY_RANK)
+                ),
+                priority_within_one_match=_within_one_match(
+                    g.priority, p.priority, PRIORITY_RANK
                 ),
                 exact_line=(g.line == p.line),
             )
@@ -262,6 +300,11 @@ def _build_item_detail(
                 "expected": raw_by_id[id(pair.gold)],
                 "agent": raw_by_id[id(pair.pred)],
                 "severity_match": pair.severity_match,
+                "severity_exact_match": pair.severity_exact_match,
+                "severity_within_one_match": pair.severity_within_one_match,
+                "impact_exact_match": pair.impact_exact_match,
+                "priority_exact_match": pair.priority_exact_match,
+                "priority_within_one_match": pair.priority_within_one_match,
                 "exact_line": pair.exact_line,
             }
             for pair in result.pairs
@@ -281,9 +324,15 @@ def score_gold(
     gold_total = 0
     gold_matched = 0
     pred_total_for_gold = 0
-    severity_total = 0
-    severity_matched = 0
     exact_line_matched_total = 0
+    severity_labeled = 0
+    severity_exact = 0
+    severity_within_one = 0
+    impact_labeled = 0
+    impact_exact = 0
+    priority_labeled = 0
+    priority_exact = 0
+    priority_within_one = 0
     items: list[dict[str, Any]] = []
 
     for row in gold_rows:
@@ -297,14 +346,35 @@ def score_gold(
             gold_findings, pred_findings, semantic_judge=semantic_judge
         )
         matched = len(result.pairs)
-        sev_matched = sum(1 for p in result.pairs if p.severity_match)
         exact_line_matched = sum(1 for p in result.pairs if p.exact_line)
 
         gold_total += len(gold_findings)
         gold_matched += matched
         pred_total_for_gold += len(pred_findings)
-        severity_total += matched
-        severity_matched += sev_matched
+        severity_labeled += sum(
+            1 for pair in result.pairs if pair.severity_exact_match is not None
+        )
+        severity_exact += sum(
+            1 for pair in result.pairs if pair.severity_exact_match is True
+        )
+        severity_within_one += sum(
+            1 for pair in result.pairs if pair.severity_within_one_match is True
+        )
+        impact_labeled += sum(
+            1 for pair in result.pairs if pair.impact_exact_match is not None
+        )
+        impact_exact += sum(
+            1 for pair in result.pairs if pair.impact_exact_match is True
+        )
+        priority_labeled += sum(
+            1 for pair in result.pairs if pair.priority_exact_match is not None
+        )
+        priority_exact += sum(
+            1 for pair in result.pairs if pair.priority_exact_match is True
+        )
+        priority_within_one += sum(
+            1 for pair in result.pairs if pair.priority_within_one_match is True
+        )
         exact_line_matched_total += exact_line_matched
         items.append(
             _build_item_detail(
@@ -320,13 +390,30 @@ def score_gold(
     return {
         "issue_recall": safe_div(gold_matched, gold_total),
         "issue_precision": safe_div(gold_matched, pred_total_for_gold),
-        "severity_agreement": safe_div(severity_matched, severity_total),
+        "severity_agreement": safe_div(severity_exact, severity_labeled),
+        "severity_exact_agreement": safe_div(severity_exact, severity_labeled),
+        "severity_within_one_agreement": safe_div(
+            severity_within_one, severity_labeled
+        ),
+        "impact_exact_agreement": safe_div(impact_exact, impact_labeled),
+        "priority_exact_agreement": safe_div(priority_exact, priority_labeled),
+        "priority_within_one_agreement": safe_div(
+            priority_within_one, priority_labeled
+        ),
         "location_hit_rate": safe_div(exact_line_matched_total, gold_matched),
         "counts": {
             "gold_total": gold_total,
             "gold_matched": gold_matched,
             "pred_total_for_gold": pred_total_for_gold,
             "location_matched_exact": exact_line_matched_total,
+            "severity_labeled_pairs": severity_labeled,
+            "severity_exact_matched": severity_exact,
+            "severity_within_one_matched": severity_within_one,
+            "impact_labeled_pairs": impact_labeled,
+            "impact_exact_matched": impact_exact,
+            "priority_labeled_pairs": priority_labeled,
+            "priority_exact_matched": priority_exact,
+            "priority_within_one_matched": priority_within_one,
         },
         "items": items,
     }

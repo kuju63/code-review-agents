@@ -30,11 +30,19 @@ def make_finding(
     path="src/a.ts",
     line=10,
     category="security",
-    severity="high",
+    severity: object = "high",
+    impact: object = "security",
+    priority: object = "high",
     summary="xss via innerHTML",
 ):
     return Finding(
-        category=category, severity=severity, path=path, line=line, summary=summary
+        category=category,
+        severity=severity,
+        impact=impact,
+        priority=priority,
+        path=path,
+        line=line,
+        summary=summary,
     )
 
 
@@ -130,6 +138,125 @@ class TestMatchFindings:
         matched, severity_matched, _ = match_findings(gold, pred)
         assert matched == 1
         assert severity_matched == 0
+
+
+class TestScoreGoldAxisAgreement:
+    def test_reports_exact_and_within_one_agreement_per_axis(self):
+        gold_rows = [
+            {
+                "id": "pr1",
+                "human_findings": [
+                    make_finding(
+                        path="src/a.ts",
+                        severity="critical",
+                        impact="security",
+                        priority="high",
+                    ).__dict__,
+                    make_finding(
+                        path="src/b.ts",
+                        severity="high",
+                        impact="performance",
+                        priority="medium",
+                    ).__dict__,
+                    make_finding(
+                        path="src/c.ts",
+                        severity="low",
+                        impact="correctness",
+                        priority="low",
+                    ).__dict__,
+                ],
+            }
+        ]
+        pred_by_id = {
+            "pr1": {
+                "agent_findings": [
+                    make_finding(
+                        path="src/a.ts",
+                        severity="critical",
+                        impact="security",
+                        priority="high",
+                    ).__dict__,
+                    make_finding(
+                        path="src/b.ts",
+                        severity="medium",
+                        impact="maintainability",
+                        priority="low",
+                    ).__dict__,
+                    make_finding(
+                        path="src/c.ts",
+                        severity="high",
+                        impact="correctness",
+                        priority="high",
+                    ).__dict__,
+                ]
+            }
+        }
+
+        report = score_gold(gold_rows, pred_by_id)
+
+        assert report["severity_exact_agreement"] == 1 / 3
+        assert report["severity_within_one_agreement"] == 2 / 3
+        assert report["impact_exact_agreement"] == 2 / 3
+        assert report["priority_exact_agreement"] == 1 / 3
+        assert report["priority_within_one_agreement"] == 2 / 3
+        assert report["severity_agreement"] == report["severity_exact_agreement"]
+        assert report["counts"] | {} == {
+            **report["counts"],
+            "severity_labeled_pairs": 3,
+            "severity_exact_matched": 1,
+            "severity_within_one_matched": 2,
+            "impact_labeled_pairs": 3,
+            "impact_exact_matched": 2,
+            "priority_labeled_pairs": 3,
+            "priority_exact_matched": 1,
+            "priority_within_one_matched": 2,
+        }
+
+    def test_unknown_and_invalid_axes_are_excluded_per_axis(self):
+        gold_rows = [
+            {
+                "id": "pr1",
+                "human_findings": [
+                    make_finding(
+                        severity="unknown", impact="security", priority="high"
+                    ).__dict__
+                ],
+            }
+        ]
+        pred_by_id = {
+            "pr1": {
+                "agent_findings": [
+                    make_finding(
+                        severity="high", impact="invalid", priority=None
+                    ).__dict__
+                ]
+            }
+        }
+
+        report = score_gold(gold_rows, pred_by_id)
+
+        assert report["counts"]["gold_matched"] == 1
+        assert report["counts"]["severity_labeled_pairs"] == 0
+        assert report["counts"]["impact_labeled_pairs"] == 0
+        assert report["counts"]["priority_labeled_pairs"] == 0
+        assert report["severity_exact_agreement"] == 0.0
+        assert report["severity_within_one_agreement"] == 0.0
+        assert report["impact_exact_agreement"] == 0.0
+        assert report["priority_exact_agreement"] == 0.0
+        assert report["priority_within_one_agreement"] == 0.0
+
+    def test_axes_do_not_participate_in_finding_pairing(self):
+        gold = [make_finding(severity="critical", impact="security", priority="high")]
+        pred = [make_finding(severity="low", impact="maintainability", priority="low")]
+
+        result = match_findings_detailed(gold, pred)
+
+        assert len(result.pairs) == 1
+        assert result.pairs[0].severity_exact_match is False
+        assert result.pairs[0].severity_within_one_match is False
+        assert result.pairs[0].impact_exact_match is False
+        assert result.pairs[0].priority_exact_match is False
+        assert result.pairs[0].priority_within_one_match is False
 
 
 class TestScoreGoldLocationHitRate:
@@ -398,6 +525,11 @@ class TestScoreSeededItemsDetail:
                 "expected": raw_must_find_hit,
                 "agent": raw_agent,
                 "severity_match": True,
+                "severity_exact_match": True,
+                "severity_within_one_match": True,
+                "impact_exact_match": True,
+                "priority_exact_match": True,
+                "priority_within_one_match": True,
                 "exact_line": True,
             }
         ]

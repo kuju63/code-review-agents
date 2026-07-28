@@ -252,7 +252,13 @@ class TestMain:
         )
         assert main() == 0
         assert json.loads(output.read_text()) == [
-            {"repository": "owner/repo", "pr_number": 1}
+            {
+                "repository": "owner/repo",
+                "pr_number": 1,
+                "severity": "high",
+                "impact": "security",
+                "priority": "high",
+            }
         ]
         summary = json.loads(capsys.readouterr().out)
         assert summary["total"] == 1

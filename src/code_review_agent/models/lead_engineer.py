@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from .review import ReviewError, ReviewFinding, ReviewPerspective, ReviewPriority
+from .review import ReviewError, ReviewFinding, ReviewPerspective
 
 
 class DecisionVerdict(StrEnum):
@@ -18,6 +18,32 @@ class DecisionVerdict(StrEnum):
 
     ACCEPT = "accept"
     REJECT = "reject"
+
+
+class FindingSeverity(StrEnum):
+    """Final severity assigned to an individual finding."""
+
+    CRITICAL = "critical"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
+class FindingImpact(StrEnum):
+    """Quality characteristic primarily affected by a finding."""
+
+    SECURITY = "security"
+    CORRECTNESS = "correctness"
+    PERFORMANCE = "performance"
+    MAINTAINABILITY = "maintainability"
+
+
+class FindingPriority(StrEnum):
+    """Final urgency assigned to an individual finding."""
+
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
 
 
 class FindingDecisionOutput(BaseModel):
@@ -41,7 +67,11 @@ class FindingDecisionOutput(BaseModel):
     verdict: DecisionVerdict = Field(..., description="Accept or reject")
     reason: str = Field(..., description="Rationale for the decision")
     impact: str = Field(..., description="Impact if not fixed")
-    final_priority: ReviewPriority = Field(..., description="Final priority")
+    severity: FindingSeverity = Field(..., description="Final severity")
+    impact_category: FindingImpact = Field(
+        ..., description="Quality characteristic affected"
+    )
+    final_priority: FindingPriority = Field(..., description="Final priority")
 
 
 class LeadEngineerOutput(BaseModel):
@@ -82,7 +112,11 @@ class FindingDecision(BaseModel):
     verdict: DecisionVerdict = Field(..., description="Accept or reject")
     reason: str = Field(..., description="Rationale for the decision")
     impact: str = Field(..., description="Impact if not fixed")
-    final_priority: ReviewPriority = Field(..., description="Final priority")
+    severity: FindingSeverity = Field(..., description="Final severity")
+    impact_category: FindingImpact = Field(
+        ..., description="Quality characteristic affected"
+    )
+    final_priority: FindingPriority = Field(..., description="Final priority")
 
 
 class LeadEngineerReport(BaseModel):
@@ -105,33 +139,34 @@ class LeadEngineerReport(BaseModel):
     )
 
     def accepted(self) -> list[FindingDecision]:
-        """Return accepted findings sorted CRITICAL → HIGH → MEDIUM → LOW.
+        """Return accepted findings ordered by severity, highest first.
 
         Returns:
-            Accepted findings in descending priority order.
+            Accepted findings in descending severity order.
         """
         return self._by_verdict(DecisionVerdict.ACCEPT)
 
     def rejected(self) -> list[FindingDecision]:
-        """Return rejected findings sorted CRITICAL → HIGH → MEDIUM → LOW.
+        """Return rejected findings ordered by severity, highest first.
 
         Returns:
-            Rejected findings in descending priority order.
+            Rejected findings in descending severity order.
         """
         return self._by_verdict(DecisionVerdict.REJECT)
 
     def _by_verdict(self, verdict: DecisionVerdict) -> list[FindingDecision]:
-        order = list(ReviewPriority)
+        order = list(FindingSeverity)
         return sorted(
             [d for d in self.decisions if d.verdict is verdict],
-            key=lambda d: order.index(d.final_priority),
+            key=lambda d: order.index(d.severity),
         )
 
     def to_markdown(self) -> str:
         """Render the report as Markdown for chat output.
 
-        Accepted findings are listed first, sorted by final_priority.
-        Rejected findings follow inside a collapsible ``<details>`` block.
+        Accepted findings are listed first, ordered by severity.
+        Rejected findings follow in severity order inside a collapsible
+        ``<details>`` block.
         Reviewer errors are appended at the end if present.
 
         Returns:
@@ -156,13 +191,19 @@ class LeadEngineerReport(BaseModel):
                     if d.finding.line:
                         loc += f" L{d.finding.line}"
                 lines += [
-                    f"### {i}. [{d.final_priority.upper()}] {loc or '(no location)'}",
+                    f"### {i}. [{d.severity.upper()}] {loc or '(no location)'}",
                     "",
                     f"**Reviewer**: {d.reviewer_id} ({d.perspective.value})",
                     "",
                     f"**Finding**: {d.finding.comment}",
                     "",
-                    f"**Impact**: {d.impact}",
+                    f"**Severity**: {d.severity.value}",
+                    "",
+                    f"**Impact category**: {d.impact_category.value}",
+                    "",
+                    f"**Priority**: {d.final_priority.value}",
+                    "",
+                    f"**Impact if not fixed**: {d.impact}",
                     "",
                     f"**Decision rationale**: {d.reason}",
                 ]
@@ -215,7 +256,9 @@ class LeadEngineerReport(BaseModel):
                 "path": d.finding.file_path,
                 "line": d.finding.line,
                 "category": d.perspective.value,
-                "severity": d.final_priority.value,
+                "severity": d.severity.value,
+                "impact": d.impact_category.value,
+                "priority": d.final_priority.value,
                 "summary": d.finding.comment,
             }
             for d in self.accepted()

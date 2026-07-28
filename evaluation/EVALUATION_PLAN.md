@@ -175,7 +175,9 @@ for now to focus on improving frontend review accuracy.
 
 - Issue Recall: matched_gold_issues / all_gold_issues
 - Issue Precision: matched_gold_issues / all_agent_issues
-- Severity Agreement: matched_severity / matched_gold_issues
+- Severity Agreement: severity_exact_matched / severity_labeled_pairs
+  — Retained as a backward-compatible alias of `severity_exact_agreement`
+    (see Finding-Level Axis Agreement below).
 - Location Hit Rate: matched_file_line / matched_gold_issues
   — Among `matched_gold_issues` (pairs that already satisfy the full matching
     rule below, including the ±5 line tolerance), `matched_file_line` counts
@@ -185,7 +187,29 @@ for now to focus on improving frontend review accuracy.
     location-matched.
 - Decision Agreement (lead): decisions_matching_human / all_decisions
 
-## 3.1.1 Lead Engineer Decision Metrics
+### 3.1.1 Finding-Level Axis Agreement
+
+After findings are paired by the existing matching rule, compare three independent axes. The axes do not participate in pairing, avoiding selection bias in their agreement scores.
+
+- Severity: `critical | high | medium | low`
+- Impact: `security | correctness | performance | maintainability`
+- Priority: `high | medium | low`
+
+Metrics:
+
+- Severity Exact Agreement: exact severity matches / severity-labeled matched pairs
+- Severity Within-One Agreement: severity rank difference <= 1 / severity-labeled matched pairs
+- Impact Exact Agreement: exact impact matches / impact-labeled matched pairs
+- Priority Exact Agreement: exact priority matches / priority-labeled matched pairs
+- Priority Within-One Agreement: priority rank difference <= 1 / priority-labeled matched pairs
+
+Severity ranks are `low=0, medium=1, high=2, critical=3`; priority ranks are `low=0, medium=1, high=2`. Within-one includes exact matches. Impact is categorical and therefore has no within-one metric.
+
+Each axis denominator includes only matched pairs where both Gold and prediction values are canonical members of that axis. Missing, `null`, empty, `unknown`, out-of-vocabulary, and wrong-type values are excluded per axis. A zero denominator produces `0.0`, and the report must expose the denominator count to distinguish unavailable labels from complete disagreement. Unmatched Gold and prediction findings remain measured by Issue Recall and Issue Precision rather than axis agreement.
+
+The initial Gold labels are PR-level proxy labels inherited by every finding from the selected `pr_targets_{stack}.json` row. They measure alignment with the PR review context, not independently annotated finding-level ground truth. This limitation must remain visible in reports until comment-level annotation replaces the proxy labels.
+
+### 3.1.2 Lead Engineer Decision Metrics
 
 These metrics evaluate the quality of the Lead Engineer's accept/reject decisions.
 
@@ -311,13 +335,15 @@ Collect live traces and add sampled failures back into Gold pool.
 
 ## 6. Human Annotation Rules
 
-When normalizing human comments, annotate each finding with:
+When normalizing review comments, annotate each finding with:
 
 - category: correctness | security | performance | maintainability | style
 - severity: critical | high | medium | low
+- impact: security | correctness | performance | maintainability
+- priority: high | medium | low
 - evidence: path + line + original comment URL
 
-If severity is unclear, set severity to unknown and exclude from Severity Agreement denominator.
+The current builder inherits severity / impact / priority from the PR-level target assessment as proxy labels; category remains comment-derived. If any axis is unclear or unavailable, set it to `unknown` and exclude only that axis from its agreement denominator.
 
 ## 7. Why This Hybrid Works
 

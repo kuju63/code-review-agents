@@ -385,9 +385,18 @@ def _to_output(rows: list[StackTarget]) -> list[dict[str, Any]]:
     """Convert classified targets to the Gold builder input schema.
 
     Returns:
-        Execution targets containing only repository and pull-request number.
+        Execution targets retaining finding-axis proxy labels.
     """
-    return [{"repository": row.repository, "pr_number": row.pr_number} for row in rows]
+    return [
+        {
+            "repository": row.repository,
+            "pr_number": row.pr_number,
+            "severity": row.severity,
+            "impact": row.impact,
+            "priority": row.priority,
+        }
+        for row in rows
+    ]
 
 
 def main() -> int:

@@ -6,6 +6,11 @@ import pytest
 
 from code_review_agent.agents.base_reviewer import ReviewerConfig
 from code_review_agent.agents.exceptions import StructuredOutputMissingError
+from code_review_agent.models.lead_engineer import (
+    FindingImpact,
+    FindingPriority,
+    FindingSeverity,
+)
 from code_review_agent.models.review import (
     ReviewError,
     ReviewFinding,
@@ -228,7 +233,9 @@ class TestResolveDecisions:
                 verdict=DecisionVerdict.ACCEPT,
                 reason="Critical",
                 impact="Data breach",
-                final_priority=ReviewPriority.HIGH,
+                severity=FindingSeverity.HIGH,
+                impact_category=FindingImpact.CORRECTNESS,
+                final_priority=FindingPriority.HIGH,
             )
         ]
         agent = self._agent()
@@ -258,7 +265,9 @@ class TestResolveDecisions:
                 verdict=DecisionVerdict.ACCEPT,
                 reason="ok",
                 impact="none",
-                final_priority=ReviewPriority.LOW,
+                severity=FindingSeverity.LOW,
+                impact_category=FindingImpact.CORRECTNESS,
+                final_priority=FindingPriority.LOW,
             )
         ]
         agent = self._agent()
@@ -270,7 +279,7 @@ class TestResolveDecisions:
         assert decisions[0].finding is finding
         assert decisions[0].verdict == DecisionVerdict.REJECT
         # final_priority falls back to the original finding.priority
-        assert decisions[0].final_priority == ReviewPriority.HIGH
+        assert decisions[0].final_priority is FindingPriority.HIGH
 
     def test_duplicate_index_uses_first_occurrence(self):
         from code_review_agent.models.lead_engineer import (
@@ -287,14 +296,18 @@ class TestResolveDecisions:
                 verdict=DecisionVerdict.ACCEPT,
                 reason="first occurrence",
                 impact="critical",
-                final_priority=ReviewPriority.CRITICAL,
+                severity=FindingSeverity.CRITICAL,
+                impact_category=FindingImpact.SECURITY,
+                final_priority=FindingPriority.HIGH,
             ),
             FindingDecisionOutput(
                 finding_index=1,
                 verdict=DecisionVerdict.REJECT,
                 reason="duplicate — should be ignored",
                 impact="none",
-                final_priority=ReviewPriority.LOW,
+                severity=FindingSeverity.LOW,
+                impact_category=FindingImpact.CORRECTNESS,
+                final_priority=FindingPriority.LOW,
             ),
         ]
         agent = self._agent()
@@ -321,7 +334,9 @@ class TestResolveDecisions:
                 verdict=DecisionVerdict.ACCEPT,
                 reason="ok",
                 impact="high",
-                final_priority=ReviewPriority.CRITICAL,
+                severity=FindingSeverity.CRITICAL,
+                impact_category=FindingImpact.SECURITY,
+                final_priority=FindingPriority.HIGH,
             ),
         ]
         agent = self._agent()
@@ -335,9 +350,17 @@ class TestResolveDecisions:
         assert accepted[0].finding.comment == "A"
         assert len(rejected) == 1
         assert rejected[0].finding.comment == "B"
-        assert (
-            rejected[0].final_priority == ReviewPriority.LOW
-        )  # falls back to original
+        assert rejected[0].final_priority is FindingPriority.LOW
+
+    def test_missing_critical_security_decision_falls_back_to_independent_axes(self):
+        finding = _make_finding(priority=ReviewPriority.CRITICAL)
+        index_map = {1: ("security", ReviewPerspective.SECURITY, finding)}
+
+        decision = self._agent()._resolve_decisions([], index_map)[0]
+
+        assert decision.severity is FindingSeverity.CRITICAL
+        assert decision.impact_category is FindingImpact.SECURITY
+        assert decision.final_priority is FindingPriority.HIGH
 
     def test_mixed_valid_and_invalid_indexes(self):
         from code_review_agent.models.lead_engineer import (
@@ -353,21 +376,27 @@ class TestResolveDecisions:
                 verdict=DecisionVerdict.ACCEPT,
                 reason="ok",
                 impact="none",
-                final_priority=ReviewPriority.HIGH,
+                severity=FindingSeverity.HIGH,
+                impact_category=FindingImpact.CORRECTNESS,
+                final_priority=FindingPriority.HIGH,
             ),
             FindingDecisionOutput(
                 finding_index=99,
                 verdict=DecisionVerdict.REJECT,
                 reason="invalid",
                 impact="none",
-                final_priority=ReviewPriority.LOW,
+                severity=FindingSeverity.LOW,
+                impact_category=FindingImpact.CORRECTNESS,
+                final_priority=FindingPriority.LOW,
             ),
             FindingDecisionOutput(
                 finding_index=2,
                 verdict=DecisionVerdict.REJECT,
                 reason="out of scope",
                 impact="none",
-                final_priority=ReviewPriority.LOW,
+                severity=FindingSeverity.LOW,
+                impact_category=FindingImpact.CORRECTNESS,
+                final_priority=FindingPriority.LOW,
             ),
         ]
         agent = self._agent()
@@ -397,14 +426,18 @@ class TestResolveDecisions:
                 verdict=DecisionVerdict.ACCEPT,
                 reason="ok",
                 impact="none",
-                final_priority=ReviewPriority.HIGH,
+                severity=FindingSeverity.HIGH,
+                impact_category=FindingImpact.CORRECTNESS,
+                final_priority=FindingPriority.HIGH,
             ),
             FindingDecisionOutput(
                 finding_index=2,
                 verdict=DecisionVerdict.REJECT,
                 reason="low value",
                 impact="minimal",
-                final_priority=ReviewPriority.LOW,
+                severity=FindingSeverity.LOW,
+                impact_category=FindingImpact.CORRECTNESS,
+                final_priority=FindingPriority.LOW,
             ),
         ]
         agent = self._agent()
