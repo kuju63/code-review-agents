@@ -15,8 +15,8 @@
     "semantic_hash": "cd78f7f28cef7f7f9bb757a5f6cf6c71"
   },
   ".opencode/opencode.json": {
-    "mtime": 1785197789.378105,
-    "ast_hash": "e5f74d14a81702b55bdf53b33ec991d7",
+    "mtime": 1785208435.9428382,
+    "ast_hash": "35e1bbd40298af1e27d2f5c27c6bcc03",
     "semantic_hash": ""
   },
   ".opencode/plugins/graphify.js": {
@@ -170,9 +170,9 @@
     "semantic_hash": "7ff883b155eef770dbbb00b9019fb995"
   },
   "scripts/setup-worktree.sh": {
-    "mtime": 1785144584.0188656,
-    "ast_hash": "eff92d4bf51a0ff034d31a675d686aba",
-    "semantic_hash": "eff92d4bf51a0ff034d31a675d686aba"
+    "mtime": 1785208435.9428382,
+    "ast_hash": "bd10524b05289fe52a4b7da0c6c0982d",
+    "semantic_hash": ""
   },
   "src/code_review_agent/__init__.py": {
     "mtime": 1785144584.019576,
@@ -1802,6 +1802,11 @@
   "src/code_review_agent/skills/vercel-react-best-practices/rules/server-serialization.md": {
     "mtime": 1785144584.0380034,
     "ast_hash": "e6d34426614852685f43609dd9e3b250",
+    "semantic_hash": ""
+  },
+  ".opencode/plugins/worktree.js": {
+    "mtime": 1785208435.9428382,
+    "ast_hash": "0661248e854eb54e28a9c6675f7041ac",
     "semantic_hash": ""
   }
 }
