@@ -425,8 +425,8 @@
     "semantic_hash": "fc596ce6be49023774cbc00a97ea8049"
   },
   "tests/agents/test_lead_engineer.py": {
-    "mtime": 1785205034.5626485,
-    "ast_hash": "b7121aa9bdfb3611bdf49758f8b83bcc",
+    "mtime": 1785205514.4395044,
+    "ast_hash": "7a84b12402d80b35278958246547c726",
     "semantic_hash": ""
   },
   "tests/agents/test_pr_info_collector.py": {
@@ -545,8 +545,8 @@
     "semantic_hash": "6de41bd85a9fb2c59f7af5acb633ee7c"
   },
   "tests/evaluation/tools/test_score_evaluation.py": {
-    "mtime": 1785146341.0984461,
-    "ast_hash": "4b842a7e69c90f577677283bf5f6dc28",
+    "mtime": 1785205514.4395044,
+    "ast_hash": "044eb7dfbd52025f019b6ed1e46e84a7",
     "semantic_hash": ""
   },
   "tests/evaluation/tools/test_select_stack_targets.py": {
@@ -930,8 +930,8 @@
     "semantic_hash": ""
   },
   "evaluation/RUBRIC.md": {
-    "mtime": 1785205013.9722526,
-    "ast_hash": "eab1abfb6de1fcb549fc77fe48be0d25",
+    "mtime": 1785205203.2710564,
+    "ast_hash": "001aec77010eb0f41fda3a1a4eb6a398",
     "semantic_hash": ""
   },
   "evaluation/RUNBOOK.md": {

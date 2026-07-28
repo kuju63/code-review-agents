@@ -240,8 +240,10 @@ class TestScoreGoldAxisAgreement:
         assert report["counts"]["impact_labeled_pairs"] == 0
         assert report["counts"]["priority_labeled_pairs"] == 0
         assert report["severity_exact_agreement"] == 0.0
+        assert report["severity_within_one_agreement"] == 0.0
         assert report["impact_exact_agreement"] == 0.0
         assert report["priority_exact_agreement"] == 0.0
+        assert report["priority_within_one_agreement"] == 0.0
 
     def test_axes_do_not_participate_in_finding_pairing(self):
         gold = [make_finding(severity="critical", impact="security", priority="high")]
@@ -254,6 +256,7 @@ class TestScoreGoldAxisAgreement:
         assert result.pairs[0].severity_within_one_match is False
         assert result.pairs[0].impact_exact_match is False
         assert result.pairs[0].priority_exact_match is False
+        assert result.pairs[0].priority_within_one_match is False
 
 
 class TestScoreGoldLocationHitRate:

@@ -279,7 +279,7 @@ class TestResolveDecisions:
         assert decisions[0].finding is finding
         assert decisions[0].verdict == DecisionVerdict.REJECT
         # final_priority falls back to the original finding.priority
-        assert decisions[0].final_priority == ReviewPriority.HIGH
+        assert decisions[0].final_priority is FindingPriority.HIGH
 
     def test_duplicate_index_uses_first_occurrence(self):
         from code_review_agent.models.lead_engineer import (
@@ -350,9 +350,7 @@ class TestResolveDecisions:
         assert accepted[0].finding.comment == "A"
         assert len(rejected) == 1
         assert rejected[0].finding.comment == "B"
-        assert (
-            rejected[0].final_priority == ReviewPriority.LOW
-        )  # falls back to original
+        assert rejected[0].final_priority is FindingPriority.LOW
 
     def test_missing_critical_security_decision_falls_back_to_independent_axes(self):
         finding = _make_finding(priority=ReviewPriority.CRITICAL)

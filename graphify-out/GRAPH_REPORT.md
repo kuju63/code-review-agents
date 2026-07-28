@@ -1,7 +1,7 @@
 # Graph Report - finding-axis-evaluation  (2026-07-28)
 
 ## Corpus Check
-- 353 files · ~256,054 words
+- 353 files · ~256,060 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9cfdf0de`
+- Built from commit: `04cc7e4b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -500,7 +500,7 @@ Nodes (8): inject_patch(), Inject `line_snippet` into the hunk with the most add
 
 ### Community 28 - "select_stack_targets.py"
 Cohesion: 0.16
-Nodes (22): allocate_quota(), filter_rows(), load_targets(), main(), parse_csv_arg(), _rank(), Parse a comma-separated CLI argument.      Returns:         Trimmed non-empty va, Filter targets by stack and the three classification axes.      Returns: (+14 more)
+Nodes (22): allocate_quota(), dedupe_rows(), load_targets(), main(), parse_csv_arg(), _rank(), Parse a comma-separated CLI argument.      Returns:         Trimmed non-empty va, Remove duplicate repository and pull-request pairs.      Returns:         De-dup (+14 more)
 
 ### Community 29 - "recompute_injected_line"
 Cohesion: 0.13
@@ -668,7 +668,7 @@ Nodes (4): Render one Gold PR or Seeded item's matched/missed/unmatched-agent de
 
 ### Community 71 - "make_row"
 Cohesion: 0.27
-Nodes (5): dedupe_rows(), Remove duplicate repository and pull-request pairs.      Returns:         De-dup, make_row(), TestFilterAndDedupe, TestSelection
+Nodes (5): filter_rows(), Filter targets by stack and the three classification axes.      Returns:, make_row(), TestFilterAndDedupe, TestSelection
 
 ### Community 72 - "code_review_agent/__init__.py"
 Cohesion: 0.08
