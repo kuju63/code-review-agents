@@ -1,27 +1,32 @@
-"""Tests for evaluation/tools/run_agent_evaluation.py::_build_report.
+"""Tests for evaluation/tools/generate_evaluation_report.py::_build_report.
 
 Covers the per-item detail rendering added on top of the existing
 aggregate-only report: Gold PR sections showing human_findings vs
 agent_findings (matched/missed/unmatched), Seeded item sections showing
 must_find vs agent_findings with no "human review" wording, and the
 _sanitize_cell/_ref_cell table-cell helpers.
+
+_build_report and friends used to live in run_agent_evaluation.py; they
+moved here (see docs/eval-sharded-execution-spec.md) so scoring/report
+generation can run independently of the A2A evaluation step. The
+assertions below are unchanged by that move.
 """
 
 from __future__ import annotations
 
 from tests.evaluation.conftest import load_eval_tool_module
 
-run_agent_evaluation = load_eval_tool_module(
-    "run_agent_evaluation", "run_agent_evaluation.py"
+generate_evaluation_report = load_eval_tool_module(
+    "generate_evaluation_report", "generate_evaluation_report.py"
 )
 
-_build_report = run_agent_evaluation._build_report
-_sanitize_cell = run_agent_evaluation._sanitize_cell
-_ref_cell = run_agent_evaluation._ref_cell
-_finding_row = run_agent_evaluation._finding_row
-_render_item_detail = run_agent_evaluation._render_item_detail
-_gold_heading = run_agent_evaluation._gold_heading
-_seeded_heading = run_agent_evaluation._seeded_heading
+_build_report = generate_evaluation_report._build_report
+_sanitize_cell = generate_evaluation_report._sanitize_cell
+_ref_cell = generate_evaluation_report._ref_cell
+_finding_row = generate_evaluation_report._finding_row
+_render_item_detail = generate_evaluation_report._render_item_detail
+_gold_heading = generate_evaluation_report._gold_heading
+_seeded_heading = generate_evaluation_report._seeded_heading
 
 
 def make_scores(
@@ -451,3 +456,46 @@ class TestBuildReportIntegration:
         )
         assert "still shown" in report
         assert "評価失敗のため" not in report
+
+
+class TestFailedIdsPath:
+    def test_derives_sidecar_path_from_pred_stem(self):
+        path = generate_evaluation_report._failed_ids_path(
+            "evaluation/data/agent_predictions.jsonl"
+        )
+        assert str(path) == "evaluation/data/agent_predictions.failed_ids.json"
+
+
+class TestLoadFailedIds:
+    def test_reads_sidecar_next_to_pred_by_default(self, tmp_path):
+        pred_path = tmp_path / "agent_predictions.jsonl"
+        pred_path.write_text("", encoding="utf-8")
+        sidecar = tmp_path / "agent_predictions.failed_ids.json"
+        sidecar.write_text('["id-1", "id-2"]', encoding="utf-8")
+
+        failed_ids = generate_evaluation_report._load_failed_ids(str(pred_path), None)
+
+        assert failed_ids == ["id-1", "id-2"]
+
+    def test_explicit_failed_ids_file_overrides_default_sidecar(self, tmp_path):
+        pred_path = tmp_path / "agent_predictions.jsonl"
+        pred_path.write_text("", encoding="utf-8")
+        default_sidecar = tmp_path / "agent_predictions.failed_ids.json"
+        default_sidecar.write_text('["should-not-be-used"]', encoding="utf-8")
+        explicit = tmp_path / "custom_failed_ids.json"
+        explicit.write_text('["id-9"]', encoding="utf-8")
+
+        failed_ids = generate_evaluation_report._load_failed_ids(
+            str(pred_path), str(explicit)
+        )
+
+        assert failed_ids == ["id-9"]
+
+    def test_missing_sidecar_returns_empty_list_and_warns(self, tmp_path, capsys):
+        pred_path = tmp_path / "agent_predictions.jsonl"
+        pred_path.write_text("", encoding="utf-8")
+
+        failed_ids = generate_evaluation_report._load_failed_ids(str(pred_path), None)
+
+        assert failed_ids == []
+        assert "WARN" in capsys.readouterr().err
