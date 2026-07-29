@@ -246,7 +246,11 @@ class TestMainShutdownSkip:
 
         assert shutdown_calls == []
 
-    def test_invalid_shard_args_raises_before_running(self, monkeypatch):
+    def test_invalid_shard_args_returns_fatal_exit_code(self, monkeypatch):
+        """Invalid --shard-index/--shard-count must be reported as one of the
+        script's established fatal exit codes, not an uncaught ValueError
+        (which would print a raw traceback and exit 1, indistinguishable
+        from an unrelated crash)."""
         monkeypatch.setattr(
             "sys.argv",
             [
@@ -264,8 +268,7 @@ class TestMainShutdownSkip:
             ],
         )
 
-        with pytest.raises(ValueError):
-            run_agent_evaluation.main()
+        assert run_agent_evaluation.main() == 2
 
     def test_shutdown_still_runs_when_shard_args_are_invalid_and_shard_count_unset(
         self, monkeypatch
@@ -299,7 +302,7 @@ class TestMainShutdownSkip:
             ],
         )
 
-        with pytest.raises(ValueError):
-            run_agent_evaluation.main()
+        exit_code = run_agent_evaluation.main()
 
+        assert exit_code == 2
         assert shutdown_calls == ["/tmp/pid"]

@@ -175,6 +175,32 @@ class TestMergeUnaccountedIds:
         merged_sidecar = json.loads((tmp_path / "merged.failed_ids.json").read_text())
         assert merged_sidecar == ["g2"]
 
+    def test_summary_does_not_mention_allow_missing_when_not_provided(
+        self, tmp_path, capsys
+    ):
+        """The 'allowed via --allow-missing' wording implies the flag was
+        active; it must not appear when the merge succeeded purely on known
+        failures and --allow-missing was never passed."""
+        gold = tmp_path / "gold.jsonl"
+        write_jsonl(gold, [{"id": "g1"}, {"id": "g2"}])
+        seeded = tmp_path / "seeded.jsonl"
+        write_jsonl(seeded, [])
+
+        shard0 = tmp_path / "shard0.jsonl"
+        write_jsonl(shard0, [{"id": "g1", "agent_findings": []}])
+        write_sidecar(shard0, ["g2"])
+
+        output = tmp_path / "merged.jsonl"
+        merge_predictions.merge(
+            gold=str(gold),
+            seeded=str(seeded),
+            output=str(output),
+            pred_paths=[str(shard0)],
+            allow_missing=False,
+        )
+
+        assert "--allow-missing" not in capsys.readouterr().out
+
     def test_missing_sidecar_file_makes_its_gaps_unaccounted(self, tmp_path):
         gold = tmp_path / "gold.jsonl"
         write_jsonl(gold, [{"id": "g1"}, {"id": "g2"}])

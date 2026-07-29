@@ -207,7 +207,15 @@ fi
 終了コードの確認:
 - `0`: 全評価成功
 - `1`: 一部アイテムの評価失敗（スコアは部分結果）
-- `2〜4`: 致命的エラー（ユーザーに報告する）
+- `2〜5`: 致命的エラー（ユーザーに報告する）
+  - `2`: 引数エラー（`GITHUB_TOKEN`未設定、または`--shard-index`/`--shard-count`の指定不正）
+  - `3`: A2Aサーバーに接続できない
+  - `4`: スコアリング失敗（`generate_evaluation_report.py`が`score_evaluation.py`の実行に失敗）
+  - `5`: `failed_ids` sidecarが見つからない（`generate_evaluation_report.py`を`--pred`単体で
+    実行した場合など。`--allow-missing-failed-ids`で許容可能）
+
+非shard実行では`run_agent_evaluation.py`が`generate_evaluation_report.py`をsubprocess呼び出しし、
+その終了コード（0/1/4/5のいずれか）をそのまま返す。
 
 ---
 

@@ -244,7 +244,7 @@ Step 5's fallback) once every shard has finished.
 
 **Choosing `--shard-count`**: pick the smallest value satisfying
 
-```
+```text
 (ceil(gold_count / shard_count / concurrency)
  + ceil(seeded_count / shard_count / concurrency)) * timeout <= available_window
 ```

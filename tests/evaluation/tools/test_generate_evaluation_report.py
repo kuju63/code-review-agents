@@ -14,6 +14,8 @@ assertions below are unchanged by that move.
 
 from __future__ import annotations
 
+import argparse
+
 import pytest
 
 from tests.evaluation.conftest import load_eval_tool_module
@@ -516,3 +518,81 @@ class TestLoadFailedIds:
 
         assert failed_ids == []
         assert "WARN" in capsys.readouterr().err
+
+
+class TestGenerateReportExitCodes:
+    """`_generate_report`'s exit-code contract: 5 (sidecar missing), 4
+    (scoring failed), 1 (failed_ids present), 0 (clean success). `_score`
+    and `send_discord_notification` are monkeypatched so these stay
+    unit-test-fast with no subprocess/network calls."""
+
+    def _make_args(self, tmp_path, **overrides):
+        gold = tmp_path / "gold.jsonl"
+        gold.write_text("", encoding="utf-8")
+        seeded = tmp_path / "seeded.jsonl"
+        seeded.write_text("", encoding="utf-8")
+        kwargs = dict(
+            gold=str(gold),
+            seeded=str(seeded),
+            pred=str(tmp_path / "pred.jsonl"),
+            failed_ids_file=None,
+            allow_missing_failed_ids=False,
+        )
+        kwargs.update(overrides)
+        return argparse.Namespace(**kwargs)
+
+    def test_returns_5_when_failed_ids_sidecar_missing(self, tmp_path):
+        args = self._make_args(tmp_path)
+
+        exit_code = generate_evaluation_report._generate_report(args)
+
+        assert exit_code == 5
+
+    def test_returns_4_when_scoring_fails(self, tmp_path, monkeypatch):
+        (tmp_path / "pred.failed_ids.json").write_text("[]", encoding="utf-8")
+        monkeypatch.setattr(
+            generate_evaluation_report,
+            "_score",
+            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")),
+        )
+        args = self._make_args(tmp_path)
+
+        exit_code = generate_evaluation_report._generate_report(args)
+
+        assert exit_code == 4
+
+    def test_returns_1_when_failed_ids_present(self, tmp_path, monkeypatch):
+        (tmp_path / "pred.failed_ids.json").write_text('["pr1"]', encoding="utf-8")
+        monkeypatch.setattr(
+            generate_evaluation_report, "_score", lambda *a, **k: make_scores()
+        )
+        notified = []
+        monkeypatch.setattr(
+            generate_evaluation_report,
+            "send_discord_notification",
+            lambda *a, **k: notified.append(True),
+        )
+        args = self._make_args(tmp_path)
+
+        exit_code = generate_evaluation_report._generate_report(args)
+
+        assert exit_code == 1
+        assert notified == [True]
+
+    def test_returns_0_on_clean_success(self, tmp_path, monkeypatch):
+        (tmp_path / "pred.failed_ids.json").write_text("[]", encoding="utf-8")
+        monkeypatch.setattr(
+            generate_evaluation_report, "_score", lambda *a, **k: make_scores()
+        )
+        monkeypatch.setattr(
+            generate_evaluation_report,
+            "send_discord_notification",
+            lambda *a, **k: None,
+        )
+        args = self._make_args(tmp_path)
+
+        exit_code = generate_evaluation_report._generate_report(args)
+
+        assert exit_code == 0
+        report_files = list(tmp_path.glob("report_*.md"))
+        assert len(report_files) == 1

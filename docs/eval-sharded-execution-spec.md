@@ -27,7 +27,7 @@ OpenCodeの2時間制約は呼び出し(実行)単位でリセットされるこ
 流儀(`build_seeded_set.py`/`score_evaluation.py`/`run_agent_evaluation.py` がそれぞれ独立に
 `read_jsonl` を持つ)を踏襲し、共有utilモジュールは新設せず3スクリプトに分割する。
 
-```
+```text
 run_agent_evaluation.py         A2A評価の実行、predictions + failed_ids sidecarの書き込みのみ
 merge_predictions.py (新規)      複数shardのpredictions/failed_idsを統合
 generate_evaluation_report.py (新規)  スコアリング・Markdownレポート・Discord通知
@@ -110,7 +110,7 @@ killされ、predictionsファイルが一切書き出されないまま終わ�
 
 ## 4. テスト
 
-`tests/evaluation/tools/test_run_agent_evaluation.py`:
+`tests/evaluation/tools/test_run_agent_evaluation_shard.py`:
 - `_select_shard`: 境界値(shard-count=1、最終shardの余り件数)、全shard分を合算すると
   Gold/Seededそれぞれの原集合と重複・欠落なく一致することの回帰
 - `_validate_shard_args`: 片方だけ指定/範囲外indexでエラーになることの確認

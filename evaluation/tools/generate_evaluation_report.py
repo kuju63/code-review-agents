@@ -19,8 +19,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -418,13 +420,16 @@ def main() -> int:
 
 
 def _generate_report(args: argparse.Namespace) -> int:
-    import os
-    from datetime import datetime, timezone
-
     model_id = os.getenv("CODE_REVIEW_MODEL_ID", "gpt-4o")
     commit_hash = _get_commit_hash()
-    executed_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    ts_str = datetime.now().strftime("%Y%m%d-%H%M%S")
+    # Single instant for both: the body's 実行日時 and the filename timestamp
+    # used to disagree because they were two independent datetime.now() calls
+    # in different timezones (UTC vs local), which could show different dates
+    # near a local midnight. UTC is used for the filename (not local time) so
+    # both stay consistent with each other and with `executed_at`.
+    now = datetime.now(timezone.utc)
+    executed_at = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    ts_str = now.strftime("%Y%m%d-%H%M%S")
 
     gold_items = read_jsonl(args.gold)
     seeded_items = read_jsonl(args.seeded)

@@ -330,7 +330,10 @@ def _maybe_generate_report(args: argparse.Namespace) -> int | None:
 
     Returns:
         ``None`` when sharding is active (nothing was invoked), otherwise
-        the report subprocess's exit code.
+        generate_evaluation_report.py's exit code, returned unconverted (one
+        of 0-5: 0 success, 1 partial/failed_ids present, 4 scoring failed, 5
+        failed_ids sidecar missing without --allow-missing-failed-ids). This
+        becomes ``main()``'s own exit code for a non-sharded run.
     """
     if _is_sharded(args):
         return None
@@ -420,9 +423,15 @@ def main() -> int:
     # that invalid --shard-index/--shard-count combinations still reach the
     # finally clause: whenever args.shard_count ends up None (e.g.
     # --shard-index given without --shard-count), shutdown must still fire
-    # instead of leaking the A2A server because validation raised first.
+    # instead of leaking the A2A server because validation raised first. Its
+    # ValueError is caught and mapped to the established fatal-argument-error
+    # exit code (2) rather than propagating as an uncaught exception.
     try:
-        _validate_shard_args(args.shard_index, args.shard_count)
+        try:
+            _validate_shard_args(args.shard_index, args.shard_count)
+        except ValueError as e:
+            print(f"[ERROR] Invalid shard arguments: {e}", file=sys.stderr)
+            return 2
         return _run_evaluation(args)
     finally:
         if not _is_sharded(args):

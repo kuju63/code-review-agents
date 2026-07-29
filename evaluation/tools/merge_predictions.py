@@ -148,10 +148,20 @@ def merge(
         json.dumps(sorted(missing), ensure_ascii=False), encoding="utf-8"
     )
 
+    # "allowed via --allow-missing" is only accurate -- and only printed --
+    # when the flag was actually what let this merge through with a
+    # non-empty unaccounted set; otherwise it falsely implies the flag was
+    # active for a merge that succeeded purely on known failures (or had no
+    # gaps at all).
+    if allow_missing and unaccounted:
+        unaccounted_detail = (
+            f"{len(unaccounted)} unaccounted allowed via --allow-missing"
+        )
+    else:
+        unaccounted_detail = f"{len(unaccounted)} unaccounted"
     print(
         f"Merged {len(merged)}/{len(expected_ids)} items "
-        f"({len(known_failed & missing)} known failure(s), "
-        f"{len(unaccounted)} unaccounted allowed via --allow-missing) "
+        f"({len(known_failed & missing)} known failure(s), {unaccounted_detail}) "
         f"-> {output}"
     )
     if missing:
