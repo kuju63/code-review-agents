@@ -74,6 +74,23 @@ export async function withToolStatus({ label, operation, notify }) {
   }
 }
 
+// Switches the session's file-operation scope to the given workspace id
+// (null = main project) and unwraps the response.
+async function switchToWorkspace({ v2, workspaceID, sessionID, notify }) {
+  return unwrap(
+    await withProgressNotifications({
+      phase: `Switching session to '${workspaceID ?? "main"}'`,
+      operation: () =>
+        v2.experimental.workspace.warp({
+          id: workspaceID,
+          sessionID,
+        }),
+      notify,
+    }),
+    "failed to switch session scope",
+  );
+}
+
 // Matches the "workspace ready" wait timeout described below. WorkspaceCreateError
 // carries no machine-readable error code, only this message, so detection is
 // necessarily string-based.
@@ -187,18 +204,7 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
                 notify,
               });
               if (preexisting) {
-                unwrap(
-                  await withProgressNotifications({
-                    phase: `Switching session to '${branch}'`,
-                    operation: () =>
-                      v2.experimental.workspace.warp({
-                        id: preexisting.id,
-                        sessionID: context.sessionID,
-                      }),
-                    notify,
-                  }),
-                  "failed to switch session scope",
-                );
+                await switchToWorkspace({ v2, workspaceID: preexisting.id, sessionID: context.sessionID, notify });
                 return `Worktree '${branch}' already exists at ${preexisting.directory}. This session's file scope is now that worktree.`;
               }
 
@@ -229,18 +235,7 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
                   throw new Error(message ?? "failed to create worktree");
                 }
               }
-              unwrap(
-                await withProgressNotifications({
-                  phase: `Switching session to '${branch}'`,
-                  operation: () =>
-                    v2.experimental.workspace.warp({
-                      id: workspace.id,
-                      sessionID: context.sessionID,
-                    }),
-                  notify,
-                }),
-                "failed to switch session scope",
-              );
+              await switchToWorkspace({ v2, workspaceID: workspace.id, sessionID: context.sessionID, notify });
               const status = recovered
                 ? `Worktree '${branch}' is ready at ${workspace.directory} (confirmed via polling after the create request timed out)`
                 : `Created worktree '${branch}' at ${workspace.directory}`;
@@ -285,7 +280,7 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
                 notify,
               });
               const previousWorkspaceID = sessionBefore.error
-                ? workspace.id
+                ? null
                 : (sessionBefore.data.workspaceID ?? null);
 
               unwrap(
