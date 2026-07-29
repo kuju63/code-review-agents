@@ -92,6 +92,10 @@ killされ、predictionsファイルが一切書き出されないまま終わ�
   `--allow-missing` を明示指定した場合のみwarnに降格して続行する(opt-out)。
 - id重複(複数shardファイルに同一idが存在)は常にfatal。shard-count設定ミスやファイルの混在を
   示すため、opt-outの対象にしない。
+- predictions中のidがGold+Seededの期待id集合に一つも含まれない場合も常にfatal(`--allow-missing`
+  でも緩和しない)。これは「shardが遅延評価をkillされた」とは別種の異常(誤った`--gold`/`--seeded`
+  の組み合わせを渡した等のデータ不整合)であり、`--allow-missing`が想定する「部分結果の許容」とは
+  性質が異なるため、常に検出する。
 - shardのfailed_ids sidecarファイル自体が存在しない場合も、そのshard担当id全体を「未回収」として
   扱う(特別扱いで緩和しない)。
 
