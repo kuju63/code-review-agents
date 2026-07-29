@@ -31,7 +31,7 @@
 
 | 観点＼種別             | React/TypeScript | Angular | Spring Boot | WASM |
 | ---------------------- | ---------------- | ------- | ----------- | ---- |
-| 技術 (technical)       | ✅ `FrontendReviewer` + Vercel Agent Skills | ✅ `AngularReviewer` + Angular公式Agent Skill | ⏳ 予定 | ⏳ 予定 |
+| 技術 (technical)       | ✅ `ReactReviewer` + Vercel Agent Skills | ✅ `AngularReviewer` + Angular公式Agent Skill | ⏳ 予定 | ⏳ 予定 |
 | セキュリティ (security)| ✅ `SecurityReviewer` | ✅ `SecurityReviewer` | ⏳ 予定 | ⏳ 予定 |
 | 仕様整合性 (spec)      | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 |
 | 要件整合性 (requirements)| ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 |
@@ -50,7 +50,7 @@
 PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
                                       │  registry: プロジェクト種別から
                                       │  適用レビュアークラスを選択
-                                      ├──▶ FrontendReviewer (technical, react_ts)  ┐
+                                      ├──▶ ReactReviewer (technical, react_ts)  ┐
                                       ├──▶ AngularReviewer  (technical, angular)   ├ asyncio.gather で並列
                                       └──▶ SecurityReviewer (security, 両種別)      ┘
                                    ──▶ ReviewReport(results, errors)  ──▶ (将来) Lead Engineer
@@ -153,8 +153,8 @@ Lead Engineer 自体は本リリースの対象外です。
 - **Lead Engineer 合成**: `ReviewReport` を入力とする合成エージェントを別途実装予定。
 
 > **実装済みに変更（旧「未配線」）**: 参照ドキュメント取得は `AgentSkills` と
-> `src/code_review_agent/skills/` 内のスキルパッケージとして実装した。`FrontendReviewer` は
-> `AgentSkillType.FRONTEND_REVIEW`（reviewing-universal / reviewing-languages / reviewing-frameworks
+> `src/code_review_agent/skills/` 内のスキルパッケージとして実装した。`ReactReviewer` は
+> `AgentSkillType.REACT_REVIEW`（reviewing-universal / reviewing-languages / reviewing-frameworks
 > / reviewing-metaframeworks に加え Vercel の vercel-react-best-practices / vercel-composition-patterns）を、
 > `AngularReviewer` は `AgentSkillType.ANGULAR_REVIEW`（reviewing-universal / reviewing-languages /
 > reviewing-frameworks に加え Angular公式の angular-developer）を `skill_type` 経由で読み込む。

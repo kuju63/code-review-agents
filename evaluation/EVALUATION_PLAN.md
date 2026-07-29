@@ -293,8 +293,9 @@ Domain hard gates:
 
 - Security Must-Find Recall >= 0.98 for critical/high in ui-library and application subsets
 - XSS/injection must-find misses must be 0 in frontend application samples
-- Angular samples carrying `angular.json` or Angular source naming conventions must route to `AngularReviewer`, not `FrontendReviewer`
+- Angular samples carrying `angular.json` or Angular source naming conventions must route to `AngularReviewer`, not `ReactReviewer`
 - React technical reviews must expose both Vercel skill indexes; Angular technical reviews must expose the official Angular skill index
+- Seeded items must route to the technical reviewer matching their `stack` label (`react`→`ReactReviewer`, `vue`→`VueReviewer`, `angular`→`AngularReviewer`, `svelte`→`SvelteReviewer`) plus `SecurityReviewer`; an unsupported or missing `stack` must fail the item explicitly rather than default to `ReactReviewer`
 
 Soft targets:
 
@@ -305,10 +306,14 @@ Soft targets:
 
 ## 5. Evaluation Workflow
 
-**評価パスの前提（2026-06-27 更新）**:
+**評価パスの前提（2026-07-29 更新）**:
 
 Gold set は `evaluate_gold_item()` を通じてオーケストレータ経由でパイプライン全体を実行する。
 Seeded set は `evaluate_seeded_item()` でセード変異を注入するため個別エンドポイントを呼ぶ。
+Seeded set も項目の `stack` ラベルに応じた技術レビュアー（`react`→`ReactReviewer` /
+`vue`→`VueReviewer` / `angular`→`AngularReviewer` / `svelte`→`SvelteReviewer`）と
+`SecurityReviewer` を選んで呼び出す（両者は並列実行、詳細は
+[docs/seeded-reviewer-stack-routing-spec.md](../docs/seeded-reviewer-stack-routing-spec.md)）。
 PR の diff が閾値（`CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` chars・`CODE_REVIEW_PATCH_MAX_FILES` ファイル、
 デフォルト 30,000 chars・30 ファイル）以内の場合、両評価パスのレビュアーは
 `PRInfoResult.file_changes` に含まれる patch を参照する（GitHub MCP フェッチは発生しない）。
