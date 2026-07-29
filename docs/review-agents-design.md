@@ -14,7 +14,8 @@
 このうち本設計が対象とするのは中段の**並列レビュー段**です。単に React 技術レビューと
 セキュリティレビューの 2 つを作るのではなく、次の 2 つの直交する軸で拡張できることを要件とします。
 
-- **軸1: プロジェクト種別** — 現状は React/TypeScript フロントエンドのみ。
+- **軸1: プロジェクト種別** — 本設計時点（React/TypeScript のみ）から React・Angular・Vue・Svelte の
+  4 フロントエンド種別に拡張済み（2 節のマトリクス参照）。
   将来 Spring Boot(Java) バックエンド、Next.js / Nuxt.js のようなフロント・バックエンド一体型、
   WASM のような「JavaScript 以外で動くフロントエンド」を追加する。
 - **軸2: レビュー観点** — 現状は技術・セキュリティのみ。
@@ -160,7 +161,11 @@ Lead Engineer 自体は本リリースの対象外です。
 > `AgentSkillType.REACT_REVIEW`（reviewing-universal / reviewing-languages / reviewing-frameworks
 > / reviewing-metaframeworks に加え Vercel の vercel-react-best-practices / vercel-composition-patterns）を、
 > `AngularReviewer` は `AgentSkillType.ANGULAR_REVIEW`（reviewing-universal / reviewing-languages /
-> reviewing-frameworks に加え Angular公式の angular-developer）を `skill_type` 経由で読み込む。
+> reviewing-frameworks に加え Angular公式の angular-developer）を、`VueReviewer` は
+> `AgentSkillType.VUE_REVIEW`（reviewing-universal / reviewing-languages / reviewing-frameworks。
+> Angular/Svelteと異なりVue公式Agent Skillは未ベンダリングのため、`reviewing-frameworks/references/vue.md`
+> の汎用知識に依拠する — 追従課題は docs/seeded-reviewer-stack-routing-spec.md §4 参照）を
+> `skill_type` 経由で読み込む。
 > いずれも GitHub MCP + `file_read` ツールとともに動作する（`shell` は最小権限の原則から注入しない）。
 
 ---

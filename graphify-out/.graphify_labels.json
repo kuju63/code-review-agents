@@ -250,7 +250,6 @@
   "248": "1. 背景と問題",
   "249": "Seeded set生成: mutation注入ロジック 要件と設計ドキュメント",
   "250": "3.1 Phase 1: 決定論的改善 (即座に着手可能) — 実装済み (Issue #111)",
-  "251": "OpenAIModel",
   "252": "Dependent State with `linkedSignal`",
   "253": "Testing Fundamentals",
   "254": "Passing snippets to components",
@@ -351,7 +350,6 @@
   "349": "bug_report.md",
   "350": "feature_request.md",
   "351": "within_change_limits",
-  "352": "test_orchestrator.py",
   "353": "write_stack_outputs",
   "354": "opencode.json",
   "355": "worktree.js",
@@ -363,7 +361,5 @@
   "361": "_gold_heading",
   "362": ".test_stops_mcp_client_even_when_start_raises",
   "363": ".test_summary_agent_called_with_custom_max_agent_turns",
-  "364": "TestWebSecurityReview",
-  "365": ".test_patches_fallback_when_total_chars_exceed_limit",
-  "366": ".test_patches_fallback_when_file_count_exceeds_limit"
+  "364": "TestWebSecurityReview"
 }

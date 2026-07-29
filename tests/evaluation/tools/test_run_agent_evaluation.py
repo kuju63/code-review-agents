@@ -227,23 +227,39 @@ class TestEvaluateSeededItemStackRouting:
 
     def test_react_stack_calls_react_reviewer(self, monkeypatch):
         called = self._run(monkeypatch, "react")
-        assert "react-reviewer" in called
-        assert "security-reviewer" in called
+        assert set(called) == {
+            "pr-info-collector",
+            "react-reviewer",
+            "security-reviewer",
+            "lead-engineer",
+        }
 
     def test_vue_stack_calls_vue_reviewer(self, monkeypatch):
         called = self._run(monkeypatch, "vue")
-        assert "vue-reviewer" in called
-        assert "security-reviewer" in called
+        assert set(called) == {
+            "pr-info-collector",
+            "vue-reviewer",
+            "security-reviewer",
+            "lead-engineer",
+        }
 
     def test_angular_stack_calls_angular_reviewer(self, monkeypatch):
         called = self._run(monkeypatch, "angular")
-        assert "angular-reviewer" in called
-        assert "security-reviewer" in called
+        assert set(called) == {
+            "pr-info-collector",
+            "angular-reviewer",
+            "security-reviewer",
+            "lead-engineer",
+        }
 
     def test_svelte_stack_calls_svelte_reviewer(self, monkeypatch):
         called = self._run(monkeypatch, "svelte")
-        assert "svelte-reviewer" in called
-        assert "security-reviewer" in called
+        assert set(called) == {
+            "pr-info-collector",
+            "svelte-reviewer",
+            "security-reviewer",
+            "lead-engineer",
+        }
 
     def test_unknown_stack_raises_value_error_without_calling_any_reviewer(
         self, monkeypatch
