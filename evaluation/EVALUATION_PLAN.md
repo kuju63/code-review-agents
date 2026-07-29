@@ -329,6 +329,19 @@ PR の diff が閾値（`CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` chars・`CODE_REVIE
 4. Score using evaluator script
 5. Publish report and failures
 
+**Sharded execution assumption (added for #177)**: when step 3 cannot fit a
+single execution window (for example OpenCode's per-invocation 2-hour
+limit), it may be split into shards via `run_agent_evaluation.py
+--shard-index`/`--shard-count` and recombined with `merge_predictions.py`
+— see [evaluation/RUNBOOK.md §4a](RUNBOOK.md#4a-sharded-execution-time-constrained-environments)
+and [docs/eval-sharded-execution-spec.md](../docs/eval-sharded-execution-spec.md).
+A single shard's partial predictions/score must never be used as the basis
+for a release-gate decision (same policy as the `--sample-n` restriction in
+§2.0.3, for the same reason: an incomplete population can pass or fail a
+gate by chance). Steps 4–5 of a release-gate run must always run against
+the `merge_predictions.py` output for the full Gold+Seeded population,
+scored via `generate_evaluation_report.py`.
+
 ### 5.2 Online Monitoring (after deployment)
 
 Collect live traces and add sampled failures back into Gold pool.

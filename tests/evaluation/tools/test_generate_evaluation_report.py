@@ -1,27 +1,36 @@
-"""Tests for evaluation/tools/run_agent_evaluation.py::_build_report.
+"""Tests for evaluation/tools/generate_evaluation_report.py::_build_report.
 
 Covers the per-item detail rendering added on top of the existing
 aggregate-only report: Gold PR sections showing human_findings vs
 agent_findings (matched/missed/unmatched), Seeded item sections showing
 must_find vs agent_findings with no "human review" wording, and the
 _sanitize_cell/_ref_cell table-cell helpers.
+
+_build_report and friends used to live in run_agent_evaluation.py; they
+moved here (see docs/eval-sharded-execution-spec.md) so scoring/report
+generation can run independently of the A2A evaluation step. The
+assertions below are unchanged by that move.
 """
 
 from __future__ import annotations
 
+import argparse
+
+import pytest
+
 from tests.evaluation.conftest import load_eval_tool_module
 
-run_agent_evaluation = load_eval_tool_module(
-    "run_agent_evaluation", "run_agent_evaluation.py"
+generate_evaluation_report = load_eval_tool_module(
+    "generate_evaluation_report", "generate_evaluation_report.py"
 )
 
-_build_report = run_agent_evaluation._build_report
-_sanitize_cell = run_agent_evaluation._sanitize_cell
-_ref_cell = run_agent_evaluation._ref_cell
-_finding_row = run_agent_evaluation._finding_row
-_render_item_detail = run_agent_evaluation._render_item_detail
-_gold_heading = run_agent_evaluation._gold_heading
-_seeded_heading = run_agent_evaluation._seeded_heading
+_build_report = generate_evaluation_report._build_report
+_sanitize_cell = generate_evaluation_report._sanitize_cell
+_ref_cell = generate_evaluation_report._ref_cell
+_finding_row = generate_evaluation_report._finding_row
+_render_item_detail = generate_evaluation_report._render_item_detail
+_gold_heading = generate_evaluation_report._gold_heading
+_seeded_heading = generate_evaluation_report._seeded_heading
 
 
 def make_scores(
@@ -451,3 +460,139 @@ class TestBuildReportIntegration:
         )
         assert "still shown" in report
         assert "評価失敗のため" not in report
+
+
+class TestFailedIdsPath:
+    def test_derives_sidecar_path_from_pred_stem(self):
+        path = generate_evaluation_report._failed_ids_path(
+            "evaluation/data/agent_predictions.jsonl"
+        )
+        assert str(path) == "evaluation/data/agent_predictions.failed_ids.json"
+
+
+class TestLoadFailedIds:
+    def test_reads_sidecar_next_to_pred_by_default(self, tmp_path):
+        pred_path = tmp_path / "agent_predictions.jsonl"
+        pred_path.write_text("", encoding="utf-8")
+        sidecar = tmp_path / "agent_predictions.failed_ids.json"
+        sidecar.write_text('["id-1", "id-2"]', encoding="utf-8")
+
+        failed_ids = generate_evaluation_report._load_failed_ids(str(pred_path), None)
+
+        assert failed_ids == ["id-1", "id-2"]
+
+    def test_explicit_failed_ids_file_overrides_default_sidecar(self, tmp_path):
+        pred_path = tmp_path / "agent_predictions.jsonl"
+        pred_path.write_text("", encoding="utf-8")
+        default_sidecar = tmp_path / "agent_predictions.failed_ids.json"
+        default_sidecar.write_text('["should-not-be-used"]', encoding="utf-8")
+        explicit = tmp_path / "custom_failed_ids.json"
+        explicit.write_text('["id-9"]', encoding="utf-8")
+
+        failed_ids = generate_evaluation_report._load_failed_ids(
+            str(pred_path), str(explicit)
+        )
+
+        assert failed_ids == ["id-9"]
+
+    def test_missing_sidecar_raises_by_default(self, tmp_path):
+        """A missing sidecar must not be silently treated as zero failures:
+        merge_predictions.py treats the identical condition as fatal, and a
+        deleted/never-written sidecar here would otherwise understate real
+        evaluation gaps in the report/notification."""
+        pred_path = tmp_path / "agent_predictions.jsonl"
+        pred_path.write_text("", encoding="utf-8")
+
+        with pytest.raises(FileNotFoundError):
+            generate_evaluation_report._load_failed_ids(str(pred_path), None)
+
+    def test_missing_sidecar_returns_empty_list_with_allow_missing(
+        self, tmp_path, capsys
+    ):
+        pred_path = tmp_path / "agent_predictions.jsonl"
+        pred_path.write_text("", encoding="utf-8")
+
+        failed_ids = generate_evaluation_report._load_failed_ids(
+            str(pred_path), None, allow_missing=True
+        )
+
+        assert failed_ids == []
+        assert "WARN" in capsys.readouterr().err
+
+
+class TestGenerateReportExitCodes:
+    """`_generate_report`'s exit-code contract: 5 (sidecar missing), 4
+    (scoring failed), 1 (failed_ids present), 0 (clean success). `_score`
+    and `send_discord_notification` are monkeypatched so these stay
+    unit-test-fast with no subprocess/network calls."""
+
+    def _make_args(self, tmp_path, **overrides):
+        gold = tmp_path / "gold.jsonl"
+        gold.write_text("", encoding="utf-8")
+        seeded = tmp_path / "seeded.jsonl"
+        seeded.write_text("", encoding="utf-8")
+        kwargs = dict(
+            gold=str(gold),
+            seeded=str(seeded),
+            pred=str(tmp_path / "pred.jsonl"),
+            failed_ids_file=None,
+            allow_missing_failed_ids=False,
+        )
+        kwargs.update(overrides)
+        return argparse.Namespace(**kwargs)
+
+    def test_returns_5_when_failed_ids_sidecar_missing(self, tmp_path):
+        args = self._make_args(tmp_path)
+
+        exit_code = generate_evaluation_report._generate_report(args)
+
+        assert exit_code == 5
+
+    def test_returns_4_when_scoring_fails(self, tmp_path, monkeypatch):
+        (tmp_path / "pred.failed_ids.json").write_text("[]", encoding="utf-8")
+        monkeypatch.setattr(
+            generate_evaluation_report,
+            "_score",
+            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("boom")),
+        )
+        args = self._make_args(tmp_path)
+
+        exit_code = generate_evaluation_report._generate_report(args)
+
+        assert exit_code == 4
+
+    def test_returns_1_when_failed_ids_present(self, tmp_path, monkeypatch):
+        (tmp_path / "pred.failed_ids.json").write_text('["pr1"]', encoding="utf-8")
+        monkeypatch.setattr(
+            generate_evaluation_report, "_score", lambda *a, **k: make_scores()
+        )
+        notified = []
+        monkeypatch.setattr(
+            generate_evaluation_report,
+            "send_discord_notification",
+            lambda *a, **k: notified.append(True),
+        )
+        args = self._make_args(tmp_path)
+
+        exit_code = generate_evaluation_report._generate_report(args)
+
+        assert exit_code == 1
+        assert notified == [True]
+
+    def test_returns_0_on_clean_success(self, tmp_path, monkeypatch):
+        (tmp_path / "pred.failed_ids.json").write_text("[]", encoding="utf-8")
+        monkeypatch.setattr(
+            generate_evaluation_report, "_score", lambda *a, **k: make_scores()
+        )
+        monkeypatch.setattr(
+            generate_evaluation_report,
+            "send_discord_notification",
+            lambda *a, **k: None,
+        )
+        args = self._make_args(tmp_path)
+
+        exit_code = generate_evaluation_report._generate_report(args)
+
+        assert exit_code == 0
+        report_files = list(tmp_path.glob("report_*.md"))
+        assert len(report_files) == 1
