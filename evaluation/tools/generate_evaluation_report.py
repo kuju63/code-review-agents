@@ -64,21 +64,42 @@ def _failed_ids_path(pred_path: str) -> Path:
     return p.with_name(p.stem + ".failed_ids.json")
 
 
-def _load_failed_ids(pred_path: str, failed_ids_file: str | None) -> list[str]:
+def _load_failed_ids(
+    pred_path: str, failed_ids_file: str | None, allow_missing: bool = False
+) -> list[str]:
     """Load the failed-ids list for *pred_path*.
+
+    In the intended pipeline (run_agent_evaluation.py always writes this
+    sidecar, and merge_predictions.py enforces its presence before writing
+    a merged one) the sidecar always exists, so a missing one is fatal by
+    default -- mirroring merge_predictions.py's own default-strict
+    treatment of the same condition -- rather than silently reporting zero
+    failures. Pass *allow_missing* to accept a hand-assembled predictions
+    file that genuinely has no sidecar.
 
     Returns:
         The failed-ids list read from *failed_ids_file* (or the default
         sidecar next to *pred_path*), or an empty list with a stderr
-        warning when no sidecar is found -- degrading report generation
-        gracefully instead of crashing, though the resulting
-        report/notification failure count may then undercount.
+        warning when *allow_missing* is set and no sidecar is found.
+
+    Raises:
+        FileNotFoundError: If no sidecar is found and *allow_missing* is
+            ``False``.
     """
     path = Path(failed_ids_file) if failed_ids_file else _failed_ids_path(pred_path)
     if not path.exists():
+        if not allow_missing:
+            raise FileNotFoundError(
+                f"No failed_ids sidecar found at {path}. Every predictions file "
+                "produced by run_agent_evaluation.py or merge_predictions.py has "
+                "one; its absence usually means failures are being silently "
+                "undercounted. Pass --allow-missing-failed-ids to proceed anyway "
+                "(assumes zero failures)."
+            )
         print(
-            f"[WARN] No failed_ids sidecar found at {path}; assuming zero failures. "
-            "Failure counts in the report/notification may be inaccurate.",
+            f"[WARN] No failed_ids sidecar found at {path}; assuming zero failures "
+            "(--allow-missing-failed-ids was set). Failure counts in the "
+            "report/notification may be inaccurate.",
             file=sys.stderr,
         )
         return []
@@ -383,6 +404,15 @@ def main() -> int:
         help="Path to a JSON array of ids that failed evaluation. Defaults to "
         "the sidecar next to --pred (<pred-stem>.failed_ids.json).",
     )
+    parser.add_argument(
+        "--allow-missing-failed-ids",
+        action="store_true",
+        help="Treat a missing failed_ids sidecar as zero failures instead of "
+        "a fatal error. Off by default: in the normal pipeline the sidecar "
+        "always exists (written by run_agent_evaluation.py or "
+        "merge_predictions.py), so its absence usually means failures are "
+        "being silently undercounted.",
+    )
     args = parser.parse_args()
     return _generate_report(args)
 
@@ -398,7 +428,13 @@ def _generate_report(args: argparse.Namespace) -> int:
 
     gold_items = read_jsonl(args.gold)
     seeded_items = read_jsonl(args.seeded)
-    failed_ids = _load_failed_ids(args.pred, args.failed_ids_file)
+    try:
+        failed_ids = _load_failed_ids(
+            args.pred, args.failed_ids_file, args.allow_missing_failed_ids
+        )
+    except FileNotFoundError as e:
+        print(f"[ERROR] {e}", file=sys.stderr)
+        return 5
 
     print("\n--- Scoring ---")
     try:

@@ -75,6 +75,18 @@ def merge(
     merged_source: dict[str, str] = {}
     duplicates: list[tuple[str, str, str]] = []
     for pred_path in pred_paths:
+        # A shard killed mid-run (the exact failure mode this tool exists to
+        # detect) may never have created its output file at all -- treat that
+        # the same as an empty predictions file rather than crashing, so its
+        # ids fall through to the unaccounted/known-failed check below
+        # instead of an uncaught traceback.
+        if not Path(pred_path).exists():
+            print(
+                f"[WARN] Predictions file not found: {pred_path} (shard likely "
+                "never completed); its ids will be treated as unaccounted.",
+                file=sys.stderr,
+            )
+            continue
         for row in read_jsonl(pred_path):
             rid = row["id"]
             if rid in merged:

@@ -14,6 +14,8 @@ assertions below are unchanged by that move.
 
 from __future__ import annotations
 
+import pytest
+
 from tests.evaluation.conftest import load_eval_tool_module
 
 generate_evaluation_report = load_eval_tool_module(
@@ -491,11 +493,26 @@ class TestLoadFailedIds:
 
         assert failed_ids == ["id-9"]
 
-    def test_missing_sidecar_returns_empty_list_and_warns(self, tmp_path, capsys):
+    def test_missing_sidecar_raises_by_default(self, tmp_path):
+        """A missing sidecar must not be silently treated as zero failures:
+        merge_predictions.py treats the identical condition as fatal, and a
+        deleted/never-written sidecar here would otherwise understate real
+        evaluation gaps in the report/notification."""
         pred_path = tmp_path / "agent_predictions.jsonl"
         pred_path.write_text("", encoding="utf-8")
 
-        failed_ids = generate_evaluation_report._load_failed_ids(str(pred_path), None)
+        with pytest.raises(FileNotFoundError):
+            generate_evaluation_report._load_failed_ids(str(pred_path), None)
+
+    def test_missing_sidecar_returns_empty_list_with_allow_missing(
+        self, tmp_path, capsys
+    ):
+        pred_path = tmp_path / "agent_predictions.jsonl"
+        pred_path.write_text("", encoding="utf-8")
+
+        failed_ids = generate_evaluation_report._load_failed_ids(
+            str(pred_path), None, allow_missing=True
+        )
 
         assert failed_ids == []
         assert "WARN" in capsys.readouterr().err

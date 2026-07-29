@@ -81,6 +81,16 @@ class TestValidateShardArgs:
             run_agent_evaluation._validate_shard_args(0, 0)
 
 
+class TestIsSharded:
+    def test_false_when_shard_count_unset(self):
+        args = argparse.Namespace(shard_count=None)
+        assert run_agent_evaluation._is_sharded(args) is False
+
+    def test_true_when_shard_count_set(self):
+        args = argparse.Namespace(shard_count=4)
+        assert run_agent_evaluation._is_sharded(args) is True
+
+
 class TestFailedIdsPath:
     def test_derives_sidecar_path_from_pred_stem(self):
         path = run_agent_evaluation._failed_ids_path(
@@ -256,3 +266,40 @@ class TestMainShutdownSkip:
 
         with pytest.raises(ValueError):
             run_agent_evaluation.main()
+
+    def test_shutdown_still_runs_when_shard_args_are_invalid_and_shard_count_unset(
+        self, monkeypatch
+    ):
+        """Regression: --shard-index without --shard-count leaves
+        args.shard_count as None, which is exactly the condition under which
+        the non-sharded finally-block branch shuts the server down. That
+        must still happen even though _validate_shard_args() raises for this
+        combination -- an operator's typo shouldn't leak a running A2A
+        server."""
+        shutdown_calls = []
+        monkeypatch.setattr(
+            run_agent_evaluation,
+            "_shutdown_server",
+            lambda pid_file: shutdown_calls.append(pid_file),
+        )
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "run_agent_evaluation.py",
+                "--gold",
+                "g.jsonl",
+                "--seeded",
+                "s.jsonl",
+                "--output",
+                "o.jsonl",
+                "--server-pid-file",
+                "/tmp/pid",
+                "--shard-index",
+                "0",
+            ],
+        )
+
+        with pytest.raises(ValueError):
+            run_agent_evaluation.main()
+
+        assert shutdown_calls == ["/tmp/pid"]

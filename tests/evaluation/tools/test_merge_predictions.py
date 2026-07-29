@@ -228,3 +228,60 @@ class TestMergeUnexpectedIds:
 
         assert exit_code == 2
         assert not output.exists()
+
+
+class TestMergeMissingShardFile:
+    def test_shard_file_that_was_never_written_is_treated_as_unaccounted_not_a_crash(
+        self, tmp_path
+    ):
+        """A shard killed mid-run before _write_predictions_and_sidecar ran
+        leaves no predictions file and no sidecar at all -- merge() must
+        report this as the usual fatal unaccounted-ids error, not crash with
+        an uncaught FileNotFoundError."""
+        gold = tmp_path / "gold.jsonl"
+        write_jsonl(gold, [{"id": "g1"}, {"id": "g2"}])
+        seeded = tmp_path / "seeded.jsonl"
+        write_jsonl(seeded, [])
+
+        shard0 = tmp_path / "shard0.jsonl"
+        write_jsonl(shard0, [{"id": "g1", "agent_findings": []}])
+        write_sidecar(shard0, [])
+        shard1 = tmp_path / "shard1.jsonl"  # never created
+
+        output = tmp_path / "merged.jsonl"
+        exit_code = merge_predictions.merge(
+            gold=str(gold),
+            seeded=str(seeded),
+            output=str(output),
+            pred_paths=[str(shard0), str(shard1)],
+            allow_missing=False,
+        )
+
+        assert exit_code == 2
+        assert not output.exists()
+
+    def test_missing_shard_file_accepted_with_allow_missing(self, tmp_path):
+        gold = tmp_path / "gold.jsonl"
+        write_jsonl(gold, [{"id": "g1"}, {"id": "g2"}])
+        seeded = tmp_path / "seeded.jsonl"
+        write_jsonl(seeded, [])
+
+        shard0 = tmp_path / "shard0.jsonl"
+        write_jsonl(shard0, [{"id": "g1", "agent_findings": []}])
+        write_sidecar(shard0, [])
+        shard1 = tmp_path / "shard1.jsonl"  # never created
+
+        output = tmp_path / "merged.jsonl"
+        exit_code = merge_predictions.merge(
+            gold=str(gold),
+            seeded=str(seeded),
+            output=str(output),
+            pred_paths=[str(shard0), str(shard1)],
+            allow_missing=True,
+        )
+
+        assert exit_code == 1
+        merged_ids = [
+            json.loads(line)["id"] for line in output.read_text().splitlines()
+        ]
+        assert merged_ids == ["g1"]

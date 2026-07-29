@@ -307,6 +307,20 @@ def _write_predictions_and_sidecar(
     )
 
 
+def _is_sharded(args: argparse.Namespace) -> bool:
+    """Whether *args* selects a sharded (partial-dataset) run.
+
+    The single source of truth for the shard/non-shard branch used by
+    ``_run_evaluation`` (item filtering), ``_maybe_generate_report`` (report
+    subprocess), and ``main()`` (server-shutdown guard) -- kept in one place
+    so those three checks can't drift out of sync.
+
+    Returns:
+        ``True`` when ``--shard-count`` was provided.
+    """
+    return args.shard_count is not None
+
+
 def _maybe_generate_report(args: argparse.Namespace) -> int | None:
     """Invoke generate_evaluation_report.py for a non-sharded run.
 
@@ -318,7 +332,7 @@ def _maybe_generate_report(args: argparse.Namespace) -> int | None:
         ``None`` when sharding is active (nothing was invoked), otherwise
         the report subprocess's exit code.
     """
-    if args.shard_count is not None:
+    if _is_sharded(args):
         return None
     report_script = Path(__file__).parent / "generate_evaluation_report.py"
     result = subprocess.run(
@@ -401,12 +415,17 @@ def main() -> int:
     args = parser.parse_args()
 
     args.base_url = args.base_url.rstrip("/")
-    _validate_shard_args(args.shard_index, args.shard_count)
 
+    # _validate_shard_args() runs inside the try block (not before it) so
+    # that invalid --shard-index/--shard-count combinations still reach the
+    # finally clause: whenever args.shard_count ends up None (e.g.
+    # --shard-index given without --shard-count), shutdown must still fire
+    # instead of leaking the A2A server because validation raised first.
     try:
+        _validate_shard_args(args.shard_index, args.shard_count)
         return _run_evaluation(args)
     finally:
-        if args.shard_count is None:
+        if not _is_sharded(args):
             _shutdown_server(args.server_pid_file)
 
 
@@ -422,7 +441,7 @@ def _run_evaluation(args: argparse.Namespace) -> int:
     gold_items = read_jsonl(args.gold)
     seeded_items = read_jsonl(args.seeded)
 
-    if args.shard_count is not None:
+    if _is_sharded(args):
         gold_items = _select_shard(gold_items, args.shard_index, args.shard_count)
         seeded_items = _select_shard(seeded_items, args.shard_index, args.shard_count)
         print(
