@@ -17,14 +17,15 @@ from .pr_info import PRInfoResult
 class ProjectType(StrEnum):
     """Project technology stack a reviewer applies to.
 
-    ``REACT_TS``, ``ANGULAR``, and ``SVELTE`` are wired to concrete reviewers
-    and automatic detection. The remaining members reserve schema-stable
-    extension points for future stacks.
+    ``REACT_TS``, ``ANGULAR``, ``SVELTE``, and ``VUE`` are wired to concrete
+    reviewers and automatic detection. The remaining members reserve
+    schema-stable extension points for future stacks.
     """
 
     REACT_TS = "react_ts"
     ANGULAR = "angular"
     SVELTE = "svelte"
+    VUE = "vue"
     SPRING_BOOT = "spring_boot"
     NEXTJS = "nextjs"
     NUXT = "nuxt"

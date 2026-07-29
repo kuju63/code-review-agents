@@ -66,9 +66,9 @@ _ANGULAR_SOURCE_SUFFIXES = (
 )
 
 # Ordered by specificity: framework rules precede the coarse React/TypeScript
-# rule so a JS/TS or ``package.json`` signal does not misclassify an Angular or
-# Svelte project as React. Adding a stack means adding a rule here (and, when
-# the stack ships a reviewer, registering that reviewer).
+# rule so a JS/TS or ``package.json`` signal does not misclassify an Angular,
+# Svelte, or Vue project as React. Adding a stack means adding a rule here
+# (and, when the stack ships a reviewer, registering that reviewer).
 _DETECTION_RULES: tuple[_DetectionRule, ...] = (
     _DetectionRule(
         project_type=ProjectType.ANGULAR,
@@ -79,6 +79,11 @@ _DETECTION_RULES: tuple[_DetectionRule, ...] = (
         project_type=ProjectType.SVELTE,
         manifests=("svelte.config.js", "svelte.config.ts"),
         source_suffixes=(".svelte",),
+    ),
+    _DetectionRule(
+        project_type=ProjectType.VUE,
+        manifests=("vue.config.js", "vue.config.ts"),
+        source_suffixes=(".vue",),
     ),
     _DetectionRule(
         project_type=ProjectType.REACT_TS,
@@ -156,11 +161,12 @@ def detect_project_types(pr_info: PRInfoResult) -> set[ProjectType]:
     rules precede the coarse React/TypeScript rule.
 
     Note:
-        Angular takes priority over Svelte, and both take priority over the
-        coarse React/TypeScript heuristic, in mixed-signal repositories.
-        Because ``dependency_files`` is repository-level, a PR that changes
-        only non-stack files in a JS/TS repo can still be detected as
-        React/TypeScript via ``package.json``.
+        Angular takes priority over Svelte, which takes priority over Vue,
+        and all three take priority over the coarse React/TypeScript
+        heuristic, in mixed-signal repositories. Because ``dependency_files``
+        is repository-level, a PR that changes only non-stack files in a
+        JS/TS repo can still be detected as React/TypeScript via
+        ``package.json``.
 
     Args:
         pr_info: Structured PR information from the PR Info Collector.
