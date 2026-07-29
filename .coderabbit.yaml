@@ -1,0 +1,33 @@
+language: "ja-JP"
+enable_free_tier: true
+reviews:
+  profile: chill
+  request_changes_workflow: true
+  high_level_summary_in_walkthrough: true
+  path_filters:
+    - "**/*.py"
+    - "**/*.js"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.jsx"
+    - "**/*.md"
+    - "!/.serena/*"
+    - "!/.venv/*"
+    - "!/node_modules/*"
+    - "!/dist/*"
+    - "!/.claude/.worktrees/*"
+    - "/graphify-out/*"
+  finishing_touches:
+    docstrings:
+      enabled: true
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+    autofix:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+
