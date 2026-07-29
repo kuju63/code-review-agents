@@ -29,18 +29,19 @@
 レビュアーは「どの観点を」「どのプロジェクト種別に対して」見るかで分類されます。
 セルにレビュアーを登録していくマトリクスとして拡張します。
 
-| 観点＼種別             | React/TypeScript | Angular | Spring Boot | WASM |
-| ---------------------- | ---------------- | ------- | ----------- | ---- |
-| 技術 (technical)       | ✅ `ReactReviewer` + Vercel Agent Skills | ✅ `AngularReviewer` + Angular公式Agent Skill | ⏳ 予定 | ⏳ 予定 |
-| セキュリティ (security)| ✅ `SecurityReviewer` | ✅ `SecurityReviewer` | ⏳ 予定 | ⏳ 予定 |
-| 仕様整合性 (spec)      | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 |
-| 要件整合性 (requirements)| ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 |
+| 観点＼種別             | React/TypeScript | Angular | Vue | Svelte | Spring Boot | WASM |
+| ---------------------- | ---------------- | ------- | --- | ------ | ----------- | ---- |
+| 技術 (technical)       | ✅ `ReactReviewer` + Vercel Agent Skills | ✅ `AngularReviewer` + Angular公式Agent Skill | ✅ `VueReviewer` | ✅ `SvelteReviewer` + Svelte公式Agent Skill | ⏳ 予定 | ⏳ 予定 |
+| セキュリティ (security)| ✅ `SecurityReviewer` | ✅ `SecurityReviewer` | ✅ `SecurityReviewer` | ✅ `SecurityReviewer` | ⏳ 予定 | ⏳ 予定 |
+| 仕様整合性 (spec)      | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 |
+| 要件整合性 (requirements)| ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 |
 
 - ✅ = 実装済。⏳ = enum 値・拡張点のみ用意（未登録）。
-- `detect_project_types()` は `angular.json` または Angular固有のファイル命名を検出した場合、
-  粗い TypeScript/JavaScript 判定より Angular を優先して `ProjectType.ANGULAR` を返す。
-- React/Angular 混在モノレポで Angular signal が存在する場合も、現時点では Angular を優先する。
-- 同一レビュアーを複数種別に登録でき、`SecurityReviewer` は React/TypeScript と Angular で共有する。
+- `detect_project_types()` は `angular.json`/Angular固有のファイル命名、`.svelte`/`svelte.config.*`、
+  `.vue`/`vue.config.*` を検出した場合、粗い TypeScript/JavaScript 判定より優先してそれぞれ
+  `ProjectType.ANGULAR` / `SVELTE` / `VUE` を返す。優先順位は Angular → Svelte → Vue → React/TypeScript。
+- React/Angular/Svelte/Vue 混在モノレポでも、この優先順位に従い最初に一致した種別を採用する。
+- 同一レビュアーを複数種別に登録でき、`SecurityReviewer` は React/TypeScript・Angular・Vue・Svelte で共有する。
 
 ---
 
@@ -48,11 +49,13 @@
 
 ```text
 PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
-                                      │  registry: プロジェクト種別から
-                                      │  適用レビュアークラスを選択
-                                      ├──▶ ReactReviewer (technical, react_ts)  ┐
-                                      ├──▶ AngularReviewer  (technical, angular)   ├ asyncio.gather で並列
-                                      └──▶ SecurityReviewer (security, 両種別)      ┘
+                                      │  registry: detect_project_types() で検出した
+                                      │  stack (react_ts/angular/vue/svelte) に
+                                      │  対応する技術レビュアーを1つ選択
+                                      ├──▶ {Stack}Reviewer   (technical, 検出stackに対応)  ┐
+                                      │      React→ReactReviewer / Angular→AngularReviewer │ asyncio.gather
+                                      │      Vue→VueReviewer / Svelte→SvelteReviewer        │ で並列
+                                      └──▶ SecurityReviewer (security, 全stack共通)         ┘
                                    ──▶ ReviewReport(results, errors)  ──▶ (将来) Lead Engineer
 ```
 

@@ -57,33 +57,35 @@ _STACK_TECHNICAL_REVIEWER_ENDPOINT = {
 }
 
 
-def _technical_reviewer_endpoint(stack: str) -> str:
+def _technical_reviewer_endpoint(stack: Any) -> str:
     """Resolve the technical reviewer endpoint name for a Seeded item's stack.
 
     Unlike Gold items (evaluated via ``/orchestrator``, which detects the
     stack itself from PR file changes), a Seeded item carries its own
     ``stack`` label from dataset generation (see
     docs/seeded-reviewer-stack-routing-spec.md). This resolves that label to
-    the matching technical reviewer's endpoint name, failing closed on an
-    unknown stack rather than silently falling back to an unrelated
-    reviewer.
+    the matching technical reviewer's endpoint name, failing closed on a
+    missing, non-string, or unknown stack rather than silently falling back
+    to an unrelated reviewer.
 
     Args:
-        stack: The Seeded item's ``stack`` label.
+        stack: The Seeded item's ``stack`` label. Typed as ``Any`` (rather
+            than ``str``) because callers pass ``item.get("stack")``, which
+            is ``None`` for a malformed item missing the key entirely; that
+            case must also fail closed with ``ValueError`` here rather than
+            raising ``KeyError`` at the call site.
 
     Returns:
         The endpoint name (for example ``"react-reviewer"``).
 
     Raises:
-        ValueError: If ``stack`` is not one of the known stacks.
+        ValueError: If ``stack`` is missing, not a string, or not one of the
+            known stacks.
     """
-    try:
-        return _STACK_TECHNICAL_REVIEWER_ENDPOINT[stack]
-    except KeyError:
+    if not isinstance(stack, str) or stack not in _STACK_TECHNICAL_REVIEWER_ENDPOINT:
         allowed = ", ".join(sorted(_STACK_TECHNICAL_REVIEWER_ENDPOINT))
-        raise ValueError(
-            f"unknown stack {stack!r}; expected one of: {allowed}"
-        ) from None
+        raise ValueError(f"unknown stack {stack!r}; expected one of: {allowed}")
+    return _STACK_TECHNICAL_REVIEWER_ENDPOINT[stack]
 
 
 def _to_predictions(lead_report_data: dict[str, Any], pr_id: str) -> dict[str, Any]:
@@ -156,7 +158,7 @@ def evaluate_seeded_item(
     """
     owner, repo = item["repository"].split("/")
     pr_number = item["pr_number"]
-    technical_endpoint = _technical_reviewer_endpoint(item["stack"])
+    technical_endpoint = _technical_reviewer_endpoint(item.get("stack"))
 
     # Step 1: Collect PR info (real PR metadata)
     pr_info_data = _run_a2a(

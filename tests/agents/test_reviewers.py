@@ -254,3 +254,13 @@ class TestRegistration:
         assert ReactReviewer not in selected
         assert AngularReviewer not in selected
         assert SvelteReviewer not in selected
+
+
+class TestPackageExports:
+    """VueReviewer must be importable from the `agents` package top level,
+    like the other reviewers, not only from `agents.reviewers`."""
+
+    def test_vue_reviewer_importable_from_agents_package(self):
+        from code_review_agent.agents import VueReviewer as ExportedVueReviewer
+
+        assert ExportedVueReviewer is VueReviewer

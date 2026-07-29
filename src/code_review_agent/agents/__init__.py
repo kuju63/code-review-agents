@@ -12,7 +12,7 @@ from .registry import (
 
 # Importing the reviewers package registers the concrete reviewers as a side
 # effect, so they are discoverable via the registry once `agents` is imported.
-from .reviewers import ReactReviewer, SecurityReviewer, SvelteReviewer
+from .reviewers import ReactReviewer, SecurityReviewer, SvelteReviewer, VueReviewer
 
 __all__ = [
     "PRInfoCollector",
@@ -27,4 +27,5 @@ __all__ = [
     "ReactReviewer",
     "SecurityReviewer",
     "SvelteReviewer",
+    "VueReviewer",
 ]

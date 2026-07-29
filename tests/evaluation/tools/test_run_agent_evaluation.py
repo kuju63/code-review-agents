@@ -277,3 +277,102 @@ class TestEvaluateSeededItemStackRouting:
         # pr-info-collector -- no wasted work and no accidental fallback to
         # an unrelated reviewer.
         assert called_endpoints == []
+
+    def test_missing_stack_key_raises_value_error_not_key_error(self, monkeypatch):
+        called_endpoints: list[str] = []
+
+        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
+            called_endpoints.append(endpoint.rsplit("/", 1)[-1])
+            return {"pr_info": {"file_changes": []}}
+
+        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
+
+        item = {
+            "id": "seeded-1",
+            "repository": "a/b",
+            "pr_number": 1,
+            "file_changes": [],
+        }
+
+        with pytest.raises(ValueError, match="None"):
+            run_agent_evaluation.evaluate_seeded_item(
+                item,
+                client=object(),
+                base_url="http://x",
+                poll_interval=0.01,
+                timeout=5,
+                model_id="m",
+            )
+        assert called_endpoints == []
+
+    def test_none_stack_raises_value_error(self, monkeypatch):
+        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", lambda *a, **k: {})
+
+        item = {
+            "id": "seeded-1",
+            "repository": "a/b",
+            "pr_number": 1,
+            "stack": None,
+            "file_changes": [],
+        }
+
+        with pytest.raises(ValueError, match="None"):
+            run_agent_evaluation.evaluate_seeded_item(
+                item,
+                client=object(),
+                base_url="http://x",
+                poll_interval=0.01,
+                timeout=5,
+                model_id="m",
+            )
+
+    def test_non_string_stack_raises_value_error(self, monkeypatch):
+        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", lambda *a, **k: {})
+
+        item = {
+            "id": "seeded-1",
+            "repository": "a/b",
+            "pr_number": 1,
+            "stack": 42,
+            "file_changes": [],
+        }
+
+        with pytest.raises(ValueError, match="42"):
+            run_agent_evaluation.evaluate_seeded_item(
+                item,
+                client=object(),
+                base_url="http://x",
+                poll_interval=0.01,
+                timeout=5,
+                model_id="m",
+            )
+
+
+class TestTechnicalReviewerEndpoint:
+    """Direct unit tests for the resolver used by evaluate_seeded_item."""
+
+    def test_known_stacks_resolve(self):
+        assert run_agent_evaluation._technical_reviewer_endpoint("react") == (
+            "react-reviewer"
+        )
+        assert run_agent_evaluation._technical_reviewer_endpoint("vue") == (
+            "vue-reviewer"
+        )
+        assert run_agent_evaluation._technical_reviewer_endpoint("angular") == (
+            "angular-reviewer"
+        )
+        assert run_agent_evaluation._technical_reviewer_endpoint("svelte") == (
+            "svelte-reviewer"
+        )
+
+    def test_none_raises_value_error(self):
+        with pytest.raises(ValueError, match="None"):
+            run_agent_evaluation._technical_reviewer_endpoint(None)
+
+    def test_non_string_raises_value_error(self):
+        with pytest.raises(ValueError, match="42"):
+            run_agent_evaluation._technical_reviewer_endpoint(42)
+
+    def test_unknown_string_raises_value_error(self):
+        with pytest.raises(ValueError, match="solid"):
+            run_agent_evaluation._technical_reviewer_endpoint("solid")
