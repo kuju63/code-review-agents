@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from unittest.mock import patch
 
+import pytest
+
 from tests.evaluation.conftest import load_eval_tool_module
 
 build_gold_set = load_eval_tool_module("build_gold_set", "build_gold_set.py")
@@ -38,6 +40,7 @@ class TestLoadTargets:
                     {
                         "repository": "owner/repo",
                         "pr_number": 1,
+                        "stack": "react",
                         "severity": "high",
                         "impact": "security",
                         "priority": "medium",
@@ -50,6 +53,7 @@ class TestLoadTargets:
             Target(
                 repository="owner/repo",
                 pr_number=1,
+                stack="react",
                 severity="high",
                 impact="security",
                 priority="medium",
@@ -58,7 +62,9 @@ class TestLoadTargets:
 
     def test_legacy_target_defaults_axes_to_unknown(self, tmp_path):
         path = tmp_path / "targets.json"
-        path.write_text(json.dumps([{"repository": "owner/repo", "pr_number": 1}]))
+        path.write_text(
+            json.dumps([{"repository": "owner/repo", "pr_number": 1, "stack": "vue"}])
+        )
 
         target = load_targets(str(path))[0]
 
@@ -76,6 +82,7 @@ class TestLoadTargets:
                     {
                         "repository": "owner/repo",
                         "pr_number": 1,
+                        "stack": "angular",
                         "severity": " HIGH ",
                         "impact": None,
                         "priority": "urgent",
@@ -92,6 +99,22 @@ class TestLoadTargets:
             "unknown",
         )
 
+    def test_missing_stack_fails_closed(self, tmp_path):
+        path = tmp_path / "targets.json"
+        path.write_text(json.dumps([{"repository": "owner/repo", "pr_number": 1}]))
+
+        with pytest.raises(ValueError, match="stack"):
+            load_targets(str(path))
+
+    def test_unknown_stack_value_fails_closed(self, tmp_path):
+        path = tmp_path / "targets.json"
+        path.write_text(
+            json.dumps([{"repository": "owner/repo", "pr_number": 1, "stack": "solid"}])
+        )
+
+        with pytest.raises(ValueError, match="stack"):
+            load_targets(str(path))
+
 
 class TestBuildGoldItem:
     @patch.object(build_gold_set, "_api_get", side_effect=_api_payload)
@@ -99,6 +122,7 @@ class TestBuildGoldItem:
         target = Target(
             repository="owner/repo",
             pr_number=1,
+            stack="react",
             severity="critical",
             impact="security",
             priority="high",
@@ -118,3 +142,18 @@ class TestBuildGoldItem:
                 "source": "https://github.com/owner/repo/pull/1#discussion_r1",
             }
         ]
+
+    @patch.object(build_gold_set, "_api_get", side_effect=_api_payload)
+    def test_carries_target_stack_to_the_gold_item(self, _api_get):
+        target = Target(
+            repository="owner/repo",
+            pr_number=1,
+            stack="vue",
+            severity="critical",
+            impact="security",
+            priority="high",
+        )
+
+        item = build_gold_item(target, "token")
+
+        assert item["stack"] == "vue"

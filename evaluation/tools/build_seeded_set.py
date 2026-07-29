@@ -1136,6 +1136,7 @@ def render_seeded_item(
         "base_source": gold_item["id"],
         "repository": gold_item["repository"],
         "pr_number": gold_item["pr_number"],
+        "stack": gold_item["stack"],
         "file_changes": seeded_changes,
         "generation_source": "deterministic_fallback",
         "must_find": [
@@ -1212,6 +1213,7 @@ def render_seeded_item_from_llm(
         "base_source": gold_item["id"],
         "repository": gold_item["repository"],
         "pr_number": gold_item["pr_number"],
+        "stack": gold_item["stack"],
         "file_changes": seeded_changes,
         "generation_source": "llm",
         "reachability_rationale": llm_output.reachability_rationale,

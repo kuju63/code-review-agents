@@ -385,12 +385,15 @@ def _to_output(rows: list[StackTarget]) -> list[dict[str, Any]]:
     """Convert classified targets to the Gold builder input schema.
 
     Returns:
-        Execution targets retaining finding-axis proxy labels.
+        Execution targets retaining ``stack`` and finding-axis proxy
+        labels (Issue #181: ``stack`` must survive through to the Gold
+        and Seeded sets for stack-based reviewer routing).
     """
     return [
         {
             "repository": row.repository,
             "pr_number": row.pr_number,
+            "stack": row.stack,
             "severity": row.severity,
             "impact": row.impact,
             "priority": row.priority,

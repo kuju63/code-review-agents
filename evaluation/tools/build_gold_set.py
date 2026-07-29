@@ -35,6 +35,7 @@ from target_criteria import is_production_code_file
 _SEVERITIES = {"critical", "high", "medium", "low", "unknown"}
 _IMPACTS = {"security", "correctness", "performance", "maintainability", "unknown"}
 _PRIORITIES = {"high", "medium", "low", "unknown"}
+_STACKS = {"react", "vue", "angular", "svelte"}
 
 
 def _api_get(url: str, token: str) -> Any:
@@ -161,6 +162,7 @@ def _extract_line(comment: dict[str, Any]) -> int:
 class Target:
     repository: str
     pr_number: int
+    stack: str
     severity: str = "unknown"
     impact: str = "unknown"
     priority: str = "unknown"
@@ -177,13 +179,21 @@ def load_targets(path: str) -> list[Target]:
     with open(path, encoding="utf-8") as f:
         raw = json.load(f)
     targets: list[Target] = []
-    for item in raw:
+    for index, item in enumerate(raw):
         repo = item["repository"]
         pr = int(item["pr_number"])
+        stack = item.get("stack")
+        if stack not in _STACKS:
+            allowed = ", ".join(sorted(_STACKS))
+            raise ValueError(
+                f"invalid target at [{index}]: stack={stack!r}; "
+                f"expected one of: {allowed}"
+            )
         targets.append(
             Target(
                 repository=repo,
                 pr_number=pr,
+                stack=stack,
                 severity=_normalize_axis(item.get("severity"), _SEVERITIES),
                 impact=_normalize_axis(item.get("impact"), _IMPACTS),
                 priority=_normalize_axis(item.get("priority"), _PRIORITIES),
@@ -237,6 +247,7 @@ def build_gold_item(target: Target, token: str) -> dict[str, Any]:
         "id": f"{target.repository}#{target.pr_number}",
         "repository": target.repository,
         "pr_number": target.pr_number,
+        "stack": target.stack,
         "title": pr_data.get("title", ""),
         "body": pr_data.get("body") or "",
         "labels": labels,
