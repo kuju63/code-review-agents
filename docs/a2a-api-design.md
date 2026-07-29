@@ -783,7 +783,10 @@ model = OpenAIModel(
 |---|---|---|
 | `CODE_REVIEW_AGENT_BASE_URL` | `http://localhost:8000` | AgentCard URL のベース（モノリス時のフォールバック） |
 | `CODE_REVIEW_AGENT_PR_INFO_COLLECTOR_URL` | `{base}/pr-info-collector` | PR Info Collector の公開 URL |
-| `CODE_REVIEW_AGENT_REACT_REVIEWER_URL` | `{base}/react-reviewer` | React Code Reviewer の公開 URL |
+| `CODE_REVIEW_AGENT_REACT_REVIEWER_URL` | `{base}/react-reviewer` | React Reviewer の公開 URL |
+| `CODE_REVIEW_AGENT_VUE_REVIEWER_URL` | `{base}/vue-reviewer` | Vue Reviewer の公開 URL |
+| `CODE_REVIEW_AGENT_ANGULAR_REVIEWER_URL` | `{base}/angular-reviewer` | Angular Reviewer の公開 URL |
+| `CODE_REVIEW_AGENT_SVELTE_REVIEWER_URL` | `{base}/svelte-reviewer` | Svelte Reviewer の公開 URL |
 | `CODE_REVIEW_AGENT_SECURITY_REVIEWER_URL` | `{base}/security-reviewer` | Security Reviewer の公開 URL |
 | `CODE_REVIEW_AGENT_LEAD_ENGINEER_URL` | `{base}/lead-engineer` | Lead Engineer の公開 URL |
 | `CODE_REVIEW_AGENT_ORCHESTRATOR_URL` | `{base}/orchestrator` | Orchestrator の公開 URL |

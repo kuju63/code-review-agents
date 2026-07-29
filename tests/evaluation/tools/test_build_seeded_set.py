@@ -94,11 +94,12 @@ def make_file(path, patch="@@ -1,2 +1,2 @@\n line1\n line2"):
     return {"path": path, "patch": patch}
 
 
-def make_gold_item(id="owner/repo#1", files=None):
+def make_gold_item(item_id="owner/repo#1", files=None, stack="react"):
     return {
-        "id": id,
+        "id": item_id,
         "repository": "owner/repo",
         "pr_number": 1,
+        "stack": stack,
         "file_changes": files or [],
     }
 
@@ -138,7 +139,7 @@ class TestEnumerateComboPool:
 class TestRenderSeededItem:
     def test_builds_expected_shape(self):
         item = make_gold_item(
-            id="owner/repo#9",
+            item_id="owner/repo#9",
             files=[make_file("src/foo.ts", patch="@@ -1,3 +1,3 @@\n a\n b\n c")],
         )
         file_change = item["file_changes"][0]
@@ -159,6 +160,15 @@ class TestRenderSeededItem:
         file_change = item["file_changes"][0]
         seeded = render_seeded_item(item, file_change, RULES[0])
         assert seeded["generation_source"] == "deterministic_fallback"
+
+    def test_carries_gold_item_stack(self):
+        item = make_gold_item(
+            files=[make_file("src/foo.ts", patch="@@ -1,3 +1,3 @@\n a\n b\n c")],
+            stack="vue",
+        )
+        file_change = item["file_changes"][0]
+        seeded = render_seeded_item(item, file_change, RULES[0])
+        assert seeded["stack"] == "vue"
 
 
 class TestBuildSeededItemsNoDuplicates:
@@ -188,7 +198,7 @@ class TestBuildSeededItemsDeterminism:
 
 class TestBuildSeededItemsClampAndWarning:
     def test_clamps_and_warns_when_multiplier_exceeds_pool(self):
-        item = make_gold_item(id="owner/repo#2", files=[make_file("src/only.ts")])
+        item = make_gold_item(item_id="owner/repo#2", files=[make_file("src/only.ts")])
         single_rule = [RULES[0]]  # matches ts -> pool size 1
 
         items, warning = build_seeded_items(item, single_rule, random.Random(1), 3)
@@ -266,6 +276,7 @@ class TestMainCLI:
                 "id": "owner/repo#1",
                 "repository": "owner/repo",
                 "pr_number": 1,
+                "stack": "react",
                 "file_changes": [
                     make_file("src/foo.ts"),
                     make_file("src/bar.js"),
@@ -310,6 +321,7 @@ class TestMainCLI:
                 "id": "owner/repo#2",
                 "repository": "owner/repo",
                 "pr_number": 2,
+                "stack": "react",
                 "file_changes": [make_file("src/only.ts")],
             }
         ]
@@ -347,6 +359,7 @@ class TestMainCLI:
                 "id": "owner/repo#1",
                 "repository": "owner/repo",
                 "pr_number": 1,
+                "stack": "react",
                 "file_changes": [make_file("src/foo.ts")],
             }
         ]
@@ -391,6 +404,7 @@ class TestMainCLI:
                 "id": "owner/repo#1",
                 "repository": "owner/repo",
                 "pr_number": 1,
+                "stack": "react",
                 "file_changes": [make_file("src/foo.ts")],
             }
         ]
@@ -427,6 +441,7 @@ class TestMainCLI:
                 "id": "owner/repo#1",
                 "repository": "owner/repo",
                 "pr_number": 1,
+                "stack": "react",
                 "file_changes": [make_file("src/foo.ts")],
             }
         ]
@@ -464,6 +479,7 @@ class TestMainCLI:
                 "id": "owner/repo#1",
                 "repository": "owner/repo",
                 "pr_number": 1,
+                "stack": "react",
                 "file_changes": [make_file("src/foo.ts")],
             }
         ]
@@ -1558,7 +1574,7 @@ class TestPassesPostGenerationChecks:
 class TestRenderSeededItemWithGeneration:
     def _gold_item_and_file(self):
         item = make_gold_item(
-            id="owner/repo#9",
+            item_id="owner/repo#9",
             files=[make_file("src/foo.ts", patch=_ORIGINAL_SINGLE_HUNK)],
         )
         return item, item["file_changes"][0]
@@ -1584,6 +1600,7 @@ class TestRenderSeededItemWithGeneration:
         assert seeded["generation_source"] == "llm"
         assert seeded["must_find"][0]["line"] == 3
         assert seeded["reachability_rationale"] == "Reached via the init flow."
+        assert seeded["stack"] == "react"
 
     def test_failed_v3_falls_back_to_deterministic(self):
         item, file_change = self._gold_item_and_file()
@@ -1755,6 +1772,7 @@ class TestMainCLIModelConfigValidation:
                 "id": "owner/repo#1",
                 "repository": "owner/repo",
                 "pr_number": 1,
+                "stack": "react",
                 "file_changes": [make_file("src/foo.ts")],
             }
         ]
@@ -1942,6 +1960,7 @@ class TestMainCLIEndToEnd:
                 "id": "owner/repo#1",
                 "repository": "owner/repo",
                 "pr_number": 1,
+                "stack": "react",
                 "file_changes": [make_file("src/foo.ts", patch=_ORIGINAL_SINGLE_HUNK)],
             }
         ]
@@ -2109,7 +2128,7 @@ class TestRegressionKnownMisses:
     def _gold_item_and_file(self):
         patch = _published_docs_resolver_patch()
         item = make_gold_item(
-            id="hoppscotch/hoppscotch#6171",
+            item_id="hoppscotch/hoppscotch#6171",
             files=[make_file("published-docs.resolver.ts", patch=patch)],
         )
         return item, item["file_changes"][0]
@@ -2254,7 +2273,7 @@ class TestRegressionKnownMissesVuetifyTsx:
 
     def _gold_item_and_file(self):
         item = make_gold_item(
-            id="vuetifyjs/vuetify#22788",
+            item_id="vuetifyjs/vuetify#22788",
             files=[
                 make_file(
                     "src/components/VDataTableFooter.tsx", patch=self._ORIGINAL_PATCH

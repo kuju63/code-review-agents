@@ -148,7 +148,7 @@ uv run python evaluation/tools/discover_candidate_prs.py \
 - `--balanced`: stack round-robin。
 - `--shuffle --stratify-repo-type`: repo_type をほぼ50/50に層化した seed 固定抽出。
 
-結果は `evaluation/data/pr_targets.json` に `repository / pr_number / severity / impact / priority` を出力して `build_gold_set.py` へ渡す。Gold builderは3軸をPR単位の代理ラベルとして各 `human_findings` へ継承する。これはコメント固有の正解ではなくPR文脈との整合を測る暫定ラベルであり、詳細は [指摘単位3軸評価仕様](finding-axis-evaluation-spec.md) を参照する。抽出後の構成比不足は `[COVERAGE-WARN]` として通知するが、パイプラインを停止しない。
+結果は `evaluation/data/pr_targets.json` に `repository / pr_number / stack / severity / impact / priority` を出力して `build_gold_set.py` へ渡す。`stack` はレビュアー選択に使う実行時属性であり、Gold-set/Seeded-set生成を通じて保持される（詳細は [Seeded評価のスタック別レビュアールーティング仕様](seeded-reviewer-stack-routing-spec.md)）。Gold builderは3軸をPR単位の代理ラベルとして各 `human_findings` へ継承する。これはコメント固有の正解ではなくPR文脈との整合を測る暫定ラベルであり、詳細は [指摘単位3軸評価仕様](finding-axis-evaluation-spec.md) を参照する。抽出後の構成比不足は `[COVERAGE-WARN]` として通知するが、パイプラインを停止しない。
 
 ## 8. テスト方針
 

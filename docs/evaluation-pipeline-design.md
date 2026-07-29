@@ -70,7 +70,7 @@ flowchart TD
     end
 
     subgraph STEP4["Step 4: run_agent_evaluation.py<br/>--concurrency 2(既定)"]
-        A2A["A2Aサーバー<br/>/orchestrator, /pr-info-collector,<br/>/frontend-reviewer, /security-reviewer,<br/>/svelte-reviewer, /lead-engineer, /health"]
+        A2A["A2Aサーバー<br/>/orchestrator, /pr-info-collector,<br/>/react-reviewer, /vue-reviewer, /angular-reviewer,<br/>/svelte-reviewer, /security-reviewer, /lead-engineer, /health"]
     end
 
     subgraph STEP5["Step 5: score_evaluation.py"]
@@ -143,8 +143,8 @@ uvicornだが、各エンドポイントはリクエストを`BackgroundTasks`�
 同時に受け付けて実際に並行処理できる。
 
 A2Aサーバーが公開するエンドポイントは
-`/orchestrator`, `/pr-info-collector`, `/frontend-reviewer`, `/security-reviewer`,
-`/svelte-reviewer`, `/lead-engineer`, `/health` である。
+`/orchestrator`, `/pr-info-collector`, `/react-reviewer`, `/vue-reviewer`, `/angular-reviewer`,
+`/svelte-reviewer`, `/security-reviewer`, `/lead-engineer`, `/health` である。
 
 ```mermaid
 sequenceDiagram
@@ -165,22 +165,22 @@ sequenceDiagram
 
     Note over Runner,A2A: Seeded項目は1項目内でも並列化
     Runner->>W1: evaluate_seeded_item(seeded_1)
-    par frontend/security 並列呼び出し
-        W1->>A2A: POST /frontend-reviewer
+    par 技術レビュアー/security 並列呼び出し
+        W1->>A2A: POST /{stack}-reviewer
     and
         W1->>A2A: POST /security-reviewer
     end
     A2A-->>W1: 両方completed後 → /lead-engineer
 ```
 
-### Gold と Seeded のレビュアー経路の非対称性
+### Gold と Seeded のレビュアー選択
 
 Gold項目は`/orchestrator`経由で評価され、orchestratorがproject-type検出に基づいて
-レビュアーを選ぶ(例: Svelte項目には`/svelte-reviewer`)。一方Seeded項目は
-`/frontend-reviewer`と`/security-reviewer`を直接・固定で呼び出し、orchestratorを経由しない。
-したがってSeeded項目にはstack固有レビュアー(svelte等)が適用されない。これはSeeded生成が
-frontend共通のtrapに絞られていることと整合するが、非React/Vue stackのSeeded recallに影響しうる
-既知の非対称性である。
+レビュアーを選ぶ(例: Svelte項目には`/svelte-reviewer`)。Seeded項目はorchestratorを経由しないが、
+項目の`stack`ラベルから技術レビュアーのendpoint(`/react-reviewer` / `/vue-reviewer` /
+`/angular-reviewer` / `/svelte-reviewer`)を解決し、`/security-reviewer`と並列で直接呼び出す。
+未知のstack値は明示的に失敗させ、無関係な技術レビュアーへフォールバックしない。詳細は
+[Seeded評価のスタック別レビュアールーティング仕様](seeded-reviewer-stack-routing-spec.md)を参照。
 
 ### なぜ既定を2並列にするか
 
@@ -189,7 +189,7 @@ frontend共通のtrapに絞られていることと整合するが、非React/Vu
 上げる場合、各タスクのポーリングタイムアウト(`--timeout`、既定1800秒)に達するリスクが高まるため、
 `--concurrency`を上げる際は`--timeout`も合わせて見直すこと。
 
-Seeded項目内のfrontend-reviewer/security-reviewer呼び出しの並列化は、`--concurrency`の値とは独立に
+Seeded項目内の技術レビュアー/security-reviewer呼び出しの並列化は、`--concurrency`の値とは独立に
 常に行われる。両者は互いの結果に依存しない独立処理であり、並列化しても精度(検出内容)には影響しない。
 
 ---
@@ -214,6 +214,7 @@ Seeded項目内のfrontend-reviewer/security-reviewer呼び出しの並列化は
 ## 7. 関連ドキュメント
 
 - [docs/goldset-per-stack-spec.md](goldset-per-stack-spec.md) — スタック別ターゲット選定の仕様
+- [docs/seeded-reviewer-stack-routing-spec.md](seeded-reviewer-stack-routing-spec.md) — Seeded評価のスタック別レビュアールーティング仕様
 - [docs/adr/0005-per-stack-evaluation-target-pipeline.md](adr/0005-per-stack-evaluation-target-pipeline.md) — 正規経路化の設計判断
 - [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md) — 何を測るか・合否基準・データセット戦略
 - [evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md) — 評価実行の具体的な手順

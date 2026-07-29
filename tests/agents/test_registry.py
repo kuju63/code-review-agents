@@ -197,6 +197,41 @@ class TestDetectProjectTypes:
         )
         assert detect_project_types(pr) == {ProjectType.ANGULAR}
 
+    def test_detects_vue_from_vue_file_change(self):
+        pr = _pr_info(file_paths=["src/App.vue"], dependency_files=[])
+        assert detect_project_types(pr) == {ProjectType.VUE}
+
+    def test_detects_vue_from_vue_config_js_dependency_file(self):
+        pr = _pr_info(
+            file_paths=["src/lib/util.ts"], dependency_files=["vue.config.js"]
+        )
+        assert detect_project_types(pr) == {ProjectType.VUE}
+
+    def test_detects_vue_from_vue_config_ts_change(self):
+        pr = _pr_info(file_paths=["vue.config.ts"], dependency_files=[])
+        assert detect_project_types(pr) == {ProjectType.VUE}
+
+    def test_vue_detection_suppresses_coarse_react_detection(self):
+        pr = _pr_info(
+            file_paths=["src/App.vue", "src/lib/util.ts"],
+            dependency_files=["package.json"],
+        )
+        assert detect_project_types(pr) == {ProjectType.VUE}
+
+    def test_angular_detection_takes_priority_over_vue(self):
+        pr = _pr_info(
+            file_paths=["src/app/app.component.ts", "src/App.vue"],
+            dependency_files=["angular.json", "vue.config.js"],
+        )
+        assert detect_project_types(pr) == {ProjectType.ANGULAR}
+
+    def test_svelte_detection_takes_priority_over_vue(self):
+        pr = _pr_info(
+            file_paths=["src/App.svelte", "src/App.vue"],
+            dependency_files=["svelte.config.js", "vue.config.js"],
+        )
+        assert detect_project_types(pr) == {ProjectType.SVELTE}
+
     def test_does_not_match_filename_that_only_ends_with_package_json_text(self):
         # ``package.json`` detection must be as strict as the manifest checks:
         # a file whose name merely ends with the manifest text is not a match.
@@ -226,6 +261,8 @@ class TestDetectProjectTypes:
                 ProjectType.ANGULAR,
             ),
             (["x.svelte"], ["svelte.config.ts", "package.json"], ProjectType.SVELTE),
+            (["x.vue", "c.ts"], ["package.json"], ProjectType.VUE),
+            (["x.vue"], ["vue.config.ts", "package.json"], ProjectType.VUE),
         ],
     )
     def test_detection_priority_matrix(self, file_paths, dependency_files, expected):

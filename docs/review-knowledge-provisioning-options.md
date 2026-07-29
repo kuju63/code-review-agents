@@ -6,7 +6,7 @@ Agent Skills 方式を対象に、**より変更しやすく柔軟な知識提�
 
 ## 1. 背景
 
-技術レビュー(`FrontendReviewer`)・セキュリティレビュー(`SecurityReviewer`)は、
+技術レビュー(`ReactReviewer`)・セキュリティレビュー(`SecurityReviewer`)は、
 `src/code_review_agent/skills/` 配下の Markdown ベースの Agent Skills
 (`SKILL.md` + `references/*.md`、progressive disclosure)でフレームワーク/言語/OWASP知識を
 与えている。この方式自体(知識をMarkdownで記述し、段階的にロードする設計)は機能しているが、
@@ -15,17 +15,17 @@ Agent Skills 方式を対象に、**より変更しやすく柔軟な知識提�
 ### 1.1 スキル束ねの配線がPythonコードに直書きされている
 
 [`src/code_review_agent/skills/agent_skills_factory.py`](../src/code_review_agent/skills/agent_skills_factory.py)
-の `AgentSkillType`(`StrEnum`)と `_build_frontend_review_skills()` /
+の `AgentSkillType`(`StrEnum`)と `_build_react_review_skills()` /
 `_build_web_security_review_skills()` が、「どのレビュアーにどのスキルパッケージ群を束ねるか」を
 Pythonコードとして直書きしている。
 
 ```python
 class AgentSkillType(StrEnum):
     NONE = ""
-    FRONTEND_REVIEW = "frontend_review"
+    REACT_REVIEW = "react_review"
     WEB_SECURITY_REVIEW = "web_security_review"
 
-def _build_frontend_review_skills() -> list[SkillSource]:
+def _build_react_review_skills() -> list[SkillSource]:
     return [
         Skill.from_file(_SKILLS_DIR / "reviewing-universal"),
         Skill.from_file(_SKILLS_DIR / "reviewing-languages"),
@@ -34,7 +34,7 @@ def _build_frontend_review_skills() -> list[SkillSource]:
     ]
 ```
 
-各レビュアー([`agents/reviewers/frontend.py`](../src/code_review_agent/agents/reviewers/frontend.py)、
+各レビュアー([`agents/reviewers/react.py`](../src/code_review_agent/agents/reviewers/react.py)、
 [`agents/reviewers/security.py`](../src/code_review_agent/agents/reviewers/security.py))は
 `skill_type: ClassVar[AgentSkillType]` でこの束を選択する。新しいスキルパッケージ
 (例: 新フレームワーク、Spring Boot 等の新スタック向け知識)を追加するたびに、

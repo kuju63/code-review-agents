@@ -21,8 +21,8 @@ class TestAgentSkillType:
     def test_none_value(self):
         assert AgentSkillType.NONE == ""
 
-    def test_frontend_review_value(self):
-        assert AgentSkillType.FRONTEND_REVIEW == "frontend_review"
+    def test_react_review_value(self):
+        assert AgentSkillType.REACT_REVIEW == "react_review"
 
     def test_web_security_review_value(self):
         assert AgentSkillType.WEB_SECURITY_REVIEW == "web_security_review"
@@ -32,6 +32,9 @@ class TestAgentSkillType:
 
     def test_svelte_review_value(self):
         assert AgentSkillType.SVELTE_REVIEW == "svelte_review"
+
+    def test_vue_review_value(self):
+        assert AgentSkillType.VUE_REVIEW == "vue_review"
 
     def test_is_str_enum(self):
         assert issubclass(AgentSkillType, StrEnum)
@@ -65,7 +68,7 @@ class TestCreateAgentSkills:
             result = create_agent_skills(AgentSkillType.NONE)
             assert len(result._skills) == 0
 
-    class TestFrontendReview:
+    class TestReactReview:
         _EXPECTED_SKILL_NAMES = frozenset(
             {
                 "reviewing-universal",
@@ -78,15 +81,15 @@ class TestCreateAgentSkills:
         )
 
         def test_returns_agent_skills_instance(self):
-            result = create_agent_skills(AgentSkillType.FRONTEND_REVIEW)
+            result = create_agent_skills(AgentSkillType.REACT_REVIEW)
             assert isinstance(result, AgentSkills)
 
         def test_loads_six_skills(self):
-            result = create_agent_skills(AgentSkillType.FRONTEND_REVIEW)
+            result = create_agent_skills(AgentSkillType.REACT_REVIEW)
             assert len(result._skills) == 6
 
         def test_skill_names(self):
-            result = create_agent_skills(AgentSkillType.FRONTEND_REVIEW)
+            result = create_agent_skills(AgentSkillType.REACT_REVIEW)
             assert set(result._skills.keys()) == self._EXPECTED_SKILL_NAMES
 
         def test_vendored_react_rule_files_are_available(self):
@@ -180,6 +183,27 @@ class TestCreateAgentSkills:
             assert "# Svelte Review Guidelines" in skill_file
             assert "Do not request code generation" in skill_file
 
+    class TestVueReview:
+        _EXPECTED_SKILL_NAMES = frozenset(
+            {
+                "reviewing-universal",
+                "reviewing-languages",
+                "reviewing-frameworks",
+            }
+        )
+
+        def test_returns_agent_skills_instance(self):
+            result = create_agent_skills(AgentSkillType.VUE_REVIEW)
+            assert isinstance(result, AgentSkills)
+
+        def test_loads_three_skills(self):
+            result = create_agent_skills(AgentSkillType.VUE_REVIEW)
+            assert len(result._skills) == 3
+
+        def test_skill_names(self):
+            result = create_agent_skills(AgentSkillType.VUE_REVIEW)
+            assert set(result._skills.keys()) == self._EXPECTED_SKILL_NAMES
+
     class TestWebSecurityReview:
         def test_returns_agent_skills_instance(self):
             result = create_agent_skills(AgentSkillType.WEB_SECURITY_REVIEW)
@@ -207,13 +231,13 @@ class TestCreateAgentSkills:
             assert skill.name == skill_dir.name
 
     class TestErrorPropagation:
-        def test_file_not_found_propagates_for_frontend_review(self, monkeypatch):
+        def test_file_not_found_propagates_for_react_review(self, monkeypatch):
             monkeypatch.setattr(
                 "code_review_agent.skills.agent_skills_factory._SKILLS_DIR",
                 Path("/nonexistent/path"),
             )
             with pytest.raises(FileNotFoundError):
-                create_agent_skills(AgentSkillType.FRONTEND_REVIEW)
+                create_agent_skills(AgentSkillType.REACT_REVIEW)
 
         def test_file_not_found_propagates_for_web_security_review(self, monkeypatch):
             monkeypatch.setattr(
@@ -238,3 +262,11 @@ class TestCreateAgentSkills:
             )
             with pytest.raises(FileNotFoundError):
                 create_agent_skills(AgentSkillType.SVELTE_REVIEW)
+
+        def test_file_not_found_propagates_for_vue_review(self, monkeypatch):
+            monkeypatch.setattr(
+                "code_review_agent.skills.agent_skills_factory._SKILLS_DIR",
+                Path("/nonexistent/path"),
+            )
+            with pytest.raises(FileNotFoundError):
+                create_agent_skills(AgentSkillType.VUE_REVIEW)

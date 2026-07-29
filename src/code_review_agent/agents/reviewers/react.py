@@ -1,10 +1,10 @@
-"""Frontend technical reviewer.
+"""React technical reviewer.
 
 Reviews front-end changes as a senior front-end engineer, covering component
 design, performance, and correct library usage for React/TypeScript and related
-metaframeworks. Angular changes are handled separately by ``AngularReviewer``.
-Framework-specific review criteria are provided via AgentSkills from the
-``skills/`` directory.
+metaframeworks. Angular, Svelte, and Vue changes are handled separately by
+``AngularReviewer``, ``SvelteReviewer``, and ``VueReviewer``. Framework-specific
+review criteria are provided via AgentSkills from the ``skills/`` directory.
 """
 
 from ...models.review import ProjectType, ReviewPerspective
@@ -31,11 +31,11 @@ the libraries and frameworks detected in the project.
 
 
 @register_reviewer
-class FrontendReviewer(LLMReviewAgent):
+class ReactReviewer(LLMReviewAgent):
     """Technical reviewer for React/TypeScript and related frontend projects."""
 
-    reviewer_id = "frontend-technical"
+    reviewer_id = "react-technical"
     perspective = ReviewPerspective.TECHNICAL
     project_types = frozenset({ProjectType.REACT_TS})
     system_prompt = _SYSTEM_PROMPT
-    skill_type = AgentSkillType.FRONTEND_REVIEW
+    skill_type = AgentSkillType.REACT_REVIEW

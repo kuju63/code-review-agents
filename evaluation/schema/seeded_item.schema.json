@@ -8,6 +8,7 @@
     "base_source",
     "repository",
     "pr_number",
+    "stack",
     "file_changes",
     "must_find"
   ],
@@ -25,6 +26,10 @@
     "pr_number": {
       "type": "integer",
       "minimum": 1
+    },
+    "stack": {
+      "type": "string",
+      "enum": ["react", "vue", "angular", "svelte"]
     },
     "file_changes": {
       "type": "array",

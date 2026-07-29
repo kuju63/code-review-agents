@@ -255,6 +255,7 @@ class TestMain:
             {
                 "repository": "owner/repo",
                 "pr_number": 1,
+                "stack": "react",
                 "severity": "high",
                 "impact": "security",
                 "priority": "high",

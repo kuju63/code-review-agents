@@ -1,4 +1,4 @@
-"""Tests for the concrete frontend technical and security reviewers."""
+"""Tests for the concrete technical and security reviewers."""
 
 from unittest.mock import patch
 
@@ -12,9 +12,10 @@ from code_review_agent.agents.base_reviewer import (
 from code_review_agent.agents.registry import get_reviewer_classes
 from code_review_agent.agents.reviewers import (
     AngularReviewer,
-    FrontendReviewer,
+    ReactReviewer,
     SecurityReviewer,
     SvelteReviewer,
+    VueReviewer,
 )
 from code_review_agent.models.pr_info import (
     FileChange,
@@ -50,27 +51,27 @@ def _context(*, file_paths: list[str], dependency_files: list[str]) -> ReviewCon
     return ReviewContext(pr_info=pr_info)
 
 
-class TestFrontendReviewer:
-    """Frontend technical reviewer metadata and prompt."""
+class TestReactReviewer:
+    """React technical reviewer metadata and prompt."""
 
     def test_is_llm_review_agent(self):
-        assert issubclass(FrontendReviewer, LLMReviewAgent)
+        assert issubclass(ReactReviewer, LLMReviewAgent)
 
     def test_metadata(self):
-        assert FrontendReviewer.perspective is ReviewPerspective.TECHNICAL
-        assert FrontendReviewer.project_types == frozenset({ProjectType.REACT_TS})
-        assert FrontendReviewer.reviewer_id
+        assert ReactReviewer.perspective is ReviewPerspective.TECHNICAL
+        assert ReactReviewer.project_types == frozenset({ProjectType.REACT_TS})
+        assert ReactReviewer.reviewer_id == "react-technical"
 
     def test_system_prompt_mentions_frontend(self):
-        prompt = FrontendReviewer.system_prompt
+        prompt = ReactReviewer.system_prompt
         assert "front-end" in prompt
         assert "package.json" in prompt
 
-    def test_skill_type_is_frontend_review(self):
-        assert FrontendReviewer.skill_type is AgentSkillType.FRONTEND_REVIEW
+    def test_skill_type_is_react_review(self):
+        assert ReactReviewer.skill_type is AgentSkillType.REACT_REVIEW
 
-    def test_frontend_review_skills_resolve(self):
-        result = create_agent_skills(AgentSkillType.FRONTEND_REVIEW)
+    def test_react_review_skills_resolve(self):
+        result = create_agent_skills(AgentSkillType.REACT_REVIEW)
         assert isinstance(result, AgentSkills)
 
 
@@ -135,6 +136,25 @@ class TestSvelteReviewer:
         assert result is sentinel
 
 
+class TestVueReviewer:
+    """Vue technical reviewer metadata and prompt."""
+
+    def test_is_llm_review_agent(self):
+        assert issubclass(VueReviewer, LLMReviewAgent)
+
+    def test_metadata(self):
+        assert VueReviewer.perspective is ReviewPerspective.TECHNICAL
+        assert VueReviewer.project_types == frozenset({ProjectType.VUE})
+        assert VueReviewer.reviewer_id == "vue-technical"
+
+    def test_skill_type_is_vue_review(self):
+        assert VueReviewer.skill_type is AgentSkillType.VUE_REVIEW
+
+    def test_vue_review_skills_resolve(self):
+        result = create_agent_skills(AgentSkillType.VUE_REVIEW)
+        assert isinstance(result, AgentSkills)
+
+
 class TestSecurityReviewer:
     """Security reviewer metadata and prompt."""
 
@@ -146,6 +166,7 @@ class TestSecurityReviewer:
         assert ProjectType.REACT_TS in SecurityReviewer.project_types
         assert ProjectType.ANGULAR in SecurityReviewer.project_types
         assert ProjectType.SVELTE in SecurityReviewer.project_types
+        assert ProjectType.VUE in SecurityReviewer.project_types
         assert SecurityReviewer.reviewer_id
 
     def test_skill_type_is_web_security_review(self):
@@ -176,9 +197,10 @@ class TestStructuredOutputDirective:
     def test_reviewers_carry_directive_in_effective_prompt(self):
         for reviewer_cls in (
             AngularReviewer,
-            FrontendReviewer,
+            ReactReviewer,
             SecurityReviewer,
             SvelteReviewer,
+            VueReviewer,
         ):
             composed = compose_system_prompt(reviewer_cls.system_prompt)
             assert STRUCTURED_OUTPUT_DIRECTIVE in composed
@@ -189,12 +211,12 @@ class TestRegistration:
 
     def test_both_registered_for_react_ts(self):
         registered = registry.get_registered_reviewers()
-        assert FrontendReviewer in registered
+        assert ReactReviewer in registered
         assert SecurityReviewer in registered
 
     def test_selected_for_react_ts(self):
         selected = get_reviewer_classes(ProjectType.REACT_TS)
-        assert FrontendReviewer in selected
+        assert ReactReviewer in selected
         assert SecurityReviewer in selected
 
     def test_both_perspectives_present(self):
@@ -210,7 +232,7 @@ class TestRegistration:
         assert AngularReviewer in registered
         assert AngularReviewer in selected
         assert SecurityReviewer in selected
-        assert FrontendReviewer not in selected
+        assert ReactReviewer not in selected
 
     def test_svelte_reviewers_registered_and_selected(self):
         registered = registry.get_registered_reviewers()
@@ -219,5 +241,26 @@ class TestRegistration:
         assert SvelteReviewer in registered
         assert SvelteReviewer in selected
         assert SecurityReviewer in selected
-        assert FrontendReviewer not in selected
+        assert ReactReviewer not in selected
         assert AngularReviewer not in selected
+
+    def test_vue_reviewers_registered_and_selected(self):
+        registered = registry.get_registered_reviewers()
+        selected = get_reviewer_classes(ProjectType.VUE)
+
+        assert VueReviewer in registered
+        assert VueReviewer in selected
+        assert SecurityReviewer in selected
+        assert ReactReviewer not in selected
+        assert AngularReviewer not in selected
+        assert SvelteReviewer not in selected
+
+
+class TestPackageExports:
+    """VueReviewer must be importable from the `agents` package top level,
+    like the other reviewers, not only from `agents.reviewers`."""
+
+    def test_vue_reviewer_importable_from_agents_package(self):
+        from code_review_agent.agents import VueReviewer as ExportedVueReviewer
+
+        assert ExportedVueReviewer is VueReviewer

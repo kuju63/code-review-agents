@@ -8,7 +8,9 @@ from code_review_agent.api.config import Settings
 
 _ALL_PREFIXES = [
     "pr-info-collector",
-    "frontend-reviewer",
+    "react-reviewer",
+    "vue-reviewer",
+    "angular-reviewer",
     "svelte-reviewer",
     "security-reviewer",
     "lead-engineer",
@@ -25,7 +27,9 @@ class TestAgentCards:
         "prefix,expected_name",
         [
             ("pr-info-collector", "PR Info Collector"),
-            ("frontend-reviewer", "Frontend Reviewer"),
+            ("react-reviewer", "React Reviewer"),
+            ("vue-reviewer", "Vue Reviewer"),
+            ("angular-reviewer", "Angular Reviewer"),
             ("svelte-reviewer", "Svelte Reviewer"),
             ("security-reviewer", "Security Reviewer"),
             ("lead-engineer", "Lead Engineer"),
@@ -38,6 +42,13 @@ class TestAgentCards:
             resp = client.get(f"/{prefix}/.well-known/agent.json")
         assert resp.status_code == 200
         assert resp.json()["name"] == expected_name
+
+    def test_removed_frontend_reviewer_alias_returns_404(self) -> None:
+        """`ReactReviewer` replaced `FrontendReviewer`; the old alias must be gone."""
+        app = create_app(_make_settings())
+        with TestClient(app) as client:
+            resp = client.get("/frontend-reviewer/.well-known/agent.json")
+        assert resp.status_code == 404
 
 
 class TestSkillSchemasSelfContained:
@@ -75,7 +86,9 @@ class TestSendTaskEndpoints:
         "prefix",
         [
             "pr-info-collector",
-            "frontend-reviewer",
+            "react-reviewer",
+            "vue-reviewer",
+            "angular-reviewer",
             "svelte-reviewer",
             "security-reviewer",
             "lead-engineer",
@@ -93,6 +106,18 @@ class TestSendTaskEndpoints:
             )
         assert resp.status_code == 422
 
+    def test_removed_frontend_reviewer_alias_returns_404(self) -> None:
+        """`ReactReviewer` replaced `FrontendReviewer`; the old alias must be gone."""
+        app = create_app(_make_settings())
+        with TestClient(app) as client:
+            resp = client.post(
+                "/frontend-reviewer/tasks/send",
+                json={
+                    "message": {"role": "user", "parts": [{"kind": "data", "data": {}}]}
+                },
+            )
+        assert resp.status_code == 404
+
 
 class TestHealthEndpoint:
     def test_returns_200(self) -> None:
@@ -108,7 +133,9 @@ class TestGetTaskEndpoints:
         "prefix",
         [
             "pr-info-collector",
-            "frontend-reviewer",
+            "react-reviewer",
+            "vue-reviewer",
+            "angular-reviewer",
             "svelte-reviewer",
             "security-reviewer",
             "lead-engineer",
@@ -119,4 +146,11 @@ class TestGetTaskEndpoints:
         app = create_app(_make_settings())
         with TestClient(app) as client:
             resp = client.get(f"/{prefix}/tasks/no-such-task")
+        assert resp.status_code == 404
+
+    def test_removed_frontend_reviewer_alias_returns_404(self) -> None:
+        """`ReactReviewer` replaced `FrontendReviewer`; the old alias must be gone."""
+        app = create_app(_make_settings())
+        with TestClient(app) as client:
+            resp = client.get("/frontend-reviewer/tasks/no-such-task")
         assert resp.status_code == 404

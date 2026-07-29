@@ -7,6 +7,7 @@
     "id",
     "repository",
     "pr_number",
+    "stack",
     "title",
     "labels",
     "file_changes",
@@ -23,6 +24,10 @@
     "pr_number": {
       "type": "integer",
       "minimum": 1
+    },
+    "stack": {
+      "type": "string",
+      "enum": ["react", "vue", "angular", "svelte"]
     },
     "title": {
       "type": "string"

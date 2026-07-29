@@ -140,12 +140,12 @@ class TestReviewResult:
 
     def test_carries_metadata_and_output(self):
         result = ReviewResult(
-            reviewer_id="frontend-technical",
+            reviewer_id="react-technical",
             perspective=ReviewPerspective.TECHNICAL,
             project_type=ProjectType.REACT_TS,
             output=ReviewOutput(summary="ok"),
         )
-        assert result.reviewer_id == "frontend-technical"
+        assert result.reviewer_id == "react-technical"
         assert result.perspective is ReviewPerspective.TECHNICAL
         assert result.project_type is ProjectType.REACT_TS
 

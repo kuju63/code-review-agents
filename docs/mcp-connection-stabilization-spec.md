@@ -53,7 +53,7 @@ flowchart LR
     subgraph B["並列レビュー段 (ReviewOrchestrator.run_async)"]
         direction TB
         Shared[("共有MCPClient<br/>(1接続)")]
-        R1["FrontendReviewer<br/>(technical)"]
+        R1["ReactReviewer<br/>(technical)"]
         R2["SecurityReviewer<br/>(security)"]
         R1 -.->|tool calls| Shared
         R2 -.->|tool calls| Shared

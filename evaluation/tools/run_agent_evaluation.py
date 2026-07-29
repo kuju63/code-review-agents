@@ -49,6 +49,45 @@ def _run_a2a(
     return a2a_poll(client, endpoint, task_id, poll_interval, timeout)
 
 
+_STACK_TECHNICAL_REVIEWER_ENDPOINT = {
+    "react": "react-reviewer",
+    "vue": "vue-reviewer",
+    "angular": "angular-reviewer",
+    "svelte": "svelte-reviewer",
+}
+
+
+def _technical_reviewer_endpoint(stack: Any) -> str:
+    """Resolve the technical reviewer endpoint name for a Seeded item's stack.
+
+    Unlike Gold items (evaluated via ``/orchestrator``, which detects the
+    stack itself from PR file changes), a Seeded item carries its own
+    ``stack`` label from dataset generation (see
+    docs/seeded-reviewer-stack-routing-spec.md). This resolves that label to
+    the matching technical reviewer's endpoint name, failing closed on a
+    missing, non-string, or unknown stack rather than silently falling back
+    to an unrelated reviewer.
+
+    Args:
+        stack: The Seeded item's ``stack`` label. Typed as ``Any`` (rather
+            than ``str``) because callers pass ``item.get("stack")``, which
+            is ``None`` for a malformed item missing the key entirely; that
+            case must also fail closed with ``ValueError`` here rather than
+            raising ``KeyError`` at the call site.
+
+    Returns:
+        The endpoint name (for example ``"react-reviewer"``).
+
+    Raises:
+        ValueError: If ``stack`` is missing, not a string, or not one of the
+            known stacks.
+    """
+    if not isinstance(stack, str) or stack not in _STACK_TECHNICAL_REVIEWER_ENDPOINT:
+        allowed = ", ".join(sorted(_STACK_TECHNICAL_REVIEWER_ENDPOINT))
+        raise ValueError(f"unknown stack {stack!r}; expected one of: {allowed}")
+    return _STACK_TECHNICAL_REVIEWER_ENDPOINT[stack]
+
+
 def _to_predictions(lead_report_data: dict[str, Any], pr_id: str) -> dict[str, Any]:
     """Convert LeadEngineerReport dict to agent_predictions.jsonl format.
 
@@ -107,12 +146,19 @@ def evaluate_seeded_item(
 ) -> dict[str, Any]:
     """Evaluate a seeded item: collect real PR metadata, inject seeded file_changes.
 
+    ``item["stack"]`` is resolved to a technical reviewer endpoint via
+    ``_technical_reviewer_endpoint`` before any A2A call is made, so an
+    unknown stack fails closed (propagating ``ValueError``) instead of
+    wasting a ``pr-info-collector`` call or falling back to an unrelated
+    reviewer.
+
     Returns:
         The lead engineer's synthesized result, converted to
         ``agent_predictions.jsonl`` format.
     """
     owner, repo = item["repository"].split("/")
     pr_number = item["pr_number"]
+    technical_endpoint = _technical_reviewer_endpoint(item.get("stack"))
 
     # Step 1: Collect PR info (real PR metadata)
     pr_info_data = _run_a2a(
@@ -133,14 +179,14 @@ def evaluate_seeded_item(
     ]
     pr_info_data["pr_info"]["file_changes"] = seeded_file_changes
 
-    # Step 3: Run Frontend reviewer and Security reviewer in parallel.
-    # They are independent of each other's output, so running them
+    # Step 3: Run the stack's technical reviewer and Security reviewer in
+    # parallel. They are independent of each other's output, so running them
     # concurrently only affects wall-clock time, not what is found.
     with ThreadPoolExecutor(max_workers=2) as executor:
-        frontend_future = executor.submit(
+        technical_future = executor.submit(
             _run_a2a,
             client,
-            f"{base_url}/frontend-reviewer",
+            f"{base_url}/{technical_endpoint}",
             {"pr_info": pr_info_data, "model_id": model_id},
             poll_interval,
             timeout,
@@ -153,11 +199,11 @@ def evaluate_seeded_item(
             poll_interval,
             timeout,
         )
-        frontend_result = frontend_future.result()
+        technical_result = technical_future.result()
         security_result = security_future.result()
 
     # Step 4: Lead engineer synthesis
-    review_report = {"results": [frontend_result, security_result], "errors": []}
+    review_report = {"results": [technical_result, security_result], "errors": []}
     lead_data = _run_a2a(
         client,
         f"{base_url}/lead-engineer",

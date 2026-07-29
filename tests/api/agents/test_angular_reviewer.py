@@ -7,11 +7,11 @@ from fastapi.testclient import TestClient
 from code_review_agent.a2a.models import A2ATaskStatus
 from code_review_agent.a2a.task_store import TaskStore
 from code_review_agent.api.agents.common import verify_github_token
-from code_review_agent.api.agents.svelte_reviewer import svelte_reviewer_router
+from code_review_agent.api.agents.angular_reviewer import angular_reviewer_router
 from code_review_agent.api.config import Settings
 from tests.api.agents.conftest import wait_for_task_completed
 
-_MOD = "code_review_agent.api.agents.svelte_reviewer"
+_MOD = "code_review_agent.api.agents.angular_reviewer"
 
 
 def _make_app(settings: Settings | None = None) -> tuple[FastAPI, TaskStore]:
@@ -20,8 +20,8 @@ def _make_app(settings: Settings | None = None) -> tuple[FastAPI, TaskStore]:
     if settings is None:
         settings = Settings(_env_file=None)  # type: ignore[call-arg]
     app.include_router(
-        svelte_reviewer_router(settings, store),
-        prefix="/svelte-reviewer",
+        angular_reviewer_router(settings, store),
+        prefix="/angular-reviewer",
     )
     app.dependency_overrides[verify_github_token] = lambda: "ghp_testtoken"
     return app, store
@@ -55,11 +55,11 @@ class TestAgentCard:
     def test_returns_agent_card(self) -> None:
         app, _ = _make_app()
         with TestClient(app) as client:
-            resp = client.get("/svelte-reviewer/.well-known/agent.json")
+            resp = client.get("/angular-reviewer/.well-known/agent.json")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["name"] == "Svelte Reviewer"
-        assert "/svelte-reviewer" in data["url"]
+        assert data["name"] == "Angular Reviewer"
+        assert "/angular-reviewer" in data["url"]
         assert len(data["skills"]) == 1
 
 
@@ -67,7 +67,7 @@ class TestSendTask:
     def test_returns_202_with_task_id(self) -> None:
         app, _ = _make_app()
         with TestClient(app) as client:
-            resp = client.post("/svelte-reviewer/tasks/send", json=_send_payload())
+            resp = client.post("/angular-reviewer/tasks/send", json=_send_payload())
         assert resp.status_code == 202
         data = resp.json()
         assert data["task"]["status"] == "submitted"
@@ -78,7 +78,7 @@ class TestGetTask:
     def test_returns_404_for_unknown_task_id(self) -> None:
         app, _ = _make_app()
         with TestClient(app) as client:
-            resp = client.get("/svelte-reviewer/tasks/nonexistent-id")
+            resp = client.get("/angular-reviewer/tasks/nonexistent-id")
         assert resp.status_code == 404
 
     @pytest.mark.asyncio
@@ -90,7 +90,7 @@ class TestGetTask:
         )
 
         mock_result = ReviewResult(
-            reviewer_id="svelte-technical",
+            reviewer_id="angular-technical",
             perspective=ReviewPerspective.TECHNICAL,
             project_type=None,
             output=ReviewOutput(summary="Looks good.", findings=[]),
@@ -98,14 +98,14 @@ class TestGetTask:
 
         app, store = _make_app()
         with (
-            patch(f"{_MOD}.SvelteReviewer") as mock_reviewer_cls,
+            patch(f"{_MOD}.AngularReviewer") as mock_reviewer_cls,
             TestClient(app) as client,
         ):
             mock_instance = MagicMock()
             mock_instance.review.return_value = mock_result
             mock_reviewer_cls.return_value = mock_instance
 
-            resp = client.post("/svelte-reviewer/tasks/send", json=_send_payload())
+            resp = client.post("/angular-reviewer/tasks/send", json=_send_payload())
             assert resp.status_code == 202
             task_id = resp.json()["task"]["id"]
 

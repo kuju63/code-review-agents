@@ -30,7 +30,7 @@ issue #56 本文が引用しているコード（`asyncio.gather(..., return_exc
 issue対応の依頼時に「lead_engineerなど他Agentへの横展開」も要望されたため、実装前に対象ファイルを実際に読んで検証した:
 
 - **`lead_engineer.py`**: `evaluate()` は例外を無条件に上位へ伝播させる素直な実装で、`asyncio.gather`/`wait` による集約や広範な `except Exception` による握りつぶしは存在しない。`EventLoopException` は既に正しく `orchestrator.py:_run` の境界 `except Exception` まで届く。**→ 修正不要**。
-- **`api/agents/*.py`**（orchestrator/pr_info_collector/lead_engineer/security_reviewer/frontend_reviewer の各A2Aハンドラ）: いずれも `except Exception as exc: await store.set_failed(...)` という意図的なタスク境界の捕捉であり、これが最終的にインフラ例外を拾う受け皿になる。**→ 修正不要**。
+- **`api/agents/*.py`**（orchestrator/pr_info_collector/lead_engineer/security_reviewer/react_reviewer/vue_reviewer/angular_reviewer/svelte_reviewer の各A2Aハンドラ）: いずれも `except Exception as exc: await store.set_failed(...)` という意図的なタスク境界の捕捉であり、これが最終的にインフラ例外を拾う受け皿になる。**→ 修正不要**。
 - **`agents/pr_info_collector.py`**（issue本文で言及なし）: issue #56 と同型の「インフラ例外を握りつぶして処理続行」パターンが**3箇所**実在する（後述）。**→ 修正対象に追加**。
 
 つまり実体としては「lead_engineerへの横展開」は空振りで、`pr_info_collector.py` が真の横展開対象だった。評価パイプライン（`evaluation/tools/`）側への対応は今回のスコープ外とする。
