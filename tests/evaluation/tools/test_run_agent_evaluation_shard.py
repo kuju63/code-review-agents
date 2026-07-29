@@ -270,6 +270,45 @@ class TestMainShutdownSkip:
 
         assert run_agent_evaluation.main() == 2
 
+    def test_shutdown_still_runs_when_both_shard_args_given_but_out_of_range(
+        self, monkeypatch
+    ):
+        """Regression: --shard-index 5 --shard-count 4 leaves
+        args.shard_count set (not None), so a naive `_is_sharded(args)`
+        check in the finally block would treat this failed-validation
+        invocation as a real sharded run and skip shutdown -- even though
+        _run_evaluation() never ran and this invocation is not actually
+        part of a valid shard sequence. Shutdown must still fire."""
+        shutdown_calls = []
+        monkeypatch.setattr(
+            run_agent_evaluation,
+            "_shutdown_server",
+            lambda pid_file: shutdown_calls.append(pid_file),
+        )
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "run_agent_evaluation.py",
+                "--gold",
+                "g.jsonl",
+                "--seeded",
+                "s.jsonl",
+                "--output",
+                "o.jsonl",
+                "--server-pid-file",
+                "/tmp/pid",
+                "--shard-index",
+                "5",
+                "--shard-count",
+                "4",
+            ],
+        )
+
+        exit_code = run_agent_evaluation.main()
+
+        assert exit_code == 2
+        assert shutdown_calls == ["/tmp/pid"]
+
     def test_shutdown_still_runs_when_shard_args_are_invalid_and_shard_count_unset(
         self, monkeypatch
     ):

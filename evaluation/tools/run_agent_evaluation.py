@@ -421,20 +421,29 @@ def main() -> int:
 
     # _validate_shard_args() runs inside the try block (not before it) so
     # that invalid --shard-index/--shard-count combinations still reach the
-    # finally clause: whenever args.shard_count ends up None (e.g.
-    # --shard-index given without --shard-count), shutdown must still fire
-    # instead of leaking the A2A server because validation raised first. Its
-    # ValueError is caught and mapped to the established fatal-argument-error
-    # exit code (2) rather than propagating as an uncaught exception.
+    # finally clause instead of leaking the A2A server because validation
+    # raised first. Its ValueError is caught and mapped to the established
+    # fatal-argument-error exit code (2) rather than propagating as an
+    # uncaught exception.
+    #
+    # shard_validation_ok gates the finally-block shutdown decision alongside
+    # _is_sharded(args): args.shard_count alone is not enough to tell "a
+    # validated sharded run" apart from "an invalid combination that happens
+    # to have shard_count set" (e.g. --shard-index 5 --shard-count 4, where
+    # shard_count is 4, not None). Only a *validated* sharded run should skip
+    # shutdown; any failed validation must shut the server down like a
+    # non-sharded run, regardless of which fields were provided.
+    shard_validation_ok = False
     try:
         try:
             _validate_shard_args(args.shard_index, args.shard_count)
+            shard_validation_ok = True
         except ValueError as e:
             print(f"[ERROR] Invalid shard arguments: {e}", file=sys.stderr)
             return 2
         return _run_evaluation(args)
     finally:
-        if not _is_sharded(args):
+        if not (shard_validation_ok and _is_sharded(args)):
             _shutdown_server(args.server_pid_file)
 
 
