@@ -322,7 +322,13 @@ class TestEvaluateSeededItemStackRouting:
         assert called_endpoints == []
 
     def test_none_stack_raises_value_error(self, monkeypatch):
-        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", lambda *a, **k: {})
+        called_endpoints: list[str] = []
+
+        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
+            called_endpoints.append(endpoint.rsplit("/", 1)[-1])
+            return {"pr_info": {"file_changes": []}}
+
+        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
 
         item = {
             "id": "seeded-1",
@@ -341,9 +347,16 @@ class TestEvaluateSeededItemStackRouting:
                 timeout=5,
                 model_id="m",
             )
+        assert called_endpoints == []
 
     def test_non_string_stack_raises_value_error(self, monkeypatch):
-        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", lambda *a, **k: {})
+        called_endpoints: list[str] = []
+
+        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
+            called_endpoints.append(endpoint.rsplit("/", 1)[-1])
+            return {"pr_info": {"file_changes": []}}
+
+        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
 
         item = {
             "id": "seeded-1",
@@ -362,6 +375,7 @@ class TestEvaluateSeededItemStackRouting:
                 timeout=5,
                 model_id="m",
             )
+        assert called_endpoints == []
 
 
 class TestTechnicalReviewerEndpoint:

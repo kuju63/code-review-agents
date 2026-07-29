@@ -1,4 +1,3 @@
-import asyncio
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +9,7 @@ from code_review_agent.a2a.task_store import TaskStore
 from code_review_agent.api.agents.common import verify_github_token
 from code_review_agent.api.agents.svelte_reviewer import svelte_reviewer_router
 from code_review_agent.api.config import Settings
+from tests.api.agents.conftest import wait_for_task_completed
 
 _MOD = "code_review_agent.api.agents.svelte_reviewer"
 
@@ -109,8 +109,5 @@ class TestGetTask:
             assert resp.status_code == 202
             task_id = resp.json()["task"]["id"]
 
-            await asyncio.sleep(0.1)
-
-            task = await store.get(task_id)
-            assert task is not None
-            assert task.status in (A2ATaskStatus.COMPLETED, A2ATaskStatus.WORKING)
+            task = await wait_for_task_completed(store, task_id)
+            assert task.status == A2ATaskStatus.COMPLETED
