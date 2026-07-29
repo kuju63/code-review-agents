@@ -29,7 +29,7 @@ class Settings(BaseSettings):
 
     agent_base_url: str = "http://localhost:8000"
     agent_pr_info_collector_url: str | None = None
-    agent_frontend_reviewer_url: str | None = None
+    agent_react_reviewer_url: str | None = None
     agent_svelte_reviewer_url: str | None = None
     agent_security_reviewer_url: str | None = None
     agent_lead_engineer_url: str | None = None
@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
         Args:
             prefix: Path segment the agent is mounted under (for example
-                ``"frontend-reviewer"``), used when no override is set.
+                ``"react-reviewer"``), used when no override is set.
             override: Explicit URL configured for this agent, if any.
 
         Returns:

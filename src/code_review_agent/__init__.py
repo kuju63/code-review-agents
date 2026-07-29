@@ -1,9 +1,9 @@
 """Code Review Agent — multi-agent code review orchestration."""
 
 from .agents import (
-    FrontendReviewer,
     LLMReviewAgent,
     PRInfoCollector,
+    ReactReviewer,
     ReviewAgent,
     ReviewerConfig,
     SecurityReviewer,
@@ -50,7 +50,7 @@ __all__ = [
     "ReviewAgent",
     "LLMReviewAgent",
     "ReviewerConfig",
-    "FrontendReviewer",
+    "ReactReviewer",
     "SecurityReviewer",
     "register_reviewer",
     "get_reviewer_classes",

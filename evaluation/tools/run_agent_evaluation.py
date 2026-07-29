@@ -133,14 +133,14 @@ def evaluate_seeded_item(
     ]
     pr_info_data["pr_info"]["file_changes"] = seeded_file_changes
 
-    # Step 3: Run Frontend reviewer and Security reviewer in parallel.
+    # Step 3: Run the React reviewer and Security reviewer in parallel.
     # They are independent of each other's output, so running them
     # concurrently only affects wall-clock time, not what is found.
     with ThreadPoolExecutor(max_workers=2) as executor:
-        frontend_future = executor.submit(
+        technical_future = executor.submit(
             _run_a2a,
             client,
-            f"{base_url}/frontend-reviewer",
+            f"{base_url}/react-reviewer",
             {"pr_info": pr_info_data, "model_id": model_id},
             poll_interval,
             timeout,
@@ -153,11 +153,11 @@ def evaluate_seeded_item(
             poll_interval,
             timeout,
         )
-        frontend_result = frontend_future.result()
+        technical_result = technical_future.result()
         security_result = security_future.result()
 
     # Step 4: Lead engineer synthesis
-    review_report = {"results": [frontend_result, security_result], "errors": []}
+    review_report = {"results": [technical_result, security_result], "errors": []}
     lead_data = _run_a2a(
         client,
         f"{base_url}/lead-engineer",

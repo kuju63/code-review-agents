@@ -80,7 +80,7 @@ class _SkillsReviewer(LLMReviewAgent):
     perspective = ReviewPerspective.TECHNICAL
     project_types = frozenset({ProjectType.REACT_TS})
     system_prompt = "Skills reviewer."
-    skill_type = AgentSkillType.FRONTEND_REVIEW
+    skill_type = AgentSkillType.REACT_REVIEW
 
 
 def _make_context(shared_mcp_client: MagicMock | None = None) -> ReviewContext:
@@ -704,7 +704,7 @@ class TestAgentSkillsIntegration:
         ):
             reviewer.review(_make_context())
 
-        mock_factory.assert_called_once_with(AgentSkillType.FRONTEND_REVIEW)
+        mock_factory.assert_called_once_with(AgentSkillType.REACT_REVIEW)
 
     def test_skill_type_adds_agent_skills_to_plugins(self):
         """create_agent_skills() return value must appear in Agent plugins."""

@@ -16,7 +16,7 @@ class AgentSkillType(StrEnum):
     """Skill bundles available to LLM-backed reviewers."""
 
     NONE = ""
-    FRONTEND_REVIEW = "frontend_review"
+    REACT_REVIEW = "react_review"
     WEB_SECURITY_REVIEW = "web_security_review"
     ANGULAR_REVIEW = "angular_review"
     SVELTE_REVIEW = "svelte_review"
@@ -35,8 +35,8 @@ def create_agent_skills(
         AgentSkills: Plugin containing the selected local skills.
     """
     skills: list[SkillSource] = []
-    if skill_type == AgentSkillType.FRONTEND_REVIEW:
-        skills = _build_frontend_review_skills()
+    if skill_type == AgentSkillType.REACT_REVIEW:
+        skills = _build_react_review_skills()
     elif skill_type == AgentSkillType.ANGULAR_REVIEW:
         skills = _build_angular_review_skills()
     elif skill_type == AgentSkillType.SVELTE_REVIEW:
@@ -49,8 +49,8 @@ def create_agent_skills(
     return AgentSkills(skills=skills)
 
 
-def _build_frontend_review_skills() -> list[SkillSource]:
-    """Build the skill bundle for the frontend technical reviewer.
+def _build_react_review_skills() -> list[SkillSource]:
+    """Build the skill bundle for the React technical reviewer.
 
     The bundle combines the project's generic frontend review skills with
     Vercel's React/Next.js skills so the reviewer can apply React-specific
@@ -76,7 +76,7 @@ def _build_angular_review_skills() -> list[SkillSource]:
     The bundle pairs the project's generic frontend and language review skills
     with Angular's official ``angular-developer`` skill so Angular-specific
     review criteria are applied without routing Angular changes through the
-    React-oriented frontend reviewer.
+    React-oriented reviewer.
 
     Returns:
         list[SkillSource]: Skill instances loaded for Angular review.
@@ -95,7 +95,7 @@ def _build_svelte_review_skills() -> list[SkillSource]:
     The bundle pairs the project's generic frontend and language review skills
     with Svelte's official ``svelte-core-bestpractices`` skill so Svelte-specific
     review criteria are applied without routing Svelte changes through the
-    React-oriented frontend reviewer.
+    React-oriented reviewer.
 
     Returns:
         list[SkillSource]: Skill instances loaded for Svelte review.

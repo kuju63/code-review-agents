@@ -143,7 +143,7 @@ class TestTaskStoreSetFailed:
         store = TaskStore()
         task = await store.create()
         error = (
-            "Reviewer 'frontend-technical' completed without producing "
+            "Reviewer 'react-technical' completed without producing "
             "structured output (stop_reason='limit_turns')."
         )
         with caplog.at_level(

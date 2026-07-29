@@ -6,14 +6,14 @@ orchestrator.
 """
 
 from .angular import AngularReviewer
-from .frontend import FrontendReviewer
+from .react import ReactReviewer
 from .security import SecurityReviewer
 from .svelte import SvelteReviewer
 from .vue import VueReviewer
 
 __all__ = [
     "AngularReviewer",
-    "FrontendReviewer",
+    "ReactReviewer",
     "SecurityReviewer",
     "SvelteReviewer",
     "VueReviewer",

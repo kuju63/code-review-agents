@@ -2,7 +2,7 @@
 
 These tests exercise the new `_evaluate_concurrently` helper (used to run
 Gold/Seeded items with bounded parallelism instead of a strict sequential
-for-loop) and the parallelized frontend/security reviewer calls inside
+for-loop) and the parallelized technical/security reviewer calls inside
 `evaluate_seeded_item`. No live A2A server or network access is used;
 `evaluate_fn` / `_run_a2a` are replaced with lightweight fakes.
 """
@@ -138,7 +138,7 @@ class TestEvaluateConcurrentlyFailureIsolation:
 
 
 class TestSeededItemReviewerParallelism:
-    def test_frontend_and_security_reviewer_calls_overlap(self, monkeypatch):
+    def test_technical_and_security_reviewer_calls_overlap(self, monkeypatch):
         windows: dict[str, tuple[float, float]] = {}
         lock = threading.Lock()
 
@@ -175,7 +175,7 @@ class TestSeededItemReviewerParallelism:
             model_id="m",
         )
 
-        f_start, f_end = windows["frontend-reviewer"]
+        f_start, f_end = windows["react-reviewer"]
         s_start, s_end = windows["security-reviewer"]
         overlap = min(f_end, s_end) - max(f_start, s_start)
         assert overlap > 0
