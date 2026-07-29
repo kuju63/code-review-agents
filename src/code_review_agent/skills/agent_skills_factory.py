@@ -20,6 +20,7 @@ class AgentSkillType(StrEnum):
     WEB_SECURITY_REVIEW = "web_security_review"
     ANGULAR_REVIEW = "angular_review"
     SVELTE_REVIEW = "svelte_review"
+    VUE_REVIEW = "vue_review"
 
 
 def create_agent_skills(
@@ -40,6 +41,8 @@ def create_agent_skills(
         skills = _build_angular_review_skills()
     elif skill_type == AgentSkillType.SVELTE_REVIEW:
         skills = _build_svelte_review_skills()
+    elif skill_type == AgentSkillType.VUE_REVIEW:
+        skills = _build_vue_review_skills()
     elif skill_type == AgentSkillType.WEB_SECURITY_REVIEW:
         skills = _build_web_security_review_skills()
 
@@ -102,6 +105,25 @@ def _build_svelte_review_skills() -> list[SkillSource]:
         Skill.from_file(_SKILLS_DIR / "reviewing-languages"),
         Skill.from_file(_SKILLS_DIR / "reviewing-frameworks"),
         Skill.from_file(_SKILLS_DIR / "svelte-core-bestpractices"),
+    ]
+
+
+def _build_vue_review_skills() -> list[SkillSource]:
+    """Build the skill bundle for the Vue technical reviewer.
+
+    Unlike Angular and Svelte, no official Vue skill package is vendored yet
+    (tracked as a follow-up, see docs/seeded-reviewer-stack-routing-spec.md
+    §4); the bundle relies on the project's generic frontend and language
+    review skills, whose ``reviewing-frameworks`` bundle already documents
+    Vue-specific conventions (``reviewing-frameworks/references/vue.md``).
+
+    Returns:
+        list[SkillSource]: Skill instances loaded for Vue review.
+    """
+    return [
+        Skill.from_file(_SKILLS_DIR / "reviewing-universal"),
+        Skill.from_file(_SKILLS_DIR / "reviewing-languages"),
+        Skill.from_file(_SKILLS_DIR / "reviewing-frameworks"),
     ]
 
 

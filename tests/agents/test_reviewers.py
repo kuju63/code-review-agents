@@ -15,6 +15,7 @@ from code_review_agent.agents.reviewers import (
     FrontendReviewer,
     SecurityReviewer,
     SvelteReviewer,
+    VueReviewer,
 )
 from code_review_agent.models.pr_info import (
     FileChange,
@@ -135,6 +136,25 @@ class TestSvelteReviewer:
         assert result is sentinel
 
 
+class TestVueReviewer:
+    """Vue technical reviewer metadata and prompt."""
+
+    def test_is_llm_review_agent(self):
+        assert issubclass(VueReviewer, LLMReviewAgent)
+
+    def test_metadata(self):
+        assert VueReviewer.perspective is ReviewPerspective.TECHNICAL
+        assert VueReviewer.project_types == frozenset({ProjectType.VUE})
+        assert VueReviewer.reviewer_id == "vue-technical"
+
+    def test_skill_type_is_vue_review(self):
+        assert VueReviewer.skill_type is AgentSkillType.VUE_REVIEW
+
+    def test_vue_review_skills_resolve(self):
+        result = create_agent_skills(AgentSkillType.VUE_REVIEW)
+        assert isinstance(result, AgentSkills)
+
+
 class TestSecurityReviewer:
     """Security reviewer metadata and prompt."""
 
@@ -146,6 +166,7 @@ class TestSecurityReviewer:
         assert ProjectType.REACT_TS in SecurityReviewer.project_types
         assert ProjectType.ANGULAR in SecurityReviewer.project_types
         assert ProjectType.SVELTE in SecurityReviewer.project_types
+        assert ProjectType.VUE in SecurityReviewer.project_types
         assert SecurityReviewer.reviewer_id
 
     def test_skill_type_is_web_security_review(self):
@@ -179,6 +200,7 @@ class TestStructuredOutputDirective:
             FrontendReviewer,
             SecurityReviewer,
             SvelteReviewer,
+            VueReviewer,
         ):
             composed = compose_system_prompt(reviewer_cls.system_prompt)
             assert STRUCTURED_OUTPUT_DIRECTIVE in composed
@@ -221,3 +243,14 @@ class TestRegistration:
         assert SecurityReviewer in selected
         assert FrontendReviewer not in selected
         assert AngularReviewer not in selected
+
+    def test_vue_reviewers_registered_and_selected(self):
+        registered = registry.get_registered_reviewers()
+        selected = get_reviewer_classes(ProjectType.VUE)
+
+        assert VueReviewer in registered
+        assert VueReviewer in selected
+        assert SecurityReviewer in selected
+        assert FrontendReviewer not in selected
+        assert AngularReviewer not in selected
+        assert SvelteReviewer not in selected

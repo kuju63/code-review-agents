@@ -9,10 +9,12 @@ from .angular import AngularReviewer
 from .frontend import FrontendReviewer
 from .security import SecurityReviewer
 from .svelte import SvelteReviewer
+from .vue import VueReviewer
 
 __all__ = [
     "AngularReviewer",
     "FrontendReviewer",
     "SecurityReviewer",
     "SvelteReviewer",
+    "VueReviewer",
 ]

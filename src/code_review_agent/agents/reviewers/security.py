@@ -34,12 +34,17 @@ If a security property depends on a file you did not fetch, state that explicitl
 
 @register_reviewer
 class SecurityReviewer(LLMReviewAgent):
-    """Security reviewer for React/TypeScript, Angular, and Svelte projects."""
+    """Security reviewer for React/TypeScript, Angular, Svelte, and Vue projects."""
 
     reviewer_id = "security"
     perspective = ReviewPerspective.SECURITY
     project_types = frozenset(
-        {ProjectType.REACT_TS, ProjectType.ANGULAR, ProjectType.SVELTE}
+        {
+            ProjectType.REACT_TS,
+            ProjectType.ANGULAR,
+            ProjectType.SVELTE,
+            ProjectType.VUE,
+        }
     )
     system_prompt = _SYSTEM_PROMPT
     uses_url_fetch = True
