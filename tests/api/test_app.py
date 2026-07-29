@@ -9,6 +9,8 @@ from code_review_agent.api.config import Settings
 _ALL_PREFIXES = [
     "pr-info-collector",
     "react-reviewer",
+    "vue-reviewer",
+    "angular-reviewer",
     "svelte-reviewer",
     "security-reviewer",
     "lead-engineer",
@@ -26,6 +28,8 @@ class TestAgentCards:
         [
             ("pr-info-collector", "PR Info Collector"),
             ("react-reviewer", "React Reviewer"),
+            ("vue-reviewer", "Vue Reviewer"),
+            ("angular-reviewer", "Angular Reviewer"),
             ("svelte-reviewer", "Svelte Reviewer"),
             ("security-reviewer", "Security Reviewer"),
             ("lead-engineer", "Lead Engineer"),
@@ -76,6 +80,8 @@ class TestSendTaskEndpoints:
         [
             "pr-info-collector",
             "react-reviewer",
+            "vue-reviewer",
+            "angular-reviewer",
             "svelte-reviewer",
             "security-reviewer",
             "lead-engineer",
@@ -109,6 +115,8 @@ class TestGetTaskEndpoints:
         [
             "pr-info-collector",
             "react-reviewer",
+            "vue-reviewer",
+            "angular-reviewer",
             "svelte-reviewer",
             "security-reviewer",
             "lead-engineer",

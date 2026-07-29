@@ -87,6 +87,8 @@ class TestSettingsDefaults:
         s = _IsolatedSettings()
         assert s.agent_pr_info_collector_url is None
         assert s.agent_react_reviewer_url is None
+        assert s.agent_vue_reviewer_url is None
+        assert s.agent_angular_reviewer_url is None
         assert s.agent_security_reviewer_url is None
         assert s.agent_lead_engineer_url is None
         assert s.agent_orchestrator_url is None

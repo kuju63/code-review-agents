@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     agent_base_url: str = "http://localhost:8000"
     agent_pr_info_collector_url: str | None = None
     agent_react_reviewer_url: str | None = None
+    agent_vue_reviewer_url: str | None = None
+    agent_angular_reviewer_url: str | None = None
     agent_svelte_reviewer_url: str | None = None
     agent_security_reviewer_url: str | None = None
     agent_lead_engineer_url: str | None = None

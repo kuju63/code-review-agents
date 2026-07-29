@@ -8,6 +8,8 @@ from code_review_agent.api.agents import (
     orchestrator_router,
     pr_info_collector_router,
     react_reviewer_router,
+    vue_reviewer_router,
+    angular_reviewer_router,
     svelte_reviewer_router,
     security_reviewer_router,
 )
@@ -37,6 +39,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         pr_info_collector_router(settings, store), prefix="/pr-info-collector"
     )
     app.include_router(react_reviewer_router(settings, store), prefix="/react-reviewer")
+    app.include_router(vue_reviewer_router(settings, store), prefix="/vue-reviewer")
+    app.include_router(
+        angular_reviewer_router(settings, store), prefix="/angular-reviewer"
+    )
     app.include_router(
         svelte_reviewer_router(settings, store), prefix="/svelte-reviewer"
     )
