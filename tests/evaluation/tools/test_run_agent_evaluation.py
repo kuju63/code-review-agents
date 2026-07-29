@@ -12,6 +12,8 @@ from __future__ import annotations
 import threading
 import time
 
+import pytest
+
 from tests.evaluation.conftest import load_eval_tool_module
 
 run_agent_evaluation = load_eval_tool_module(
@@ -164,6 +166,7 @@ class TestSeededItemReviewerParallelism:
             "id": "seeded-1",
             "repository": "a/b",
             "pr_number": 1,
+            "stack": "react",
             "file_changes": [],
         }
         run_agent_evaluation.evaluate_seeded_item(
@@ -179,3 +182,98 @@ class TestSeededItemReviewerParallelism:
         s_start, s_end = windows["security-reviewer"]
         overlap = min(f_end, s_end) - max(f_start, s_start)
         assert overlap > 0
+
+
+class TestEvaluateSeededItemStackRouting:
+    """evaluate_seeded_item routes the technical reviewer call by stack
+    (Issue #181): each Seeded item is reviewed by the reviewer matching its
+    own stack plus SecurityReviewer, instead of always calling the (formerly
+    React-only) Frontend reviewer regardless of the item's actual stack.
+    """
+
+    def _run(self, monkeypatch, stack: str) -> list[str]:
+        called_endpoints: list[str] = []
+
+        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
+            name = endpoint.rsplit("/", 1)[-1]
+            called_endpoints.append(name)
+            if name == "pr-info-collector":
+                return {"pr_info": {"file_changes": []}}
+            return {"reviewer": name}
+
+        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
+        monkeypatch.setattr(
+            run_agent_evaluation,
+            "_to_predictions",
+            lambda data, pr_id: {"id": pr_id, "agent_findings": []},
+        )
+
+        item = {
+            "id": "seeded-1",
+            "repository": "a/b",
+            "pr_number": 1,
+            "stack": stack,
+            "file_changes": [],
+        }
+        run_agent_evaluation.evaluate_seeded_item(
+            item,
+            client=object(),
+            base_url="http://x",
+            poll_interval=0.01,
+            timeout=5,
+            model_id="m",
+        )
+        return called_endpoints
+
+    def test_react_stack_calls_react_reviewer(self, monkeypatch):
+        called = self._run(monkeypatch, "react")
+        assert "react-reviewer" in called
+        assert "security-reviewer" in called
+
+    def test_vue_stack_calls_vue_reviewer(self, monkeypatch):
+        called = self._run(monkeypatch, "vue")
+        assert "vue-reviewer" in called
+        assert "security-reviewer" in called
+
+    def test_angular_stack_calls_angular_reviewer(self, monkeypatch):
+        called = self._run(monkeypatch, "angular")
+        assert "angular-reviewer" in called
+        assert "security-reviewer" in called
+
+    def test_svelte_stack_calls_svelte_reviewer(self, monkeypatch):
+        called = self._run(monkeypatch, "svelte")
+        assert "svelte-reviewer" in called
+        assert "security-reviewer" in called
+
+    def test_unknown_stack_raises_value_error_without_calling_any_reviewer(
+        self, monkeypatch
+    ):
+        called_endpoints: list[str] = []
+
+        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
+            called_endpoints.append(endpoint.rsplit("/", 1)[-1])
+            return {"pr_info": {"file_changes": []}}
+
+        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
+
+        item = {
+            "id": "seeded-1",
+            "repository": "a/b",
+            "pr_number": 1,
+            "stack": "solid",
+            "file_changes": [],
+        }
+
+        with pytest.raises(ValueError, match="solid"):
+            run_agent_evaluation.evaluate_seeded_item(
+                item,
+                client=object(),
+                base_url="http://x",
+                poll_interval=0.01,
+                timeout=5,
+                model_id="m",
+            )
+        # Fails closed before any A2A call is made, including
+        # pr-info-collector -- no wasted work and no accidental fallback to
+        # an unrelated reviewer.
+        assert called_endpoints == []
