@@ -211,6 +211,89 @@ Minimum record format:
 
 Axis agreement uses only matched pairs where both sides contain canonical values. Missing, `unknown`, or invalid axis values are excluded independently, and a reported `0.0` with `n=0` means no eligible labels rather than complete disagreement.
 
+After writing `agent_predictions.jsonl`, `run_agent_evaluation.py` invokes
+`evaluation/tools/generate_evaluation_report.py` as a subprocess (the same
+pattern it already uses for `score_evaluation.py`) to score, write the
+Markdown report, and send the Discord notification. This is unchanged from
+before the sharded-execution support below was added — see
+[docs/eval-sharded-execution-spec.md](../docs/eval-sharded-execution-spec.md).
+
+### 4a. Sharded execution (time-constrained environments)
+
+Some execution environments (for example OpenCode, whose invocations reset
+every 2 hours) cap wall-clock time per invocation below what a full
+Gold+Seeded run can take. When `--concurrency 2` and `--timeout 1800`
+(defaults) do not fit in the available window, split the run into shards:
+
+```bash
+uv run python evaluation/tools/run_agent_evaluation.py \
+  --gold evaluation/data/gold_pr_set.jsonl \
+  --seeded evaluation/data/seeded_set.jsonl \
+  --output evaluation/data/shard0.jsonl \
+  --shard-index 0 --shard-count 4
+
+# repeat for --shard-index 1, 2, 3 with matching --output paths
+```
+
+Each shard evaluates only every `--shard-count`-th Gold/Seeded item
+(0-based `--shard-index`), skips report generation, and does not shut down
+the A2A server even if `--server-pid-file` is set — the server must stay up
+across all shard invocations. Stop it manually (or via
+[.claude/skills/run-evaluation/SKILL.md](../.claude/skills/run-evaluation/SKILL.md)
+Step 5's fallback) once every shard has finished.
+
+**Choosing `--shard-count`**: pick the smallest value satisfying
+
+```
+(ceil(gold_count / shard_count / concurrency)
+ + ceil(seeded_count / shard_count / concurrency)) * timeout <= available_window
+```
+
+With today's dataset (Gold 8 / Seeded 16, `--concurrency 2`, `--timeout 1800`)
+and a 2-hour window, `shard-count = 3` gives `(ceil(3/2) + ceil(6/2)) * 1800
+= 9000s ≈ 2.5h` — too slow — while `shard-count = 4` gives `(1 + 2) * 1800 =
+5400s = 1.5h`, which fits. Recompute this whenever the dataset grows.
+
+All shards must run against the same (byte-identical) `--gold`/`--seeded`
+files, since the split is positional (`items[shard_index::shard_count]`);
+each shard needs a distinct `--output` path.
+
+Once every shard has finished, merge them:
+
+```bash
+uv run python evaluation/tools/merge_predictions.py \
+  --gold evaluation/data/gold_pr_set.jsonl \
+  --seeded evaluation/data/seeded_set.jsonl \
+  --output evaluation/data/agent_predictions.jsonl \
+  evaluation/data/shard0.jsonl evaluation/data/shard1.jsonl \
+  evaluation/data/shard2.jsonl evaluation/data/shard3.jsonl
+```
+
+By default, an id missing from both the merged predictions and every
+shard's `failed_ids.json` sidecar is treated as **unaccounted** and fails
+the merge (exit code 2). This is deliberately stricter than the
+non-sharded run's "partial results are fine" tolerance: with no sidecar
+evidence, an unaccounted id can't be told apart from a shard invocation
+that was killed mid-run by the same execution-time limit this workflow
+exists to work around, before it wrote anything. Do not reach for
+`--allow-missing` as a routine flag — check the shard's logs first — and
+use it only once you have confirmed the gap is an accepted per-item
+failure, not a shard that silently never ran.
+
+Then generate the score, Markdown report, and Discord notification from the
+merged predictions:
+
+```bash
+uv run python evaluation/tools/generate_evaluation_report.py \
+  --gold evaluation/data/gold_pr_set.jsonl \
+  --seeded evaluation/data/seeded_set.jsonl \
+  --pred evaluation/data/agent_predictions.jsonl
+```
+
+This is the same script the non-sharded path in §4 calls automatically, so
+the output (`report_YYYYMMDD-HHMMSS-<hash>.md`, Discord notification) is
+identical either way.
+
 ## 5. Score evaluation
 
 uv run python evaluation/tools/score_evaluation.py \
@@ -280,3 +363,6 @@ If evaluation runs are slow:
 - Increase `--concurrency` on `run_agent_evaluation.py` cautiously (default 2);
   watch for `--timeout` failures in the run's `[WARN]` output before raising it
   further
+- If a single invocation cannot fit the full run in its execution window at
+  all (rather than merely being slow), split it with `--shard-index`/
+  `--shard-count` — see §4a above.

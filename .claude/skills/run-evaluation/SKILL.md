@@ -171,12 +171,27 @@ GitHub MCPのレート制限次第では2が現実的な上限であり、上げ
 
 `.env` に `DISCORD_WEBHOOK_URL` が設定されていれば、レポート生成直後（Hard Gate の成否を問わず）に自動で Discord へ完了通知が送信される（任意設定。未設定なら何もしない）。
 
+### 実行環境に時間制約がある場合（例: OpenCode の呼び出し単位2時間制約）
+
+上記コマンドを1回で完走できない場合は、`--shard-index`/`--shard-count` で評価フェーズを
+複数回の呼び出しに分割する。手順・shard数の目安・マージ方法は
+[evaluation/RUNBOOK.md §4a](../../../evaluation/RUNBOOK.md#4a-sharded-execution-time-constrained-environments)
+を参照。この場合、Step 4のコマンドをshard数だけ繰り返した後、
+`evaluation/tools/merge_predictions.py` でマージし、
+`evaluation/tools/generate_evaluation_report.py` を実行してから Step 5 に進む
+（レポート・Discord通知はこの独立実行で生成されるため、shard実行中の
+`run_agent_evaluation.py` はレポート生成をスキップする）。
+
 ---
 
 ## Step 5: サーバー停止の確認（念のためのフォールバック）
 
 `run_agent_evaluation.py` の `--server-pid-file` オプションにより、スクリプト終了時に自動的に SIGTERM が送信される。
 スクリプトが異常終了した場合のフォールバックとして、PID ファイルが残っていれば手動停止する。
+
+shard実行時（`--shard-index`/`--shard-count` 指定時）は、各shard呼び出しがサーバーを
+shutdownしない（次のshard呼び出しがサーバーに接続できなくなるため）。したがってshard運用では
+このStep 5が実質的な唯一のサーバー停止手段であり、全shard完了後に必ず実行すること。
 
 ```bash
 if [ -f /tmp/a2a_eval.pid ]; then
@@ -197,6 +212,9 @@ fi
 ---
 
 ## Step 6: Obsidian へのレポート保存
+
+shard運用時は `evaluation/tools/generate_evaluation_report.py`(マージ後に独立実行したもの)が
+生成したレポートが対象になる。それ以外は生成物の形式・保存手順に差はない。
 
 `evaluation/data/report_*.md` の最新ファイルを特定する:
 
