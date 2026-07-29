@@ -19,6 +19,78 @@ const slugify = (branch) =>
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+export function createToastNotifier(v2, { timeoutMs = 2000 } = {}) {
+  return (message, variant = "info") => {
+    let request;
+    try {
+      request = v2.tui.showToast({
+        title: "Git Worktree",
+        message,
+        variant,
+        duration: 5000,
+      });
+    } catch {
+      return;
+    }
+    void Promise.race([request, sleep(timeoutMs)]).catch(() => {});
+  };
+}
+
+export async function withProgressNotifications({
+  phase,
+  operation,
+  notify,
+  initialDelayMs = 5000,
+  intervalMs = 15000,
+}) {
+  const startedAt = Date.now();
+  let interval;
+  const reportWaiting = () => {
+    const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
+    notify(`${phase} is still running (${elapsedSeconds}s elapsed)`, "info");
+  };
+  notify(`${phase} started`, "info");
+  const initialTimer = setTimeout(() => {
+    reportWaiting();
+    interval = setInterval(reportWaiting, intervalMs);
+  }, initialDelayMs);
+  try {
+    return await operation();
+  } finally {
+    clearTimeout(initialTimer);
+    if (interval) clearInterval(interval);
+  }
+}
+
+export async function withToolStatus({ label, operation, notify }) {
+  try {
+    const result = await operation();
+    notify(`${label} completed`, "success");
+    return result;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    notify(`${label} failed: ${detail}`, "error");
+    throw error;
+  }
+}
+
+// Switches the session's file-operation scope to the given workspace id
+// (null = main project) and unwraps the response.
+async function switchToWorkspace({ v2, workspaceID, sessionID, notify }) {
+  return unwrap(
+    await withProgressNotifications({
+      phase: `Switching session to '${workspaceID ?? "main"}'`,
+      operation: () =>
+        v2.experimental.workspace.warp({
+          id: workspaceID,
+          sessionID,
+        }),
+      notify,
+    }),
+    "failed to switch session scope",
+  );
+}
+
 // Matches the "workspace ready" wait timeout described below. WorkspaceCreateError
 // carries no machine-readable error code, only this message, so detection is
 // necessarily string-based.
@@ -55,6 +127,7 @@ async function findWorkspaceByBranch(v2, branch, { attempts = 20, intervalMs = 1
 
 export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_workspace }) => {
   const v2 = createOpencodeClient({ baseUrl: serverUrl.toString() });
+  const notify = createToastNotifier(v2);
 
   experimental_workspace.register("git-worktree", {
     name: "Git Worktree",
@@ -75,10 +148,20 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
         .nothrow()
         .quiet();
       if (existing.exitCode === 0) {
-        await $`git -C ${directory} worktree add ${config.directory} ${config.branch}`.env(shellEnv);
+        await withProgressNotifications({
+          phase: `Adding Git worktree for '${config.branch}'`,
+          operation: () =>
+            $`git -C ${directory} worktree add ${config.directory} ${config.branch}`.env(shellEnv),
+          notify,
+        });
       } else {
         const base = config.extra?.base || "main";
-        await $`git -C ${directory} worktree add ${config.directory} -b ${config.branch} ${base}`.env(shellEnv);
+        await withProgressNotifications({
+          phase: `Adding Git worktree for '${config.branch}' from '${base}'`,
+          operation: () =>
+            $`git -C ${directory} worktree add ${config.directory} -b ${config.branch} ${base}`.env(shellEnv),
+          notify,
+        });
       }
       // Deliberately not awaited: opencode waits on a "workspace ready" event
       // with a short timeout, and scripts/setup-worktree.sh's venv/uv sync can
@@ -107,45 +190,58 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
           base: tool.schema.string().optional(),
         },
         async execute({ branch, base }, context) {
-          // Check before create() so a workspace that already existed for this
-          // branch (created earlier, or by a concurrent request) isn't reported
-          // as "recovered from a timeout" below -- that label is reserved for
-          // workspaces this specific create() call actually produced.
-          const preexisting = await findWorkspaceByBranch(v2, branch, { attempts: 1, intervalMs: 0 });
-          if (preexisting) {
-            unwrap(
-              await v2.experimental.workspace.warp({ id: preexisting.id, sessionID: context.sessionID }),
-              "failed to switch session scope",
-            );
-            return `Worktree '${branch}' already exists at ${preexisting.directory}. This session's file scope is now that worktree.`;
-          }
+          return withToolStatus({
+            label: `Create worktree '${branch}'`,
+            notify,
+            operation: async () => {
+              // Check before create() so a workspace that already existed for this
+              // branch (created earlier, or by a concurrent request) isn't reported
+              // as "recovered from a timeout" below -- that label is reserved for
+              // workspaces this specific create() call actually produced.
+              const preexisting = await withProgressNotifications({
+                phase: `Checking existing workspaces for '${branch}'`,
+                operation: () => findWorkspaceByBranch(v2, branch, { attempts: 1, intervalMs: 0 }),
+                notify,
+              });
+              if (preexisting) {
+                await switchToWorkspace({ v2, workspaceID: preexisting.id, sessionID: context.sessionID, notify });
+                return `Worktree '${branch}' already exists at ${preexisting.directory}. This session's file scope is now that worktree.`;
+              }
 
-          const created = await v2.experimental.workspace.create({
-            type: "git-worktree",
-            branch,
-            extra: { base },
+              const created = await withProgressNotifications({
+                phase: `Creating workspace for '${branch}'`,
+                operation: () =>
+                  v2.experimental.workspace.create({
+                    type: "git-worktree",
+                    branch,
+                    extra: { base },
+                  }),
+                notify,
+              });
+              let workspace = created.data;
+              let recovered = false;
+              if (created.error) {
+                const message = created.error.data?.message;
+                if (!isWorkspaceReadyTimeout(message)) {
+                  throw new Error(message ?? "failed to create worktree");
+                }
+                workspace = await withProgressNotifications({
+                  phase: `Waiting for workspace '${branch}' to become ready`,
+                  operation: () => findWorkspaceByBranch(v2, branch),
+                  notify,
+                });
+                recovered = true;
+                if (!workspace) {
+                  throw new Error(message ?? "failed to create worktree");
+                }
+              }
+              await switchToWorkspace({ v2, workspaceID: workspace.id, sessionID: context.sessionID, notify });
+              const status = recovered
+                ? `Worktree '${branch}' is ready at ${workspace.directory} (confirmed via polling after the create request timed out)`
+                : `Created worktree '${branch}' at ${workspace.directory}`;
+              return `${status}. This session's file scope is now that worktree.`;
+            },
           });
-          let workspace = created.data;
-          let recovered = false;
-          if (created.error) {
-            const message = created.error.data?.message;
-            if (!isWorkspaceReadyTimeout(message)) {
-              throw new Error(message ?? "failed to create worktree");
-            }
-            workspace = await findWorkspaceByBranch(v2, branch);
-            recovered = true;
-            if (!workspace) {
-              throw new Error(message ?? "failed to create worktree");
-            }
-          }
-          unwrap(
-            await v2.experimental.workspace.warp({ id: workspace.id, sessionID: context.sessionID }),
-            "failed to switch session scope",
-          );
-          const status = recovered
-            ? `Worktree '${branch}' is ready at ${workspace.directory} (confirmed via polling after the create request timed out)`
-            : `Created worktree '${branch}' at ${workspace.directory}`;
-          return `${status}. This session's file scope is now that worktree.`;
         },
       }),
       worktree_remove: tool({
@@ -155,42 +251,80 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
           branch: tool.schema.string(),
         },
         async execute({ branch }, context) {
-          const workspaces = unwrap(await v2.experimental.workspace.list(), "failed to list worktrees");
-          const workspace = workspaces.find((w) => w.type === "git-worktree" && w.branch === branch);
-          if (!workspace) {
-            throw new Error(`No git-worktree workspace found for branch '${branch}'`);
-          }
-          // The session invoking this tool isn't necessarily scoped into the
-          // worktree being removed (it could already be on main, or on a
-          // different worktree entirely). Capture wherever it actually is
-          // before warping to main, so a failed remove() below restores that
-          // -- not the (possibly now-gone) workspace we tried to remove.
-          const sessionBefore = await v2.session.get({ sessionID: context.sessionID });
-          const previousWorkspaceID = sessionBefore.error ? workspace.id : (sessionBefore.data.workspaceID ?? null);
-
-          unwrap(
-            await v2.experimental.workspace.warp({ id: null, sessionID: context.sessionID }),
-            "failed to switch session scope back to main",
-          );
-          const removed = await v2.experimental.workspace.remove({ id: workspace.id });
-          if (removed.error) {
-            // The session was already warped out of its prior scope above so
-            // the worktree directory could be deleted; if deletion itself
-            // failed, try to restore the session's scope rather than leaving
-            // it silently detached from where it actually was.
-            const restored = await v2.experimental.workspace.warp({
-              id: previousWorkspaceID,
-              sessionID: context.sessionID,
-            });
-            if (restored.error) {
-              console.error(
-                `[git-worktree] failed to restore session scope (was ${previousWorkspaceID ?? "main"}) after removing '${branch}' failed:`,
-                restored.error.data?.message,
+          return withToolStatus({
+            label: `Remove worktree '${branch}'`,
+            notify,
+            operation: async () => {
+              const workspaces = unwrap(
+                await withProgressNotifications({
+                  phase: `Finding workspace for '${branch}'`,
+                  operation: () => v2.experimental.workspace.list(),
+                  notify,
+                }),
+                "failed to list worktrees",
               );
-            }
-            throw new Error(removed.error.data?.message ?? "failed to remove worktree");
-          }
-          return `Session file scope moved back to the main project. Worktree '${branch}' removed.`;
+              const workspace = workspaces.find(
+                (w) => w.type === "git-worktree" && w.branch === branch,
+              );
+              if (!workspace) {
+                throw new Error(`No git-worktree workspace found for branch '${branch}'`);
+              }
+              // The session invoking this tool isn't necessarily scoped into the
+              // worktree being removed (it could already be on main, or on a
+              // different worktree entirely). Capture wherever it actually is
+              // before warping to main, so a failed remove() below restores that
+              // -- not the (possibly now-gone) workspace we tried to remove.
+              const sessionBefore = await withProgressNotifications({
+                phase: "Reading current session workspace",
+                operation: () => v2.session.get({ sessionID: context.sessionID }),
+                notify,
+              });
+              const previousWorkspaceID = sessionBefore.error
+                ? null
+                : (sessionBefore.data.workspaceID ?? null);
+
+              unwrap(
+                await withProgressNotifications({
+                  phase: "Switching session back to main",
+                  operation: () =>
+                    v2.experimental.workspace.warp({
+                      id: null,
+                      sessionID: context.sessionID,
+                    }),
+                  notify,
+                }),
+                "failed to switch session scope back to main",
+              );
+              const removed = await withProgressNotifications({
+                phase: `Removing workspace '${branch}'`,
+                operation: () => v2.experimental.workspace.remove({ id: workspace.id }),
+                notify,
+              });
+              if (removed.error) {
+                // The session was already warped out of its prior scope above so
+                // the worktree directory could be deleted; if deletion itself
+                // failed, try to restore the session's scope rather than leaving
+                // it silently detached from where it actually was.
+                const restored = await withProgressNotifications({
+                  phase: "Restoring previous session workspace",
+                  operation: () =>
+                    v2.experimental.workspace.warp({
+                      id: previousWorkspaceID,
+                      sessionID: context.sessionID,
+                    }),
+                  notify,
+                });
+                if (restored.error) {
+                  console.error(
+                    `[git-worktree] failed to restore session scope (was ${previousWorkspaceID ?? "main"}) after removing '${branch}' failed:`,
+                    restored.error.data?.message,
+                  );
+                }
+                throw new Error(removed.error.data?.message ?? "failed to remove worktree");
+              }
+              return `Session file scope moved back to the main project. Worktree '${branch}' removed.`;
+            },
+          });
         },
       }),
     },

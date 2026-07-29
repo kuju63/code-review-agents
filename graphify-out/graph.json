@@ -115,6 +115,28 @@
       "norm_label": ".opencode/plugins/worktree.js"
     },
     {
+      "label": "instructions",
+      "file_type": "code",
+      "source_file": ".opencode/opencode.json",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "opencode_opencode_instructions",
+      "community": 354,
+      "community_name": "opencode.json",
+      "norm_label": "instructions"
+    },
+    {
+      "label": "AGENTS.setup.md",
+      "file_type": "concept",
+      "source_file": ".opencode/opencode.json",
+      "source_location": "L7",
+      "_origin": "ast",
+      "id": "ref_agents_setup_md",
+      "community": 354,
+      "community_name": "opencode.json",
+      "norm_label": "agents.setup.md"
+    },
+    {
       "label": "graphify.js",
       "file_type": "code",
       "source_file": ".opencode/plugins/graphify.js",
@@ -181,10 +203,43 @@
       "norm_label": "sleep()"
     },
     {
+      "label": "createToastNotifier()",
+      "file_type": "code",
+      "source_file": ".opencode/plugins/worktree.js",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "opencode_plugins_worktree_createtoastnotifier",
+      "community": 355,
+      "community_name": "worktree.js",
+      "norm_label": "createtoastnotifier()"
+    },
+    {
+      "label": "withProgressNotifications()",
+      "file_type": "code",
+      "source_file": ".opencode/plugins/worktree.js",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "opencode_plugins_worktree_withprogressnotifications",
+      "community": 355,
+      "community_name": "worktree.js",
+      "norm_label": "withprogressnotifications()"
+    },
+    {
+      "label": "withToolStatus()",
+      "file_type": "code",
+      "source_file": ".opencode/plugins/worktree.js",
+      "source_location": "L65",
+      "_origin": "ast",
+      "id": "opencode_plugins_worktree_withtoolstatus",
+      "community": 355,
+      "community_name": "worktree.js",
+      "norm_label": "withtoolstatus()"
+    },
+    {
       "label": "isWorkspaceReadyTimeout()",
       "file_type": "code",
       "source_file": ".opencode/plugins/worktree.js",
-      "source_location": "L25",
+      "source_location": "L80",
       "_origin": "ast",
       "id": "opencode_plugins_worktree_isworkspacereadytimeout",
       "community": 355,
@@ -195,7 +250,7 @@
       "label": "unwrap()",
       "file_type": "code",
       "source_file": ".opencode/plugins/worktree.js",
-      "source_location": "L31",
+      "source_location": "L86",
       "_origin": "ast",
       "id": "opencode_plugins_worktree_unwrap",
       "community": 355,
@@ -206,7 +261,7 @@
       "label": "findWorkspaceByBranch()",
       "file_type": "code",
       "source_file": ".opencode/plugins/worktree.js",
-      "source_location": "L44",
+      "source_location": "L99",
       "_origin": "ast",
       "id": "opencode_plugins_worktree_findworkspacebybranch",
       "community": 355,
@@ -217,12 +272,34 @@
       "label": "WorktreePlugin()",
       "file_type": "code",
       "source_file": ".opencode/plugins/worktree.js",
-      "source_location": "L56",
+      "source_location": "L111",
       "_origin": "ast",
       "id": "opencode_plugins_worktree_worktreeplugin",
       "community": 355,
       "community_name": "worktree.js",
       "norm_label": "worktreeplugin()"
+    },
+    {
+      "label": "worktree.test.js",
+      "file_type": "code",
+      "source_file": ".opencode/plugins/worktree.test.js",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "opencode_plugins_worktree_test",
+      "community": 355,
+      "community_name": "worktree.js",
+      "norm_label": "worktree.test.js"
+    },
+    {
+      "label": "wait()",
+      "file_type": "code",
+      "source_file": ".opencode/plugins/worktree.test.js",
+      "source_location": "L10",
+      "_origin": "ast",
+      "id": "opencode_plugins_worktree_test_wait",
+      "community": 355,
+      "community_name": "worktree.js",
+      "norm_label": "wait()"
     },
     {
       "label": "gold_pr_item.schema.json",
@@ -2893,8 +2970,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_collect_review_texts",
-      "community": 356,
-      "community_name": "collect_review_texts",
+      "community": 86,
+      "community_name": "within_change_limits",
       "norm_label": "collect_review_texts()"
     },
     {
@@ -3168,8 +3245,8 @@
       "source_location": "L545",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_validate_repo",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "validate_repo()"
     },
     {
@@ -3190,8 +3267,8 @@
       "source_location": "L648",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_revalidate_existing_targets",
-      "community": 273,
-      "community_name": ".__init__",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": "revalidate_existing_targets()"
     },
     {
@@ -3245,8 +3322,8 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_rationale_73",
-      "community": 356,
-      "community_name": "collect_review_texts",
+      "community": 86,
+      "community_name": "within_change_limits",
       "norm_label": "aggregate non-blank inline comment and review bodies (any author).      returns:"
     },
     {
@@ -3443,8 +3520,8 @@
       "source_location": "L552",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_rationale_552",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 353,
+      "community_name": "write_stack_outputs",
       "norm_label": "validate a repository's availability, archive status, star count, and recent rel"
     },
     {
@@ -3465,8 +3542,8 @@
       "source_location": "L652",
       "_origin": "ast",
       "id": "evaluation_tools_discover_candidate_prs_rationale_652",
-      "community": 273,
-      "community_name": ".__init__",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": "revalidate existing classified targets against shared gold criteria.      return"
     },
     {
@@ -4357,8 +4434,8 @@
       "source_location": "L287",
       "_origin": "ast",
       "id": "evaluation_tools_select_stack_targets_check_coverage_thresholds",
-      "community": 80,
-      "community_name": "summarize",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "check_coverage_thresholds()"
     },
     {
@@ -4368,8 +4445,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "evaluation_tools_select_stack_targets_py_any",
-      "community": 80,
-      "community_name": "summarize",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "any"
     },
     {
@@ -4379,8 +4456,8 @@
       "source_location": "L346",
       "_origin": "ast",
       "id": "evaluation_tools_select_stack_targets_summarize",
-      "community": 80,
-      "community_name": "summarize",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "summarize()"
     },
     {
@@ -4522,8 +4599,8 @@
       "source_location": "L290",
       "_origin": "ast",
       "id": "evaluation_tools_select_stack_targets_rationale_290",
-      "community": 80,
-      "community_name": "summarize",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "compare selected targets with the evaluation coverage policy.      returns:"
     },
     {
@@ -4533,8 +4610,8 @@
       "source_location": "L347",
       "_origin": "ast",
       "id": "evaluation_tools_select_stack_targets_rationale_347",
-      "community": 80,
-      "community_name": "summarize",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "build distributions and advisory coverage warnings.      returns:         json-s"
     },
     {
@@ -5040,8 +5117,8 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "src_code_review_agent_init_main",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "main()"
     },
     {
@@ -5062,8 +5139,8 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "src_code_review_agent_init_rationale_63",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "start the a2a http server."
     },
     {
@@ -5095,8 +5172,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "models.py"
     },
     {
@@ -5150,8 +5227,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_a2adatapart",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "a2adatapart"
     },
     {
@@ -5194,8 +5271,8 @@
       "source_location": "L64",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_a2asendtaskresponse",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "a2asendtaskresponse"
     },
     {
@@ -5216,8 +5293,8 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_agentskill",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "agentskill"
     },
     {
@@ -5227,8 +5304,8 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_agentcard",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "agentcard"
     },
     {
@@ -5238,8 +5315,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_rationale_1",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "pydantic models for the a2a (agent-to-agent) protocol.  covers task lifecycle (:"
     },
     {
@@ -5271,8 +5348,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_rationale_33",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "a structured-data segment of an :class:`a2amessage`."
     },
     {
@@ -5315,8 +5392,8 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_rationale_65",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "response body wrapping the created or updated :class:`a2atask`."
     },
     {
@@ -5337,8 +5414,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_rationale_79",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "a single capability an agent exposes, including its i/o json schemas."
     },
     {
@@ -5348,8 +5425,8 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_models_rationale_89",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "discovery metadata describing an agent's identity, capabilities, and skills."
     },
     {
@@ -5458,8 +5535,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_task_store_taskstore_create",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 7,
+      "community_name": "TaskStore",
       "norm_label": ".create()"
     },
     {
@@ -5546,8 +5623,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_task_store_rationale_33",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 7,
+      "community_name": "TaskStore",
       "norm_label": "create and store a new task in the ``submitted`` state.          returns:"
     },
     {
@@ -5689,8 +5766,8 @@
       "source_location": "L170",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_base_reviewer_reviewagent_init",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 1,
+      "community_name": "ReviewerConfig",
       "norm_label": ".__init__()"
     },
     {
@@ -5700,8 +5777,8 @@
       "source_location": "L180",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_base_reviewer_reviewagent_review",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".review()"
     },
     {
@@ -5733,8 +5810,8 @@
       "source_location": "L331",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_base_reviewer_llmreviewagent_build_prompt",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 44,
+      "community_name": "TestAnnotatePatch",
       "norm_label": "._build_prompt()"
     },
     {
@@ -5799,8 +5876,8 @@
       "source_location": "L171",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_base_reviewer_rationale_171",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 1,
+      "community_name": "ReviewerConfig",
       "norm_label": "store the shared runtime configuration for this reviewer instance.          args"
     },
     {
@@ -5810,8 +5887,8 @@
       "source_location": "L185",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_base_reviewer_rationale_185",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "review the change described by ``context``.          args:             context:"
     },
     {
@@ -5843,8 +5920,8 @@
       "source_location": "L332",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_base_reviewer_rationale_332",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 44,
+      "community_name": "TestAnnotatePatch",
       "norm_label": "serialize the review-relevant pr information into a prompt.          shared by e"
     },
     {
@@ -5865,8 +5942,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_exceptions_structuredoutputmissingerror",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "structuredoutputmissingerror"
     },
     {
@@ -5887,8 +5964,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_exceptions_structuredoutputmissingerror_init",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": ".__init__()"
     },
     {
@@ -5909,8 +5986,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_exceptions_rationale_26",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "raised when an llm agent call ends without a structured output result.      stra"
     },
     {
@@ -5920,8 +5997,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_exceptions_rationale_37",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "build the error message from which agent failed and why it stopped.          arg"
     },
     {
@@ -5931,8 +6008,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_lead_engineer",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "code_review_agent/agents/lead_engineer.py"
     },
     {
@@ -5964,8 +6041,8 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_lead_engineer_leadengineeragent_evaluate",
-      "community": 71,
-      "community_name": "make_row",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": ".evaluate()"
     },
     {
@@ -5997,8 +6074,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_lead_engineer_rationale_1",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "lead engineer synthesis agent.  evaluates the aggregated outputs of the parallel"
     },
     {
@@ -6030,8 +6107,8 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_lead_engineer_rationale_92",
-      "community": 71,
-      "community_name": "make_row",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "evaluate all reviewer findings and produce a final report.          args:"
     },
     {
@@ -6063,8 +6140,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_pr_info_collector",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "code_review_agent/agents/pr_info_collector.py"
     },
     {
@@ -6250,8 +6327,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_pr_info_collector_rationale_1",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "pr info collector agent.  collects pull request information from github and retu"
     },
     {
@@ -6591,8 +6668,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_run_reviewer",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "_run_reviewer()"
     },
     {
@@ -6602,8 +6679,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_py_mcpclient",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "mcpclient"
     },
     {
@@ -6635,8 +6712,8 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_revieworchestrator_run",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": ".run()"
     },
     {
@@ -6646,8 +6723,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_revieworchestrator_run_async",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": ".run_async()"
     },
     {
@@ -6657,8 +6734,8 @@
       "source_location": "L249",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_revieworchestrator_select_reviewers",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "._select_reviewers()"
     },
     {
@@ -6679,8 +6756,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_rationale_35",
-      "community": 6,
-      "community_name": "base_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "run a reviewer and release its shared-client placeholder afterward.      the pla"
     },
     {
@@ -6712,8 +6789,8 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_rationale_92",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "run the parallel review stage synchronously.          convenience wrapper around"
     },
     {
@@ -6723,8 +6800,8 @@
       "source_location": "L114",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_rationale_114",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "run the parallel review stage concurrently.          each reviewer's synchronous"
     },
     {
@@ -6734,8 +6811,8 @@
       "source_location": "L255",
       "_origin": "ast",
       "id": "src_code_review_agent_agents_review_orchestrator_rationale_255",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "resolve which reviewers to run and the project type each targets.          a rev"
     },
     {
@@ -7042,8 +7119,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_leadengineerskillinput",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "leadengineerskillinput"
     },
     {
@@ -7075,8 +7152,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_verify_github_token",
-      "community": 351,
-      "community_name": "verify_github_token",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "verify_github_token()"
     },
     {
@@ -7108,8 +7185,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_rationale_27",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "input payload schema for the lead engineer skill."
     },
     {
@@ -7119,8 +7196,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_rationale_45",
-      "community": 351,
-      "community_name": "verify_github_token",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "fastapi dependency that authenticates a request against the github api.      arg"
     },
     {
@@ -7196,8 +7273,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_lead_engineer",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "api/agents/lead_engineer.py"
     },
     {
@@ -7240,8 +7317,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_lead_engineer_rationale_1",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "a2a router exposing the lead engineer agent as an independently callable service"
     },
     {
@@ -7328,8 +7405,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "api/agents/pr_info_collector.py"
     },
     {
@@ -7339,8 +7416,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector_run",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "_run()"
     },
     {
@@ -7350,8 +7427,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector_pr_info_collector_router",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "pr_info_collector_router()"
     },
     {
@@ -7361,8 +7438,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector_py_apirouter",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "apirouter"
     },
     {
@@ -7372,8 +7449,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector_rationale_1",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "a2a router exposing the pr info collector agent as an independently callable ser"
     },
     {
@@ -7383,8 +7460,8 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector_rationale_48",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "build the a2a-compatible router for the pr info collector agent.      exposes th"
     },
     {
@@ -7658,8 +7735,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_models_init",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "code_review_agent/models/__init__.py"
     },
     {
@@ -7669,8 +7746,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_models_init_rationale_1",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "data models for code review agent."
     },
     {
@@ -7680,8 +7757,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "models/lead_engineer.py"
     },
     {
@@ -7691,8 +7768,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_decisionverdict",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "decisionverdict"
     },
     {
@@ -7702,8 +7779,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_py_strenum",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "strenum"
     },
     {
@@ -7713,8 +7790,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_findingseverity",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "findingseverity"
     },
     {
@@ -7724,8 +7801,8 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_findingimpact",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "findingimpact"
     },
     {
@@ -7735,8 +7812,8 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_findingpriority",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "findingpriority"
     },
     {
@@ -7867,8 +7944,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_rationale_1",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "pydantic models for the lead engineer synthesis stage.  defines the decision sch"
     },
     {
@@ -7878,8 +7955,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_rationale_17",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "the lead engineer's verdict on a single reviewer finding."
     },
     {
@@ -7889,8 +7966,8 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_rationale_24",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "final severity assigned to an individual finding."
     },
     {
@@ -7900,8 +7977,8 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_rationale_33",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "quality characteristic primarily affected by a finding."
     },
     {
@@ -7911,8 +7988,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_code_review_agent_models_lead_engineer_rationale_42",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "final urgency assigned to an individual finding."
     },
     {
@@ -8010,8 +8087,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_models_pr_info",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "pr_info.py"
     },
     {
@@ -8076,8 +8153,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_models_pr_info_rationale_1",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "pydantic models for pr information collected from github."
     },
     {
@@ -8153,8 +8230,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_py_strenum",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": "strenum"
     },
     {
@@ -8164,8 +8241,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_reviewperspective",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "reviewperspective"
     },
     {
@@ -8186,8 +8263,8 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_reviewfinding",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": "reviewfinding"
     },
     {
@@ -8285,8 +8362,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_rationale_35",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 71,
+      "community_name": "make_row",
       "norm_label": "the lens a reviewer evaluates a change through.      :attr:`technical` and :attr"
     },
     {
@@ -8307,8 +8384,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "src_code_review_agent_models_review_rationale_58",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": "a single issue raised by a reviewer.      attributes:         file_path: target"
     },
     {
@@ -8406,8 +8483,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "src_code_review_agent_skills_agent_skills_factory_agentskilltype",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "agentskilltype"
     },
     {
@@ -8417,8 +8494,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_skills_agent_skills_factory_py_strenum",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "strenum"
     },
     {
@@ -8516,8 +8593,8 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "src_code_review_agent_skills_agent_skills_factory_rationale_16",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "skill bundles available to llm-backed reviewers."
     },
     {
@@ -8945,8 +9022,8 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "tests_a2a_test_models_testagentcard_test_agent_card_defaults",
-      "community": 8,
-      "community_name": "models.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": ".test_agent_card_defaults()"
     },
     {
@@ -9385,8 +9462,8 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "tests_agents_test_base_reviewer_nomcpreviewer",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "_nomcpreviewer"
     },
     {
@@ -9396,8 +9473,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "tests_agents_test_base_reviewer_urlfetchreviewer",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "_urlfetchreviewer"
     },
     {
@@ -9407,8 +9484,8 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "tests_agents_test_base_reviewer_urlfetchonlyreviewer",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "_urlfetchonlyreviewer"
     },
     {
@@ -9517,8 +9594,8 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "tests_agents_test_base_reviewer_testreviewermetadata",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": "testreviewermetadata"
     },
     {
@@ -9528,8 +9605,8 @@
       "source_location": "L142",
       "_origin": "ast",
       "id": "tests_agents_test_base_reviewer_testreviewermetadata_test_subclass_is_review_agent",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_subclass_is_review_agent()"
     },
     {
@@ -9539,8 +9616,8 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "tests_agents_test_base_reviewer_testreviewermetadata_test_metadata_present",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_metadata_present()"
     },
     {
@@ -10067,8 +10144,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "tests_agents_test_base_reviewer_rationale_45",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "reviewer that does not use github mcp."
     },
     {
@@ -10078,8 +10155,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "tests_agents_test_base_reviewer_rationale_55",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "reviewer that uses both github mcp and url fetch."
     },
     {
@@ -10089,8 +10166,8 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "tests_agents_test_base_reviewer_rationale_66",
-      "community": 1,
-      "community_name": "ReviewerConfig",
+      "community": 6,
+      "community_name": "base_reviewer.py",
       "norm_label": "reviewer that uses url fetch but not github mcp."
     },
     {
@@ -10111,8 +10188,8 @@
       "source_location": "L140",
       "_origin": "ast",
       "id": "tests_agents_test_base_reviewer_rationale_140",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": "the base class exposes class-level metadata."
     },
     {
@@ -12366,8 +12443,8 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_failingreviewer",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 14,
+      "community_name": "ReviewOrchestrator",
       "norm_label": "_failingreviewer"
     },
     {
@@ -12377,8 +12454,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_failingreviewer_review",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 14,
+      "community_name": "ReviewOrchestrator",
       "norm_label": ".review()"
     },
     {
@@ -12388,8 +12465,8 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_eventloopfailingreviewer",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 14,
+      "community_name": "ReviewOrchestrator",
       "norm_label": "_eventloopfailingreviewer"
     },
     {
@@ -12399,8 +12476,8 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_eventloopfailingreviewer_review",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 14,
+      "community_name": "ReviewOrchestrator",
       "norm_label": ".review()"
     },
     {
@@ -12410,8 +12487,8 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_mcpinitfailingreviewer",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 14,
+      "community_name": "ReviewOrchestrator",
       "norm_label": "_mcpinitfailingreviewer"
     },
     {
@@ -12421,8 +12498,8 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_mcpinitfailingreviewer_review",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 14,
+      "community_name": "ReviewOrchestrator",
       "norm_label": ".review()"
     },
     {
@@ -12432,8 +12509,8 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_transportfailingreviewer",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 14,
+      "community_name": "ReviewOrchestrator",
       "norm_label": "_transportfailingreviewer"
     },
     {
@@ -12443,8 +12520,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "tests_agents_test_review_orchestrator_transportfailingreviewer_review",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 14,
+      "community_name": "ReviewOrchestrator",
       "norm_label": ".review()"
     },
     {
@@ -13004,8 +13081,8 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testfrontendreviewer_test_frontend_review_skills_resolve",
-      "community": 58,
-      "community_name": "create_agent_skills",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_frontend_review_skills_resolve()"
     },
     {
@@ -13059,8 +13136,8 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testangularreviewer_test_angular_review_skills_resolve",
-      "community": 58,
-      "community_name": "create_agent_skills",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_angular_review_skills_resolve()"
     },
     {
@@ -13070,8 +13147,8 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testsveltereviewer",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": "testsveltereviewer"
     },
     {
@@ -13081,8 +13158,8 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testsveltereviewer_test_is_llm_review_agent",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_is_llm_review_agent()"
     },
     {
@@ -13092,8 +13169,8 @@
       "source_location": "L102",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testsveltereviewer_test_metadata",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_metadata()"
     },
     {
@@ -13103,8 +13180,8 @@
       "source_location": "L107",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testsveltereviewer_test_skill_type_is_svelte_review",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_skill_type_is_svelte_review()"
     },
     {
@@ -13125,8 +13202,8 @@
       "source_location": "L114",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testsveltereviewer_test_non_svelte_pr_returns_empty_without_invoking_llm",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_non_svelte_pr_returns_empty_without_invoking_llm()"
     },
     {
@@ -13136,8 +13213,8 @@
       "source_location": "L126",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testsveltereviewer_test_svelte_pr_delegates_to_llm_review",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_svelte_pr_delegates_to_llm_review()"
     },
     {
@@ -13191,8 +13268,8 @@
       "source_location": "L154",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_testsecurityreviewer_test_web_security_review_skills_resolve",
-      "community": 58,
-      "community_name": "create_agent_skills",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": ".test_web_security_review_skills_resolve()"
     },
     {
@@ -13345,8 +13422,8 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "tests_agents_test_reviewers_rationale_97",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": "svelte technical reviewer metadata, prompt, and non-svelte guard."
     },
     {
@@ -13477,8 +13554,8 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken",
-      "community": 351,
-      "community_name": "verify_github_token",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "testverifygithubtoken"
     },
     {
@@ -13488,8 +13565,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_py_asyncio",
-      "community": 351,
-      "community_name": "verify_github_token",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "asyncio"
     },
     {
@@ -13499,8 +13576,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_returns_token_on_valid_response",
-      "community": 351,
-      "community_name": "verify_github_token",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_returns_token_on_valid_response()"
     },
     {
@@ -13510,8 +13587,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_raises_401_on_invalid_token",
-      "community": 351,
-      "community_name": "verify_github_token",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_raises_401_on_invalid_token()"
     },
     {
@@ -13521,8 +13598,8 @@
       "source_location": "L79",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_raises_401_on_missing_bearer_prefix",
-      "community": 351,
-      "community_name": "verify_github_token",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_raises_401_on_missing_bearer_prefix()"
     },
     {
@@ -13532,8 +13609,8 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_raises_503_when_github_unreachable",
-      "community": 351,
-      "community_name": "verify_github_token",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_raises_503_when_github_unreachable()"
     },
     {
@@ -13543,8 +13620,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "test_frontend_reviewer.py"
     },
     {
@@ -13554,8 +13631,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_make_app",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "_make_app()"
     },
     {
@@ -13565,8 +13642,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_py_fastapi",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "fastapi"
     },
     {
@@ -13576,8 +13653,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_pr_info_payload",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "_pr_info_payload()"
     },
     {
@@ -13587,8 +13664,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_send_payload",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "_send_payload()"
     },
     {
@@ -13598,8 +13675,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testagentcard",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "testagentcard"
     },
     {
@@ -13609,8 +13686,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testagentcard_test_returns_agent_card",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_returns_agent_card()"
     },
     {
@@ -13642,8 +13719,8 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testgettask",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "testgettask"
     },
     {
@@ -13653,8 +13730,8 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testgettask_test_returns_404_for_unknown_task_id",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_returns_404_for_unknown_task_id()"
     },
     {
@@ -13664,8 +13741,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_py_asyncio",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "asyncio"
     },
     {
@@ -13675,8 +13752,8 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testgettask_test_background_task_completes",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_background_task_completes()"
     },
     {
@@ -13686,8 +13763,8 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "tests_api_agents_test_frontend_reviewer_testgettask_test_forwards_mcp_retry_settings_to_reviewer_config",
-      "community": 49,
-      "community_name": "test_frontend_reviewer.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_forwards_mcp_retry_settings_to_reviewer_config()"
     },
     {
@@ -13840,8 +13917,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_make_app",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "_make_app()"
     },
     {
@@ -13851,8 +13928,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_py_fastapi",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": "fastapi"
     },
     {
@@ -13862,8 +13939,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_send_payload",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "_send_payload()"
     },
     {
@@ -13873,8 +13950,8 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testagentcard",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": "testagentcard"
     },
     {
@@ -13884,8 +13961,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testagentcard_test_returns_agent_card",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_returns_agent_card()"
     },
     {
@@ -13917,8 +13994,8 @@
       "source_location": "L107",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testgettask",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "testgettask"
     },
     {
@@ -13928,8 +14005,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testgettask_test_returns_404_for_unknown_task_id",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 47,
+      "community_name": "api/agents/test_pr_info_collector.py",
       "norm_label": ".test_returns_404_for_unknown_task_id()"
     },
     {
@@ -13939,8 +14016,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_py_asyncio",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": "asyncio"
     },
     {
@@ -13950,8 +14027,8 @@
       "source_location": "L115",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testgettask_test_background_task_runs_full_pipeline",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": ".test_background_task_runs_full_pipeline()"
     },
     {
@@ -13961,8 +14038,8 @@
       "source_location": "L169",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testgettask_test_forwards_mcp_retry_settings",
-      "community": 67,
-      "community_name": "test_orchestrator.py",
+      "community": 3,
+      "community_name": "ReviewPerspective",
       "norm_label": ".test_forwards_mcp_retry_settings()"
     },
     {
@@ -13972,8 +14049,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "api/agents/test_pr_info_collector.py"
     },
     {
@@ -14005,8 +14082,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_send_payload",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "_send_payload()"
     },
     {
@@ -14016,8 +14093,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_testagentcard",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 9,
+      "community_name": "PRInfo",
       "norm_label": "testagentcard"
     },
     {
@@ -14038,8 +14115,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_testsendtask",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "testsendtask"
     },
     {
@@ -14049,8 +14126,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_testsendtask_test_returns_202_with_task_id",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": ".test_returns_202_with_task_id()"
     },
     {
@@ -14071,8 +14148,8 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_testgettask",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "testgettask"
     },
     {
@@ -14093,8 +14170,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_py_asyncio",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": "asyncio"
     },
     {
@@ -14104,8 +14181,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_testgettask_test_background_task_completes",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": ".test_background_task_completes()"
     },
     {
@@ -14115,8 +14192,8 @@
       "source_location": "L157",
       "_origin": "ast",
       "id": "tests_api_agents_test_pr_info_collector_testgettask_test_forwards_mcp_retry_settings_to_collector",
-      "community": 9,
-      "community_name": "PRInfo",
+      "community": 2,
+      "community_name": "Settings",
       "norm_label": ".test_forwards_mcp_retry_settings_to_collector()"
     },
     {
@@ -14126,8 +14203,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "test_security_reviewer.py"
     },
     {
@@ -14137,8 +14214,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_make_app",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "_make_app()"
     },
     {
@@ -14148,8 +14225,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_py_fastapi",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "fastapi"
     },
     {
@@ -14159,8 +14236,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_send_payload",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "_send_payload()"
     },
     {
@@ -14170,8 +14247,8 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testagentcard",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "testagentcard"
     },
     {
@@ -14181,8 +14258,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testagentcard_test_returns_agent_card",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_returns_agent_card()"
     },
     {
@@ -14214,8 +14291,8 @@
       "source_location": "L103",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testgettask",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "testgettask"
     },
     {
@@ -14225,8 +14302,8 @@
       "source_location": "L104",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testgettask_test_returns_404_for_unknown_task_id",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_returns_404_for_unknown_task_id()"
     },
     {
@@ -14236,8 +14313,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_py_asyncio",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": "asyncio"
     },
     {
@@ -14247,8 +14324,8 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testgettask_test_background_task_completes",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_background_task_completes()"
     },
     {
@@ -14258,8 +14335,8 @@
       "source_location": "L145",
       "_origin": "ast",
       "id": "tests_api_agents_test_security_reviewer_testgettask_test_forwards_mcp_retry_settings_to_reviewer_config",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 4,
+      "community_name": "ReviewResult",
       "norm_label": ".test_forwards_mcp_retry_settings_to_reviewer_config()"
     },
     {
@@ -14269,8 +14346,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_api_agents_test_svelte_reviewer",
-      "community": 47,
-      "community_name": "api/agents/test_pr_info_collector.py",
+      "community": 66,
+      "community_name": "task_store.py",
       "norm_label": "test_svelte_reviewer.py"
     },
     {
@@ -14412,8 +14489,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_api_test_app",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "test_app.py"
     },
     {
@@ -14423,8 +14500,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tests_api_test_app_make_settings",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "_make_settings()"
     },
     {
@@ -14434,8 +14511,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "tests_api_test_app_testagentcards",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "testagentcards"
     },
     {
@@ -14445,8 +14522,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_test_app_py_parametrize",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "parametrize"
     },
     {
@@ -14456,8 +14533,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "tests_api_test_app_testagentcards_test_returns_agent_card",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": ".test_returns_agent_card()"
     },
     {
@@ -14467,8 +14544,8 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "tests_api_test_app_testskillschemasselfcontained",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "testskillschemasselfcontained"
     },
     {
@@ -14478,8 +14555,8 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "tests_api_test_app_testskillschemasselfcontained_test_no_dangling_component_refs",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": ".test_no_dangling_component_refs()"
     },
     {
@@ -14489,8 +14566,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tests_api_test_app_testskillschemasselfcontained_test_skill_schemas_are_objects",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": ".test_skill_schemas_are_objects()"
     },
     {
@@ -14500,8 +14577,8 @@
       "source_location": "L73",
       "_origin": "ast",
       "id": "tests_api_test_app_testsendtaskendpoints",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "testsendtaskendpoints"
     },
     {
@@ -14511,8 +14588,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "tests_api_test_app_testsendtaskendpoints_test_returns_422_without_auth",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": ".test_returns_422_without_auth()"
     },
     {
@@ -14522,8 +14599,8 @@
       "source_location": "L97",
       "_origin": "ast",
       "id": "tests_api_test_app_testhealthendpoint",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "testhealthendpoint"
     },
     {
@@ -14533,8 +14610,8 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "tests_api_test_app_testhealthendpoint_test_returns_200",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": ".test_returns_200()"
     },
     {
@@ -14544,8 +14621,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "tests_api_test_app_testgettaskendpoints",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "testgettaskendpoints"
     },
     {
@@ -14555,8 +14632,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "tests_api_test_app_testgettaskendpoints_test_returns_404_for_unknown_task",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": ".test_returns_404_for_unknown_task()"
     },
     {
@@ -14566,8 +14643,8 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "tests_api_test_app_rationale_44",
-      "community": 2,
-      "community_name": "Settings",
+      "community": 8,
+      "community_name": "models.py",
       "norm_label": "skill input/output schemas must be resolvable standalone json schemas.      the"
     },
     {
@@ -14940,8 +15017,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_evaluation_conftest",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 48,
+      "community_name": "test_select_stack_targets.py",
       "norm_label": "conftest.py"
     },
     {
@@ -14951,8 +15028,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tests_evaluation_conftest_load_eval_tool_module",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 48,
+      "community_name": "test_select_stack_targets.py",
       "norm_label": "load_eval_tool_module()"
     },
     {
@@ -14962,8 +15039,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "moduletype",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 48,
+      "community_name": "test_select_stack_targets.py",
       "norm_label": "moduletype"
     },
     {
@@ -14973,8 +15050,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_evaluation_conftest_rationale_1",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 48,
+      "community_name": "test_select_stack_targets.py",
       "norm_label": "shared helpers for testing standalone scripts under evaluation/tools/.  evaluati"
     },
     {
@@ -14984,8 +15061,8 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "tests_evaluation_conftest_rationale_19",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 48,
+      "community_name": "test_select_stack_targets.py",
       "norm_label": "load a module from evaluation/tools/<filename> under the given name.      evalua"
     },
     {
@@ -15072,8 +15149,8 @@
       "source_location": "L96",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_build_gold_set_testbuildgolditem",
-      "community": 122,
-      "community_name": "build_gold_set.py",
+      "community": 53,
+      "community_name": "load_eval_tool_module",
       "norm_label": "testbuildgolditem"
     },
     {
@@ -15083,8 +15160,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "object",
-      "community": 256,
-      "community_name": "_make_app",
+      "community": 56,
+      "community_name": "test_run_agent_evaluation.py",
       "norm_label": "object"
     },
     {
@@ -18372,8 +18449,8 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discord_notify_testsenddiscordnotification",
-      "community": 55,
-      "community_name": "test_discord_notify.py",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": "testsenddiscordnotification"
     },
     {
@@ -18383,8 +18460,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discord_notify_testsenddiscordnotification_test_noop_when_webhook_url_is_none",
-      "community": 55,
-      "community_name": "test_discord_notify.py",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": ".test_noop_when_webhook_url_is_none()"
     },
     {
@@ -18394,8 +18471,8 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discord_notify_testsenddiscordnotification_test_noop_when_webhook_url_is_empty_string",
-      "community": 55,
-      "community_name": "test_discord_notify.py",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": ".test_noop_when_webhook_url_is_empty_string()"
     },
     {
@@ -18405,8 +18482,8 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discord_notify_testsenddiscordnotification_test_posts_payload_to_webhook_url",
-      "community": 55,
-      "community_name": "test_discord_notify.py",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": ".test_posts_payload_to_webhook_url()"
     },
     {
@@ -18416,8 +18493,8 @@
       "source_location": "L135",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discord_notify_testsenddiscordnotification_test_network_error_is_logged_and_not_raised",
-      "community": 55,
-      "community_name": "test_discord_notify.py",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": ".test_network_error_is_logged_and_not_raised()"
     },
     {
@@ -18427,8 +18504,8 @@
       "source_location": "L148",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discord_notify_testsenddiscordnotification_test_http_error_status_is_logged_and_not_raised",
-      "community": 55,
-      "community_name": "test_discord_notify.py",
+      "community": 49,
+      "community_name": "test_frontend_reviewer.py",
       "norm_label": ".test_http_error_status_is_logged_and_not_raised()"
     },
     {
@@ -18449,8 +18526,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 86,
+      "community_name": "within_change_limits",
       "norm_label": "test_discover_candidate_prs.py"
     },
     {
@@ -18548,8 +18625,8 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testcollectreviewtexts",
-      "community": 356,
-      "community_name": "collect_review_texts",
+      "community": 86,
+      "community_name": "within_change_limits",
       "norm_label": "testcollectreviewtexts"
     },
     {
@@ -18559,8 +18636,8 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testcollectreviewtexts_test_aggregates_inline_and_review_bodies",
-      "community": 356,
-      "community_name": "collect_review_texts",
+      "community": 86,
+      "community_name": "within_change_limits",
       "norm_label": ".test_aggregates_inline_and_review_bodies()"
     },
     {
@@ -18570,8 +18647,8 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testcollectreviewtexts_test_skips_blank",
-      "community": 356,
-      "community_name": "collect_review_texts",
+      "community": 86,
+      "community_name": "within_change_limits",
       "norm_label": ".test_skips_blank()"
     },
     {
@@ -18581,8 +18658,8 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testistestfile",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 86,
+      "community_name": "within_change_limits",
       "norm_label": "testistestfile"
     },
     {
@@ -18592,8 +18669,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testistestfile_test_detects_test_paths",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 86,
+      "community_name": "within_change_limits",
       "norm_label": ".test_detects_test_paths()"
     },
     {
@@ -18603,8 +18680,8 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testistestfile_test_non_test_path",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 86,
+      "community_name": "within_change_limits",
       "norm_label": ".test_non_test_path()"
     },
     {
@@ -18933,8 +19010,8 @@
       "source_location": "L291",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testrevalidateexistingtargets",
-      "community": 273,
-      "community_name": ".__init__",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": "testrevalidateexistingtargets"
     },
     {
@@ -18944,8 +19021,8 @@
       "source_location": "L292",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testrevalidateexistingtargets_target",
-      "community": 273,
-      "community_name": ".__init__",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": "._target()"
     },
     {
@@ -18955,8 +19032,8 @@
       "source_location": "L303",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testrevalidateexistingtargets_test_keeps_only_targets_matching_shared_criteria",
-      "community": 273,
-      "community_name": ".__init__",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": ".test_keeps_only_targets_matching_shared_criteria()"
     },
     {
@@ -18966,8 +19043,8 @@
       "source_location": "L318",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testrevalidateexistingtargets_test_aborts_when_github_fetch_fails",
-      "community": 273,
-      "community_name": ".__init__",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": ".test_aborts_when_github_fetch_fails()"
     },
     {
@@ -18977,8 +19054,8 @@
       "source_location": "L327",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testrevalidateexistingtargets_test_aborts_when_review_comment_fetch_fails",
-      "community": 273,
-      "community_name": ".__init__",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": ".test_aborts_when_review_comment_fetch_fails()"
     },
     {
@@ -18988,8 +19065,8 @@
       "source_location": "L343",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testrevalidateexistingtargets_test_preserves_existing_classifications",
-      "community": 273,
-      "community_name": ".__init__",
+      "community": 16,
+      "community_name": "GitHubClient",
       "norm_label": ".test_preserves_existing_classifications()"
     },
     {
@@ -19054,8 +19131,8 @@
       "source_location": "L423",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_fake_client",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 61,
+      "community_name": "build_target",
       "norm_label": "_fake_client()"
     },
     {
@@ -19065,8 +19142,8 @@
       "source_location": "L442",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testvalidaterepo",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 61,
+      "community_name": "build_target",
       "norm_label": "testvalidaterepo"
     },
     {
@@ -19076,8 +19153,8 @@
       "source_location": "L443",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testvalidaterepo_candidate",
-      "community": 353,
-      "community_name": "write_stack_outputs",
+      "community": 61,
+      "community_name": "build_target",
       "norm_label": "._candidate()"
     },
     {
@@ -19087,8 +19164,8 @@
       "source_location": "L451",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testvalidaterepo_test_ok_when_stars_and_recent_release",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 61,
+      "community_name": "build_target",
       "norm_label": ".test_ok_when_stars_and_recent_release()"
     },
     {
@@ -19098,8 +19175,8 @@
       "source_location": "L459",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testvalidaterepo_test_repo_not_found",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 61,
+      "community_name": "build_target",
       "norm_label": ".test_repo_not_found()"
     },
     {
@@ -19109,8 +19186,8 @@
       "source_location": "L466",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testvalidaterepo_test_archived",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 61,
+      "community_name": "build_target",
       "norm_label": ".test_archived()"
     },
     {
@@ -19120,8 +19197,8 @@
       "source_location": "L473",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testvalidaterepo_test_too_few_stars",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 61,
+      "community_name": "build_target",
       "norm_label": ".test_too_few_stars()"
     },
     {
@@ -19131,8 +19208,8 @@
       "source_location": "L480",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_testvalidaterepo_test_no_recent_release",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 61,
+      "community_name": "build_target",
       "norm_label": ".test_no_recent_release()"
     },
     {
@@ -19395,8 +19472,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_rationale_1",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 86,
+      "community_name": "within_change_limits",
       "norm_label": "tests for evaluation/tools/discover_candidate_prs.py.  covers the per-stack gold"
     },
     {
@@ -19417,8 +19494,8 @@
       "source_location": "L424",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_rationale_424",
-      "community": 25,
-      "community_name": "test_discover_candidate_prs.py",
+      "community": 61,
+      "community_name": "build_target",
       "norm_label": "create a mock client with default repository, release, and tag responses.      p"
     },
     {
@@ -19428,8 +19505,8 @@
       "source_location": "L444",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_discover_candidate_prs_rationale_444",
-      "community": 353,
-      "community_name": "write_stack_outputs",
+      "community": 61,
+      "community_name": "build_target",
       "norm_label": "create a sample repository candidate for testing.          returns:"
     },
     {
@@ -19527,8 +19604,8 @@
       "source_location": "L90",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_run_agent_evaluation_testevaluateconcurrentlyfailureisolation",
-      "community": 56,
-      "community_name": "test_run_agent_evaluation.py",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": "testevaluateconcurrentlyfailureisolation"
     },
     {
@@ -19538,8 +19615,8 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_run_agent_evaluation_testevaluateconcurrentlyfailureisolation_test_failed_items_are_recorded_and_do_not_affect_others",
-      "community": 56,
-      "community_name": "test_run_agent_evaluation.py",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": ".test_failed_items_are_recorded_and_do_not_affect_others()"
     },
     {
@@ -19549,8 +19626,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_run_agent_evaluation_testevaluateconcurrentlyfailureisolation_test_failure_log_line_is_self_contained_under_concurrency",
-      "community": 56,
-      "community_name": "test_run_agent_evaluation.py",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": ".test_failure_log_line_is_self_contained_under_concurrency()"
     },
     {
@@ -19593,8 +19670,8 @@
       "source_location": "L107",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_run_agent_evaluation_rationale_107",
-      "community": 56,
-      "community_name": "test_run_agent_evaluation.py",
+      "community": 256,
+      "community_name": "_make_app",
       "norm_label": "each outcome line must carry its own label so a warn can't visually         atta"
     },
     {
@@ -20253,8 +20330,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "test_select_stack_targets.py"
     },
     {
@@ -20264,8 +20341,8 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_make_row",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "make_row()"
     },
     {
@@ -20275,8 +20352,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_row_dict",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "row_dict()"
     },
     {
@@ -20286,8 +20363,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testloadtargets",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "testloadtargets"
     },
     {
@@ -20297,8 +20374,8 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testloadtargets_test_loads_multiple_stack_files",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_loads_multiple_stack_files()"
     },
     {
@@ -20308,8 +20385,8 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testloadtargets_test_rejects_invalid_enum",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_rejects_invalid_enum()"
     },
     {
@@ -20319,8 +20396,8 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testloadtargets_test_rejects_unknown_stack",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_rejects_unknown_stack()"
     },
     {
@@ -20330,8 +20407,8 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testloadtargets_test_preserves_missing_field_message",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_preserves_missing_field_message()"
     },
     {
@@ -20341,8 +20418,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_py_parametrize",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "parametrize"
     },
     {
@@ -20352,8 +20429,8 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testloadtargets_test_qualifies_invalid_pr_number_with_path_and_index",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_qualifies_invalid_pr_number_with_path_and_index()"
     },
     {
@@ -20363,8 +20440,8 @@
       "source_location": "L100",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testfilteranddedupe",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "testfilteranddedupe"
     },
     {
@@ -20385,8 +20462,8 @@
       "source_location": "L134",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testfilteranddedupe_test_dedupe_keeps_first_occurrence",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_dedupe_keeps_first_occurrence()"
     },
     {
@@ -20396,8 +20473,8 @@
       "source_location": "L142",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testselection",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "testselection"
     },
     {
@@ -20407,8 +20484,8 @@
       "source_location": "L143",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testselection_test_balanced_round_robin_prioritizes_severity_then_priority",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_balanced_round_robin_prioritizes_severity_then_priority()"
     },
     {
@@ -20418,8 +20495,8 @@
       "source_location": "L152",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testselection_test_allocate_quota_clamps_and_redistributes",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_allocate_quota_clamps_and_redistributes()"
     },
     {
@@ -20429,8 +20506,8 @@
       "source_location": "L160",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testselection_test_stratified_is_balanced_and_deterministic",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_stratified_is_balanced_and_deterministic()"
     },
     {
@@ -20440,8 +20517,8 @@
       "source_location": "L175",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testsummaryandcoverage",
-      "community": 80,
-      "community_name": "summarize",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "testsummaryandcoverage"
     },
     {
@@ -20451,8 +20528,8 @@
       "source_location": "L176",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testsummaryandcoverage_test_summarizes_new_three_axes",
-      "community": 80,
-      "community_name": "summarize",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_summarizes_new_three_axes()"
     },
     {
@@ -20462,8 +20539,8 @@
       "source_location": "L196",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testsummaryandcoverage_test_coverage_warns_when_impact_ratio_is_low",
-      "community": 80,
-      "community_name": "summarize",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_coverage_warns_when_impact_ratio_is_low()"
     },
     {
@@ -20473,8 +20550,8 @@
       "source_location": "L203",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testmain",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "testmain"
     },
     {
@@ -20484,8 +20561,8 @@
       "source_location": "L204",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testmain_test_writes_execution_targets_from_multiple_inputs",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_writes_execution_targets_from_multiple_inputs()"
     },
     {
@@ -20495,8 +20572,8 @@
       "source_location": "L266",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testmain_test_shuffle_balanced_preserves_shuffled_order",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_shuffle_balanced_preserves_shuffled_order()"
     },
     {
@@ -20506,8 +20583,8 @@
       "source_location": "L299",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_testmain_test_stratify_requires_shuffle",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": ".test_stratify_requires_shuffle()"
     },
     {
@@ -20517,8 +20594,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_select_stack_targets_rationale_1",
-      "community": 48,
-      "community_name": "test_select_stack_targets.py",
+      "community": 28,
+      "community_name": "select_stack_targets.py",
       "norm_label": "tests for evaluation/tools/select_stack_targets.py."
     },
     {
@@ -20528,8 +20605,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_target_criteria",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 48,
+      "community_name": "test_select_stack_targets.py",
       "norm_label": "test_target_criteria.py"
     },
     {
@@ -20682,8 +20759,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_target_criteria_testinlinereviewcriteria",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 67,
+      "community_name": "test_orchestrator.py",
       "norm_label": "testinlinereviewcriteria"
     },
     {
@@ -20693,8 +20770,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_target_criteria_testinlinereviewcriteria_test_accepts_human_inline_comment",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 67,
+      "community_name": "test_orchestrator.py",
       "norm_label": ".test_accepts_human_inline_comment()"
     },
     {
@@ -20704,8 +20781,8 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_target_criteria_testinlinereviewcriteria_test_accepts_ai_inline_comment",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 67,
+      "community_name": "test_orchestrator.py",
       "norm_label": ".test_accepts_ai_inline_comment()"
     },
     {
@@ -20715,8 +20792,8 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_target_criteria_testinlinereviewcriteria_test_rejects_comment_without_path",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 67,
+      "community_name": "test_orchestrator.py",
       "norm_label": ".test_rejects_comment_without_path()"
     },
     {
@@ -20726,8 +20803,8 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_target_criteria_testinlinereviewcriteria_test_rejects_comment_on_non_target_file",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 67,
+      "community_name": "test_orchestrator.py",
       "norm_label": ".test_rejects_comment_on_non_target_file()"
     },
     {
@@ -20737,8 +20814,8 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_target_criteria_testinlinereviewcriteria_test_rejects_blank_comment",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 67,
+      "community_name": "test_orchestrator.py",
       "norm_label": ".test_rejects_blank_comment()"
     },
     {
@@ -20748,8 +20825,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_evaluation_tools_test_target_criteria_rationale_1",
-      "community": 53,
-      "community_name": "load_eval_tool_module",
+      "community": 48,
+      "community_name": "test_select_stack_targets.py",
       "norm_label": "tests for evaluation/tools/target_criteria.py."
     },
     {
@@ -20880,8 +20957,8 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput",
-      "community": 352,
-      "community_name": "TestFindingDecisionOutput",
+      "community": 124,
+      "community_name": "TestResolveDecisions",
       "norm_label": "testfindingdecisionoutput"
     },
     {
@@ -20891,8 +20968,8 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_required_fields",
-      "community": 352,
-      "community_name": "TestFindingDecisionOutput",
+      "community": 124,
+      "community_name": "TestResolveDecisions",
       "norm_label": ".test_required_fields()"
     },
     {
@@ -20902,8 +20979,8 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_independent_axes_are_required_and_typed",
-      "community": 352,
-      "community_name": "TestFindingDecisionOutput",
+      "community": 124,
+      "community_name": "TestResolveDecisions",
       "norm_label": ".test_independent_axes_are_required_and_typed()"
     },
     {
@@ -20913,8 +20990,8 @@
       "source_location": "L135",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput_valid_axis_payload",
-      "community": 352,
-      "community_name": "TestFindingDecisionOutput",
+      "community": 124,
+      "community_name": "TestResolveDecisions",
       "norm_label": "._valid_axis_payload()"
     },
     {
@@ -20924,8 +21001,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_py_parametrize",
-      "community": 352,
-      "community_name": "TestFindingDecisionOutput",
+      "community": 124,
+      "community_name": "TestResolveDecisions",
       "norm_label": "parametrize"
     },
     {
@@ -20935,8 +21012,8 @@
       "source_location": "L149",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_each_axis_is_required",
-      "community": 352,
-      "community_name": "TestFindingDecisionOutput",
+      "community": 124,
+      "community_name": "TestResolveDecisions",
       "norm_label": ".test_each_axis_is_required()"
     },
     {
@@ -20946,8 +21023,8 @@
       "source_location": "L166",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_rejects_out_of_vocabulary_axis",
-      "community": 352,
-      "community_name": "TestFindingDecisionOutput",
+      "community": 124,
+      "community_name": "TestResolveDecisions",
       "norm_label": ".test_rejects_out_of_vocabulary_axis()"
     },
     {
@@ -21265,8 +21342,8 @@
       "source_location": "L87",
       "_origin": "ast",
       "id": "tests_models_test_lead_engineer_rationale_87",
-      "community": 352,
-      "community_name": "TestFindingDecisionOutput",
+      "community": 124,
+      "community_name": "TestResolveDecisions",
       "norm_label": "tests for the llm output schema (finding_index reference style)."
     },
     {
@@ -21562,8 +21639,8 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "tests_models_test_review_testenums",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": "testenums"
     },
     {
@@ -21573,8 +21650,8 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "tests_models_test_review_testenums_test_project_type_values",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": ".test_project_type_values()"
     },
     {
@@ -21584,8 +21661,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "tests_models_test_review_testenums_test_review_perspective_values",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": ".test_review_perspective_values()"
     },
     {
@@ -21595,8 +21672,8 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "tests_models_test_review_testenums_test_review_priority_values",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": ".test_review_priority_values()"
     },
     {
@@ -21606,8 +21683,8 @@
       "source_location": "L61",
       "_origin": "ast",
       "id": "tests_models_test_review_testenums_test_enums_are_string_compatible",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": ".test_enums_are_string_compatible()"
     },
     {
@@ -21617,8 +21694,8 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewfinding",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": "testreviewfinding"
     },
     {
@@ -21628,8 +21705,8 @@
       "source_location": "L70",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewfinding_test_minimal_finding",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": ".test_minimal_finding()"
     },
     {
@@ -21639,8 +21716,8 @@
       "source_location": "L81",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewfinding_test_full_finding",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": ".test_full_finding()"
     },
     {
@@ -21650,8 +21727,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewfinding_test_priority_is_required",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": ".test_priority_is_required()"
     },
     {
@@ -21661,8 +21738,8 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewfinding_test_priority_accepts_string_value",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": ".test_priority_accepts_string_value()"
     },
     {
@@ -21672,8 +21749,8 @@
       "source_location": "L104",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewoutput",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": "testreviewoutput"
     },
     {
@@ -21683,8 +21760,8 @@
       "source_location": "L107",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewoutput_test_defaults_to_empty_findings",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": ".test_defaults_to_empty_findings()"
     },
     {
@@ -21694,8 +21771,8 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "tests_models_test_review_testreviewoutput_test_holds_findings",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": ".test_holds_findings()"
     },
     {
@@ -21826,8 +21903,8 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "tests_models_test_review_rationale_37",
-      "community": 4,
-      "community_name": "ReviewResult",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": "tests for the extension-axis enumerations."
     },
     {
@@ -21837,8 +21914,8 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "tests_models_test_review_rationale_68",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": "tests for the reviewfinding model."
     },
     {
@@ -21848,8 +21925,8 @@
       "source_location": "L105",
       "_origin": "ast",
       "id": "tests_models_test_review_rationale_105",
-      "community": 3,
-      "community_name": "ReviewPerspective",
+      "community": 76,
+      "community_name": "has_production_code_change",
       "norm_label": "tests for the llm-facing reviewoutput model."
     },
     {
@@ -23921,20 +23998,20 @@
       "norm_label": "tech stack"
     },
     {
-      "label": "AGENTS.md",
+      "label": "CLAUDE.md",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L1",
       "_origin": "ast",
       "id": "claude",
       "community": 123,
       "community_name": "EVALUATION_PLAN.md",
-      "norm_label": "agents.md"
+      "norm_label": "claude.md"
     },
     {
       "label": "Coding Agent Guide",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L1",
       "_origin": "ast",
       "id": "claude_coding_agent_guide",
@@ -23945,7 +24022,7 @@
     {
       "label": "Project Overview",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L3",
       "_origin": "ast",
       "id": "claude_project_overview",
@@ -23956,7 +24033,7 @@
     {
       "label": "Technology",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L15",
       "_origin": "ast",
       "id": "claude_technology",
@@ -23967,7 +24044,7 @@
     {
       "label": "Frequently Used Commands",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L27",
       "_origin": "ast",
       "id": "claude_frequently_used_commands",
@@ -23978,7 +24055,7 @@
     {
       "label": "Setup",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L31",
       "_origin": "ast",
       "id": "claude_setup",
@@ -23989,7 +24066,7 @@
     {
       "label": "Run Application",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L35",
       "_origin": "ast",
       "id": "claude_run_application",
@@ -24000,7 +24077,7 @@
     {
       "label": "Evaluation Pipeline",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L44",
       "_origin": "ast",
       "id": "claude_evaluation_pipeline",
@@ -24011,7 +24088,7 @@
     {
       "label": "Coding Rules",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L63",
       "_origin": "ast",
       "id": "claude_coding_rules",
@@ -24022,7 +24099,7 @@
     {
       "label": "Quality / Feature Requirements",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L73",
       "_origin": "ast",
       "id": "claude_quality_feature_requirements",
@@ -24033,7 +24110,7 @@
     {
       "label": "Development Process",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L88",
       "_origin": "ast",
       "id": "claude_development_process",
@@ -24044,7 +24121,7 @@
     {
       "label": "Required Execution Checklist for Coding Agent",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L102",
       "_origin": "ast",
       "id": "claude_required_execution_checklist_for_coding_agent",
@@ -24055,7 +24132,7 @@
     {
       "label": "graphify",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L183",
       "_origin": "ast",
       "id": "claude_graphify",
@@ -29749,6 +29826,61 @@
       "community": 131,
       "community_name": "Svelte Agent Skills Review Accuracy Spec",
       "norm_label": "8. future change points"
+    },
+    {
+      "label": "worktree-plugin-progress-notification-spec.md",
+      "file_type": "document",
+      "source_file": "docs/worktree-plugin-progress-notification-spec.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_worktree_plugin_progress_notification_spec",
+      "community": 80,
+      "community_name": "summarize",
+      "norm_label": "worktree-plugin-progress-notification-spec.md"
+    },
+    {
+      "label": "Worktree Plugin Progress Notification Specification",
+      "file_type": "document",
+      "source_file": "docs/worktree-plugin-progress-notification-spec.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_worktree_plugin_progress_notification_spec_worktree_plugin_progress_notification_specification",
+      "community": 80,
+      "community_name": "summarize",
+      "norm_label": "worktree plugin progress notification specification"
+    },
+    {
+      "label": "Background",
+      "file_type": "document",
+      "source_file": "docs/worktree-plugin-progress-notification-spec.md",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "docs_worktree_plugin_progress_notification_spec_background",
+      "community": 80,
+      "community_name": "summarize",
+      "norm_label": "background"
+    },
+    {
+      "label": "Requirements",
+      "file_type": "document",
+      "source_file": "docs/worktree-plugin-progress-notification-spec.md",
+      "source_location": "L9",
+      "_origin": "ast",
+      "id": "docs_worktree_plugin_progress_notification_spec_requirements",
+      "community": 80,
+      "community_name": "summarize",
+      "norm_label": "requirements"
+    },
+    {
+      "label": "Verification",
+      "file_type": "document",
+      "source_file": "docs/worktree-plugin-progress-notification-spec.md",
+      "source_location": "L20",
+      "_origin": "ast",
+      "id": "docs_worktree_plugin_progress_notification_spec_verification",
+      "community": 80,
+      "community_name": "summarize",
+      "norm_label": "verification"
     },
     {
       "label": "EVALUATION_PLAN.md",
@@ -36434,8 +36566,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_skills_reviewing_universal_references_test_quality",
-      "community": 221,
-      "community_name": "Test quality checks",
+      "community": 202,
+      "community_name": "reviewing-universal/SKILL.md",
       "norm_label": "test-quality.md"
     },
     {
@@ -37358,8 +37490,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_skills_reviewing_web_security_references_04_dependencies",
-      "community": 167,
-      "community_name": "reviewing-web-security/SKILL.md",
+      "community": 143,
+      "community_name": "04 Software Supply Chain (The Chain of Trust and Its Blind Spots)",
       "norm_label": "04_dependencies.md"
     },
     {
@@ -42969,6 +43101,17 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": ".opencode/opencode.json",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_opencode",
+      "target": "opencode_opencode_instructions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/opencode.json",
       "source_location": "L3",
       "weight": 1.0,
       "_origin": "ast",
@@ -43012,6 +43155,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "extends",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/opencode.json",
+      "source_location": "L7",
+      "weight": 1.0,
+      "context": "import",
+      "_origin": "ast",
+      "source": "opencode_opencode_instructions",
+      "target": "ref_agents_setup_md",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": ".opencode/plugins/graphify.js",
@@ -43037,7 +43192,18 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": ".opencode/plugins/worktree.js",
-      "source_location": "L44",
+      "source_location": "L22",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_plugins_worktree",
+      "target": "opencode_plugins_worktree_createtoastnotifier",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/plugins/worktree.js",
+      "source_location": "L99",
       "weight": 1.0,
       "_origin": "ast",
       "source": "opencode_plugins_worktree",
@@ -43048,7 +43214,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": ".opencode/plugins/worktree.js",
-      "source_location": "L25",
+      "source_location": "L80",
       "weight": 1.0,
       "_origin": "ast",
       "source": "opencode_plugins_worktree",
@@ -43081,7 +43247,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": ".opencode/plugins/worktree.js",
-      "source_location": "L31",
+      "source_location": "L86",
       "weight": 1.0,
       "_origin": "ast",
       "source": "opencode_plugins_worktree",
@@ -43092,7 +43258,29 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": ".opencode/plugins/worktree.js",
-      "source_location": "L56",
+      "source_location": "L39",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_plugins_worktree",
+      "target": "opencode_plugins_worktree_withprogressnotifications",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/plugins/worktree.js",
+      "source_location": "L65",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_plugins_worktree",
+      "target": "opencode_plugins_worktree_withtoolstatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/plugins/worktree.js",
+      "source_location": "L111",
       "weight": 1.0,
       "_origin": "ast",
       "source": "opencode_plugins_worktree",
@@ -43100,15 +43288,98 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/plugins/worktree.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_plugins_worktree_test",
+      "target": "opencode_plugins_worktree",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": ".opencode/plugins/worktree.js",
-      "source_location": "L51",
+      "source_location": "L35",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_plugins_worktree_createtoastnotifier",
+      "target": "opencode_plugins_worktree_sleep",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/plugins/worktree.js",
+      "source_location": "L106",
       "weight": 1.0,
       "_origin": "ast",
       "source": "opencode_plugins_worktree_findworkspacebybranch",
       "target": "opencode_plugins_worktree_sleep",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/plugins/worktree.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_plugins_worktree_test",
+      "target": "opencode_plugins_worktree_createtoastnotifier",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/plugins/worktree.js",
+      "source_location": "L113",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_plugins_worktree_worktreeplugin",
+      "target": "opencode_plugins_worktree_createtoastnotifier",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/plugins/worktree.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_plugins_worktree_test",
+      "target": "opencode_plugins_worktree_withprogressnotifications",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/plugins/worktree.test.js",
+      "source_location": "L4",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_plugins_worktree_test",
+      "target": "opencode_plugins_worktree_withtoolstatus",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": ".opencode/plugins/worktree.test.js",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "opencode_plugins_worktree_test",
+      "target": "opencode_plugins_worktree_test_wait",
       "confidence_score": 1.0
     },
     {
@@ -51921,6 +52192,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "evaluation/tools/run_agent_evaluation.py",
+      "source_location": "L67",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "evaluation_tools_run_agent_evaluation_to_predictions",
+      "target": "src_code_review_agent_models_lead_engineer_leadengineerreport"
+    },
+    {
       "relation": "rationale_for",
       "confidence": "EXTRACTED",
       "source_file": "evaluation/tools/run_agent_evaluation.py",
@@ -56638,6 +56921,18 @@
       "target": "src_code_review_agent_a2a_models_a2atextpart"
     },
     {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/a2a/test_models.py",
+      "source_location": "L38",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_a2a_test_models_testa2aparts_test_union_discriminated_by_kind_text",
+      "target": "src_code_review_agent_a2a_models_a2atextpart"
+    },
+    {
       "relation": "uses",
       "confidence": "INFERRED",
       "source_file": "tests/a2a/test_models.py",
@@ -57071,6 +57366,18 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_a2a_test_models_testa2aparts_test_data_part",
+      "target": "src_code_review_agent_a2a_models_a2adatapart"
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/a2a/test_models.py",
+      "source_location": "L43",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_a2a_test_models_testa2aparts_test_union_discriminated_by_kind_data",
       "target": "src_code_review_agent_a2a_models_a2adatapart"
     },
     {
@@ -69109,6 +69416,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/code_review_agent/api/agents/frontend_reviewer.py",
+      "source_location": "L32",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_code_review_agent_api_agents_frontend_reviewer_run",
+      "target": "src_code_review_agent_models_pr_info_prinforesult"
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -69319,6 +69638,18 @@
       "source": "src_code_review_agent_api_agents_lead_engineer_run",
       "target": "src_code_review_agent_api_config_settings",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/code_review_agent/api/agents/lead_engineer.py",
+      "source_location": "L32",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_code_review_agent_api_agents_lead_engineer_run",
+      "target": "src_code_review_agent_models_review_reviewreport"
     },
     {
       "relation": "references",
@@ -69933,6 +70264,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/code_review_agent/api/agents/security_reviewer.py",
+      "source_location": "L32",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_code_review_agent_api_agents_security_reviewer_run",
+      "target": "src_code_review_agent_models_pr_info_prinforesult"
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -70155,6 +70498,18 @@
       "source": "src_code_review_agent_api_agents_svelte_reviewer_run",
       "target": "src_code_review_agent_api_config_settings",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "src/code_review_agent/api/agents/svelte_reviewer.py",
+      "source_location": "L32",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "src_code_review_agent_api_agents_svelte_reviewer_run",
+      "target": "src_code_review_agent_models_pr_info_prinforesult"
     },
     {
       "relation": "calls",
@@ -71897,6 +72252,18 @@
       "target": "src_code_review_agent_models_lead_engineer_findingdecisionoutput"
     },
     {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/models/test_lead_engineer.py",
+      "source_location": "L156",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_each_axis_is_required",
+      "target": "src_code_review_agent_models_lead_engineer_findingdecisionoutput"
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -71906,6 +72273,18 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_independent_axes_are_required_and_typed",
+      "target": "src_code_review_agent_models_lead_engineer_findingdecisionoutput"
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/models/test_lead_engineer.py",
+      "source_location": "L173",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_models_test_lead_engineer_testfindingdecisionoutput_test_rejects_out_of_vocabulary_axis",
       "target": "src_code_review_agent_models_lead_engineer_findingdecisionoutput"
     },
     {
@@ -75402,6 +75781,18 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/models/test_pr_info.py",
+      "source_location": "L107",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_models_test_pr_info_testprinforesult_test_json_round_trip",
+      "target": "src_code_review_agent_models_pr_info_prinforesult"
+    },
+    {
       "relation": "calls",
       "context": "call",
       "confidence": "EXTRACTED",
@@ -77212,6 +77603,30 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "tests_models_test_review_testreviewfinding_test_minimal_finding",
+      "target": "src_code_review_agent_models_review_reviewfinding"
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/models/test_review.py",
+      "source_location": "L100",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_models_test_review_testreviewfinding_test_priority_accepts_string_value",
+      "target": "src_code_review_agent_models_review_reviewfinding"
+    },
+    {
+      "relation": "references",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tests/models/test_review.py",
+      "source_location": "L96",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "tests_models_test_review_testreviewfinding_test_priority_is_required",
       "target": "src_code_review_agent_models_review_reviewfinding"
     },
     {
@@ -104675,7 +105090,7 @@
     {
       "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L33",
       "weight": 1.0,
       "_origin": "ast",
@@ -104686,7 +105101,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L1",
       "weight": 1.0,
       "_origin": "ast",
@@ -104697,7 +105112,7 @@
     {
       "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L29",
       "weight": 1.0,
       "_origin": "ast",
@@ -104708,7 +105123,7 @@
     {
       "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L79",
       "weight": 1.0,
       "_origin": "ast",
@@ -104719,7 +105134,7 @@
     {
       "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L85",
       "weight": 1.0,
       "_origin": "ast",
@@ -104730,7 +105145,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L63",
       "weight": 1.0,
       "_origin": "ast",
@@ -104741,7 +105156,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L88",
       "weight": 1.0,
       "_origin": "ast",
@@ -104752,7 +105167,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L27",
       "weight": 1.0,
       "_origin": "ast",
@@ -104763,7 +105178,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L183",
       "weight": 1.0,
       "_origin": "ast",
@@ -104774,7 +105189,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L3",
       "weight": 1.0,
       "_origin": "ast",
@@ -104785,7 +105200,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L73",
       "weight": 1.0,
       "_origin": "ast",
@@ -104796,7 +105211,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L15",
       "weight": 1.0,
       "_origin": "ast",
@@ -104807,7 +105222,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L44",
       "weight": 1.0,
       "_origin": "ast",
@@ -104818,7 +105233,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L35",
       "weight": 1.0,
       "_origin": "ast",
@@ -104829,7 +105244,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L31",
       "weight": 1.0,
       "_origin": "ast",
@@ -104840,7 +105255,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L102",
       "weight": 1.0,
       "_origin": "ast",
@@ -110709,6 +111124,50 @@
       "_origin": "ast",
       "source": "docs_svelte_agent_skills_spec_4_target_behavior",
       "target": "docs_svelte_agent_skills_spec_4_6_dependency_file_recognition",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/worktree-plugin-progress-notification-spec.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_worktree_plugin_progress_notification_spec",
+      "target": "docs_worktree_plugin_progress_notification_spec_worktree_plugin_progress_notification_specification",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/worktree-plugin-progress-notification-spec.md",
+      "source_location": "L3",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_worktree_plugin_progress_notification_spec_worktree_plugin_progress_notification_specification",
+      "target": "docs_worktree_plugin_progress_notification_spec_background",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/worktree-plugin-progress-notification-spec.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_worktree_plugin_progress_notification_spec_worktree_plugin_progress_notification_specification",
+      "target": "docs_worktree_plugin_progress_notification_spec_requirements",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/worktree-plugin-progress-notification-spec.md",
+      "source_location": "L20",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_worktree_plugin_progress_notification_spec_worktree_plugin_progress_notification_specification",
+      "target": "docs_worktree_plugin_progress_notification_spec_verification",
       "confidence_score": 1.0
     },
     {
@@ -122802,5 +123261,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "f2db8dc8460cc45a1a748ee296004a7a6bce05ef"
+  "built_at_commit": "ff969e2c6e5f0d60dbeb87bf69dbc3402a5b7ac9"
 }

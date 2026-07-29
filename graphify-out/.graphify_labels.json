@@ -272,7 +272,6 @@
   "270": "task_completion.md",
   "271": "tech_stack.md",
   "272": ".__init__",
-  "273": ".__init__",
   "274": "architecture-avoid-boolean-props.md",
   "275": "architecture-compound-components.md",
   "276": "patterns-children-over-render-props.md",
@@ -350,10 +349,7 @@
   "348": "vercel-react-best-practices/rules/_template.md",
   "349": "bug_report.md",
   "350": "feature_request.md",
-  "351": "verify_github_token",
-  "352": "TestFindingDecisionOutput",
   "353": "write_stack_outputs",
   "354": "opencode.json",
-  "355": "worktree.js",
-  "356": "collect_review_texts"
+  "355": "worktree.js"
 }
