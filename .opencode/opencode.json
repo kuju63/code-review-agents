@@ -1,9 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": [
-    ".opencode/plugins/graphify.js",
-    ".opencode/plugins/worktree.js"
-  ],
   "instructions": [
     "AGENTS.setup.md"
   ]
