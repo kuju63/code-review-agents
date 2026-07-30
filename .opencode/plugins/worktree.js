@@ -85,7 +85,9 @@ async function findWorkspaceByBranch(v2, branch, { attempts = 20, intervalMs = 1
   return undefined;
 }
 
-export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_workspace }) => {
+export const WorktreePlugin = async (context) => {
+  const { directory, $, experimental_workspace } = context;
+
   // opencode's own plugin loader passes `directory: ctx.directory` when building
   // the client it hands to plugins (see packages/opencode/src/plugin/index.ts).
   // Without it here, POST requests like workspace.create()/warp() carry no
@@ -95,7 +97,25 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
   // making the adapter registered under one project id invisible to a
   // request resolved under another. Passing directory keeps both resolutions
   // aligned.
-  const v2 = createOpencodeClient({ baseUrl: serverUrl.toString(), directory });
+  //
+  // context.serverUrl is a live getter (`Server.url ?? new URL("http://localhost:4096")`)
+  // that opencode's loader evaluates fresh on every access; Server.url is only
+  // set once the HTTP server has finished starting. If this plugin factory
+  // runs before that (observed in practice: every workspace.* call failed
+  // instantly with "Unable to connect" because the client was pinned to the
+  // unreachable localhost:4096 fallback), reading serverUrl once here and
+  // caching a client built from it bakes in the wrong URL for the plugin's
+  // whole lifetime. Build the client lazily through a Proxy instead, so every
+  // property access re-evaluates context.serverUrl and picks up the real URL
+  // once the server is actually listening.
+  const v2 = new Proxy(
+    {},
+    {
+      get(_target, prop) {
+        return createOpencodeClient({ baseUrl: context.serverUrl.toString(), directory })[prop];
+      },
+    },
+  );
   const notify = createToastNotifier(v2);
 
   experimental_workspace.register("git-worktree", {

@@ -111,14 +111,17 @@ test("WorktreePlugin passes directory to createOpencodeClient so requests resolv
     exports: {
       createOpencodeClient: (args) => {
         capturedArgs = args;
-        return { tui: { showToast: async () => {} } };
+        return {
+          tui: { showToast: async () => {} },
+          experimental: { workspace: { list: async () => ({ data: [] }) } },
+        };
       },
     },
   });
 
   const { WorktreePlugin } = await import("./worktree.js");
 
-  await WorktreePlugin({
+  const plugin = await WorktreePlugin({
     directory: "/tmp/example-project",
     $: () => {
       throw new Error("$ should not be invoked during plugin registration");
@@ -126,6 +129,12 @@ test("WorktreePlugin passes directory to createOpencodeClient so requests resolv
     serverUrl: new URL("http://localhost:4096"),
     experimental_workspace: { register: () => {} },
   });
+
+  // The client is now built lazily on first access (see WorktreePlugin), so
+  // directory is only captured once something actually uses v2 -- exercise
+  // that via a tool call instead of asserting right after WorktreePlugin()
+  // returns.
+  await assert.rejects(plugin.tool.worktree_remove.execute({ branch: "feature/test" }, { sessionID: "ses_test" }));
 
   assert.equal(capturedArgs.directory, "/tmp/example-project");
 });
