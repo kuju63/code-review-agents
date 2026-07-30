@@ -15,8 +15,10 @@ reviews:
     - "!/.venv/*"
     - "!/node_modules/*"
     - "!/dist/*"
+    - "!.opencode/skills/graphify/*"
+    - "!.claude/skills/graphify/*"
     - "!/.claude/.worktrees/*"
-    - "/graphify-out/*"
+    - "!/graphify-out/*"
   finishing_touches:
     docstrings:
       enabled: true
