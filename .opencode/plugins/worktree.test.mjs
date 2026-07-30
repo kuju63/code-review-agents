@@ -5,7 +5,7 @@ import {
   createToastNotifier,
   withProgressNotifications,
   withToolStatus,
-} from "./worktree.js";
+} from "../shared/worktree-notifications.js";
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

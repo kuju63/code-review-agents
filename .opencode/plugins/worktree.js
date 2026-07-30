@@ -7,6 +7,7 @@
 import { tool } from "@opencode-ai/plugin";
 import { createOpencodeClient } from "@opencode-ai/sdk/v2";
 import path from "node:path";
+import { createToastNotifier, sleep, withProgressNotifications, withToolStatus } from "../shared/worktree-notifications.js";
 
 // Escapes every literal '-' to '--' first, then replaces each disallowed
 // character with a '-<hex codepoint>-' escape. Because a raw '-' can only
@@ -16,63 +17,6 @@ import path from "node:path";
 // directory).
 const slugify = (branch) =>
   branch.replace(/-/g, "--").replace(/[^a-zA-Z0-9_.-]/g, (ch) => `-${ch.codePointAt(0).toString(16)}-`);
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-export function createToastNotifier(v2, { timeoutMs = 2000 } = {}) {
-  return (message, variant = "info") => {
-    let request;
-    try {
-      request = v2.tui.showToast({
-        title: "Git Worktree",
-        message,
-        variant,
-        duration: 5000,
-      });
-    } catch {
-      return;
-    }
-    void Promise.race([request, sleep(timeoutMs)]).catch(() => {});
-  };
-}
-
-export async function withProgressNotifications({
-  phase,
-  operation,
-  notify,
-  initialDelayMs = 5000,
-  intervalMs = 15000,
-}) {
-  const startedAt = Date.now();
-  let interval;
-  const reportWaiting = () => {
-    const elapsedSeconds = Math.max(1, Math.floor((Date.now() - startedAt) / 1000));
-    notify(`${phase} is still running (${elapsedSeconds}s elapsed)`, "info");
-  };
-  notify(`${phase} started`, "info");
-  const initialTimer = setTimeout(() => {
-    reportWaiting();
-    interval = setInterval(reportWaiting, intervalMs);
-  }, initialDelayMs);
-  try {
-    return await operation();
-  } finally {
-    clearTimeout(initialTimer);
-    if (interval) clearInterval(interval);
-  }
-}
-
-export async function withToolStatus({ label, operation, notify }) {
-  try {
-    const result = await operation();
-    notify(`${label} completed`, "success");
-    return result;
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    notify(`${label} failed: ${detail}`, "error");
-    throw error;
-  }
-}
 
 // Switches the session's file-operation scope to the given workspace id
 // (null = main project) and unwraps the response.
