@@ -335,7 +335,6 @@ nohup.out
 junit.xml
 
 # 評価実行成果物（実行のたびに再生成されるためバージョン管理しない）
-evaluation/data/*
 evaluation/data
 .idea/
 
