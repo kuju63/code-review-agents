@@ -40,13 +40,22 @@ async function switchToWorkspace({ v2, workspaceID, sessionID, notify }) {
 // necessarily string-based.
 const isWorkspaceReadyTimeout = (message) => /timed out waiting for/i.test(message ?? "");
 
+// The SDK's error interceptor wraps non-JSON/empty response bodies (e.g. a
+// 404 with no body) in a plain Error carrying only `.message` (HTTP status +
+// URL); typed API errors instead carry `.data.message`. Checking `.data`
+// alone silently drops the former case, hiding the one piece of information
+// (actual HTTP status/URL) needed to diagnose why a request failed.
+function errorMessage(error, fallback) {
+  return error.data?.message ?? error.message ?? fallback;
+}
+
 // Throws with the SDK's error message (falling back to a generic one) when a
 // v2 experimental_workspace call reports an error; otherwise returns its data.
 // Centralizes the `result.error ? throw ... : result.data` shape repeated
 // across both tools below.
 function unwrap(result, fallback) {
   if (result.error) {
-    throw new Error(result.error.data?.message ?? fallback);
+    throw new Error(errorMessage(result.error, fallback));
   }
   return result.data;
 }
@@ -174,7 +183,7 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
               let workspace = created.data;
               let recovered = false;
               if (created.error) {
-                const message = created.error.data?.message;
+                const message = errorMessage(created.error, undefined);
                 if (!isWorkspaceReadyTimeout(message)) {
                   throw new Error(message ?? "failed to create worktree");
                 }
@@ -270,10 +279,10 @@ export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_wor
                 if (restored.error) {
                   console.error(
                     `[git-worktree] failed to restore session scope (was ${previousWorkspaceID ?? "main"}) after removing '${branch}' failed:`,
-                    restored.error.data?.message,
+                    errorMessage(restored.error, "unknown error"),
                   );
                 }
-                throw new Error(removed.error.data?.message ?? "failed to remove worktree");
+                throw new Error(errorMessage(removed.error, "failed to remove worktree"));
               }
               return `Session file scope moved back to the main project. Worktree '${branch}' removed.`;
             },
