@@ -40,13 +40,20 @@ async function switchToWorkspace({ v2, workspaceID, sessionID, notify }) {
 // necessarily string-based.
 const isWorkspaceReadyTimeout = (message) => /timed out waiting for/i.test(message ?? "");
 
+// Treats an empty string the same as a missing message, so an empty
+// `data.message` (the typed API error schema allows any string, including
+// "") doesn't shadow a non-empty `.message` from the other source.
+function nonEmptyMessage(message) {
+  return typeof message === "string" && message.length > 0 ? message : undefined;
+}
+
 // The SDK's error interceptor wraps non-JSON/empty response bodies (e.g. a
 // 404 with no body) in a plain Error carrying only `.message` (HTTP status +
 // URL); typed API errors instead carry `.data.message`. Checking `.data`
 // alone silently drops the former case, hiding the one piece of information
 // (actual HTTP status/URL) needed to diagnose why a request failed.
 function errorMessage(error, fallback) {
-  return error.data?.message ?? error.message ?? fallback;
+  return nonEmptyMessage(error.data?.message) ?? nonEmptyMessage(error.message) ?? fallback;
 }
 
 // Throws with the SDK's error message (falling back to a generic one) when a

@@ -12,6 +12,8 @@ import test from "node:test";
 // registered later in the same process wouldn't actually take effect.
 
 test("worktree tools surface the SDK's plain Error message when a typed error carries no data", async (t) => {
+  let createCallCount = 0;
+
   // The SDK's error interceptor wraps non-JSON/empty response bodies in a
   // plain Error with only `.message` (no `.data`) -- e.g. a 404 with no body.
   // worktree.js must fall back to that `.message` instead of losing the
@@ -27,11 +29,27 @@ test("worktree tools surface the SDK's plain Error message when a typed error ca
                 "opencode server GET http://localhost:4096/experimental/workspace → 404 Not Found: (empty response body)",
               ),
             }),
-            create: async () => ({
-              error: new Error(
-                "opencode server POST http://localhost:4096/experimental/workspace → 404 Not Found: (empty response body)",
-              ),
-            }),
+            create: async () => {
+              createCallCount += 1;
+              if (createCallCount === 1) {
+                return {
+                  error: new Error(
+                    "opencode server POST http://localhost:4096/experimental/workspace → 404 Not Found: (empty response body)",
+                  ),
+                };
+              }
+              // A typed API error whose `data.message` happens to be an
+              // empty string must not shadow a non-empty `.message` on the
+              // same error object -- `data.message` is schema'd as any
+              // string, so "" is a value the server can legally send.
+              return {
+                error: {
+                  data: { message: "" },
+                  message:
+                    "opencode server POST http://localhost:4096/experimental/workspace → 500 Internal Server Error",
+                },
+              };
+            },
           },
         },
       }),
@@ -53,6 +71,14 @@ test("worktree tools surface the SDK's plain Error message when a typed error ca
     plugin.tool.worktree_create.execute({ branch: "feature/test" }, { sessionID: "ses_test" }),
     (error) => {
       assert.match(error.message, /POST .* → 404 Not Found/);
+      return true;
+    },
+  );
+
+  await assert.rejects(
+    plugin.tool.worktree_create.execute({ branch: "feature/test-2" }, { sessionID: "ses_test" }),
+    (error) => {
+      assert.match(error.message, /500 Internal Server Error/);
       return true;
     },
   );
