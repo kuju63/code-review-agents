@@ -7,6 +7,9 @@ import {
   withToolStatus,
 } from "../shared/worktree-notifications.js";
 
+// Requires `node --experimental-test-module-mocks` (mocks @opencode-ai/sdk/v2
+// via t.mock.module below).
+
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 test("withProgressNotifications reports the phase immediately and while waiting", async () => {
@@ -100,4 +103,29 @@ test("withToolStatus reports failure and preserves the original error", async ()
       variant: "error",
     },
   ]);
+});
+
+test("WorktreePlugin passes directory to createOpencodeClient so requests resolve the same project as the registered adapter", async (t) => {
+  let capturedArgs;
+  t.mock.module("@opencode-ai/sdk/v2", {
+    exports: {
+      createOpencodeClient: (args) => {
+        capturedArgs = args;
+        return { tui: { showToast: async () => {} } };
+      },
+    },
+  });
+
+  const { WorktreePlugin } = await import("./worktree.js");
+
+  await WorktreePlugin({
+    directory: "/tmp/example-project",
+    $: () => {
+      throw new Error("$ should not be invoked during plugin registration");
+    },
+    serverUrl: new URL("http://localhost:4096"),
+    experimental_workspace: { register: () => {} },
+  });
+
+  assert.equal(capturedArgs.directory, "/tmp/example-project");
 });
