@@ -85,6 +85,44 @@ async function findWorkspaceByBranch(v2, branch, { attempts = 20, intervalMs = 1
   return undefined;
 }
 
+// context.client (the v1 SDK client opencode's plugin loader builds once from
+// @opencode-ai/sdk -- see packages/opencode/src/plugin/index.ts) is already
+// wired with the correct request transport for however this process happens
+// to be running: a normal network fetch when a real HTTP server is listening
+// (Server.url set), or a fetch that calls the server's Hono app directly
+// in-process when it isn't. The latter is the default for opencode's TUI
+// (including `-s`/attach) sessions -- confirmed via `lsof` that they open no
+// listening TCP socket at all, so Server.url is never set and
+// context.serverUrl always resolves to the unreachable "http://localhost:4096"
+// fallback. A plain network fetch() against that fallback always fails with
+// "Unable to connect", no matter when it's evaluated (this is why the
+// lazy-serverUrl fix alone didn't help): there is no HTTP server for it to
+// eventually start listening on.
+//
+// Borrow the same fetch (and the baseUrl it was paired with -- the in-process
+// fetch only needs a syntactically valid URL to build a Request from, it
+// never dials out, so "localhost:4096" is harmless there) instead of
+// reconstructing a client from context.serverUrl with the default network
+// fetch. context.client's internal client and getConfig() aren't part of its
+// public type (@opencode-ai/plugin's PluginInput only guarantees `client:
+// ReturnType<typeof createOpencodeClient>`), so fall back to context.serverUrl
+// with the default network fetch if they're ever unavailable -- matching the
+// only transport available for a real `opencode serve`/`opencode web` process
+// anyway, where Server.url is always set and a plain fetch works.
+//
+// Deliberately not borrowing `headers`: v1's client mutates its headers to add
+// x-opencode-directory, and getConfig() returns whatever shape mergeHeaders()
+// produced -- if that's a Headers instance, v2's `{...config.headers}` spread
+// silently yields `{}`. Skipping it is safe here since auth is only enforced
+// when OPENCODE_SERVER_PASSWORD is set, which this plugin doesn't depend on.
+function resolveClientOptions(context) {
+  const config = context.client?._client?.getConfig?.();
+  if (config?.baseUrl && typeof config.fetch === "function") {
+    return { baseUrl: config.baseUrl, fetch: config.fetch, source: "borrowed" };
+  }
+  return { baseUrl: context.serverUrl.toString(), fetch: undefined, source: "fallback" };
+}
+
 export const WorktreePlugin = async (context) => {
   const { directory, $, experimental_workspace } = context;
 
@@ -98,23 +136,19 @@ export const WorktreePlugin = async (context) => {
   // request resolved under another. Passing directory keeps both resolutions
   // aligned.
   //
-  // context.serverUrl is a live getter (`Server.url ?? new URL("http://localhost:4096")`)
-  // that opencode's loader evaluates fresh on every access; Server.url is only
-  // set once the HTTP server has finished starting. If this plugin factory
-  // runs before that (observed in practice: every workspace.* call failed
-  // instantly with "Unable to connect" because the client was pinned to the
-  // unreachable localhost:4096 fallback), reading serverUrl once here and
-  // caching a client built from it bakes in the wrong URL for the plugin's
-  // whole lifetime. Build the client lazily through a Proxy instead, so every
-  // property access re-evaluates context.serverUrl and picks up the real URL
-  // once the server is actually listening.
+  // Built lazily through a Proxy so every property access re-resolves the
+  // transport (see resolveClientOptions) instead of pinning whatever was true
+  // when the plugin factory first ran.
   const v2 = new Proxy(
     {},
     {
       get(_target, prop) {
-        const base = context.serverUrl.toString();
-        console.error(`[git-worktree][DEBUG] client baseUrl=${base} prop=${String(prop)}`);
-        return createOpencodeClient({ baseUrl: base, directory })[prop];
+        const { baseUrl, fetch, source } = resolveClientOptions(context);
+        // Temporary, to be removed once confirmed on a real device: reports
+        // which transport branch actually ran, since that's the one fact
+        // that decides whether this fix works.
+        console.error(`[git-worktree][DEBUG] transport=${source} baseUrl=${baseUrl} fetch=${typeof fetch}`);
+        return createOpencodeClient({ baseUrl, directory, fetch })[prop];
       },
     },
   );
