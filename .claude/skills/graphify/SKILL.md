@@ -68,9 +68,14 @@ Only when the path is one or more `https://github.com/...` URLs, or several loca
 # Detect the correct Python interpreter (handles uv tool, pipx, venv, system installs)
 PYTHON=""
 GRAPHIFY_BIN=$(which graphify 2>/dev/null)
+GRAPHIFY_VERSION=$(tr -d '[:space:]' < .claude/skills/graphify/.graphify_version)
+case "$GRAPHIFY_VERSION" in
+    ''|*[!0-9.]*) echo 'error: invalid .graphify_version' >&2; exit 1 ;;
+esac
+GRAPHIFY_REQUIREMENT="graphifyy==$GRAPHIFY_VERSION"
 # 1. uv tool installs — most reliable on modern Mac/Linux
 if [ -z "$PYTHON" ] && command -v uv >/dev/null 2>&1; then
-    _UV_PY=$(uv tool run --from graphifyy python -c "import sys; print(sys.executable)" 2>/dev/null)
+    _UV_PY=$(uv tool run --from "$GRAPHIFY_REQUIREMENT" python -c "import sys; print(sys.executable)" 2>/dev/null)
     if [ -n "$_UV_PY" ]; then PYTHON="$_UV_PY"; fi
 fi
 # 2. Read shebang from graphify binary (pipx and direct pip installs)
@@ -78,27 +83,32 @@ if [ -z "$PYTHON" ] && [ -n "$GRAPHIFY_BIN" ]; then
     _SHEBANG=$(head -1 "$GRAPHIFY_BIN" | tr -d '#!')
     case "$_SHEBANG" in
         *[!a-zA-Z0-9/_.@-]*) ;;
-        *) "$_SHEBANG" -c "import graphify" 2>/dev/null && PYTHON="$_SHEBANG" ;;
+        *) GRAPHIFY_VERSION="$GRAPHIFY_VERSION" "$_SHEBANG" -c "import os; from importlib.metadata import version; raise SystemExit(version('graphifyy') != os.environ['GRAPHIFY_VERSION'])" 2>/dev/null && PYTHON="$_SHEBANG" ;;
     esac
 fi
 # 3. Fall back to python3
 if [ -z "$PYTHON" ]; then PYTHON="python3"; fi
-if ! "$PYTHON" -c "import graphify" 2>/dev/null; then
+if ! GRAPHIFY_VERSION="$GRAPHIFY_VERSION" "$PYTHON" -c "import os; from importlib.metadata import version; raise SystemExit(version('graphifyy') != os.environ['GRAPHIFY_VERSION'])" 2>/dev/null; then
     if command -v uv >/dev/null 2>&1; then
-        uv tool install --upgrade graphifyy -q 2>&1 | tail -3
-        _UV_PY=$(uv tool run --from graphifyy python -c "import sys; print(sys.executable)" 2>/dev/null)
+        uv tool install --upgrade "$GRAPHIFY_REQUIREMENT" -q 2>&1 | tail -3
+        _UV_PY=$(uv tool run --from "$GRAPHIFY_REQUIREMENT" python -c "import sys; print(sys.executable)" 2>/dev/null)
         if [ -n "$_UV_PY" ]; then PYTHON="$_UV_PY"; fi
     else
-        "$PYTHON" -m pip install graphifyy -q 2>/dev/null \
-          || "$PYTHON" -m pip install graphifyy -q --break-system-packages 2>&1 | tail -3
+        "$PYTHON" -m pip install "$GRAPHIFY_REQUIREMENT" -q 2>/dev/null \
+          || "$PYTHON" -m pip install "$GRAPHIFY_REQUIREMENT" -q --break-system-packages 2>&1 | tail -3
     fi
 fi
 # Write interpreter path for all subsequent steps (persists across invocations)
 mkdir -p graphify-out
 "$PYTHON" -c "import sys; open('graphify-out/.graphify_python', 'w', encoding='utf-8').write(sys.executable)"
-# Save scan root so `graphify update` (no args) knows where to look next time
-echo "$(cd INPUT_PATH && pwd)" > graphify-out/.graphify_root
+# Save scan root so `graphify update` (no args) knows where to look next time.
+# GRAPHIFY_INPUT_PATH must be supplied through the execution tool's environment,
+# never spliced into this shell/Python source.
+: "${GRAPHIFY_INPUT_PATH:?Set GRAPHIFY_INPUT_PATH to the scan root}"
+"$PYTHON" -c "import os; from pathlib import Path; Path('graphify-out/.graphify_root').write_text(str(Path(os.environ['GRAPHIFY_INPUT_PATH']).resolve()), encoding='utf-8')"
 ```
+
+Set `GRAPHIFY_INPUT_PATH` to the exact user-provided path through the execution tool's environment before running the block. The Python process reads it from `os.environ`, so spaces and metacharacters are data rather than shell or Python syntax.
 
 If the import succeeds, print nothing and move straight to Step 2.
 
@@ -222,7 +232,17 @@ import json
 from graphify.cache import check_semantic_cache
 from pathlib import Path
 
-detect = json.loads(Path('graphify-out/.graphify_detect.json').read_text(encoding=\"utf-8\"))
+detect_path = Path('graphify-out/.graphify_detect.json')
+detect = json.loads(detect_path.read_text(encoding=\"utf-8\"))
+# Persist transcript outputs as documents before selecting semantic inputs. This
+# also repairs a partially completed Step 2.5 without feeding raw media to agents.
+transcript_path = Path('graphify-out/.graphify_transcripts.json')
+if transcript_path.exists():
+    documents = detect.setdefault('files', {}).setdefault('document', [])
+    for transcript in json.loads(transcript_path.read_text(encoding=\"utf-8\")):
+        if transcript not in documents:
+            documents.append(transcript)
+    detect_path.write_text(json.dumps(detect, ensure_ascii=False), encoding=\"utf-8\")
 # Only content files go to semantic extraction. Code is already covered structurally
 # by the AST pass (Part A); flattening every category here makes subagents re-read
 # every source file (#1392). Video is transcribed to a document in Step 2.5 first.
