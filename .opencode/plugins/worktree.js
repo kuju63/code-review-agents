@@ -112,7 +112,9 @@ export const WorktreePlugin = async (context) => {
     {},
     {
       get(_target, prop) {
-        return createOpencodeClient({ baseUrl: context.serverUrl.toString(), directory })[prop];
+        const base = context.serverUrl.toString();
+        console.error(`[git-worktree][DEBUG] client baseUrl=${base} prop=${String(prop)}`);
+        return createOpencodeClient({ baseUrl: base, directory })[prop];
       },
     },
   );
