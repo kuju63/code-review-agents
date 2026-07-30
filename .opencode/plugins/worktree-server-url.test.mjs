@@ -8,6 +8,13 @@ import test from "node:test";
 // module that dynamically imports worktree.js needs process isolation from
 // other files mocking the same @opencode-ai/sdk/v2 module.
 
+// Covers only the fallback path (no context.client), which is what actually
+// runs for opencode's TUI/attach sessions -- see
+// worktree-client-transport.test.mjs for the borrowed-transport path those
+// sessions take in practice, and worktree.js's resolveClientOptions comment
+// for why context.serverUrl alone (this file's subject) isn't sufficient
+// there: it carries no fetch override, so a client built from it always tries
+// to dial the network even when nothing is listening.
 test("WorktreePlugin re-reads context.serverUrl on every client access instead of caching it at init time", async (t) => {
   const capturedBaseUrls = [];
 
