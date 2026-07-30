@@ -146,8 +146,12 @@ export const WorktreePlugin = async (context) => {
         const { baseUrl, fetch, source } = resolveClientOptions(context);
         // Temporary, to be removed once confirmed on a real device: reports
         // which transport branch actually ran, since that's the one fact
-        // that decides whether this fix works.
-        console.error(`[git-worktree][DEBUG] transport=${source} baseUrl=${baseUrl} fetch=${typeof fetch}`);
+        // that decides whether this fix works. Gated behind an explicit env
+        // var (opt-in, off by default) and deliberately omits baseUrl/any URL
+        // -- source + typeof fetch is enough to tell the branches apart.
+        if (process.env.OPENCODE_WORKTREE_DEBUG) {
+          console.error(`[git-worktree][DEBUG] transport=${source} fetch=${typeof fetch}`);
+        }
         return createOpencodeClient({ baseUrl, directory, fetch })[prop];
       },
     },
