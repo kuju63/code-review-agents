@@ -70,7 +70,16 @@ async function findWorkspaceByBranch(v2, branch, { attempts = 20, intervalMs = 1
 }
 
 export const WorktreePlugin = async ({ directory, $, serverUrl, experimental_workspace }) => {
-  const v2 = createOpencodeClient({ baseUrl: serverUrl.toString() });
+  // opencode's own plugin loader passes `directory: ctx.directory` when building
+  // the client it hands to plugins (see packages/opencode/src/plugin/index.ts).
+  // Without it here, POST requests like workspace.create()/warp() carry no
+  // x-opencode-directory header, so the server falls back to its own cwd to
+  // resolve the project id -- which can differ from the project this plugin
+  // instance (and its "git-worktree" adapter registration below) belongs to,
+  // making the adapter registered under one project id invisible to a
+  // request resolved under another. Passing directory keeps both resolutions
+  // aligned.
+  const v2 = createOpencodeClient({ baseUrl: serverUrl.toString(), directory });
   const notify = createToastNotifier(v2);
 
   experimental_workspace.register("git-worktree", {
