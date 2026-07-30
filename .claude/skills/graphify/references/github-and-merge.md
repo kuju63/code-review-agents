@@ -2,7 +2,7 @@
 
 Load this when the user passed one or more `https://github.com/...` URLs, or named several local subfolders to merge into one graph.
 
-### Step 0 - Clone GitHub repo(s) (only if a GitHub URL was given)
+## Step 0 - Clone GitHub repo(s) (only if a GitHub URL was given)
 
 **Single repo:**
 ```bash

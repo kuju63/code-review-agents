@@ -6,14 +6,21 @@ Load this when the user ran `/graphify add <url>` or passed `--watch`. Neither i
 
 Fetch a URL and add it to the corpus, then update the graph.
 
+Set `GRAPHIFY_INGEST_URL`, `GRAPHIFY_INGEST_AUTHOR`, and `GRAPHIFY_INGEST_CONTRIBUTOR` through the execution tool's environment. Leave the optional author or contributor empty when it was not provided.
+
 ```bash
-$(cat graphify-out/.graphify_python) -c "
-import sys
+"$(cat graphify-out/.graphify_python)" -c "
+import os, sys
 from graphify.ingest import ingest
 from pathlib import Path
 
 try:
-    out = ingest('URL', Path('./raw'), author='AUTHOR', contributor='CONTRIBUTOR')
+    out = ingest(
+        os.environ['GRAPHIFY_INGEST_URL'],
+        Path('./raw'),
+        author=os.environ.get('GRAPHIFY_INGEST_AUTHOR') or None,
+        contributor=os.environ.get('GRAPHIFY_INGEST_CONTRIBUTOR') or None,
+    )
     print(f'Saved to {out}')
 except ValueError as e:
     print(f'error: {e}', file=sys.stderr)
@@ -24,7 +31,7 @@ except RuntimeError as e:
 "
 ```
 
-Replace `URL` with the actual URL, `AUTHOR` with the user's name if provided, `CONTRIBUTOR` likewise. If the command exits with an error, tell the user what went wrong - do not silently continue. After a successful save, automatically run the `--update` pipeline on `./raw` to merge the new file into the existing graph.
+Do not splice URL, author, or contributor values into the command text. If the command exits with an error, tell the user what went wrong - do not silently continue. After a successful save, automatically run the `--update` pipeline on `./raw` to merge the new file into the existing graph.
 
 Supported URL types (auto-detected):
 - YouTube / any video URL → audio downloaded via yt-dlp, transcribed to `.txt` on next run (requires `pip install 'graphifyy[video]'`)

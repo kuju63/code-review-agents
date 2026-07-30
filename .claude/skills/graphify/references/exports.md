@@ -1,6 +1,6 @@
 # graphify reference: extra exports and benchmark
 
-Load this when the user passed one of the export flags (`--wiki`, `--neo4j`, `--neo4j-push`, `--falkordb`, `--falkordb-push`, `--svg`, `--graphml`, `--mcp`), or when the corpus is large enough for the token-reduction benchmark. Each step runs only for its own flag.
+Load this when the user passed one of the export flags (`--wiki`, `--neo4j`, `--neo4j-push`, `--falkordb`, `--falkordb-push`, `--svg`, `--graphml`, `--mcp`), or when the corpus is large enough for the token-reduction benchmark. Each export step (6b-7d) runs only for its own flag; the benchmark (Step 8) is not flag-gated and instead runs whenever `total_words > 5000`.
 
 ### Step 6b - Wiki (only if --wiki flag)
 
@@ -20,13 +20,13 @@ graphify export wiki
 graphify export neo4j
 ```
 
-**If `--neo4j-push <uri>`** - push directly to a running Neo4j instance. Ask the user for credentials if not provided:
+**If `--neo4j-push <uri>`** - push directly to a running Neo4j instance. Do not request, display, or pass the password on the command line. Set `NEO4J_PASSWORD` through the execution tool's environment or a local secret manager, preserving the URI and user workflow:
 
 ```bash
-graphify export neo4j --push bolt://localhost:7687 --user neo4j --password PASSWORD
+graphify export neo4j --push "$NEO4J_URI" --user "$NEO4J_USER"
 ```
 
-Default URI is `bolt://localhost:7687`, default user is `neo4j`. Uses MERGE - safe to re-run without creating duplicates.
+Default URI is `bolt://localhost:7687`, default user is `neo4j`. The CLI reads `NEO4J_PASSWORD` from the environment. Uses MERGE - safe to re-run without creating duplicates.
 
 ### Step 7a - FalkorDB export (only if --falkordb or --falkordb-push flag)
 

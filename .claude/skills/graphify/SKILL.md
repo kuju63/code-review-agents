@@ -97,6 +97,10 @@ if ! GRAPHIFY_VERSION="$GRAPHIFY_VERSION" "$PYTHON" -c "import os; from importli
         "$PYTHON" -m pip install "$GRAPHIFY_REQUIREMENT" -q 2>/dev/null \
           || "$PYTHON" -m pip install "$GRAPHIFY_REQUIREMENT" -q --break-system-packages 2>&1 | tail -3
     fi
+    if ! GRAPHIFY_VERSION="$GRAPHIFY_VERSION" "$PYTHON" -c "import os; from importlib.metadata import version; raise SystemExit(version('graphifyy') != os.environ['GRAPHIFY_VERSION'])" 2>/dev/null; then
+        echo "error: failed to install graphifyy==$GRAPHIFY_VERSION (required by .graphify_version)" >&2
+        exit 1
+    fi
 fi
 # Write interpreter path for all subsequent steps (persists across invocations)
 mkdir -p graphify-out
