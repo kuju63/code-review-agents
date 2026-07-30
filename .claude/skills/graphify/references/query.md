@@ -254,7 +254,13 @@ except nx.NodeNotFound as e:
 
 `GRAPHIFY_PATH_NODE_A` and `GRAPHIFY_PATH_NODE_B` should already hold the actual concept names from the user. Then explain the path in plain language - what each hop means, why it's significant.
 
-After writing the explanation, save it back. Set `GRAPHIFY_SAVE_QUESTION` to `"Path from $GRAPHIFY_PATH_NODE_A to $GRAPHIFY_PATH_NODE_B"`, `GRAPHIFY_SAVE_ANSWER` to your explanation, and reuse `GRAPHIFY_SAVE_OUTCOME` (and `GRAPHIFY_SAVE_CORRECTION` if corrected) as described above:
+After writing the explanation, save it back. Build `GRAPHIFY_SAVE_QUESTION` with an actual shell-expansion step (through the execution tool, not as a literal string) so it contains the real node names rather than the literal variable references:
+
+```bash
+export GRAPHIFY_SAVE_QUESTION="Path from $GRAPHIFY_PATH_NODE_A to $GRAPHIFY_PATH_NODE_B"
+```
+
+Set `GRAPHIFY_SAVE_ANSWER` to your explanation, and reuse `GRAPHIFY_SAVE_OUTCOME` (and `GRAPHIFY_SAVE_CORRECTION` if corrected) as described above:
 
 ```bash
 "$(cat graphify-out/.graphify_python)" -m graphify save-result \
