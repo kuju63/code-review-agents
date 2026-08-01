@@ -129,7 +129,7 @@ def _verify_agent(base_url: str, agent: str, github_token: str) -> bool:
             "finished_at": datetime.now(timezone.utc).isoformat(),
         }
         _write_result(record)
-        logger.error("  ERROR sending task: %s", exc)
+        logger.error("  failed to send task: %s", exc)
         return False
 
     logger.info("  task_id=%s", task_id)

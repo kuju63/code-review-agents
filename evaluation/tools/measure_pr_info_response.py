@@ -167,7 +167,7 @@ def main() -> None:
                     logger.info("  Saved response to: %s", dest)
 
             except Exception as e:
-                logger.error("  ERROR: %s", e)
+                logger.error("  %s", e)
                 results.append({"id": pr_id, "error": str(e)})
 
     summary_lines = ["=" * 60, "SUMMARY", "=" * 60]

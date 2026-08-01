@@ -930,9 +930,7 @@ def main() -> int:
                     max_changed_lines=args.max_changed_lines,
                 )
             except Exception as e:  # noqa: BLE001
-                logger.warning(
-                    "WARN: PR #%d failed: %s", pr["number"], type(e).__name__
-                )
+                logger.warning("PR #%d failed: %s", pr["number"], type(e).__name__)
                 time.sleep(1)
                 continue
             if target is not None:

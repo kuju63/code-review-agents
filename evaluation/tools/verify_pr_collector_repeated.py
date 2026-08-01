@@ -123,7 +123,7 @@ def main() -> None:
                     "error": f"{type(exc).__name__}: {exc}",
                 }
             )
-            logger.error("[%d/%d] ERROR in %.1fs: %s", i, args.runs, elapsed, exc)
+            logger.error("[%d/%d] failed in %.1fs: %s", i, args.runs, elapsed, exc)
         record["finished_at"] = datetime.now(timezone.utc).isoformat()
         with out.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")

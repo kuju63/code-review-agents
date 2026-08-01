@@ -247,7 +247,7 @@ def _evaluate_concurrently(
             )
         except Exception as e:
             failed_flags[index] = True
-            logger.warning("[%s] ... WARN: %s", label, e)
+            logger.warning("[%s] ... failed: %s", label, e)
 
     with ThreadPoolExecutor(max_workers=max(1, concurrency)) as executor:
         futures = [executor.submit(_run_one, i, item) for i, item in enumerate(items)]
