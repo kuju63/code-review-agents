@@ -243,6 +243,8 @@ def main() -> None:
         )
     L.append("")
 
+    # stdout is the intended output artifact (a Markdown report meant to be
+    # redirected to a file) -- keep this on print, not logging.
     print("\n".join(L))
 
 
