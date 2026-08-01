@@ -18,6 +18,7 @@ Output:
 from __future__ import annotations
 
 import json
+import logging
 import sys
 import time
 from datetime import datetime, timezone
@@ -29,6 +30,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import os  # noqa: E402
+
+from eval_logging import setup_logging  # noqa: E402
+
+logger = logging.getLogger(__name__)
 
 # ── Verification targets ────────────────────────────────────────────────────
 _OWNER = "carbon-design-system"
@@ -49,7 +54,7 @@ _OUTPUT = Path(__file__).parent.parent / "data" / "a2a_verification.jsonl"
 def _require_env(key: str) -> str:
     value = os.environ.get(key)
     if not value:
-        print(f"ERROR: {key} is not set. Add it to .env and retry.", file=sys.stderr)
+        logger.error("%s is not set. Add it to .env and retry.", key)
         sys.exit(1)
     return value
 
@@ -101,7 +106,7 @@ def _write_result(record: dict) -> None:
     _OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     with _OUTPUT.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
-    print(f"  → written to {_OUTPUT}")
+    logger.info("  → written to %s", _OUTPUT)
 
 
 def _verify_agent(base_url: str, agent: str, github_token: str) -> bool:
@@ -110,7 +115,7 @@ def _verify_agent(base_url: str, agent: str, github_token: str) -> bool:
     Returns:
         ``True`` on success, ``False`` on timeout or failure.
     """
-    print(f"\n[{agent}] Sending task...")
+    logger.info("[%s] Sending task...", agent)
     started_at = datetime.now(timezone.utc).isoformat()
 
     try:
@@ -124,22 +129,22 @@ def _verify_agent(base_url: str, agent: str, github_token: str) -> bool:
             "finished_at": datetime.now(timezone.utc).isoformat(),
         }
         _write_result(record)
-        print(f"  ERROR sending task: {exc}")
+        logger.error("  ERROR sending task: %s", exc)
         return False
 
-    print(f"  task_id={task_id}")
+    logger.info("  task_id=%s", task_id)
     deadline = time.monotonic() + _TIMEOUT_S
 
     while time.monotonic() < deadline:
         try:
             task = _poll_task(base_url, agent, task_id)
         except Exception as exc:
-            print(f"  poll error: {exc}")
+            logger.warning("  poll error: %s", exc)
             time.sleep(_POLL_INTERVAL_S)
             continue
 
         status = task.get("status")
-        print(f"  status={status}")
+        logger.info("  status=%s", status)
 
         if status == "completed":
             record = {
@@ -163,7 +168,7 @@ def _verify_agent(base_url: str, agent: str, github_token: str) -> bool:
                 "error": task.get("error"),
             }
             _write_result(record)
-            print(f"  FAILED: {task.get('error')}")
+            logger.error("  FAILED: %s", task.get("error"))
             return False
 
         time.sleep(_POLL_INTERVAL_S)
@@ -178,30 +183,34 @@ def _verify_agent(base_url: str, agent: str, github_token: str) -> bool:
         "timeout_seconds": _TIMEOUT_S,
     }
     _write_result(record)
-    print(f"  TIMEOUT after {_TIMEOUT_S}s — stopping as per plan stop condition.")
+    logger.error(
+        "  TIMEOUT after %ds — stopping as per plan stop condition.", _TIMEOUT_S
+    )
     return False
 
 
 def main() -> None:
+    setup_logging()
     github_token = _require_env("GITHUB_TOKEN")
     base_url = os.environ.get(
         "CODE_REVIEW_AGENT_BASE_URL", "http://localhost:8000"
     ).rstrip("/")
 
-    print(f"Verifying A2A API at {base_url}")
-    print(f"Target PR: {_OWNER}/{_REPO}#{_PR_NUMBER}")
-    print(f"Timeout: {_TIMEOUT_S}s per agent")
+    logger.info("Verifying A2A API at %s", base_url)
+    logger.info("Target PR: %s/%s#%d", _OWNER, _REPO, _PR_NUMBER)
+    logger.info("Timeout: %ds per agent", _TIMEOUT_S)
 
     for agent in _AGENTS:
         success = _verify_agent(base_url, agent, github_token)
         if not success:
-            print(
-                f"\nStop condition met for [{agent}]: "
-                "timeout or failure. Halting verification."
+            logger.error(
+                "Stop condition met for [%s]: timeout or failure. "
+                "Halting verification.",
+                agent,
             )
             sys.exit(1)
 
-    print("\nAll agents verified successfully.")
+    logger.info("All agents verified successfully.")
 
 
 if __name__ == "__main__":
