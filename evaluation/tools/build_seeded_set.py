@@ -17,13 +17,14 @@ import logging
 import os
 import random
 import re
-import sys
 from typing import Any, Callable, cast
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, field_validator
 from strands.models.openai import OpenAIModel
 from strands.types.content import Messages
+
+from eval_logging import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -1351,6 +1352,7 @@ def build_seeded_items(
 
 def main() -> int:
     load_dotenv()
+    setup_logging()
 
     parser = argparse.ArgumentParser(description="Build Seeded set from Gold set")
     parser.add_argument("--gold", required=True, help="Path to Gold JSONL")
@@ -1398,45 +1400,42 @@ def main() -> int:
     with open(args.catalog, encoding="utf-8") as f:
         catalog = json.load(f)
     if not isinstance(catalog, dict):
-        print(
-            f"[SEEDED-ERROR] catalog root must be an object, "
-            f"got {type(catalog).__name__}",
-            file=sys.stderr,
+        logger.error(
+            "[SEEDED-ERROR] catalog root must be an object, got %s",
+            type(catalog).__name__,
         )
         return 1
 
     rules = catalog.get("rules", [])
     if not isinstance(rules, list):
-        print(
-            f"[SEEDED-ERROR] catalog 'rules' must be a list, "
-            f"got {type(rules).__name__}",
-            file=sys.stderr,
+        logger.error(
+            "[SEEDED-ERROR] catalog 'rules' must be a list, got %s",
+            type(rules).__name__,
         )
         return 1
 
     catalog_errors = validate_catalog(rules)
     if catalog_errors:
         for err in catalog_errors:
-            print(f"[SEEDED-ERROR] {err}", file=sys.stderr)
+            logger.error("[SEEDED-ERROR] %s", err)
         return 1
 
     if args.llm_max_attempts < 1:
-        print(
-            f"[SEEDED-ERROR] --llm-max-attempts must be >= 1, got "
-            f"{args.llm_max_attempts!r} (each attempt is independently "
+        logger.error(
+            "[SEEDED-ERROR] --llm-max-attempts must be >= 1, got "
+            "%r (each attempt is independently "
             "checked by the post-generation verifiers -- pass 1 to "
             "disable retries, not 0)",
-            file=sys.stderr,
+            args.llm_max_attempts,
         )
         return 1
 
     model_id = args.model_id or os.environ.get("SEEDED_GEN_MODEL_ID")
     llm_base_url = args.llm_base_url or os.environ.get("SEEDED_GEN_LLM_BASE_URL")
     if not model_id:
-        print(
+        logger.error(
             "[SEEDED-ERROR] no generation model configured: pass --model-id "
-            "or set SEEDED_GEN_MODEL_ID (see evaluation/RUNBOOK.md)",
-            file=sys.stderr,
+            "or set SEEDED_GEN_MODEL_ID (see evaluation/RUNBOOK.md)"
         )
         return 1
     generate_fn = make_llm_mutation_generator(model_id, llm_base_url)
@@ -1452,12 +1451,12 @@ def main() -> int:
                 item, rules, rnd, args.multiplier, generate_fn, args.llm_max_attempts
             )
             if warning:
-                print(warning, file=sys.stderr)
+                logger.warning(warning)
             for seeded in items:
                 out.write(json.dumps(seeded, ensure_ascii=False) + "\n")
                 count += 1
 
-    print(f"Done. Seeded items: {count}")
+    logger.info("Done. Seeded items: %d", count)
     return 0
 
 

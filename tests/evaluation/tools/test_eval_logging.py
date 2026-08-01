@@ -21,8 +21,23 @@ def _restore_root_logger():
     root.setLevel(original_level)
 
 
+def _clear_handlers() -> None:
+    """Remove pytest's own root handler(s) for this test.
+
+    pytest re-attaches its ``LogCaptureHandler`` to the root logger right
+    before each test function body runs (independent of fixture
+    teardown), so clearing in a fixture's pre-yield section doesn't
+    survive to the test body. basicConfig() (no force=True) only
+    configures when root has no handlers, so the test body must clear
+    immediately before calling setup_logging() to see it configure at
+    all -- this mirrors production (a fresh process, no prior handlers).
+    """
+    logging.getLogger().handlers.clear()
+
+
 class TestSetupLogging:
     def test_configures_a_single_handler_with_timestamp_and_level(self):
+        _clear_handlers()
         eval_logging.setup_logging()
 
         root = logging.getLogger()
@@ -35,12 +50,14 @@ class TestSetupLogging:
         assert "%(levelname)s" in fmt
 
     def test_calling_twice_does_not_duplicate_handlers(self):
+        _clear_handlers()
         eval_logging.setup_logging()
         eval_logging.setup_logging()
 
         assert len(logging.getLogger().handlers) == 1
 
     def test_level_is_applied_to_root_logger(self):
+        _clear_handlers()
         eval_logging.setup_logging(level=logging.DEBUG)
 
         assert logging.getLogger().level == logging.DEBUG

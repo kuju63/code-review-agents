@@ -9,6 +9,7 @@ Seeded items generated under --multiplier >= 2).
 from __future__ import annotations
 
 import json
+import logging
 import random
 import sys
 from pathlib import Path
@@ -313,8 +314,9 @@ class TestMainCLI:
         assert len(ids) == len(set(ids))
 
     def test_warns_on_stderr_when_multiplier_exceeds_pool(
-        self, tmp_path, monkeypatch, capsys
+        self, tmp_path, monkeypatch, caplog
     ):
+        caplog.set_level(logging.WARNING)
         self._stub_generation_model(monkeypatch)
         gold_items = [
             {
@@ -347,13 +349,15 @@ class TestMainCLI:
         exit_code = main()
 
         assert exit_code == 0
-        captured = capsys.readouterr()
-        assert "[SEEDED-WARN]" in captured.err
-        assert "[SEEDED-WARN]" not in captured.out
+        assert any(
+            "[SEEDED-WARN]" in r.getMessage() and r.levelno == logging.WARNING
+            for r in caplog.records
+        )
 
     def test_exits_with_error_and_message_when_catalog_invalid(
-        self, tmp_path, monkeypatch, capsys
+        self, tmp_path, monkeypatch, caplog
     ):
+        caplog.set_level(logging.ERROR)
         gold_items = [
             {
                 "id": "owner/repo#1",
@@ -392,13 +396,13 @@ class TestMainCLI:
         exit_code = main()
 
         assert exit_code == 1
-        captured = capsys.readouterr()
-        assert "[SEEDED-ERROR]" in captured.err
+        assert any("[SEEDED-ERROR]" in r.getMessage() for r in caplog.records)
         assert not output_path.exists()
 
     def test_exits_with_error_when_catalog_rules_not_a_list(
-        self, tmp_path, monkeypatch, capsys
+        self, tmp_path, monkeypatch, caplog
     ):
+        caplog.set_level(logging.ERROR)
         gold_items = [
             {
                 "id": "owner/repo#1",
@@ -429,13 +433,13 @@ class TestMainCLI:
         exit_code = main()
 
         assert exit_code == 1
-        captured = capsys.readouterr()
-        assert "[SEEDED-ERROR]" in captured.err
+        assert any("[SEEDED-ERROR]" in r.getMessage() for r in caplog.records)
         assert not output_path.exists()
 
     def test_exits_with_error_when_catalog_root_not_a_dict(
-        self, tmp_path, monkeypatch, capsys
+        self, tmp_path, monkeypatch, caplog
     ):
+        caplog.set_level(logging.ERROR)
         gold_items = [
             {
                 "id": "owner/repo#1",
@@ -466,8 +470,7 @@ class TestMainCLI:
         exit_code = main()
 
         assert exit_code == 1
-        captured = capsys.readouterr()
-        assert "[SEEDED-ERROR]" in captured.err
+        assert any("[SEEDED-ERROR]" in r.getMessage() for r in caplog.records)
         assert not output_path.exists()
 
     def test_output_with_no_directory_component_does_not_crash(
@@ -1782,8 +1785,9 @@ class TestMainCLIModelConfigValidation:
         )
 
     def test_exits_with_error_when_no_model_configured(
-        self, tmp_path, monkeypatch, capsys
+        self, tmp_path, monkeypatch, caplog
     ):
+        caplog.set_level(logging.ERROR)
         # Hermetic regardless of the real .env: load_dotenv() would
         # otherwise re-populate SEEDED_GEN_MODEL_ID from disk after
         # delenv, silently invalidating this test the moment that key is
@@ -1810,13 +1814,13 @@ class TestMainCLIModelConfigValidation:
         exit_code = main()
 
         assert exit_code == 1
-        captured = capsys.readouterr()
-        assert "[SEEDED-ERROR]" in captured.err
+        assert any("[SEEDED-ERROR]" in r.getMessage() for r in caplog.records)
         assert not output_path.exists()
 
     def test_exits_with_error_when_llm_max_attempts_is_zero(
-        self, tmp_path, monkeypatch, capsys
+        self, tmp_path, monkeypatch, caplog
     ):
+        caplog.set_level(logging.ERROR)
         monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
         monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "some-model")
         gold_path, catalog_path = self._gold_and_catalog(tmp_path)
@@ -1840,14 +1844,15 @@ class TestMainCLIModelConfigValidation:
         exit_code = main()
 
         assert exit_code == 1
-        captured = capsys.readouterr()
-        assert "[SEEDED-ERROR]" in captured.err
-        assert "--llm-max-attempts" in captured.err
+        messages = [r.getMessage() for r in caplog.records]
+        assert any("[SEEDED-ERROR]" in m for m in messages)
+        assert any("--llm-max-attempts" in m for m in messages)
         assert not output_path.exists()
 
     def test_exits_with_error_when_llm_max_attempts_is_negative(
-        self, tmp_path, monkeypatch, capsys
+        self, tmp_path, monkeypatch, caplog
     ):
+        caplog.set_level(logging.ERROR)
         monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
         monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "some-model")
         gold_path, catalog_path = self._gold_and_catalog(tmp_path)
@@ -1871,8 +1876,7 @@ class TestMainCLIModelConfigValidation:
         exit_code = main()
 
         assert exit_code == 1
-        captured = capsys.readouterr()
-        assert "[SEEDED-ERROR]" in captured.err
+        assert any("[SEEDED-ERROR]" in r.getMessage() for r in caplog.records)
 
     def test_cli_model_id_takes_priority_over_env(self, tmp_path, monkeypatch):
         monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)

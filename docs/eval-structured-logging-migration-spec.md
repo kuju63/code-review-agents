@@ -54,13 +54,19 @@ def setup_logging(level: int = logging.INFO) -> None:
     logging.basicConfig(
         level=level,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-        force=True,
     )
 ```
 
-`force=True` により、`discover_candidate_prs.py` の既存 `logging.basicConfig`
-呼び出しをこの共通関数に統合しても二重設定にならない(そちらの個別呼び出しは
-削除し `setup_logging()` に一本化する)。
+`force=True` は使わない。`discover_candidate_prs.py` の既存 `logging.basicConfig`
+呼び出しはこの共通関数に統合し(個別呼び出しは削除)、以後プロセス内で
+root logger に競合する設定源はなくなるため、`basicConfig` の標準の
+no-op動作(root にハンドラが既にあれば何もしない)だけで二重設定を防げる。
+この no-op はテスト実行時にも効く: pytest はテスト関数の実行直前に自身の
+`LogCaptureHandler` を root logger にアタッチしており、`force=True` は
+このハンドラを破棄して `caplog` を機能不全にする(pytestが再アタッチする
+前にテスト対象コードが `handlers.clear()` していない限り)。`force=True`
+なしなら `setup_logging()` はそのハンドラを温存したまま no-op し、
+`caplog` は正常に動く。
 
 ### 2.3 ロックとflushの撤去
 
