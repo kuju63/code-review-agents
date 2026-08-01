@@ -535,7 +535,12 @@ class TestReview:
 
     def test_passes_generation_limits_without_base_url(self):
         reviewer = _StubReviewer(
-            ReviewerConfig(github_token="tok", model_id="gpt-4o", max_tokens=4096)
+            ReviewerConfig(
+                github_token="tok",
+                model_id="gpt-4o",
+                max_tokens=4096,
+                frequency_penalty=0.4,
+            )
         )
         mock_mcp = _mock_mcp()
         mock_agent = MagicMock()
@@ -549,7 +554,7 @@ class TestReview:
             reviewer.review(_make_context())
 
         mock_model_cls.assert_called_once_with(
-            model_id="gpt-4o", params={"max_tokens": 4096}
+            model_id="gpt-4o", params={"max_tokens": 4096, "frequency_penalty": 0.4}
         )
 
 

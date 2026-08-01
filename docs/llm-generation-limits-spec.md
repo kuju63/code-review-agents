@@ -48,15 +48,28 @@ A2Aサーバーでも発生し、`reviewer_timeout_seconds`が未設定(`None`)�
 `frequency_penalty`について、0(未設定)/0.4/0.6/0.7/0.8/1.0の6点を`ornith:latest`で、
 0(未設定)を`gpt-oss:latest`で、`bitwarden/clients#21439`に対して実行した。
 
-| モデル | frequency_penalty | 結果 | 所要時間 | 到達ターン |
-|---|---|---|---|---|
-| ornith:latest | (未設定) | 繰り返し継続、タイムアウト | 483.7s | 5 |
-| ornith:latest | 0.4 | `MaxTokensReachedException` | 91.5s | 5 |
-| ornith:latest | 0.6 | `MaxTokensReachedException` | 126.5s | 4 |
-| ornith:latest | 0.7 | `MaxTokensReachedException` | 160.9s | 4 |
-| ornith:latest | 0.8 | `MaxTokensReachedException`(悪化) | 95.2s | 1 |
-| ornith:latest | 1.0 | `StructuredOutputException` | 51.3s | 4 |
-| gpt-oss:latest | (未設定) | `MaxTokensReachedException` | 97.4s | 3 |
+再現性のための共通条件:
+- 対象: `AngularReviewer`を単体呼び出し(`ReviewOrchestrator`経由ではなく直接
+  `reviewer.review(context)`)、`max_agent_turns=6`(スクラッチパッドの診断スクリプト
+  `diagnose_reasoning.py`/`diagnose_reasoning_v2.py`)。
+- プロンプトリビジョン: 実験はすべてコミット`bf176d4`(`refactor/improve-agent-rules`
+  ブランチ、`AngularReviewer`のsystem prompt・`_build_prompt()`が現行実装に変更される前)
+  時点のコードに対して実行した。
+- ハーネスの外側タイムアウト: シェルの`timeout 600`(600秒)でプロセス自体を打ち切り。
+- モデルのタグ/ダイジェスト(`ollama list`で確認): `ornith:latest` = `a75697c14589`
+  (5.6GB)、`gpt-oss:latest` = `17052f91a42e`(13GB)。
+- 未設定行(1行目)を除く全行で`max_tokens=4000`を併用している(`max_tokens`自体の効果を
+  混入させないための固定値。1行目のみ`max_tokens`も未設定の素のベースライン)。
+
+| モデル | max_tokens | frequency_penalty | 結果 | 所要時間 | 到達ターン |
+|---|---|---|---|---|---|
+| ornith:latest | (未設定) | (未設定) | 繰り返し継続、タイムアウト | 483.7s | 5 |
+| ornith:latest | 4000 | 0.4 | `MaxTokensReachedException` | 91.5s | 5 |
+| ornith:latest | 4000 | 0.6 | `MaxTokensReachedException` | 126.5s | 4 |
+| ornith:latest | 4000 | 0.7 | `MaxTokensReachedException` | 160.9s | 4 |
+| ornith:latest | 4000 | 0.8 | `MaxTokensReachedException`(悪化) | 95.2s | 1 |
+| ornith:latest | 4000 | 1.0 | `StructuredOutputException` | 51.3s | 4 |
+| gpt-oss:latest | 4000 | (未設定) | `MaxTokensReachedException` | 97.4s | 3 |
 
 `frequency_penalty`が変えたのは「暴走が始まるターン番号」だけで「暴走するかどうか」ではなく、
 非単調(0.8は0.6/0.7より悪化)でもあった。実績のある`gpt-oss:latest`に切り替えても同様に暴走
@@ -73,20 +86,43 @@ A2Aサーバーでも発生し、`reviewer_timeout_seconds`が未設定(`None`)�
 
 1. ~~JSON出力が壊れないこと~~ → 撤回。`MaxTokensReachedException`により`agent()`呼び出しが
    中断され`ReviewError`として隔離されることを、安全弁の正常な動作として受容する。
-2. **繰り返しによる生成タイムアウトが発生しないこと** — これのみを必須ゴールとする。暴走が
-   発生しても`max_tokens`到達により有限時間(実測1.5〜3分程度)で確実に終わり、評価パイプ
-   ライン全体を数時間ブロックしないこと。
+2. **単一completionの暴走生成が有限時間で中断されること** — これを必須ゴールとする。
+   `max_tokens`到達により、暴走した単一のcompletion呼び出しは有限時間(実測1.5〜3分程度)で
+   確実に`MaxTokensReachedException`として中断される。
 
-`max_tokens`単体でこのゴールは達成できることを確認済み。`frequency_penalty`はこのゴール達成に
-必須ではないが、ユーザーの要望により設定可能にし、運用者が今後試行錯誤で調整できるようにする。
+この保証の範囲は「1回のcompletion呼び出し」に限られる。以下は本PRの範囲外であり、
+`max_tokens`は保証しない:
+
+- reviewer全体(複数ターンにわたる`agent()`呼び出し)がいつ終わるか。`max_agent_turns`
+  (既定30)の範囲内でも、暴走せず各ターンが緩やかに時間を消費するケースでは合計時間は
+  数十分に及びうる。
+- `ReviewOrchestrator`レベルでの全体終了。`reviewer_timeout_seconds`は既定`None`
+  (無期限待機)のままであり、`max_tokens`到達に起因しない要因(ネットワークハング等)で
+  reviewerが停止しない場合、`asyncio.wait(timeout=None)`は無期限に待ち続ける。今回の
+  評価実行(45件)がタイムアウトなく完走したのは、実測上すべてのreviewerが単一completion
+  レベルの暴走(またはターン数上限)で終わったことによる経験的な結果であり、コードレベルで
+  保証された性質ではない。
+- 評価パイプライン全体(`run_agent_evaluation.py --timeout`)の完走を、コード変更なしに
+  将来のあらゆる入力に対して保証すること。
+
+全体終了(オーケストレーターレベル・パイプラインレベル)を必須ゴールにする場合は、
+`reviewer_timeout_seconds`を非`None`の値に設定することを必須設定とし、実際に有限時間で
+終了することを検証するテスト(例えばモック化した無限ループreviewerに対して
+`ReviewOrchestrator.run_async()`が`reviewer_timeout_seconds`経過後に返ることを確認する)を
+別途追加する必要がある。本PRではこれを行わず、`max_tokens`による単一completionの安全弁
+のみをスコープとする。
+
+`max_tokens`単体でこの(限定された)ゴールは達成できることを確認済み。`frequency_penalty`は
+このゴール達成に必須ではないが、ユーザーの要望により設定可能にし、運用者が今後試行錯誤で
+調整できるようにする。
 
 ## 5. 設計
 
 - `Settings.max_tokens: int | None = None`(`api/config.py`)
 - `Settings.frequency_penalty: float | None = None`
 - `ReviewerConfig`(`agents/base_reviewer.py`)に同名同型フィールドを追加し、7箇所の
-  `ReviewerConfig(...)`構築(`api/agents/{angular,react,vue,svelte,security,orchestrator,
-  lead_engineer}_reviewer.py`)で配線する。
+  `ReviewerConfig(...)`構築(`api/agents/{angular,react,vue,svelte,security}_reviewer.py`、
+  `api/agents/orchestrator.py`、`api/agents/lead_engineer.py`)で配線する。
 - `OpenAIModel`の`params`辞書は「値が`None`でないキーのみ動的に追加」する
   (`None`を明示的に含めると`**params`展開でAPIに`frequency_penalty=null`等がそのまま乗るため、
   フィールド不在と同義に保つ)。

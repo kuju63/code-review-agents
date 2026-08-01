@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 from pydantic_settings import PydanticBaseSettingsSource, SettingsConfigDict
 
 from code_review_agent.api.config import Settings
@@ -80,6 +81,34 @@ class TestSettingsDefaults:
     def test_frequency_penalty_default_is_none(self, clean_env: None) -> None:
         s = _IsolatedSettings()
         assert s.frequency_penalty is None
+
+    def test_frequency_penalty_accepts_lower_boundary(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_FREQUENCY_PENALTY", "-2.0")
+        s = _IsolatedSettings()
+        assert s.frequency_penalty == -2.0
+
+    def test_frequency_penalty_accepts_upper_boundary(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_FREQUENCY_PENALTY", "2.0")
+        s = _IsolatedSettings()
+        assert s.frequency_penalty == 2.0
+
+    def test_frequency_penalty_rejects_below_lower_boundary(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_FREQUENCY_PENALTY", "-2.1")
+        with pytest.raises(ValidationError):
+            _IsolatedSettings()
+
+    def test_frequency_penalty_rejects_above_upper_boundary(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_FREQUENCY_PENALTY", "2.1")
+        with pytest.raises(ValidationError):
+            _IsolatedSettings()
 
     def test_mcp_startup_retry_attempts_default_is_3(self, clean_env: None) -> None:
         s = _IsolatedSettings()

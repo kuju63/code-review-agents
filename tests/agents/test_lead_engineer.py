@@ -691,7 +691,12 @@ class TestLeadEngineerAgentEvaluate:
         from code_review_agent.agents.lead_engineer import LeadEngineerAgent
         from code_review_agent.models.lead_engineer import LeadEngineerOutput
 
-        config = ReviewerConfig(github_token="", model_id="gpt-4o", max_tokens=4096)
+        config = ReviewerConfig(
+            github_token="",
+            model_id="gpt-4o",
+            max_tokens=4096,
+            frequency_penalty=0.4,
+        )
         mock_agent = MagicMock()
         mock_agent.return_value.structured_output = LeadEngineerOutput(
             overall_summary="ok", decisions=[]
@@ -704,5 +709,5 @@ class TestLeadEngineerAgentEvaluate:
             LeadEngineerAgent(config).evaluate(_make_report())
 
         mock_model_cls.assert_called_once_with(
-            model_id="gpt-4o", params={"max_tokens": 4096}
+            model_id="gpt-4o", params={"max_tokens": 4096, "frequency_penalty": 0.4}
         )

@@ -1,5 +1,6 @@
 """Runtime configuration for the FastAPI service, sourced from the environment."""
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,7 +28,7 @@ class Settings(BaseSettings):
     llm_base_url: str | None = None
     max_agent_turns: int = 30
     max_tokens: int | None = None
-    frequency_penalty: float | None = None
+    frequency_penalty: float | None = Field(default=None, ge=-2.0, le=2.0)
     reviewer_timeout_seconds: float | None = None
     patch_total_char_limit: int = 30_000
     patch_max_files: int = 30
