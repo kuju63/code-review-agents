@@ -135,6 +135,20 @@ class TestReviewerConfig:
         assert config.mcp_startup_retry_attempts == 5
         assert config.mcp_startup_retry_backoff_seconds == 2.5
 
+    def test_default_generation_limits_are_none(self):
+        config = ReviewerConfig(github_token="tok")
+        assert config.max_tokens is None
+        assert config.frequency_penalty is None
+
+    def test_accepts_custom_generation_limits(self):
+        config = ReviewerConfig(
+            github_token="tok",
+            max_tokens=4096,
+            frequency_penalty=0.4,
+        )
+        assert config.max_tokens == 4096
+        assert config.frequency_penalty == 0.4
+
 
 class TestReviewerMetadata:
     """The base class exposes class-level metadata."""
@@ -491,6 +505,57 @@ class TestReview:
             reviewer.review(_make_context())
 
         mock_model_cls.assert_called_once_with(model_id="gpt-4o")
+
+    def test_passes_max_tokens_and_frequency_penalty_to_openai_model_when_set(self):
+        reviewer = _StubReviewer(
+            ReviewerConfig(
+                github_token="tok",
+                model_id="gpt-4o",
+                llm_base_url="http://localhost:11434/v1",
+                max_tokens=4096,
+                frequency_penalty=0.4,
+            )
+        )
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+        ):
+            reviewer.review(_make_context())
+
+        mock_model_cls.assert_called_once_with(
+            model_id="gpt-4o",
+            client_args={"base_url": "http://localhost:11434/v1"},
+            params={"temperature": 0.1, "max_tokens": 4096, "frequency_penalty": 0.4},
+        )
+
+    def test_passes_generation_limits_without_base_url(self):
+        reviewer = _StubReviewer(
+            ReviewerConfig(
+                github_token="tok",
+                model_id="gpt-4o",
+                max_tokens=4096,
+                frequency_penalty=0.4,
+            )
+        )
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+        ):
+            reviewer.review(_make_context())
+
+        mock_model_cls.assert_called_once_with(
+            model_id="gpt-4o", params={"max_tokens": 4096, "frequency_penalty": 0.4}
+        )
 
 
 class TestReviewWithSharedMcpClient:

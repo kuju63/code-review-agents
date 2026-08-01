@@ -35,6 +35,8 @@ async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -
             model_id=data.get("model_id", settings.model_id),
             llm_base_url=settings.llm_base_url,
             max_agent_turns=settings.max_agent_turns,
+            max_tokens=settings.max_tokens,
+            frequency_penalty=settings.frequency_penalty,
         )
         agent = LeadEngineerAgent(config)
         result = await asyncio.to_thread(agent.evaluate, review_report)

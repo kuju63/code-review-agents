@@ -1,5 +1,6 @@
 """Runtime configuration for the FastAPI service, sourced from the environment."""
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,6 +9,11 @@ class Settings(BaseSettings):
 
     Values are read from ``CODE_REVIEW_``-prefixed environment variables (or
     a ``.env`` file); unrecognized variables are ignored rather than raising.
+
+    ``max_tokens``/``frequency_penalty`` bound and discourage runaway
+    single-turn generation from local models; ``None`` (default) preserves
+    the current unbounded behavior. ``frequency_penalty`` follows the OpenAI
+    Chat Completions range of -2.0 to 2.0.
     """
 
     model_config = SettingsConfigDict(
@@ -21,6 +27,8 @@ class Settings(BaseSettings):
     model_id: str = "gpt-4o"
     llm_base_url: str | None = None
     max_agent_turns: int = 30
+    max_tokens: int | None = None
+    frequency_penalty: float | None = Field(default=None, ge=-2.0, le=2.0)
     reviewer_timeout_seconds: float | None = None
     patch_total_char_limit: int = 30_000
     patch_max_files: int = 30

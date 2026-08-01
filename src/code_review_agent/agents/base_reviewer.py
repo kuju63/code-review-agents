@@ -123,6 +123,21 @@ class ReviewerConfig:
         mcp_url: GitHub MCP endpoint URL.
         max_agent_turns: Maximum agent loop iterations per invocation.
             Configurable via ``CODE_REVIEW_MAX_AGENT_TURNS``.
+        max_tokens: Maximum tokens the model may generate in a single
+            completion.  Acts as a hard kill switch against runaway
+            generation: strands raises ``MaxTokensReachedException`` when the
+            cap is hit, which aborts the whole ``agent()`` call (not a
+            graceful truncation) and is isolated by
+            :class:`~code_review_agent.agents.review_orchestrator.ReviewOrchestrator`
+            as a :class:`~code_review_agent.models.review.ReviewError`.
+            ``None`` disables the cap (default, current behavior).
+            Configurable via ``CODE_REVIEW_MAX_TOKENS``.
+        frequency_penalty: OpenAI-compatible frequency penalty (-2.0 to 2.0)
+            discouraging token repetition, forwarded verbatim to the
+            completion request.  ``None`` omits it (default, current
+            behavior).  The effective value is model/deployment-specific and
+            expected to be tuned by trial and error; configurable via
+            ``CODE_REVIEW_FREQUENCY_PENALTY``.
         reviewer_timeout_seconds: Wall-clock timeout in seconds for the full
             concurrent batch of reviewers.  All reviewers start simultaneously,
             so this is effectively a per-reviewer limit.  ``None`` disables the
@@ -144,6 +159,8 @@ class ReviewerConfig:
     mcp_url: str = GITHUB_MCP_URL
     llm_base_url: str | None = None
     max_agent_turns: int = 30
+    max_tokens: int | None = None
+    frequency_penalty: float | None = None
     reviewer_timeout_seconds: float | None = None
     mcp_startup_retry_attempts: int = 3
     mcp_startup_retry_backoff_seconds: float = 1.0
@@ -239,14 +256,23 @@ class LLMReviewAgent(ReviewAgent):
                 invoking the forced structured-output tool.
         """
         prompt = self._build_prompt(context)
+        extra_params: dict[str, int | float] = {}
+        if self._config.max_tokens is not None:
+            extra_params["max_tokens"] = self._config.max_tokens
+        if self._config.frequency_penalty is not None:
+            extra_params["frequency_penalty"] = self._config.frequency_penalty
+
         if self._config.llm_base_url:
             model = OpenAIModel(
                 model_id=self._config.model_id,
                 client_args={"base_url": self._config.llm_base_url},
                 params={
                     "temperature": 0.1,
+                    **extra_params,
                 },
             )
+        elif extra_params:
+            model = OpenAIModel(model_id=self._config.model_id, params=extra_params)
         else:
             model = OpenAIModel(model_id=self._config.model_id)
 
