@@ -20,7 +20,6 @@ import os
 import signal
 import subprocess
 import sys
-import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Callable
@@ -29,8 +28,11 @@ import httpx
 from dotenv import load_dotenv
 
 from a2a_client import a2a_poll, a2a_send
+from eval_logging import setup_logging
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_BASE_URL = "http://localhost:8000"
 _DEFAULT_POLL_INTERVAL = 3
@@ -233,24 +235,19 @@ def _evaluate_concurrently(
     """
     results: list[dict[str, Any] | None] = [None] * len(items)
     failed_flags: list[bool] = [False] * len(items)
-    print_lock = threading.Lock()
 
     def _run_one(index: int, item: dict[str, Any]) -> None:
         label = label_fn(item)[:60]
-        with print_lock:
-            print(f"  [{label}] ... started", flush=True)
+        logger.info("[%s] ... started", label)
         try:
             pred = evaluate_fn(item)
             results[index] = pred
-            with print_lock:
-                print(
-                    f"  [{label}] ... done ({len(pred['agent_findings'])} findings)",
-                    flush=True,
-                )
+            logger.info(
+                "[%s] ... done (%d findings)", label, len(pred["agent_findings"])
+            )
         except Exception as e:
             failed_flags[index] = True
-            with print_lock:
-                print(f"  [{label}] ... WARN: {e}", flush=True)
+            logger.warning("[%s] ... WARN: %s", label, e)
 
     with ThreadPoolExecutor(max_workers=max(1, concurrency)) as executor:
         futures = [executor.submit(_run_one, i, item) for i, item in enumerate(items)]
@@ -411,13 +408,14 @@ def _shutdown_server(pid_file: str | None) -> None:
     try:
         pid = int(Path(pid_file).read_text().strip())
         os.kill(pid, signal.SIGTERM)
-        logging.info("A2A server (PID %d) terminated via %s", pid, pid_file)
+        logger.info("A2A server (PID %d) terminated via %s", pid, pid_file)
         Path(pid_file).unlink(missing_ok=True)
     except (FileNotFoundError, ValueError, ProcessLookupError, PermissionError) as exc:
-        logging.debug("_shutdown_server: %s", exc)
+        logger.debug("_shutdown_server: %s", exc)
 
 
 def main() -> int:
+    setup_logging()
     parser = argparse.ArgumentParser(description="Run agent evaluation via A2A API")
     parser.add_argument("--gold", required=True, help="Gold JSONL path")
     parser.add_argument("--seeded", required=True, help="Seeded JSONL path")
@@ -485,7 +483,7 @@ def main() -> int:
             _validate_shard_args(args.shard_index, args.shard_count)
             shard_validation_ok = True
         except ValueError as e:
-            print(f"[ERROR] Invalid shard arguments: {e}", file=sys.stderr)
+            logger.error("Invalid shard arguments: %s", e)
             return 2
         return _run_evaluation(args)
     finally:
@@ -496,7 +494,7 @@ def main() -> int:
 def _run_evaluation(args: argparse.Namespace) -> int:
     github_token = os.environ.get("GITHUB_TOKEN")
     if not github_token:
-        print("GITHUB_TOKEN is required (set in .env)", file=sys.stderr)
+        logger.error("GITHUB_TOKEN is required (set in .env)")
         return 2
 
     model_id = os.getenv("CODE_REVIEW_MODEL_ID", "gpt-4o")
@@ -508,13 +506,18 @@ def _run_evaluation(args: argparse.Namespace) -> int:
     if _is_sharded(args):
         gold_items = _select_shard(gold_items, args.shard_index, args.shard_count)
         seeded_items = _select_shard(seeded_items, args.shard_index, args.shard_count)
-        print(
-            f"Shard {args.shard_index}/{args.shard_count}: "
-            f"Gold items: {len(gold_items)}, Seeded items: {len(seeded_items)}"
+        logger.info(
+            "Shard %d/%d: Gold items: %d, Seeded items: %d",
+            args.shard_index,
+            args.shard_count,
+            len(gold_items),
+            len(seeded_items),
         )
     else:
-        print(f"Gold items: {len(gold_items)}, Seeded items: {len(seeded_items)}")
-    print(f"Commit: {commit_hash}, Model: {model_id}")
+        logger.info(
+            "Gold items: %d, Seeded items: %d", len(gold_items), len(seeded_items)
+        )
+    logger.info("Commit: %s, Model: %s", commit_hash, model_id)
 
     headers = {"Authorization": f"Bearer {github_token}"}
     predictions: list[dict[str, Any]] = []
@@ -525,13 +528,10 @@ def _run_evaluation(args: argparse.Namespace) -> int:
         try:
             client.get(f"{args.base_url}/docs", timeout=5)
         except Exception as e:
-            print(
-                f"[ERROR] A2A server not reachable at {args.base_url}: {e}",
-                file=sys.stderr,
-            )
+            logger.error("A2A server not reachable at %s: %s", args.base_url, e)
             return 3
 
-        print(f"\n--- Gold set evaluation (concurrency={args.concurrency}) ---")
+        logger.info("--- Gold set evaluation (concurrency=%d) ---", args.concurrency)
         gold_predictions, gold_failed = _evaluate_concurrently(
             gold_items,
             lambda item: evaluate_gold_item(
@@ -542,7 +542,7 @@ def _run_evaluation(args: argparse.Namespace) -> int:
         predictions.extend(gold_predictions)
         failed_ids.extend(gold_failed)
 
-        print(f"\n--- Seeded set evaluation (concurrency={args.concurrency}) ---")
+        logger.info("--- Seeded set evaluation (concurrency=%d) ---", args.concurrency)
         seeded_predictions, seeded_failed = _evaluate_concurrently(
             seeded_items,
             lambda item: evaluate_seeded_item(
@@ -554,24 +554,24 @@ def _run_evaluation(args: argparse.Namespace) -> int:
         failed_ids.extend(seeded_failed)
 
     if failed_ids:
-        print(
-            f"\n[WARN] {len(failed_ids)} item(s) failed — scores reflect partial results only:",
-            file=sys.stderr,
+        logger.warning(
+            "%d item(s) failed — scores reflect partial results only:",
+            len(failed_ids),
         )
         for fid in failed_ids:
-            print(f"  - {fid}", file=sys.stderr)
+            logger.warning("  - %s", fid)
 
     # Write predictions + failed_ids sidecar (always, shard or not -- see
     # docs/eval-sharded-execution-spec.md §2.4)
     _write_predictions_and_sidecar(args.output, predictions, failed_ids)
-    print(f"\nPredictions written: {args.output} ({len(predictions)} items)")
+    logger.info("Predictions written: %s (%d items)", args.output, len(predictions))
 
     report_exit_code = _maybe_generate_report(args)
     if report_exit_code is not None:
         return report_exit_code
 
-    print(
-        "\nShard run: skipping report generation. After all shards finish, "
+    logger.info(
+        "Shard run: skipping report generation. After all shards finish, "
         "merge with merge_predictions.py and run generate_evaluation_report.py."
     )
     return 1 if failed_ids else 0
