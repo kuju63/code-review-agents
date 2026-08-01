@@ -43,6 +43,8 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 from strands import Agent
 from strands.models.openai import OpenAIModel
+
+from eval_logging import setup_logging
 from target_criteria import (
     has_inline_review_comments,
     has_production_code_change,
@@ -340,7 +342,7 @@ class GitHubClient:
             ):
                 reset = int(resp.headers.get("X-RateLimit-Reset", time.time() + 60))
                 wait = max(reset - int(time.time()), 1) + 2
-                print(f"  [rate limit] waiting {wait}s ...")
+                logger.info("[rate limit] waiting %ds ...", wait)
                 time.sleep(wait)
                 continue
             if resp.status_code in (401, 404):
@@ -777,7 +779,7 @@ def main() -> int:
         int: 1 if GITHUB_TOKEN is missing; otherwise, 0 after processing repositories and writing target files.
     """
     load_dotenv()
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
+    setup_logging()
 
     parser = argparse.ArgumentParser(
         description="Discover per-stack Gold-set PR targets"
@@ -852,7 +854,7 @@ def main() -> int:
 
     token = os.environ.get("GITHUB_TOKEN")
     if not token:
-        print("ERROR: GITHUB_TOKEN not set")
+        logger.error("GITHUB_TOKEN not set")
         return 1
 
     client = GitHubClient(token)
@@ -860,15 +862,17 @@ def main() -> int:
         targets = load_stack_outputs(args.output_dir)
         accepted = revalidate_existing_targets(client, targets)
         write_stack_outputs(accepted, args.output_dir)
-        print(
-            f"Revalidated targets: before={len(targets)}, "
-            f"after={len(accepted)}, removed={len(targets) - len(accepted)}"
+        logger.info(
+            "Revalidated targets: before=%d, after=%d, removed=%d",
+            len(targets),
+            len(accepted),
+            len(targets) - len(accepted),
         )
         return 0
 
     model_id = args.model_id or os.environ.get("SEEDED_GEN_MODEL_ID")
     if not model_id:
-        print("ERROR: --model-id or SEEDED_GEN_MODEL_ID is required")
+        logger.error("--model-id or SEEDED_GEN_MODEL_ID is required")
         return 1
     llm_base_url = args.llm_base_url or os.environ.get("SEEDED_GEN_LLM_BASE_URL")
     assessor = make_llm_assessor(model_id, llm_base_url)
@@ -886,10 +890,10 @@ def main() -> int:
     all_targets = load_skipped_targets(args.output_dir, candidates, skip_repos)
     for candidate in candidates:
         if candidate.repository in skip_repos:
-            print(f"\n[{candidate.repository}] SKIP (requested)")
+            logger.info("[%s] SKIP (requested)", candidate.repository)
             continue
 
-        print(f"\n[{candidate.repository}] validating ...")
+        logger.info("[%s] validating ...", candidate.repository)
         try:
             ok, reason = validate_repo(
                 client,
@@ -899,19 +903,19 @@ def main() -> int:
                 release_window_days=args.release_window_days,
             )
         except Exception as e:  # noqa: BLE001
-            print(f"  SKIP: validation error: {e}")
+            logger.warning("SKIP: validation error: %s", e)
             continue
         if not ok:
-            print(f"  SKIP: {reason}")
+            logger.info("SKIP: %s", reason)
             continue
-        print(f"  OK: {reason}")
+        logger.info("OK: %s", reason)
 
         try:
             prs = client.list_merged_prs(candidate.repository, since=since, per_page=50)
         except Exception as e:  # noqa: BLE001
-            print(f"  SKIP: failed to list PRs: {e}")
+            logger.warning("SKIP: failed to list PRs: %s", e)
             continue
-        print(f"  found {len(prs)} merged PRs")
+        logger.info("found %d merged PRs", len(prs))
 
         repo_targets: list[dict[str, Any]] = []
         for pr in prs[: args.max_prs_per_repo]:
@@ -926,7 +930,9 @@ def main() -> int:
                     max_changed_lines=args.max_changed_lines,
                 )
             except Exception as e:  # noqa: BLE001
-                print(f"  WARN: PR #{pr['number']} failed: {type(e).__name__}")
+                logger.warning(
+                    "WARN: PR #%d failed: %s", pr["number"], type(e).__name__
+                )
                 time.sleep(1)
                 continue
             if target is not None:
@@ -934,11 +940,11 @@ def main() -> int:
             if len(repo_targets) >= args.max_targets_per_repo:
                 break
 
-        print(f"  accepted targets: {len(repo_targets)}")
+        logger.info("accepted targets: %d", len(repo_targets))
         all_targets.extend(repo_targets)
 
         write_stack_outputs(all_targets, args.output_dir)
-        print(f"  → wrote per-stack outputs to {args.output_dir}")
+        logger.info("wrote per-stack outputs to %s", args.output_dir)
         time.sleep(1)
 
     write_stack_outputs(all_targets, args.output_dir)
@@ -946,9 +952,9 @@ def main() -> int:
     by_stack: dict[str, int] = {}
     for target in all_targets:
         by_stack[target["stack"]] = by_stack.get(target["stack"], 0) + 1
-    print(f"\nTotal targets: {len(all_targets)}")
+    logger.info("Total targets: %d", len(all_targets))
     for stack in sorted(by_stack):
-        print(f"  {stack}: {by_stack[stack]}")
+        logger.info("  %s: %d", stack, by_stack[stack])
 
     return 0
 
