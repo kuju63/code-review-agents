@@ -658,3 +658,51 @@ class TestLeadEngineerAgentEvaluate:
             LeadEngineerAgent(config).evaluate(_make_report())
 
         mock_model_cls.assert_called_once_with(model_id="gpt-4o")
+
+    def test_passes_max_tokens_and_frequency_penalty_to_openai_model_when_set(self):
+        from code_review_agent.agents.lead_engineer import LeadEngineerAgent
+        from code_review_agent.models.lead_engineer import LeadEngineerOutput
+
+        config = ReviewerConfig(
+            github_token="",
+            model_id="gpt-4o",
+            llm_base_url="http://localhost:11434/v1",
+            max_tokens=4096,
+            frequency_penalty=0.4,
+        )
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
+            overall_summary="ok", decisions=[]
+        )
+
+        with (
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+        ):
+            LeadEngineerAgent(config).evaluate(_make_report())
+
+        mock_model_cls.assert_called_once_with(
+            model_id="gpt-4o",
+            client_args={"base_url": "http://localhost:11434/v1"},
+            params={"temperature": 0.3, "max_tokens": 4096, "frequency_penalty": 0.4},
+        )
+
+    def test_passes_generation_limits_without_base_url(self):
+        from code_review_agent.agents.lead_engineer import LeadEngineerAgent
+        from code_review_agent.models.lead_engineer import LeadEngineerOutput
+
+        config = ReviewerConfig(github_token="", model_id="gpt-4o", max_tokens=4096)
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
+            overall_summary="ok", decisions=[]
+        )
+
+        with (
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+        ):
+            LeadEngineerAgent(config).evaluate(_make_report())
+
+        mock_model_cls.assert_called_once_with(
+            model_id="gpt-4o", params={"max_tokens": 4096}
+        )

@@ -102,14 +102,23 @@ class LeadEngineerAgent:
                 invoking the forced structured-output tool.
         """
         prompt, index_map = self._build_prompt_and_index(report)
+        extra_params: dict[str, int | float] = {}
+        if self._config.max_tokens is not None:
+            extra_params["max_tokens"] = self._config.max_tokens
+        if self._config.frequency_penalty is not None:
+            extra_params["frequency_penalty"] = self._config.frequency_penalty
+
         if self._config.llm_base_url:
             model = OpenAIModel(
                 model_id=self._config.model_id,
                 client_args={"base_url": self._config.llm_base_url},
                 params={
                     "temperature": 0.3,
+                    **extra_params,
                 },
             )
+        elif extra_params:
+            model = OpenAIModel(model_id=self._config.model_id, params=extra_params)
         else:
             model = OpenAIModel(model_id=self._config.model_id)
         agent = Agent(model=model, system_prompt=self.system_prompt, tools=[])

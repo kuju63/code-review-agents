@@ -27,6 +27,8 @@ _ENV_KEYS = [
     "CODE_REVIEW_MODEL_ID",
     "CODE_REVIEW_LLM_BASE_URL",
     "CODE_REVIEW_MAX_AGENT_TURNS",
+    "CODE_REVIEW_MAX_TOKENS",
+    "CODE_REVIEW_FREQUENCY_PENALTY",
     "CODE_REVIEW_MCP_STARTUP_RETRY_ATTEMPTS",
     "CODE_REVIEW_MCP_STARTUP_RETRY_BACKOFF_SECONDS",
     "CODE_REVIEW_AGENT_BASE_URL",
@@ -70,6 +72,14 @@ class TestSettingsDefaults:
     def test_max_agent_turns_default_is_30(self, clean_env: None) -> None:
         s = _IsolatedSettings()
         assert s.max_agent_turns == 30
+
+    def test_max_tokens_default_is_none(self, clean_env: None) -> None:
+        s = _IsolatedSettings()
+        assert s.max_tokens is None
+
+    def test_frequency_penalty_default_is_none(self, clean_env: None) -> None:
+        s = _IsolatedSettings()
+        assert s.frequency_penalty is None
 
     def test_mcp_startup_retry_attempts_default_is_3(self, clean_env: None) -> None:
         s = _IsolatedSettings()
@@ -123,6 +133,18 @@ class TestSettingsFromEnv:
         monkeypatch.setenv("CODE_REVIEW_MAX_AGENT_TURNS", "50")
         s = _IsolatedSettings()
         assert s.max_agent_turns == 50
+
+    def test_reads_max_tokens_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CODE_REVIEW_MAX_TOKENS", "4096")
+        s = _IsolatedSettings()
+        assert s.max_tokens == 4096
+
+    def test_reads_frequency_penalty_from_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_FREQUENCY_PENALTY", "0.4")
+        s = _IsolatedSettings()
+        assert s.frequency_penalty == 0.4
 
     def test_reads_mcp_startup_retry_attempts_from_env(
         self, monkeypatch: pytest.MonkeyPatch
