@@ -7,10 +7,13 @@ protocol changes (payload keys, status values, URL patterns) only need one fix.
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 def a2a_send(
@@ -71,5 +74,5 @@ def a2a_poll(
                 f"Task {task_id} timed out after {timeout}s (status={status})"
             )
         if verbose:
-            print(f"  [{status}] polling...", flush=True)
+            logger.info("[%s] polling...", status)
         time.sleep(poll_interval)
