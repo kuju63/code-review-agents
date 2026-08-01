@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -27,6 +28,9 @@ from pathlib import Path
 from typing import Any
 
 from discord_notify import build_notification_payload, send_discord_notification
+from eval_logging import setup_logging
+
+logger = logging.getLogger(__name__)
 
 
 def read_jsonl(path: str) -> list[dict[str, Any]]:
@@ -98,11 +102,11 @@ def _load_failed_ids(
                 "undercounted. Pass --allow-missing-failed-ids to proceed anyway "
                 "(assumes zero failures)."
             )
-        print(
-            f"[WARN] No failed_ids sidecar found at {path}; assuming zero failures "
+        logger.warning(
+            "No failed_ids sidecar found at %s; assuming zero failures "
             "(--allow-missing-failed-ids was set). Failure counts in the "
             "report/notification may be inaccurate.",
-            file=sys.stderr,
+            path,
         )
         return []
     return json.loads(path.read_text(encoding="utf-8"))
@@ -110,6 +114,11 @@ def _load_failed_ids(
 
 def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
     """Run score_evaluation.py and return the parsed JSON result.
+
+    Only stdout is piped (score_evaluation.py's machine-readable JSON
+    contract); stderr is left to inherit so score_evaluation.py's own log
+    records stream straight to this process's console instead of being
+    captured and discarded.
 
     Returns:
         The parsed JSON object printed by ``score_evaluation.py`` on stdout.
@@ -130,11 +139,14 @@ def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
             "--pred",
             pred_path,
         ],
-        capture_output=True,
+        stdout=subprocess.PIPE,
         text=True,
     )
     if result.returncode != 0:
-        raise RuntimeError(f"score_evaluation.py failed:\n{result.stderr}")
+        raise RuntimeError(
+            f"score_evaluation.py failed (exit code {result.returncode}); "
+            "see its stderr output above"
+        )
     return json.loads(result.stdout)
 
 
@@ -394,6 +406,7 @@ def _build_report(
 
 
 def main() -> int:
+    setup_logging()
     parser = argparse.ArgumentParser(
         description="Score predictions and generate the Markdown report + Discord notification"
     )
@@ -438,15 +451,15 @@ def _generate_report(args: argparse.Namespace) -> int:
             args.pred, args.failed_ids_file, args.allow_missing_failed_ids
         )
     except FileNotFoundError as e:
-        print(f"[ERROR] {e}", file=sys.stderr)
+        logger.error("%s", e)
         return 5
 
-    print("\n--- Scoring ---")
+    logger.info("--- Scoring ---")
     try:
         scores = _score(args.gold, args.seeded, args.pred)
-        print(json.dumps(scores, indent=2))
+        logger.info("Scores:\n%s", json.dumps(scores, indent=2))
     except Exception as e:
-        print(f"[ERROR] Scoring failed: {e}", file=sys.stderr)
+        logger.error("Scoring failed: %s", e)
         return 4
 
     report_md = _build_report(
@@ -455,7 +468,7 @@ def _generate_report(args: argparse.Namespace) -> int:
     report_filename = f"report_{ts_str}-{commit_hash}.md"
     report_path = Path(args.pred).parent / report_filename
     report_path.write_text(report_md, encoding="utf-8")
-    print(f"\nReport written: {report_path}")
+    logger.info("Report written: %s", report_path)
 
     send_discord_notification(
         os.environ.get("DISCORD_WEBHOOK_URL"),
