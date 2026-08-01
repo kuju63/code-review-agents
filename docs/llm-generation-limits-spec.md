@@ -71,9 +71,13 @@ A2Aサーバーでも発生し、`reviewer_timeout_seconds`が未設定(`None`)�
 | ornith:latest | 4000 | 1.0 | `StructuredOutputException` | 51.3s | 4 |
 | gpt-oss:latest | 4000 | (未設定) | `MaxTokensReachedException` | 97.4s | 3 |
 
-`frequency_penalty`が変えたのは「暴走が始まるターン番号」だけで「暴走するかどうか」ではなく、
-非単調(0.8は0.6/0.7より悪化)でもあった。実績のある`gpt-oss:latest`に切り替えても同様に暴走
-したため、モデル固有の弱さではないと判断した。プロンプト側(`_build_prompt()`末尾の
+`frequency_penalty`が0.4〜0.8の範囲で変えたのは「暴走が始まるターン番号」だけで「暴走するか
+どうか」ではなく、非単調(0.8は0.6/0.7より悪化)でもあった。1.0では暴走そのもの(同一段落の
+繰り返し)は止まったが、代わりに終了時の例外が`MaxTokensReachedException`から
+`StructuredOutputException`(構造化出力生成の失敗)に変わっており、単に暴走ターンが後ろ倒し
+になっただけでなく失敗モード自体が変化した点に注意。実績のある`gpt-oss:latest`に切り替えても
+(0.4〜0.8と同型の)`MaxTokensReachedException`で同様に暴走したため、モデル固有の弱さではない
+と判断した。プロンプト側(`_build_prompt()`末尾の
 「Retrieve full files from GitHub as needed」という指示の重複、Angular公式スキルのサイズ
 [SKILL.md群合計約200行]、実際に取得されたファイルサイズ[`default-collection.service.ts`
 11,357バイト・332行]も調査したが、コンテキスト過多となるような明白な欠陥は見つからなかった。
@@ -118,8 +122,14 @@ A2Aサーバーでも発生し、`reviewer_timeout_seconds`が未設定(`None`)�
 
 ## 5. 設計
 
-- `Settings.max_tokens: int | None = None`(`api/config.py`)
-- `Settings.frequency_penalty: float | None = None`
+- `Settings.max_tokens: int | None = None`(`api/config.py`)。値域の下限は定義しない
+  (正の最小値が仕様上未定義のため、`max_tokens`には範囲検証を設けない)。
+- `Settings.frequency_penalty: float | None = None`。**検証契約**: OpenAI Chat
+  Completions APIが定める`-2.0`以上`2.0`以下(両端含む)の範囲を`pydantic.Field(ge=-2.0,
+  le=2.0)`で強制する。範囲外の値(環境変数経由・直接インスタンス化経由のいずれも)は
+  `Settings`構築時に`pydantic.ValidationError`を送出し、呼び出し側に伝播させる(黙って
+  クランプしない)。`-2.0`/`2.0`の境界値は許可し、`-2.1`/`2.1`のような範囲外値は拒否する
+  ことを`tests/api/test_config.py`の境界値テストで検証する。
 - `ReviewerConfig`(`agents/base_reviewer.py`)に同名同型フィールドを追加し、7箇所の
   `ReviewerConfig(...)`構築(`api/agents/{angular,react,vue,svelte,security}_reviewer.py`、
   `api/agents/orchestrator.py`、`api/agents/lead_engineer.py`)で配線する。

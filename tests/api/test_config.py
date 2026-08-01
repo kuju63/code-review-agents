@@ -83,28 +83,28 @@ class TestSettingsDefaults:
         assert s.frequency_penalty is None
 
     def test_frequency_penalty_accepts_lower_boundary(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, clean_env: None, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("CODE_REVIEW_FREQUENCY_PENALTY", "-2.0")
         s = _IsolatedSettings()
         assert s.frequency_penalty == -2.0
 
     def test_frequency_penalty_accepts_upper_boundary(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, clean_env: None, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("CODE_REVIEW_FREQUENCY_PENALTY", "2.0")
         s = _IsolatedSettings()
         assert s.frequency_penalty == 2.0
 
     def test_frequency_penalty_rejects_below_lower_boundary(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, clean_env: None, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("CODE_REVIEW_FREQUENCY_PENALTY", "-2.1")
         with pytest.raises(ValidationError):
             _IsolatedSettings()
 
     def test_frequency_penalty_rejects_above_upper_boundary(
-        self, monkeypatch: pytest.MonkeyPatch
+        self, clean_env: None, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("CODE_REVIEW_FREQUENCY_PENALTY", "2.1")
         with pytest.raises(ValidationError):
