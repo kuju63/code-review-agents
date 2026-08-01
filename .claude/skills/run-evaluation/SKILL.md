@@ -79,7 +79,7 @@ fi
 ```bash
 if [ ! -s evaluation/data/gold_pr_set.jsonl ]; then
   source .venv/bin/activate
-  uv run python evaluation/tools/build_gold_set.py \
+  uv run python -u evaluation/tools/build_gold_set.py \
     --input evaluation/data/pr_targets.json \
     --output evaluation/data/gold_pr_set.jsonl
 else
@@ -93,7 +93,7 @@ fi
 
 ```bash
 if [ ! -s evaluation/data/seeded_set.jsonl ]; then
-  uv run python evaluation/tools/build_seeded_set.py \
+  uv run python -u evaluation/tools/build_seeded_set.py \
     --gold evaluation/data/gold_pr_set.jsonl \
     --catalog evaluation/config/seeded_mutations.json \
     --output evaluation/data/seeded_set.jsonl \
@@ -151,7 +151,7 @@ fi
 
 ```bash
 source .venv/bin/activate
-python evaluation/tools/run_agent_evaluation.py \
+python -u evaluation/tools/run_agent_evaluation.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --output evaluation/data/agent_predictions.jsonl \
