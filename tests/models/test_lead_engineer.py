@@ -536,6 +536,8 @@ class TestLeadEngineerReport:
         with caplog.at_level(logging.WARNING):
             report.to_evaluation_format("owner/repo#1")
 
+        assert caplog.records
+        assert all(r.levelno == logging.WARNING for r in caplog.records)
         assert "owner/repo#1" in caplog.text
         assert "security" in caplog.text
         assert "Missing location rejected finding" in caplog.text
@@ -554,9 +556,12 @@ class TestLeadEngineerReport:
         report = self._make_report(decisions=decisions)
 
         with caplog.at_level(logging.WARNING):
-            report.to_evaluation_format("owner/repo#1")
+            result = report.to_evaluation_format("owner/repo#1")
 
+        assert result["agent_findings"] == []
+        assert result["lead_decisions"] == []
         assert len(caplog.records) == 2
+        assert all(r.levelno == logging.WARNING for r in caplog.records)
 
     def test_to_evaluation_format_no_warning_when_location_present(self, caplog):
         decisions = [_make_decision("accept", file_path="src/A.tsx", line=1)]
