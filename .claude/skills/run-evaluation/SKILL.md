@@ -1,6 +1,6 @@
 ---
 name: run-evaluation
-description: "Code Review Agentの性能評価を実行するスキル。Gold setとSeeded setを準備し、A2Aサーバーをバックグラウンドで起動し、評価スクリプトを実行して結果をObsidianに保存する。次のような要求で必ずこのスキルを使うこと: 「評価を実行してください」「性能評価をしてください」「run evaluation」「評価パイプライン」「Agentのスコアを確認したい」「review agentの精度を測りたい」"
+description: "Code Review Agentの性能評価を実行するスキル。Gold setとSeeded setを準備し、A2Aサーバーをpodmanコンテナで起動し、評価スクリプトを実行して結果をObsidianに保存する。次のような要求で必ずこのスキルを使うこと: 「評価を実行してください」「性能評価をしてください」「run evaluation」「評価パイプライン」「Agentのスコアを確認したい」「review agentの精度を測りたい」"
 ---
 
 # run-evaluation スキル
@@ -11,11 +11,11 @@ Gold set・Seeded setの準備 → A2Aサーバー起動 → 評価実行 → �
 ## ステップ概要
 
 ```text
-1. 前提チェック（.env, pr_targets_{stack}.json の存在）
+1. 前提チェック（.env, pr_targets_{stack}.json の存在, podman の存在）
 2. Gold set / Seeded set の準備（なければビルド）
-3. A2A サーバーをバックグラウンドで起動（PID を記録）
+3. A2A サーバーを podman コンテナとして起動
 4. 評価スクリプトを実行
-5. A2A サーバーを必ず停止（成功・失敗どちらの場合も）
+5. A2A サーバーコンテナを停止
 6. 生成レポートを Obsidian に保存（obsidian-cli スキル経由）
 ```
 
@@ -47,6 +47,10 @@ for stack in react vue angular svelte; do
   fi
 done
 echo "per-stack target files OK"
+
+# A2Aサーバーをコンテナで起動するため podman が必要
+command -v podman > /dev/null 2>&1 || { echo "ERROR: podman not found."; exit 1; }
+echo "podman OK"
 ```
 
 ---
@@ -108,46 +112,30 @@ fi
 
 ---
 
-## Step 3: A2A サーバーをバックグラウンドで起動
+## Step 3: A2A サーバーを podman コンテナとして起動
+
+公開イメージ `quay.io/kuju63/code-review-agent:latest` を取得し、コンテナ名固定
+（`code-review-agent-eval`）で起動する。起動コマンド自体は定型処理のため
+`scripts/start_a2a_container.sh` に切り出してあり、ここではそれを呼ぶだけでよい
+（`/health` での起動確認・失敗時のログ出力・タイムアウトも同スクリプトが担当する）。
 
 ```bash
-source .venv/bin/activate
-nohup uv run code-review-agent > /tmp/a2a_server.log 2>&1 &
-A2A_PID=$!
-echo "$A2A_PID" > /tmp/a2a_eval.pid
-echo "A2A server PID: $A2A_PID"
+bash .claude/skills/run-evaluation/scripts/start_a2a_container.sh
 ```
 
-PID を `/tmp/a2a_eval.pid` に書き出す。Bash ツールはツール呼び出しをまたいでシェル変数を保持しないため、Step 5 では `$A2A_PID` が未設定になりうる。PID ファイルにより確実に停止できる。
-
-### サーバー起動待機
-
-起動完了を確認してから評価を開始する（最大60秒待つ）:
-
-```bash
-SERVER_READY=0
-for i in $(seq 1 20); do
-  sleep 3
-  if curl -sf http://localhost:8000/docs > /dev/null 2>&1; then
-    echo "A2A server is ready"
-    SERVER_READY=1
-    break
-  fi
-  echo "Waiting for server... ($i/20)"
-done
-
-if [ "$SERVER_READY" -eq 0 ]; then
-  kill $A2A_PID 2>/dev/null
-  echo "ERROR: A2A server did not start within 60s"
-  exit 1
-fi
-```
+コンテナ名は起動前から決まっている定数であるため、PIDのように実行時に判明する値を
+ファイル経由で受け渡す必要はない（Step 5 は同じ定数名でコンテナを停止するだけでよい）。
+設計の詳細（`--env-file`を使わない理由、`GITHUB_TOKEN`を渡さない理由、
+`--network=host`が必要な理由）は
+[docs/eval-a2a-container-runtime-spec.md](../../../docs/eval-a2a-container-runtime-spec.md)
+を参照。
 
 ---
 
 ## Step 4: 評価スクリプトの実行
 
-`--server-pid-file` を渡すことで、評価完了後にスクリプト自身が A2A サーバーを自動停止する（`finally` ブロックで `SIGTERM` 送信）。
+`run_agent_evaluation.py` はA2Aサーバーの起動・停止を一切行わない（起動はStep 3、停止は
+Step 5が担当する）。
 
 ```bash
 source .venv/bin/activate
@@ -155,7 +143,6 @@ python -u evaluation/tools/run_agent_evaluation.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --output evaluation/data/agent_predictions.jsonl \
-  --server-pid-file /tmp/a2a_eval.pid \
   --concurrency 2
 EVAL_EXIT=$?
 ```
@@ -184,24 +171,17 @@ GitHub MCPのレート制限次第では2が現実的な上限であり、上げ
 
 ---
 
-## Step 5: サーバー停止の確認（念のためのフォールバック）
+## Step 5: A2A サーバーコンテナの停止
 
-`run_agent_evaluation.py` の `--server-pid-file` オプションにより、スクリプト終了時に自動的に SIGTERM が送信される。
-スクリプトが異常終了した場合のフォールバックとして、PID ファイルが残っていれば手動停止する。
+`run_agent_evaluation.py` はサーバーを停止しないため、評価の成功・失敗によらず必ずこの
+Stepでコンテナを停止する。定型処理のため `scripts/stop_a2a_container.sh` を呼ぶだけでよい
+（`podman stop`。コンテナは`--rm`付きで起動しているため、停止と同時に削除される）。
 
-shard実行時（`--shard-index`/`--shard-count` 指定時）は、各shard呼び出しがサーバーを
-shutdownしない（次のshard呼び出しがサーバーに接続できなくなるため）。したがってshard運用では
-このStep 5が実質的な唯一のサーバー停止手段であり、全shard完了後に必ず実行すること。
+shard実行時（`--shard-index`/`--shard-count` 指定時）も含め、すべての実行パターンで
+このStep 5がサーバー停止の唯一の手段である。shard運用では全shard完了後に1回だけ実行する。
 
 ```bash
-if [ -f /tmp/a2a_eval.pid ]; then
-  A2A_PID=$(cat /tmp/a2a_eval.pid)
-  kill "$A2A_PID" 2>/dev/null
-  echo "A2A server (PID $A2A_PID) stopped (fallback)"
-  rm -f /tmp/a2a_eval.pid
-else
-  echo "A2A server already stopped by run_agent_evaluation.py"
-fi
+bash .claude/skills/run-evaluation/scripts/stop_a2a_container.sh
 ```
 
 終了コードの確認:
@@ -248,9 +228,8 @@ echo "Report: $REPORT_PATH"
 
 ## 注意事項
 
-- `GITHUB_TOKEN` は `.env` から読み込む。`gh` コマンド等の実作業には使用しない（`.env` の `GITHUB_TOKEN` は評価パイプライン専用）。
-- `venv` は `source .venv/bin/activate` で有効化する。
-- A2A サーバーのデフォルトポートは `8000`。起動済みの別プロセスがいる場合は `lsof -i:8000` で確認してから起動すること。
+- `GITHUB_TOKEN` は `.env` から読み込む。`gh` コマンド等の実作業には使用しない（`.env` の `GITHUB_TOKEN` は評価パイプライン専用）。GitHub MCP呼び出し・build系スクリプトは引き続き `venv`（`source .venv/bin/activate`）を使う。
+- A2A サーバーは `code-review-agent-eval` という固定名のpodmanコンテナとして起動する（デフォルトポートは`8000`、`--network=host`のためホストと同じ`localhost:8000`でアクセスできる）。前回異常終了時に同名コンテナが残っていても`--replace`により自動的に置き換わる。
 - `pr_targets.json` / Gold set / Seeded set が既に存在する場合はビルドをスキップして再利用する。
 - 既定は`--sample-n 15`によるランダムサンプリング(高速・日常イテレーション用)。全件に近いフル評価が
   必要な場合は、Step 2の変換コマンドを`--limit <n>`(例: 30)に置き換えること。

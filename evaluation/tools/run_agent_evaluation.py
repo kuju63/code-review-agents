@@ -17,7 +17,6 @@ import argparse
 import json
 import logging
 import os
-import signal
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -396,24 +395,6 @@ def _maybe_generate_report(args: argparse.Namespace) -> int | None:
     return result.returncode
 
 
-def _shutdown_server(pid_file: str | None) -> None:
-    """Send SIGTERM to the A2A server process identified by *pid_file*.
-
-    No-ops gracefully when the file is absent, unreadable, or the process is
-    already gone.  Called in a ``finally`` block so evaluation output is
-    written before the server is stopped.
-    """
-    if not pid_file:
-        return
-    try:
-        pid = int(Path(pid_file).read_text().strip())
-        os.kill(pid, signal.SIGTERM)
-        logger.info("A2A server (PID %d) terminated via %s", pid, pid_file)
-        Path(pid_file).unlink(missing_ok=True)
-    except (FileNotFoundError, ValueError, ProcessLookupError, PermissionError) as exc:
-        logger.debug("_shutdown_server: %s", exc)
-
-
 def main() -> int:
     setup_logging()
     parser = argparse.ArgumentParser(description="Run agent evaluation via A2A API")
@@ -436,22 +417,14 @@ def main() -> int:
         ),
     )
     parser.add_argument(
-        "--server-pid-file",
-        default=None,
-        help="Path to a file containing the A2A server PID.  When set, the "
-        "server is sent SIGTERM after evaluation finishes (success or failure) "
-        "-- unless --shard-count is set (see below).",
-    )
-    parser.add_argument(
         "--shard-index",
         type=int,
         default=None,
         help="0-based shard index. Must be paired with --shard-count. When "
         "set, only every --shard-count-th Gold/Seeded item (starting at this "
-        "index) is evaluated, report generation is skipped (run "
-        "generate_evaluation_report.py after merge_predictions.py), and the "
-        "A2A server is not shut down even if --server-pid-file is set (see "
-        "docs/eval-sharded-execution-spec.md).",
+        "index) is evaluated, and report generation is skipped (run "
+        "generate_evaluation_report.py after merge_predictions.py). See "
+        "docs/eval-sharded-execution-spec.md.",
     )
     parser.add_argument(
         "--shard-count",
@@ -463,32 +436,12 @@ def main() -> int:
 
     args.base_url = args.base_url.rstrip("/")
 
-    # _validate_shard_args() runs inside the try block (not before it) so
-    # that invalid --shard-index/--shard-count combinations still reach the
-    # finally clause instead of leaking the A2A server because validation
-    # raised first. Its ValueError is caught and mapped to the established
-    # fatal-argument-error exit code (2) rather than propagating as an
-    # uncaught exception.
-    #
-    # shard_validation_ok gates the finally-block shutdown decision alongside
-    # _is_sharded(args): args.shard_count alone is not enough to tell "a
-    # validated sharded run" apart from "an invalid combination that happens
-    # to have shard_count set" (e.g. --shard-index 5 --shard-count 4, where
-    # shard_count is 4, not None). Only a *validated* sharded run should skip
-    # shutdown; any failed validation must shut the server down like a
-    # non-sharded run, regardless of which fields were provided.
-    shard_validation_ok = False
     try:
-        try:
-            _validate_shard_args(args.shard_index, args.shard_count)
-            shard_validation_ok = True
-        except ValueError as e:
-            logger.error("Invalid shard arguments: %s", e)
-            return 2
-        return _run_evaluation(args)
-    finally:
-        if not (shard_validation_ok and _is_sharded(args)):
-            _shutdown_server(args.server_pid_file)
+        _validate_shard_args(args.shard_index, args.shard_count)
+    except ValueError as e:
+        logger.error("Invalid shard arguments: %s", e)
+        return 2
+    return _run_evaluation(args)
 
 
 def _run_evaluation(args: argparse.Namespace) -> int:

@@ -62,13 +62,17 @@ generate_evaluation_report.py (新規)  スコアリング・Markdownレポー�
 
 ### 2.3 サーバーshutdownの制御
 
-`main()` は `finally` で常に `_shutdown_server(args.server_pid_file)` を呼ぶ(現行L577-580)。
-shard実行中にこれが動作すると、shard 0完了時点でA2AサーバーがSIGTERMされ、shard 1のヘルスチェック
-(L606-613)が失敗して即エラーになる。
-→ `--shard-count` が指定されている場合、`_shutdown_server` の呼び出しを自動的にスキップする
-(2.2と同じ理由で専用フラグは設けない)。サーバーは全shard完了後、
-`.claude/skills/run-evaluation/SKILL.md` Step 5の既存フォールバック停止で最後に1回だけ止める
-運用とする。
+導入当初、`main()` は `finally` で常に `_shutdown_server(args.server_pid_file)` を呼び、
+`--shard-count` が指定されている場合だけこの呼び出しをスキップする、という設計だった。
+shard実行中に無条件でshutdownすると、shard 0完了時点でA2Aサーバーが停止され、shard 1の
+ヘルスチェックが失敗して即エラーになるためである。
+
+その後、`docs/eval-a2a-container-runtime-spec.md`で述べる通りA2Aサーバーの起動方式が
+podmanコンテナに切り替わったのに合わせて、`_shutdown_server`・`--server-pid-file`・
+このshutdown-skipゲート自体を`run_agent_evaluation.py`から削除した。サーバー停止は
+shard実行か否かによらず常に
+`.claude/skills/run-evaluation/SKILL.md` Step 5(`scripts/stop_a2a_container.sh`)が
+全shard完了後に1回だけ行う、という単一の運用に一本化されている。
 
 ### 2.4 failed_ids sidecarと「既知の失敗」「未回収」の区別
 
@@ -116,8 +120,10 @@ killされ、predictionsファイルが一切書き出されないまま終わ�
 - `_validate_shard_args`: 片方だけ指定/範囲外indexでエラーになることの確認
 - shard指定時に `generate_evaluation_report.py` へのsubprocess呼び出しが発生しないこと、
   非shard時は発生することの確認(monkeypatchで検知)
-- shard指定時・非shard時それぞれでの `_shutdown_server` 呼び出し有無の確認
 - failed_ids sidecarの書き込み内容(空/一部失敗)の検証
+
+(shard指定時・非shard時それぞれでの `_shutdown_server` 呼び出し有無を確認するテストは、
+2.3節の通り`_shutdown_server`自体の削除に伴い撤去した)
 
 `tests/evaluation/tools/test_generate_evaluation_report.py`(`test_build_report.py` から移動):
 - 既存の `_build_report`/`_score` 系テストをそのまま維持(移動元が変わるだけで意味は変わらない)
