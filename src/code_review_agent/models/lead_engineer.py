@@ -5,12 +5,15 @@ evaluating the parallel reviewer outputs.  Kept separate from review-stage
 models so the lead-stage contract can evolve independently.
 """
 
+import logging
 from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 from .review import ReviewError, ReviewFinding, ReviewPerspective
+
+logger = logging.getLogger(__name__)
 
 
 class DecisionVerdict(StrEnum):
@@ -251,30 +254,61 @@ class LeadEngineerReport(BaseModel):
             Dict compatible with the ``agent_predictions.jsonl`` schema used by
             ``evaluation/tools/score_evaluation.py``.
         """
-        agent_findings = [
-            {
-                "path": d.finding.file_path,
-                "line": d.finding.line,
-                "category": d.perspective.value,
-                "severity": d.severity.value,
-                "impact": d.impact_category.value,
-                "priority": d.final_priority.value,
-                "summary": d.finding.comment,
-            }
-            for d in self.accepted()
-            if d.finding.file_path and d.finding.line is not None
-        ]
-        lead_decisions = [
-            {
-                "path": d.finding.file_path,
-                "line": d.finding.line,
-                "decision": d.verdict.value,
-            }
-            for d in self.decisions
-            if d.finding.file_path and d.finding.line is not None
-        ]
+        agent_findings = []
+        for d in self.accepted():
+            if d.finding.file_path and d.finding.line is not None:
+                agent_findings.append(
+                    {
+                        "path": d.finding.file_path,
+                        "line": d.finding.line,
+                        "category": d.perspective.value,
+                        "severity": d.severity.value,
+                        "impact": d.impact_category.value,
+                        "priority": d.final_priority.value,
+                        "summary": d.finding.comment,
+                    }
+                )
+            else:
+                self._log_dropped(pr_id, d, "agent_findings")
+
+        lead_decisions = []
+        for d in self.decisions:
+            if d.finding.file_path and d.finding.line is not None:
+                lead_decisions.append(
+                    {
+                        "path": d.finding.file_path,
+                        "line": d.finding.line,
+                        "decision": d.verdict.value,
+                    }
+                )
+            else:
+                self._log_dropped(pr_id, d, "lead_decisions")
+
         return {
             "id": pr_id,
             "agent_findings": agent_findings,
             "lead_decisions": lead_decisions,
         }
+
+    @staticmethod
+    def _log_dropped(pr_id: str, decision: "FindingDecision", output_name: str) -> None:
+        """Log a finding/decision silently excluded from evaluation output.
+
+        Missing ``file_path``/``line`` is common enough with local models that
+        it needs to be visible instead of indistinguishable from "no findings"
+        -- see ``docs/finding-location-silent-drop-spec.md``.
+
+        Args:
+            pr_id: PR identifier the decision belongs to.
+            decision: The decision whose finding lacks a resolvable location.
+            output_name: Which ``to_evaluation_format`` output this entry was
+                excluded from (``"agent_findings"`` or ``"lead_decisions"``).
+        """
+        logger.warning(
+            "Dropping finding from %s: missing file_path/line "
+            "(pr_id=%s, reviewer_id=%s, comment=%r)",
+            output_name,
+            pr_id,
+            decision.reviewer_id,
+            decision.finding.comment[:120],
+        )

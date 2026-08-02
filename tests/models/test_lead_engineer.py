@@ -1,5 +1,7 @@
 """Tests for Lead Engineer stage models."""
 
+import logging
+
 import pytest
 from pydantic import ValidationError
 
@@ -497,3 +499,75 @@ class TestLeadEngineerReport:
 
         assert len(result["lead_decisions"]) == 1
         assert result["lead_decisions"][0]["line"] == 5
+
+    def test_to_evaluation_format_logs_warning_for_accepted_finding_dropped(
+        self, caplog
+    ):
+        decisions = [
+            _make_decision(
+                "accept",
+                reviewer_id="react-technical",
+                comment="Missing location finding",
+                file_path=None,
+                line=None,
+            ),
+        ]
+        report = self._make_report(decisions=decisions)
+
+        with caplog.at_level(logging.WARNING):
+            report.to_evaluation_format("owner/repo#1")
+
+        assert "owner/repo#1" in caplog.text
+        assert "react-technical" in caplog.text
+        assert "Missing location finding" in caplog.text
+
+    def test_to_evaluation_format_logs_warning_for_lead_decision_dropped(self, caplog):
+        decisions = [
+            _make_decision(
+                "reject",
+                reviewer_id="security",
+                comment="Missing location rejected finding",
+                file_path=None,
+                line=None,
+            ),
+        ]
+        report = self._make_report(decisions=decisions)
+
+        with caplog.at_level(logging.WARNING):
+            report.to_evaluation_format("owner/repo#1")
+
+        assert caplog.records
+        assert all(r.levelno == logging.WARNING for r in caplog.records)
+        assert "owner/repo#1" in caplog.text
+        assert "security" in caplog.text
+        assert "Missing location rejected finding" in caplog.text
+
+    def test_to_evaluation_format_logs_warning_once_per_affected_output(self, caplog):
+        """An accepted finding missing location is dropped from both outputs,
+        so it should log once per output (2 warnings), not a single combined one."""
+        decisions = [
+            _make_decision(
+                "accept",
+                comment="Missing location finding",
+                file_path=None,
+                line=None,
+            ),
+        ]
+        report = self._make_report(decisions=decisions)
+
+        with caplog.at_level(logging.WARNING):
+            result = report.to_evaluation_format("owner/repo#1")
+
+        assert result["agent_findings"] == []
+        assert result["lead_decisions"] == []
+        assert len(caplog.records) == 2
+        assert all(r.levelno == logging.WARNING for r in caplog.records)
+
+    def test_to_evaluation_format_no_warning_when_location_present(self, caplog):
+        decisions = [_make_decision("accept", file_path="src/A.tsx", line=1)]
+        report = self._make_report(decisions=decisions)
+
+        with caplog.at_level(logging.WARNING):
+            report.to_evaluation_format("owner/repo#1")
+
+        assert caplog.records == []
