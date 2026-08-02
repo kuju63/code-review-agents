@@ -158,9 +158,11 @@ load_eval_tool_module` でロード) に以下を追加する:
   `len(items)==1`)。
 - `TestBuildSeededItemsEmptyPool`: マッチするルールがない場合 `([], None)` を返し
   例外を投げないこと。
-- `TestMainCLI`: `tmp_path` + `monkeypatch.setattr(sys, "argv", ...)` + `capsys` で
+- `TestMainCLI`: `tmp_path` + `monkeypatch.setattr(sys, "argv", ...)` + `caplog` で
   `main()` を実行し、出力JSONLに重複IDがないこと、`multiplier`超過時に
-  `capsys.readouterr().err` に `[SEEDED-WARN]` が出ること (`.out` には出ないこと)。
+  `[SEEDED-WARN]` を含む `WARNING` レベルのログレコードが出ること
+  (`evaluation/tools/eval_logging.py` 導入後は `print`/`capsys` ではなく
+  `logging`/`caplog` で検証する)。
 
 ---
 

@@ -21,9 +21,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
+import logging
 from pathlib import Path
 from typing import Any
+
+from eval_logging import setup_logging
+
+logger = logging.getLogger(__name__)
 
 
 def read_jsonl(path: str) -> list[dict[str, Any]]:
@@ -81,10 +85,10 @@ def merge(
         # ids fall through to the unaccounted/known-failed check below
         # instead of an uncaught traceback.
         if not Path(pred_path).exists():
-            print(
-                f"[WARN] Predictions file not found: {pred_path} (shard likely "
+            logger.warning(
+                "Predictions file not found: %s (shard likely "
                 "never completed); its ids will be treated as unaccounted.",
-                file=sys.stderr,
+                pred_path,
             )
             continue
         for row in read_jsonl(pred_path):
@@ -96,20 +100,19 @@ def merge(
                 merged_source[rid] = pred_path
 
     if duplicates:
-        print("[FATAL] Duplicate id(s) found across shard files:", file=sys.stderr)
+        logger.error("Duplicate id(s) found across shard files:")
         for rid, first, dup in duplicates:
-            print(f"  - {rid}: present in both {first} and {dup}", file=sys.stderr)
+            logger.error("  - %s: present in both %s and %s", rid, first, dup)
         return 2
 
     unexpected_ids = merged.keys() - expected_ids
     if unexpected_ids:
-        print(
-            "[FATAL] id(s) present in predictions but not in --gold/--seeded "
-            "(likely a mismatched --gold/--seeded pairing for this shard set):",
-            file=sys.stderr,
+        logger.error(
+            "id(s) present in predictions but not in --gold/--seeded "
+            "(likely a mismatched --gold/--seeded pairing for this shard set):"
         )
         for rid in sorted(unexpected_ids):
-            print(f"  - {rid}", file=sys.stderr)
+            logger.error("  - %s", rid)
         return 2
 
     known_failed: set[str] = set()
@@ -118,24 +121,23 @@ def merge(
         if sidecar.exists():
             known_failed |= set(json.loads(sidecar.read_text(encoding="utf-8")))
         else:
-            print(
-                f"[WARN] No failed_ids sidecar found for {pred_path}; any of its "
+            logger.warning(
+                "No failed_ids sidecar found for %s; any of its "
                 "gaps will be treated as unaccounted.",
-                file=sys.stderr,
+                pred_path,
             )
 
     missing = expected_ids - merged.keys()
     unaccounted = missing - known_failed
     if unaccounted and not allow_missing:
-        print(
-            "[FATAL] Unaccounted id(s): present in neither the merged predictions "
+        logger.error(
+            "Unaccounted id(s): present in neither the merged predictions "
             "nor any shard's failed_ids sidecar. This usually means a shard was "
             "never run (--shard-count mismatch) or was killed mid-run. Pass "
-            "--allow-missing to accept this as a partial result.",
-            file=sys.stderr,
+            "--allow-missing to accept this as a partial result."
         )
         for rid in sorted(unaccounted):
-            print(f"  - {rid}", file=sys.stderr)
+            logger.error("  - %s", rid)
         return 2
 
     Path(output).parent.mkdir(parents=True, exist_ok=True)
@@ -159,20 +161,24 @@ def merge(
         )
     else:
         unaccounted_detail = f"{len(unaccounted)} unaccounted"
-    print(
-        f"Merged {len(merged)}/{len(expected_ids)} items "
-        f"({len(known_failed & missing)} known failure(s), {unaccounted_detail}) "
-        f"-> {output}"
+    logger.info(
+        "Merged %d/%d items (%d known failure(s), %s) -> %s",
+        len(merged),
+        len(expected_ids),
+        len(known_failed & missing),
+        unaccounted_detail,
+        output,
     )
     if missing:
-        print("Missing ids (recorded in the merged failed_ids sidecar):")
+        logger.info("Missing ids (recorded in the merged failed_ids sidecar):")
         for rid in sorted(missing):
-            print(f"  - {rid}")
+            logger.info("  - %s", rid)
 
     return 1 if missing else 0
 
 
 def main() -> int:
+    setup_logging()
     parser = argparse.ArgumentParser(
         description="Merge shard predictions.jsonl files into one"
     )

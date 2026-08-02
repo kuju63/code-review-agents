@@ -20,9 +20,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import re
-import sys
 import time
 import urllib.error
 import urllib.request
@@ -30,7 +30,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from dotenv import load_dotenv
+
+from eval_logging import setup_logging
 from target_criteria import is_production_code_file
+
+logger = logging.getLogger(__name__)
 
 _SEVERITIES = {"critical", "high", "medium", "low", "unknown"}
 _IMPACTS = {"security", "correctness", "performance", "maintainability", "unknown"}
@@ -258,6 +262,7 @@ def build_gold_item(target: Target, token: str) -> dict[str, Any]:
 
 def main() -> int:
     load_dotenv()
+    setup_logging()
 
     parser = argparse.ArgumentParser(description="Build Gold PR dataset from GitHub")
     parser.add_argument("--input", required=True, help="Path to input target JSON")
@@ -269,7 +274,7 @@ def main() -> int:
 
     token = os.getenv("GITHUB_TOKEN")
     if not token:
-        print("GITHUB_TOKEN is required", file=sys.stderr)
+        logger.error("GITHUB_TOKEN is required")
         return 2
 
     targets = load_targets(args.input)
@@ -281,22 +286,24 @@ def main() -> int:
             try:
                 item = build_gold_item(target, token)
             except urllib.error.HTTPError as e:
-                print(
-                    f"[WARN] skip {target.repository}#{target.pr_number}: HTTP {e.code}"
+                logger.warning(
+                    "skip %s#%d: HTTP %d", target.repository, target.pr_number, e.code
                 )
                 continue
             except Exception as e:  # noqa: BLE001
-                print(f"[WARN] skip {target.repository}#{target.pr_number}: {e}")
+                logger.warning("skip %s#%d: %s", target.repository, target.pr_number, e)
                 continue
 
             if not item["file_changes"]:
-                print(
-                    f"[INFO] no target file changes: {target.repository}#{target.pr_number}"
+                logger.info(
+                    "no target file changes: %s#%d",
+                    target.repository,
+                    target.pr_number,
                 )
                 continue
             if not item["human_findings"]:
-                print(
-                    f"[INFO] no review comments: {target.repository}#{target.pr_number}"
+                logger.info(
+                    "no review comments: %s#%d", target.repository, target.pr_number
                 )
                 continue
 
@@ -304,7 +311,7 @@ def main() -> int:
             count += 1
             time.sleep(args.sleep)
 
-    print(f"Done. Gold items: {count}")
+    logger.info("Done. Gold items: %d", count)
     return 0
 
 

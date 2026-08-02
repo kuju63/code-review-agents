@@ -9,6 +9,7 @@ for-loop) and the parallelized technical/security reviewer calls inside
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 
@@ -105,9 +106,11 @@ class TestEvaluateConcurrentlyFailureIsolation:
         assert failed == ["item-2"]
         assert [p["id"] for p in predictions] == ["item-0", "item-1", "item-3"]
 
-    def test_failure_log_line_is_self_contained_under_concurrency(self, capsys):
-        """Each outcome line must carry its own label so a WARN can't visually
-        attach to a different, concurrently-running item's start marker."""
+    def test_failure_log_line_is_self_contained_under_concurrency(self, caplog):
+        """Each outcome record must carry its own label so a WARNING can't
+        visually attach to a different, concurrently-running item's start
+        marker."""
+        caplog.set_level(logging.INFO)
         items = [{"id": f"item-{i}"} for i in range(6)]
 
         def evaluate_fn(item):
@@ -120,23 +123,24 @@ class TestEvaluateConcurrentlyFailureIsolation:
 
         run_agent_evaluation._evaluate_concurrently(items, evaluate_fn, concurrency=6)
 
-        out = capsys.readouterr().out
-        lines = out.splitlines()
+        records = caplog.records
 
-        warn_lines = [line for line in lines if "WARN" in line]
-        assert len(warn_lines) == 1
-        assert "item-3" in warn_lines[0]
+        warn_records = [r for r in records if r.levelno == logging.WARNING]
+        assert len(warn_records) == 1
+        assert "item-3" in warn_records[0].getMessage()
 
-        started_lines = [line for line in lines if "started" in line]
+        started_records = [r for r in records if "started" in r.getMessage()]
         for item in items:
-            assert any(item["id"] in line for line in started_lines)
+            assert any(item["id"] in r.getMessage() for r in started_records)
 
-        done_lines = [line for line in lines if "done" in line]
-        assert len(done_lines) == 5
+        done_records = [
+            r for r in records if r.levelno == logging.INFO and "done" in r.getMessage()
+        ]
+        assert len(done_records) == 5
         for item in items:
             if item["id"] == "item-3":
                 continue
-            assert any(item["id"] in line for line in done_lines)
+            assert any(item["id"] in r.getMessage() for r in done_records)
 
 
 class TestSeededItemReviewerParallelism:

@@ -15,6 +15,7 @@ assertions below are unchanged by that move.
 from __future__ import annotations
 
 import argparse
+import logging
 
 import pytest
 
@@ -507,8 +508,9 @@ class TestLoadFailedIds:
             generate_evaluation_report._load_failed_ids(str(pred_path), None)
 
     def test_missing_sidecar_returns_empty_list_with_allow_missing(
-        self, tmp_path, capsys
+        self, tmp_path, caplog
     ):
+        caplog.set_level(logging.WARNING)
         pred_path = tmp_path / "agent_predictions.jsonl"
         pred_path.write_text("", encoding="utf-8")
 
@@ -517,7 +519,7 @@ class TestLoadFailedIds:
         )
 
         assert failed_ids == []
-        assert "WARN" in capsys.readouterr().err
+        assert any(r.levelno == logging.WARNING for r in caplog.records)
 
 
 class TestGenerateReportExitCodes:

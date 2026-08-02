@@ -16,6 +16,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 from pathlib import Path
@@ -25,8 +26,11 @@ import httpx
 from dotenv import load_dotenv
 
 from a2a_client import a2a_poll, a2a_send
+from eval_logging import setup_logging
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 _DEFAULT_BASE_URL = "http://localhost:8000"
 _POLL_INTERVAL = 3
@@ -73,36 +77,40 @@ def _measure(result: dict[str, Any], response_file: str | None) -> dict[str, Any
     }
 
 
-def _print_report(pr_id: str, metrics: dict[str, Any]) -> None:
+def _format_report(pr_id: str, metrics: dict[str, Any]) -> str:
     total_kb = metrics["total_bytes"] / 1024
-    print(f"\n{'=' * 60}")
-    print(f"PR: {pr_id}")
-    print(f"{'=' * 60}")
-    print(
-        f"  Total response size : {metrics['total_bytes']:>10,} bytes  ({total_kb:.1f} KB)"
-    )
+    lines = [
+        "=" * 60,
+        f"PR: {pr_id}",
+        "=" * 60,
+        f"  Total response size : {metrics['total_bytes']:>10,} bytes  ({total_kb:.1f} KB)",
+    ]
     if metrics["file_written_bytes"] is not None:
-        print(
+        lines.append(
             f"  File on disk        : {metrics['file_written_bytes']:>10,} bytes  (PR_INFO_COLLECTOR_RESPONSE_FILE)"
         )
-    print(f"  file_changes count  : {metrics['file_changes_count']}")
-    print(
+    lines.append(f"  file_changes count  : {metrics['file_changes_count']}")
+    lines.append(
         f"  Patch total         : {metrics['patch_bytes']:>10,} bytes  "
         f"(always 0 — patch delegated to reviewers)"
     )
-    print(f"  PR body             : {metrics['body_bytes']:>10,} bytes")
-    print(f"  project_summary     : {metrics['project_summary_bytes']:>10,} bytes")
-    print(f"  dependency_files    : {metrics['dependency_files']}")
-    print("\n  Top files by filename (patch size is always 0):")
-    for path, size in metrics["file_details"][:10]:
-        print(f"    {path}")
+    lines.append(f"  PR body             : {metrics['body_bytes']:>10,} bytes")
+    lines.append(
+        f"  project_summary     : {metrics['project_summary_bytes']:>10,} bytes"
+    )
+    lines.append(f"  dependency_files    : {metrics['dependency_files']}")
+    lines.append("\n  Top files by filename (patch size is always 0):")
+    for path, _size in metrics["file_details"][:10]:
+        lines.append(f"    {path}")
     if len(metrics["file_details"]) > 10:
-        print(f"    ... and {len(metrics['file_details']) - 10} more files")
+        lines.append(f"    ... and {len(metrics['file_details']) - 10} more files")
+    return "\n".join(lines)
 
 
 def main() -> None:
     import argparse
 
+    setup_logging()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base-url", default=_DEFAULT_BASE_URL)
     args = parser.parse_args()
@@ -110,9 +118,9 @@ def main() -> None:
     response_file = os.environ.get("PR_INFO_COLLECTOR_RESPONSE_FILE")
     model_id = os.environ.get("CODE_REVIEW_MODEL_ID", "gpt-4o")
 
-    print(f"Target A2A server : {args.base_url}")
-    print(f"Model             : {model_id}")
-    print(f"Response file     : {response_file or '(not set)'}")
+    logger.info("Target A2A server : %s", args.base_url)
+    logger.info("Model             : %s", model_id)
+    logger.info("Response file     : %s", response_file or "(not set)")
 
     github_token = os.environ.get("GITHUB_TOKEN", "")
     headers = {"Authorization": f"Bearer {github_token}"}
@@ -120,18 +128,15 @@ def main() -> None:
     with httpx.Client(headers=headers, base_url=args.base_url) as client:
         try:
             client.get("/docs", timeout=5).raise_for_status()
-            print("A2A server: OK\n")
+            logger.info("A2A server: OK")
         except Exception as e:
-            print(
-                f"ERROR: A2A server not reachable at {args.base_url}: {e}",
-                file=sys.stderr,
-            )
+            logger.error("A2A server not reachable at %s: %s", args.base_url, e)
             sys.exit(1)
 
         results = []
         for owner, repo, pr_number in _TARGETS:
             pr_id = f"{owner}/{repo}#{pr_number}"
-            print(f"\n[{pr_id}] Calling /pr-info-collector ...", flush=True)
+            logger.info("[%s] Calling /pr-info-collector ...", pr_id)
             try:
                 data = {
                     "owner": owner,
@@ -140,7 +145,7 @@ def main() -> None:
                     "model_id": model_id,
                 }
                 task_id = a2a_send(client, f"{args.base_url}/pr-info-collector", data)
-                print(f"  task_id: {task_id}", flush=True)
+                logger.info("  task_id: %s", task_id)
                 result = a2a_poll(
                     client,
                     f"{args.base_url}/pr-info-collector",
@@ -150,7 +155,7 @@ def main() -> None:
                     verbose=True,
                 )
                 metrics = _measure(result, response_file)
-                _print_report(pr_id, metrics)
+                logger.info("\n%s", _format_report(pr_id, metrics))
                 results.append({"id": pr_id, "metrics": metrics})
 
                 # Save individual response for inspection
@@ -159,25 +164,24 @@ def main() -> None:
                         Path(response_file).stem + f"_{pr_number}"
                     )
                     dest.write_text(json.dumps(result, ensure_ascii=False, indent=2))
-                    print(f"\n  Saved response to: {dest}")
+                    logger.info("  Saved response to: %s", dest)
 
             except Exception as e:
-                print(f"  ERROR: {e}", file=sys.stderr)
+                logger.error("  %s", e)
                 results.append({"id": pr_id, "error": str(e)})
 
-    print("\n\n" + "=" * 60)
-    print("SUMMARY")
-    print("=" * 60)
+    summary_lines = ["=" * 60, "SUMMARY", "=" * 60]
     for r in results:
         if "error" in r:
-            print(f"  {r['id']}: ERROR - {r['error']}")
+            summary_lines.append(f"  {r['id']}: ERROR - {r['error']}")
         else:
             m = r["metrics"]
-            print(
+            summary_lines.append(
                 f"  {r['id']}: {m['total_bytes']:,} bytes "
                 f"({m['total_bytes'] / 1024:.1f} KB), "
                 f"{m['file_changes_count']} files"
             )
+    logger.info("\n%s", "\n".join(summary_lines))
 
 
 if __name__ == "__main__":

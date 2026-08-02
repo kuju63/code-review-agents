@@ -20,6 +20,8 @@ from pydantic import BaseModel
 from strands import Agent
 from strands.models.openai import OpenAIModel
 
+from eval_logging import setup_logging
+
 logger = logging.getLogger(__name__)
 
 SemanticJudge = Callable[[str, str], bool]
@@ -475,6 +477,7 @@ def score_seeded(
 
 
 def main() -> int:
+    setup_logging()
     parser = argparse.ArgumentParser(description="Score review agent evaluation")
     parser.add_argument("--gold", required=True)
     parser.add_argument("--seeded", required=True)
@@ -520,6 +523,8 @@ def main() -> int:
         "seeded": score_seeded(seeded_rows, pred_by_id, semantic_judge=semantic_judge),
     }
 
+    # stdout is generate_evaluation_report.py's machine-readable contract
+    # (json.loads(result.stdout)) -- keep this on print, not logging.
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0
 

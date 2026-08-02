@@ -12,6 +12,7 @@ docs/eval-sharded-execution-spec.md §2.4 for the design rationale.
 from __future__ import annotations
 
 import json
+import logging
 
 from tests.evaluation.conftest import load_eval_tool_module
 
@@ -123,7 +124,8 @@ class TestMergeUnaccountedIds:
         assert exit_code == 2
         assert not output.exists()
 
-    def test_allow_missing_downgrades_unaccounted_id_to_warning(self, tmp_path, capsys):
+    def test_allow_missing_downgrades_unaccounted_id_to_warning(self, tmp_path, caplog):
+        caplog.set_level(logging.INFO)
         gold = tmp_path / "gold.jsonl"
         write_jsonl(gold, [{"id": "g1"}, {"id": "g2"}])
         seeded = tmp_path / "seeded.jsonl"
@@ -146,7 +148,7 @@ class TestMergeUnaccountedIds:
         assert output.exists()
         merged_sidecar = json.loads((tmp_path / "merged.failed_ids.json").read_text())
         assert merged_sidecar == ["g2"]
-        assert "g2" in capsys.readouterr().out
+        assert any("g2" in r.getMessage() for r in caplog.records)
 
     def test_known_failed_id_is_not_fatal_without_allow_missing(self, tmp_path):
         gold = tmp_path / "gold.jsonl"
@@ -176,11 +178,12 @@ class TestMergeUnaccountedIds:
         assert merged_sidecar == ["g2"]
 
     def test_summary_does_not_mention_allow_missing_when_not_provided(
-        self, tmp_path, capsys
+        self, tmp_path, caplog
     ):
         """The 'allowed via --allow-missing' wording implies the flag was
         active; it must not appear when the merge succeeded purely on known
         failures and --allow-missing was never passed."""
+        caplog.set_level(logging.INFO)
         gold = tmp_path / "gold.jsonl"
         write_jsonl(gold, [{"id": "g1"}, {"id": "g2"}])
         seeded = tmp_path / "seeded.jsonl"
@@ -199,7 +202,7 @@ class TestMergeUnaccountedIds:
             allow_missing=False,
         )
 
-        assert "--allow-missing" not in capsys.readouterr().out
+        assert not any("--allow-missing" in r.getMessage() for r in caplog.records)
 
     def test_missing_sidecar_file_makes_its_gaps_unaccounted(self, tmp_path):
         gold = tmp_path / "gold.jsonl"

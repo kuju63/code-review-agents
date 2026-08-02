@@ -357,7 +357,19 @@
   "355": "worktree.js",
   "356": "TestLoadFailedIds",
   "357": "_seeded_heading",
+  "358": "graphify reference: add a URL and watch a folder",
+  "359": "graphify reference: commit hook and native CLAUDE.md integration",
   "360": "TestReactReview",
   "361": "_gold_heading",
-  "364": "TestWebSecurityReview"
+  "362": "graphify reference: incremental update and cluster-only",
+  "363": "TestVueReview",
+  "364": "TestWebSecurityReview",
+  "365": "graphify reference: GitHub clone and cross-repo merge",
+  "366": "graphify reference: transcribe video and audio",
+  "367": ".claude/CLAUDE.md",
+  "368": ".claude/skills/graphify/references/extraction-spec.md",
+  "369": "worktree-server-url.test.mjs",
+  "370": "worktree-client-transport-fallback.test.mjs",
+  "371": "worktree-client-transport.test.mjs",
+  "372": "worktree-error-surfacing.test.mjs"
 }

@@ -78,6 +78,13 @@ def _run_one(index: int, item: dict[str, Any]) -> None:
 
 - 構造化ロギング(JSON Lines化等)への変更は行わない。既存の `print` ベース進捗表示の
   最小修正に留める。
+
+  > **補足(その後の変更)**: 開始・終了時刻とログレベル区分を継続的に必要とする
+  > 運用上の要求が生じたため、この判断は
+  > [docs/eval-structured-logging-migration-spec.md](eval-structured-logging-migration-spec.md)
+  > で明示的に覆され、`evaluation/tools/` 全体が標準 `logging` モジュールへ
+  > 移行された。本節の記述は当時の判断の記録として残す。
+
 - スコアリング・レポート生成ロジック(`failed_ids` の構築箇所)は変更しない。元々正しいため。
 
 ---

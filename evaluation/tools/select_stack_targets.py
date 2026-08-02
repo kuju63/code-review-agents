@@ -5,12 +5,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 import random
-import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
+
+from eval_logging import setup_logging
+
+logger = logging.getLogger(__name__)
 
 SEVERITY_SCORE = {"low": 1, "medium": 2, "high": 3, "critical": 4}
 PRIORITIES = {"low", "medium", "high"}
@@ -408,6 +412,7 @@ def main() -> int:
     Returns:
         Process exit status.
     """
+    setup_logging()
     parser = argparse.ArgumentParser(
         description="Select execution targets from per-stack Gold-set inputs"
     )
@@ -473,8 +478,10 @@ def main() -> int:
 
     summary = summarize(rows)
     for warning in summary["coverage_warnings"]:
-        print(warning, file=sys.stderr)
+        logger.warning(warning)
     if args.print_summary:
+        # stdout is the machine-readable contract for --print-summary
+        # consumers -- keep this on print, not logging.
         print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
 

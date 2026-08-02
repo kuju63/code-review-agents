@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 import sys
 import time
@@ -37,19 +38,24 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from code_review_agent.agents.pr_info_collector import PRInfoCollector  # noqa: E402
 
+from eval_logging import setup_logging  # noqa: E402
+
+logger = logging.getLogger(__name__)
+
 _OWNER = "mui"
 _REPO = "material-ui"
 _PR_NUMBER = 48591
 
 
 def main() -> None:
+    setup_logging()
     parser = argparse.ArgumentParser()
     parser.add_argument("--runs", type=int, default=20)
     args = parser.parse_args()
 
     github_token = os.environ.get("GITHUB_TOKEN")
     if not github_token:
-        print("ERROR: GITHUB_TOKEN not set", file=sys.stderr)
+        logger.error("GITHUB_TOKEN not set")
         sys.exit(1)
 
     model_id = os.environ.get("CODE_REVIEW_MODEL_ID", "google/gemma-4-e4b")
@@ -69,9 +75,9 @@ def main() -> None:
     if out.exists():
         out.unlink()
 
-    print(f"Model: {model_id}  base_url: {base_url}")
-    print(f"Target: {_OWNER}/{_REPO}#{_PR_NUMBER}  runs: {args.runs}")
-    print(f"Output: {out}")
+    logger.info("Model: %s  base_url: %s", model_id, base_url)
+    logger.info("Target: %s/%s#%d  runs: %d", _OWNER, _REPO, _PR_NUMBER, args.runs)
+    logger.info("Output: %s", out)
 
     for i in range(1, args.runs + 1):
         started = datetime.now(timezone.utc).isoformat()
@@ -100,9 +106,13 @@ def main() -> None:
                     "dependency_files": result.dependency_files,
                 }
             )
-            print(
-                f"[{i}/{args.runs}] completed in {elapsed:.1f}s "
-                f"title={result.pr_info.title!r} files={len(result.pr_info.file_changes)}"
+            logger.info(
+                "[%d/%d] completed in %.1fs title=%r files=%d",
+                i,
+                args.runs,
+                elapsed,
+                result.pr_info.title,
+                len(result.pr_info.file_changes),
             )
         except Exception as exc:
             elapsed = time.monotonic() - t0
@@ -113,12 +123,12 @@ def main() -> None:
                     "error": f"{type(exc).__name__}: {exc}",
                 }
             )
-            print(f"[{i}/{args.runs}] ERROR in {elapsed:.1f}s: {exc}")
+            logger.error("[%d/%d] failed in %.1fs: %s", i, args.runs, elapsed, exc)
         record["finished_at"] = datetime.now(timezone.utc).isoformat()
         with out.open("a", encoding="utf-8") as f:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
-    print(f"\nDone. {args.runs} runs written to {out}")
+    logger.info("Done. %d runs written to %s", args.runs, out)
 
 
 if __name__ == "__main__":
