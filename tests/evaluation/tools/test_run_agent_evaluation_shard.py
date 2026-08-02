@@ -3,9 +3,8 @@
 Covers `_select_shard` (positional round-robin partitioning),
 `_validate_shard_args` (CLI argument sanity checks), `_failed_ids_path`
 (sidecar naming), `_write_predictions_and_sidecar` (always-on failed-ids
-sidecar output), `_maybe_generate_report` (report subprocess is skipped
-during a sharded run and invoked for a normal run), and `main()`'s
-shutdown-skip behavior during a sharded run. See
+sidecar output), and `_maybe_generate_report` (report subprocess is skipped
+during a sharded run and invoked for a normal run). See
 docs/eval-sharded-execution-spec.md for the design rationale.
 """
 
@@ -187,65 +186,7 @@ class TestMaybeGenerateReport:
         assert run_agent_evaluation._maybe_generate_report(args) == 1
 
 
-class TestMainShutdownSkip:
-    def test_shutdown_called_for_non_sharded_run(self, monkeypatch):
-        shutdown_calls = []
-        monkeypatch.setattr(run_agent_evaluation, "_run_evaluation", lambda args: 0)
-        monkeypatch.setattr(
-            run_agent_evaluation,
-            "_shutdown_server",
-            lambda pid_file: shutdown_calls.append(pid_file),
-        )
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "run_agent_evaluation.py",
-                "--gold",
-                "g.jsonl",
-                "--seeded",
-                "s.jsonl",
-                "--output",
-                "o.jsonl",
-                "--server-pid-file",
-                "/tmp/pid",
-            ],
-        )
-
-        run_agent_evaluation.main()
-
-        assert shutdown_calls == ["/tmp/pid"]
-
-    def test_shutdown_skipped_for_sharded_run(self, monkeypatch):
-        shutdown_calls = []
-        monkeypatch.setattr(run_agent_evaluation, "_run_evaluation", lambda args: 0)
-        monkeypatch.setattr(
-            run_agent_evaluation,
-            "_shutdown_server",
-            lambda pid_file: shutdown_calls.append(pid_file),
-        )
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "run_agent_evaluation.py",
-                "--gold",
-                "g.jsonl",
-                "--seeded",
-                "s.jsonl",
-                "--output",
-                "o.jsonl",
-                "--server-pid-file",
-                "/tmp/pid",
-                "--shard-index",
-                "0",
-                "--shard-count",
-                "4",
-            ],
-        )
-
-        run_agent_evaluation.main()
-
-        assert shutdown_calls == []
-
+class TestMainShardValidation:
     def test_invalid_shard_args_returns_fatal_exit_code(self, monkeypatch):
         """Invalid --shard-index/--shard-count must be reported as one of the
         script's established fatal exit codes, not an uncaught ValueError
@@ -269,79 +210,3 @@ class TestMainShutdownSkip:
         )
 
         assert run_agent_evaluation.main() == 2
-
-    def test_shutdown_still_runs_when_both_shard_args_given_but_out_of_range(
-        self, monkeypatch
-    ):
-        """Regression: --shard-index 5 --shard-count 4 leaves
-        args.shard_count set (not None), so a naive `_is_sharded(args)`
-        check in the finally block would treat this failed-validation
-        invocation as a real sharded run and skip shutdown -- even though
-        _run_evaluation() never ran and this invocation is not actually
-        part of a valid shard sequence. Shutdown must still fire."""
-        shutdown_calls = []
-        monkeypatch.setattr(
-            run_agent_evaluation,
-            "_shutdown_server",
-            lambda pid_file: shutdown_calls.append(pid_file),
-        )
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "run_agent_evaluation.py",
-                "--gold",
-                "g.jsonl",
-                "--seeded",
-                "s.jsonl",
-                "--output",
-                "o.jsonl",
-                "--server-pid-file",
-                "/tmp/pid",
-                "--shard-index",
-                "5",
-                "--shard-count",
-                "4",
-            ],
-        )
-
-        exit_code = run_agent_evaluation.main()
-
-        assert exit_code == 2
-        assert shutdown_calls == ["/tmp/pid"]
-
-    def test_shutdown_still_runs_when_shard_args_are_invalid_and_shard_count_unset(
-        self, monkeypatch
-    ):
-        """Regression: --shard-index without --shard-count leaves
-        args.shard_count as None, which is exactly the condition under which
-        the non-sharded finally-block branch shuts the server down. That
-        must still happen even though _validate_shard_args() raises for this
-        combination -- an operator's typo shouldn't leak a running A2A
-        server."""
-        shutdown_calls = []
-        monkeypatch.setattr(
-            run_agent_evaluation,
-            "_shutdown_server",
-            lambda pid_file: shutdown_calls.append(pid_file),
-        )
-        monkeypatch.setattr(
-            "sys.argv",
-            [
-                "run_agent_evaluation.py",
-                "--gold",
-                "g.jsonl",
-                "--seeded",
-                "s.jsonl",
-                "--output",
-                "o.jsonl",
-                "--server-pid-file",
-                "/tmp/pid",
-                "--shard-index",
-                "0",
-            ],
-        )
-
-        exit_code = run_agent_evaluation.main()
-
-        assert exit_code == 2
-        assert shutdown_calls == ["/tmp/pid"]

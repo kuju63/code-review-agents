@@ -236,11 +236,11 @@ uv run python evaluation/tools/run_agent_evaluation.py \
 ```
 
 Each shard evaluates only every `--shard-count`-th Gold/Seeded item
-(0-based `--shard-index`), skips report generation, and does not shut down
-the A2A server even if `--server-pid-file` is set — the server must stay up
-across all shard invocations. Stop it manually (or via
+(0-based `--shard-index`) and skips report generation. `run_agent_evaluation.py`
+never stops the A2A server itself (sharded or not) — the server must stay up
+across all shard invocations, and shutdown is the sole responsibility of
 [.claude/skills/run-evaluation/SKILL.md](../.claude/skills/run-evaluation/SKILL.md)
-Step 5's fallback) once every shard has finished.
+Step 5 (`scripts/stop_a2a_container.sh`), run once every shard has finished.
 
 **Choosing `--shard-count`**: pick the smallest value satisfying
 
