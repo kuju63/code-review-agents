@@ -1,7 +1,7 @@
 # Graph Report - eval-structured-logging  (2026-08-02)
 
 ## Corpus Check
-- 387 files · ~282,175 words
+- 387 files · ~282,176 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1ff1a30e`
+- Built from commit: `8e0694f8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -607,7 +607,7 @@ Nodes (13): properties, minimum, type, type, type, line, patch, path (+5 more)
 
 ### Community 51 - "required"
 Cohesion: 0.17
-Nodes (13): items, required, type, category, line, patch, path, summary (+5 more)
+Nodes (13): items, type, required, type, category, line, patch, path (+5 more)
 
 ### Community 52 - "a2a_poll"
 Cohesion: 0.29
@@ -1118,7 +1118,7 @@ Cohesion: 0.22
 Nodes (4): Context7 usage, Reference files, Reviewing framework-specific concerns, Shared component design checks (all frameworks)
 
 ### Community 202 - "reviewing-universal/SKILL.md"
-Cohesion: 0.25
+Cohesion: 0.22
 Nodes (3): Quick triage, Reference files, Reviewing universal concerns
 
 ### Community 203 - "Accessibility checks"
@@ -1190,7 +1190,7 @@ Cohesion: 0.25
 Nodes (8): Bundle size, Contents, Dependency audit checks, Duplication, Issue format, Justification, License, Maintenance status
 
 ### Community 221 - "Test quality checks"
-Cohesion: 0.25
+Cohesion: 0.29
 Nodes (7): Assertion presence, Behavior vs implementation detail, Contents, Coverage of changed paths, Issue format, Test isolation, Test quality checks
 
 ### Community 222 - "@attach.md"

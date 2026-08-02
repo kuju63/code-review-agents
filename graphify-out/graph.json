@@ -1672,8 +1672,8 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "evaluation_schema_seeded_item_schema_properties_file_changes",
-      "community": 39,
-      "community_name": "properties",
+      "community": 51,
+      "community_name": "required",
       "norm_label": "file_changes"
     },
     {
@@ -1683,8 +1683,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "evaluation_schema_seeded_item_schema_file_changes_type",
-      "community": 39,
-      "community_name": "properties",
+      "community": 51,
+      "community_name": "required",
       "norm_label": "type"
     },
     {
@@ -1804,8 +1804,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "evaluation_schema_seeded_item_schema_properties_must_find",
-      "community": 51,
-      "community_name": "required",
+      "community": 39,
+      "community_name": "properties",
       "norm_label": "must_find"
     },
     {
@@ -1815,8 +1815,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "evaluation_schema_seeded_item_schema_must_find_type",
-      "community": 51,
-      "community_name": "required",
+      "community": 39,
+      "community_name": "properties",
       "norm_label": "type"
     },
     {
@@ -30656,7 +30656,7 @@
       "label": "4. \u691c\u8a3c\u624b\u9806",
       "file_type": "document",
       "source_file": "docs/eval-seeded-set-duplicate-combo-fix-spec.md",
-      "source_location": "L167",
+      "source_location": "L169",
       "_origin": "ast",
       "id": "docs_eval_seeded_set_duplicate_combo_fix_spec_4_\u691c\u8a3c\u624b\u9806",
       "community": 189,
@@ -40592,8 +40592,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_skills_reviewing_universal_references_test_quality",
-      "community": 221,
-      "community_name": "Test quality checks",
+      "community": 202,
+      "community_name": "reviewing-universal/SKILL.md",
       "norm_label": "test-quality.md"
     },
     {
@@ -120085,7 +120085,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/eval-seeded-set-duplicate-combo-fix-spec.md",
-      "source_location": "L167",
+      "source_location": "L169",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_eval_seeded_set_duplicate_combo_fix_spec_seeded_set\u751f\u6210_\u30d5\u30a1\u30a4\u30eb_\u30eb\u30fc\u30eb_\u7d44\u307f\u5408\u308f\u305b\u91cd\u8907_\u4fee\u6b63_\u8a2d\u8a08\u30c9\u30ad\u30e5\u30e1\u30f3\u30c8",
@@ -135549,5 +135549,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "1ff1a30ea4ffd774c66c8be38c8dc1b39005d5f4"
+  "built_at_commit": "8e0694f84d11796c3c4e3323d7f92b34a93090f2"
 }
