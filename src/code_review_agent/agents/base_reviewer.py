@@ -47,7 +47,14 @@ Use tools only to gather the information you need. Once you have gathered enough
 information, your single final action MUST be to return your findings as the \
 structured output. Emit the structured output directly; do not restate it as \
 prose first. If you have no findings, return an empty structured result rather \
-than writing an explanation."""
+than writing an explanation.
+
+For every finding tied to a specific place in the diff, you MUST also set that \
+finding's `file_path` and `line` fields to that location. Mentioning the file or \
+line only in `comment`/`context` is not enough: a finding whose `file_path` or \
+`line` is left unset is silently dropped before it reaches the user, no matter \
+how well-reasoned it is. Leave `file_path`/`line` unset only for findings that \
+are genuinely not tied to one place in the diff."""
 
 
 def compose_system_prompt(system_prompt: str) -> str:

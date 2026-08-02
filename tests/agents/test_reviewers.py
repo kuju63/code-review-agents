@@ -205,6 +205,23 @@ class TestStructuredOutputDirective:
             composed = compose_system_prompt(reviewer_cls.system_prompt)
             assert STRUCTURED_OUTPUT_DIRECTIVE in composed
 
+    def test_directive_requires_file_path_and_line_for_located_findings(self):
+        directive = STRUCTURED_OUTPUT_DIRECTIVE.lower()
+        assert "file_path" in directive
+        assert "line" in directive
+        # Must warn that mentioning the location in prose is not enough.
+        assert "comment" in directive or "context" in directive
+
+    def test_directive_explains_consequence_of_missing_location(self):
+        directive = STRUCTURED_OUTPUT_DIRECTIVE.lower()
+        # Must tell the model *why* this matters, not just *what* to do --
+        # matching the existing directive's rationale-first style.
+        assert (
+            "dropped" in directive
+            or "discarded" in directive
+            or "excluded" in directive
+        )
+
 
 class TestRegistration:
     """Importing the reviewers package registers both reviewers."""
