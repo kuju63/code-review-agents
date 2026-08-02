@@ -50,6 +50,10 @@ echo "per-stack target files OK"
 
 # A2Aサーバーをコンテナで起動するため podman が必要
 command -v podman > /dev/null 2>&1 || { echo "ERROR: podman not found."; exit 1; }
+# バイナリの存在だけでなく、rootless実行環境やストレージが初期化済みで
+# 実際にコンテナを起動できる状態かをここで検知する（Step 2のデータセット生成に
+# 時間をかけた後、Step 3で初めて podman が使えないと判明するのを避けるため）。
+podman info > /dev/null 2>&1 || { echo "ERROR: podman is installed but not usable (check rootless setup/storage initialization)."; exit 1; }
 echo "podman OK"
 ```
 
@@ -125,8 +129,10 @@ bash .claude/skills/run-evaluation/scripts/start_a2a_container.sh
 
 コンテナ名は起動前から決まっている定数であるため、PIDのように実行時に判明する値を
 ファイル経由で受け渡す必要はない（Step 5 は同じ定数名でコンテナを停止するだけでよい）。
+同名コンテナが既に**稼働中**の場合は、他セッションの評価実行中とみなしてスクリプトは
+明示的に失敗する（黙って`--replace`で強制終了させることはしない）。
 設計の詳細（`--env-file`を使わない理由、`GITHUB_TOKEN`を渡さない理由、
-`--network=host`が必要な理由）は
+`--network=host`が必要な理由、同時実行時の扱い）は
 [docs/eval-a2a-container-runtime-spec.md](../../../docs/eval-a2a-container-runtime-spec.md)
 を参照。
 

@@ -23,6 +23,16 @@ set +a
 podman pull "$IMAGE"
 echo "Image digest: $(podman image inspect --format '{{.Digest}}' "$IMAGE")"
 
+# --replace below silently kills and recreates a container of this name if one
+# exists. If it's still running, that could be another concurrent evaluation
+# run -- fail loudly instead of clobbering it. A stopped/stale leftover (e.g.
+# from a crash that skipped --rm cleanup) is not running and is safe to
+# replace.
+if [ -n "$(podman ps --filter "name=^${CONTAINER_NAME}\$" --filter status=running -q)" ]; then
+  echo "ERROR: container '$CONTAINER_NAME' is already running -- another evaluation may be in progress. Stop it first (scripts/stop_a2a_container.sh) or wait for it to finish." >&2
+  exit 1
+fi
+
 # Forward CODE_REVIEW_*/OPENAI_API_KEY as value-less `-e KEY` so podman reads
 # the already-parsed shell value (set by `source .env` above) instead of
 # re-parsing .env itself -- `podman run --env-file` does not strip trailing
