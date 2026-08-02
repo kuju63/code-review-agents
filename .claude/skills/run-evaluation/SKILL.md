@@ -235,7 +235,7 @@ echo "Report: $REPORT_PATH"
 ## 注意事項
 
 - `GITHUB_TOKEN` は `.env` から読み込む。`gh` コマンド等の実作業には使用しない（`.env` の `GITHUB_TOKEN` は評価パイプライン専用）。GitHub MCP呼び出し・build系スクリプトは引き続き `venv`（`source .venv/bin/activate`）を使う。
-- A2A サーバーは `code-review-agent-eval` という固定名のpodmanコンテナとして起動する（デフォルトポートは`8000`、`--network=host`のためホストと同じ`localhost:8000`でアクセスできる）。前回異常終了時に同名コンテナが残っていても`--replace`により自動的に置き換わる。
+- A2A サーバーは `code-review-agent-eval` という固定名のpodmanコンテナとして起動する（デフォルトポートは`8000`、`--network=host`のためホストと同じ`localhost:8000`でアクセスできる）。`--replace`が置き換えるのは**停止済み**の同名コンテナ（前回異常終了時の残骸など）のみで、**稼働中**の同名コンテナがあれば`start_a2a_container.sh`は置き換えずに明示的に起動失敗する（他セッションの評価実行中を誤って停止しないため）。
 - `pr_targets.json` / Gold set / Seeded set が既に存在する場合はビルドをスキップして再利用する。
 - 既定は`--sample-n 15`によるランダムサンプリング(高速・日常イテレーション用)。全件に近いフル評価が
   必要な場合は、Step 2の変換コマンドを`--limit <n>`(例: 30)に置き換えること。
