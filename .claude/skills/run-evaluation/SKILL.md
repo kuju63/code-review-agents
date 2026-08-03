@@ -144,14 +144,18 @@ bash .claude/skills/run-evaluation/scripts/start_a2a_container.sh
 Step 5が担当する）。
 
 ```bash
-source .venv/bin/activate
-python -u evaluation/tools/run_agent_evaluation.py \
+uv run python -u evaluation/tools/run_agent_evaluation.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --output evaluation/data/agent_predictions.jsonl \
   --concurrency 2
 EVAL_EXIT=$?
 ```
+
+`source .venv/bin/activate && python ...`ではなく`uv run python ...`を使うこと。venvを直接activateした場合、
+editable installが`uv sync`と同期されていないと`code_review_agent`パッケージ（`_to_predictions`が内部でimportする）
+が`ModuleNotFoundError`になり、全アイテムが空の結果（`agent_findings: []`）で失敗し続ける
+（2026-08-03の実行で発生・原因特定済み）。`uv run`は実行前に自動で環境を同期するため、この問題を回避できる。
 
 `--concurrency`は既定で2（Gold/Seededの各項目を最大2件同時に評価）。ハードウェアや外部LLM API・
 GitHub MCPのレート制限次第では2が現実的な上限であり、上げる場合はタイムアウト（`--timeout`、既定1800秒）
@@ -223,7 +227,8 @@ echo "Report: $REPORT_PATH"
 
 **obsidian-cli スキルを使い**、以下のパスに保存する:
 
-- **Vault**: `AI box`
+- **Vault**: `AI Knowledge`（`obsidian vaults`で確認できる実際のVault名。手順書に旧称「AI box」と
+  書かれていることがあるが、指定すると`Vault not found.`になるため`AI Knowledge`を使うこと）
 - **保存先**: `プロジェクト/code-review-agent/evaluation-report/`
 - **ファイル名**: レポートファイル名をそのまま使用（`report_YYYYMMDD-HHMMSS-<hash>.md` → `YYYYMMDD-HHMMSS-<hash>.md` に変換してもよい）
 
