@@ -106,6 +106,9 @@ LLM inference + deterministic post-generation checks, see
 [docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
 3.2). Set `SEEDED_GEN_MODEL_ID` in `.env` (see `.env.example`), or pass
 `--model-id` explicitly; there is no implicit default model.
+`SEEDED_GEN_PROVIDER_TYPE` / `--provider-type` select the backend
+(`openai` default, or `ollama` for Strands' native Ollama SDK; see
+[docs/model-provider-factory-spec.md](../docs/model-provider-factory-spec.md)).
 
 Each (file, rule) combo gets up to `--llm-max-attempts` LLM generation
 attempts (default 3) before falling back to Phase1 (design doc §9.4).
@@ -160,8 +163,8 @@ Checkpoint:
 
 ### Regenerating after a Seeded generation model change
 
-`SEEDED_GEN_MODEL_ID` / `SEEDED_GEN_LLM_BASE_URL` is not part of the
-cache key for `evaluation/data/seeded_set.jsonl` (design doc 3.2.4:
+`SEEDED_GEN_MODEL_ID` / `SEEDED_GEN_LLM_BASE_URL` / `SEEDED_GEN_PROVIDER_TYPE`
+is not part of the cache key for `evaluation/data/seeded_set.jsonl` (design doc 3.2.4:
 generation is a build-time, one-off process). If you change the
 generation model, delete and rebuild manually -- it will not happen
 automatically:
@@ -301,10 +304,10 @@ uv run python evaluation/tools/score_evaluation.py \
   --seeded evaluation/data/seeded_set.jsonl \
   --pred evaluation/data/agent_predictions.jsonl
 
-Add `--semantic-judge` (optionally with `--model-id` / `--llm-base-url`) to
-enable LLM-as-judge content matching on top of path/line/category — see
-EVALUATION_PLAN.md §3.1.1 Matching rule. Do not use it for Seeded-set hard
-gate runs (§6): it introduces non-determinism.
+Add `--semantic-judge` (optionally with `--model-id` / `--llm-base-url` /
+`--provider-type`) to enable LLM-as-judge content matching on top of
+path/line/category — see EVALUATION_PLAN.md §3.1.1 Matching rule. Do not
+use it for Seeded-set hard gate runs (§6): it introduces non-determinism.
 
 ## 6. Gate decision
 

@@ -1447,11 +1447,21 @@ def main() -> int:
 
     model_id = args.model_id or os.environ.get("SEEDED_GEN_MODEL_ID")
     llm_base_url = args.llm_base_url or os.environ.get("SEEDED_GEN_LLM_BASE_URL")
-    provider_type = ProviderType(
+    raw_provider_type = (
         args.provider_type
         or os.environ.get("SEEDED_GEN_PROVIDER_TYPE")
-        or ProviderType.OPENAI
+        or ProviderType.OPENAI.value
     )
+    try:
+        provider_type = ProviderType(raw_provider_type)
+    except ValueError:
+        logger.error(
+            "[SEEDED-ERROR] invalid provider type %r: must be one of %s "
+            "(pass --provider-type or set SEEDED_GEN_PROVIDER_TYPE)",
+            raw_provider_type,
+            [p.value for p in ProviderType],
+        )
+        return 1
     if not model_id:
         logger.error(
             "[SEEDED-ERROR] no generation model configured: pass --model-id "

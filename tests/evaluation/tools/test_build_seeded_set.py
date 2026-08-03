@@ -1843,6 +1843,35 @@ class TestMainCLIModelConfigValidation:
         assert any("[SEEDED-ERROR]" in r.getMessage() for r in caplog.records)
         assert not output_path.exists()
 
+    def test_exits_with_error_when_env_provider_type_is_invalid(
+        self, tmp_path, monkeypatch, caplog
+    ):
+        caplog.set_level(logging.ERROR)
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "some-model")
+        monkeypatch.setenv("SEEDED_GEN_PROVIDER_TYPE", "bogus")
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 1
+        assert any("[SEEDED-ERROR]" in r.getMessage() for r in caplog.records)
+        assert not output_path.exists()
+
     def test_exits_with_error_when_llm_max_attempts_is_zero(
         self, tmp_path, monkeypatch, caplog
     ):
