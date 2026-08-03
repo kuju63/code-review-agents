@@ -20,11 +20,12 @@ import os
 from typing import Any
 
 from strands import Agent
-from strands.models.openai import OpenAIModel
+from strands.models import Model
 
 from ..models.pr_info import FileChange, PRInfo, PRInfoResult, RepositoryInfo
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
 from .exceptions import INFRA_EXCEPTIONS
+from .model_provider_factory import ProviderType, create_model_provider
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +178,7 @@ class PRInfoCollector:
         model_id: str = "gpt-4o",
         mcp_url: str = GITHUB_MCP_URL,
         llm_base_url: str | None = None,
+        provider_type: ProviderType = ProviderType.OPENAI,
         max_agent_turns: int = 30,
         patch_total_char_limit: int = 30_000,
         patch_max_files: int = 30,
@@ -190,6 +192,8 @@ class PRInfoCollector:
             model_id: OpenAI-compatible model ID used for the README summary.
             mcp_url: URL of the GitHub MCP endpoint.
             llm_base_url: Optional OpenAI-compatible base URL (e.g. LM Studio).
+            provider_type: Which backend :func:`create_model_provider` builds
+                the README-summary model against.
             max_agent_turns: Maximum agent loop iterations for the README
                 summary call.
             patch_total_char_limit: Maximum combined patch size (characters)
@@ -208,6 +212,7 @@ class PRInfoCollector:
         self._model_id = model_id
         self._mcp_url = mcp_url
         self._llm_base_url = llm_base_url
+        self._provider_type = provider_type
         self._max_agent_turns = max_agent_turns
         self._patch_total_char_limit = patch_total_char_limit
         self._patch_max_files = patch_max_files
@@ -494,22 +499,19 @@ class PRInfoCollector:
         # body; the last text block holds the README content.
         return texts[-1] if texts else None
 
-    def _build_model(self) -> OpenAIModel:
-        """Build the OpenAI-compatible model for README summarisation.
+    def _build_model(self) -> Model:
+        """Build the model for README summarisation.
 
         Returns:
-            A model configured with ``llm_base_url`` when set, else the
-            default OpenAI-compatible client.
+            Model: Configured via :func:`create_model_provider` for this
+            collector's ``provider_type``.
         """
-        if self._llm_base_url:
-            return OpenAIModel(
-                model_id=self._model_id,
-                client_args={"base_url": self._llm_base_url},
-                params={
-                    "temperature": 0.3,
-                },
-            )
-        return OpenAIModel(model_id=self._model_id)
+        return create_model_provider(
+            self._provider_type,
+            self._model_id,
+            llm_base_url=self._llm_base_url,
+            temperature=0.3,
+        )
 
     def _summarize_readme(self, readme_text: str) -> str:
         """Summarise the README with a single tool-free LLM call.

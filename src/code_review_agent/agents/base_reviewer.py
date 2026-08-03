@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from typing import ClassVar, cast
 
 from strands import Agent
-from strands.models.openai import OpenAIModel
 from strands.types.agent import Limits
 from strands_tools import file_read, http_request
 
@@ -26,6 +25,7 @@ from ..models.review import (
 from ..skills.agent_skills_factory import AgentSkillType, create_agent_skills
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
 from .exceptions import StructuredOutputMissingError
+from .model_provider_factory import ProviderType, create_model_provider
 
 
 # Small models (e.g. granite4.1:8b) tend to end their turn with a free-form
@@ -128,6 +128,9 @@ class ReviewerConfig:
             header.
         model_id: OpenAI-compatible model ID used by every reviewer.
         mcp_url: GitHub MCP endpoint URL.
+        provider_type: Which backend :func:`create_model_provider` builds the
+            model against.  Configurable via ``CODE_REVIEW_PROVIDER_TYPE``;
+            unlike ``model_id`` this has no per-request override.
         max_agent_turns: Maximum agent loop iterations per invocation.
             Configurable via ``CODE_REVIEW_MAX_AGENT_TURNS``.
         max_tokens: Maximum tokens the model may generate in a single
@@ -165,6 +168,7 @@ class ReviewerConfig:
     model_id: str = "gpt-4o"
     mcp_url: str = GITHUB_MCP_URL
     llm_base_url: str | None = None
+    provider_type: ProviderType = ProviderType.OPENAI
     max_agent_turns: int = 30
     max_tokens: int | None = None
     frequency_penalty: float | None = None
@@ -263,25 +267,14 @@ class LLMReviewAgent(ReviewAgent):
                 invoking the forced structured-output tool.
         """
         prompt = self._build_prompt(context)
-        extra_params: dict[str, int | float] = {}
-        if self._config.max_tokens is not None:
-            extra_params["max_tokens"] = self._config.max_tokens
-        if self._config.frequency_penalty is not None:
-            extra_params["frequency_penalty"] = self._config.frequency_penalty
-
-        if self._config.llm_base_url:
-            model = OpenAIModel(
-                model_id=self._config.model_id,
-                client_args={"base_url": self._config.llm_base_url},
-                params={
-                    "temperature": 0.1,
-                    **extra_params,
-                },
-            )
-        elif extra_params:
-            model = OpenAIModel(model_id=self._config.model_id, params=extra_params)
-        else:
-            model = OpenAIModel(model_id=self._config.model_id)
+        model = create_model_provider(
+            self._config.provider_type,
+            self._config.model_id,
+            llm_base_url=self._config.llm_base_url,
+            temperature=0.1,
+            max_tokens=self._config.max_tokens,
+            frequency_penalty=self._config.frequency_penalty,
+        )
 
         tools: list = []
         # In strands >=1.41 ``MCPClient`` is a ``ToolProvider`` whose lifecycle

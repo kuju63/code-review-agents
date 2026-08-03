@@ -3,6 +3,8 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from ..agents.model_provider_factory import ProviderType
+
 
 class Settings(BaseSettings):
     """Environment-backed runtime configuration for the API and its agents.
@@ -14,6 +16,12 @@ class Settings(BaseSettings):
     single-turn generation from local models; ``None`` (default) preserves
     the current unbounded behavior. ``frequency_penalty`` follows the OpenAI
     Chat Completions range of -2.0 to 2.0.
+
+    ``provider_type`` selects the backend every agent's model is built
+    against (see
+    :func:`~code_review_agent.agents.model_provider_factory.create_model_provider`).
+    It is a deployment-level choice with no per-request override, unlike
+    ``model_id``.
     """
 
     model_config = SettingsConfigDict(
@@ -26,6 +34,7 @@ class Settings(BaseSettings):
 
     model_id: str = "gpt-4o"
     llm_base_url: str | None = None
+    provider_type: ProviderType = ProviderType.OPENAI
     max_agent_turns: int = 30
     max_tokens: int | None = None
     frequency_penalty: float | None = Field(default=None, ge=-2.0, le=2.0)

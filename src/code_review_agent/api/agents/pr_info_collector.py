@@ -27,6 +27,7 @@ async def _run(task_id: str, data: dict, store: TaskStore, settings: Settings) -
             github_token=data["github_token"],
             model_id=data.get("model_id", settings.model_id),
             llm_base_url=settings.llm_base_url,
+            provider_type=settings.provider_type,
             max_agent_turns=settings.max_agent_turns,
             patch_total_char_limit=settings.patch_total_char_limit,
             patch_max_files=settings.patch_max_files,
