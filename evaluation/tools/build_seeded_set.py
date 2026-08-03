@@ -21,9 +21,12 @@ from typing import Any, Callable, cast
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, field_validator
-from strands.models.openai import OpenAIModel
 from strands.types.content import Messages
 
+from code_review_agent.agents.model_provider_factory import (
+    ProviderType,
+    create_model_provider,
+)
 from eval_logging import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -158,9 +161,11 @@ def build_generation_prompt(patch: str, rule: dict[str, Any], lang: str) -> str:
 
 
 def make_llm_mutation_generator(
-    model_id: str, llm_base_url: str | None = None
+    model_id: str,
+    llm_base_url: str | None = None,
+    provider_type: ProviderType = ProviderType.OPENAI,
 ) -> MutationGenerator:
-    """Build a mutation generator backed by an OpenAI-compatible LLM.
+    """Build a mutation generator backed by an LLM.
 
     Mirrors the model-selection pattern used elsewhere in this repo
     (``base_reviewer.py`` / ``score_evaluation.py::make_llm_semantic_judge``):
@@ -180,18 +185,24 @@ def make_llm_mutation_generator(
     with the correct JSON as freeform text on both attempts without ever
     emitting a `tool_calls` entry, which raises `StructuredOutputException`
     on every call. `Model.structured_output()` sidesteps tool-calling
-    entirely via the OpenAI-compatible `response_format` (JSON-schema
-    constrained decoding), which this repo's local Ollama setup honors
-    reliably. This is not the deprecated `Agent.structured_output()`
-    convenience wrapper (which internally calls the same `Model` method) --
-    the `Model.structured_output()` method itself carries no deprecation
-    notice.
+    entirely via JSON-schema constrained decoding (`response_format` for
+    OpenAI-compatible backends, native `format=` for Ollama -- see
+    `strands.models.ollama.OllamaModel.structured_output()`), which this
+    repo's local Ollama setup honors reliably. This is not the deprecated
+    `Agent.structured_output()` convenience wrapper (which internally calls
+    the same `Model` method) -- the `Model.structured_output()` method
+    itself carries no deprecation notice.
 
     Args:
-        model_id: OpenAI-compatible model id to use for generation.
-        llm_base_url: Optional OpenAI-compatible base URL. When set, the
-            model is pinned to a low, fixed temperature (0.1) to reduce
-            output variance -- not a reproducibility guarantee.
+        model_id: Model id to use for generation.
+        llm_base_url: Optional base URL (OpenAI-compatible, or bare Ollama
+            host when ``provider_type`` is ``OLLAMA``). When set, the model
+            is pinned to a low, fixed temperature (0.1) to reduce output
+            variance -- not a reproducibility guarantee.
+        provider_type: Which backend :func:`create_model_provider` builds
+            the model against. Independent of the ``CODE_REVIEW_*``
+            settings used by the agents under evaluation, to avoid biasing
+            generation toward whatever model is being graded.
 
     Returns:
         A `MutationGenerator` callable: given `(patch, rule, lang)`, it
@@ -199,14 +210,9 @@ def make_llm_mutation_generator(
         closed, no retry) when the LLM call raises or returns no
         structured output.
     """
-    if llm_base_url:
-        model = OpenAIModel(
-            model_id=model_id,
-            client_args={"base_url": llm_base_url},
-            params={"temperature": 0.1},
-        )
-    else:
-        model = OpenAIModel(model_id=model_id)
+    model = create_model_provider(
+        provider_type, model_id, llm_base_url=llm_base_url, temperature=0.1
+    )
 
     def generate(
         patch: str, rule: dict[str, Any], lang: str
@@ -1382,6 +1388,15 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--provider-type",
+        default=None,
+        choices=[p.value for p in ProviderType],
+        help=(
+            "Backend for Seeded mutation generation. Falls back to "
+            "SEEDED_GEN_PROVIDER_TYPE, then 'openai'."
+        ),
+    )
+    parser.add_argument(
         "--llm-max-attempts",
         type=int,
         default=3,
@@ -1432,13 +1447,28 @@ def main() -> int:
 
     model_id = args.model_id or os.environ.get("SEEDED_GEN_MODEL_ID")
     llm_base_url = args.llm_base_url or os.environ.get("SEEDED_GEN_LLM_BASE_URL")
+    raw_provider_type = (
+        args.provider_type
+        or os.environ.get("SEEDED_GEN_PROVIDER_TYPE")
+        or ProviderType.OPENAI.value
+    )
+    try:
+        provider_type = ProviderType(raw_provider_type)
+    except ValueError:
+        logger.error(
+            "[SEEDED-ERROR] invalid provider type %r: must be one of %s "
+            "(pass --provider-type or set SEEDED_GEN_PROVIDER_TYPE)",
+            raw_provider_type,
+            [p.value for p in ProviderType],
+        )
+        return 1
     if not model_id:
         logger.error(
             "[SEEDED-ERROR] no generation model configured: pass --model-id "
             "or set SEEDED_GEN_MODEL_ID (see evaluation/RUNBOOK.md)"
         )
         return 1
-    generate_fn = make_llm_mutation_generator(model_id, llm_base_url)
+    generate_fn = make_llm_mutation_generator(model_id, llm_base_url, provider_type)
 
     output_dir = os.path.dirname(args.output)
     if output_dir:

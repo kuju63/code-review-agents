@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 from pydantic_settings import PydanticBaseSettingsSource, SettingsConfigDict
 
+from code_review_agent.agents.model_provider_factory import ProviderType
 from code_review_agent.api.config import Settings
 
 
@@ -27,6 +28,7 @@ _ENV_KEYS = [
     "CODE_REVIEW_LOG_LEVEL",
     "CODE_REVIEW_MODEL_ID",
     "CODE_REVIEW_LLM_BASE_URL",
+    "CODE_REVIEW_PROVIDER_TYPE",
     "CODE_REVIEW_MAX_AGENT_TURNS",
     "CODE_REVIEW_MAX_TOKENS",
     "CODE_REVIEW_FREQUENCY_PENALTY",
@@ -70,6 +72,10 @@ class TestSettingsDefaults:
         s = _IsolatedSettings()
         assert s.llm_base_url is None
 
+    def test_provider_type_default_is_openai(self, clean_env: None) -> None:
+        s = _IsolatedSettings()
+        assert s.provider_type is ProviderType.OPENAI
+
     def test_max_agent_turns_default_is_30(self, clean_env: None) -> None:
         s = _IsolatedSettings()
         assert s.max_agent_turns == 30
@@ -107,6 +113,20 @@ class TestSettingsDefaults:
         self, clean_env: None, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("CODE_REVIEW_FREQUENCY_PENALTY", "2.1")
+        with pytest.raises(ValidationError):
+            _IsolatedSettings()
+
+    def test_provider_type_accepts_ollama(
+        self, clean_env: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_PROVIDER_TYPE", "ollama")
+        s = _IsolatedSettings()
+        assert s.provider_type is ProviderType.OLLAMA
+
+    def test_provider_type_rejects_invalid_value(
+        self, clean_env: None, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_PROVIDER_TYPE", "bogus")
         with pytest.raises(ValidationError):
             _IsolatedSettings()
 
@@ -155,6 +175,13 @@ class TestSettingsFromEnv:
         monkeypatch.setenv("CODE_REVIEW_LLM_BASE_URL", "http://localhost:11434/v1")
         s = _IsolatedSettings()
         assert s.llm_base_url == "http://localhost:11434/v1"
+
+    def test_reads_provider_type_from_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("CODE_REVIEW_PROVIDER_TYPE", "ollama")
+        s = _IsolatedSettings()
+        assert s.provider_type is ProviderType.OLLAMA
 
     def test_reads_max_agent_turns_from_env(
         self, monkeypatch: pytest.MonkeyPatch

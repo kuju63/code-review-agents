@@ -710,7 +710,7 @@ def main() -> None:
 
 | 環境変数 | 説明 | 例 |
 |---|---|---|
-| `OPENAI_API_KEY` | LLM プロバイダーの API キー。Ollama 等でキー不要な場合はダミー値を設定 | `sk-...` |
+| `OPENAI_API_KEY` | `provider_type=openai` 時の API キー。OpenAI 互換プロバイダーでキー不要な場合はダミー値を設定。`provider_type=ollama`（ネイティブ）では不要 | `sk-...` |
 
 ### 6.1.1 `GITHUB_TOKEN` の扱いについて
 
@@ -745,33 +745,44 @@ FastAPI の `verify_github_token()` Dependency が GitHub `/user` API でトー�
 
 ### 6.3 LLM プロバイダー・モデル設定（任意）
 
-`CODE_REVIEW_LLM_BASE_URL` を設定するだけで、OpenAI API 互換のあらゆるプロバイダーに切り替えられます。
+`CODE_REVIEW_PROVIDER_TYPE` でバックエンド（`openai` / `ollama`）を選択し、
+`CODE_REVIEW_LLM_BASE_URL` でエンドポイントを切り替えます（Issue #214、
+[docs/model-provider-factory-spec.md](model-provider-factory-spec.md) 参照）。
+`provider_type=openai` の場合は OpenAI API 互換のあらゆるプロバイダー（LM Studio /
+OpenRouter 等）に切り替えられ、`provider_type=ollama` の場合は Strands のネイティブ
+`OllamaModel` を使用します。
 
 > **セキュリティ上の注意**: `llm_base_url` はリクエストボディで受け付けません（SSRF リスクのため）。
 > **サーバー環境変数のみ**で設定してください。設計判断の詳細は [§ 12.2](#122-llm_base_url-の扱いssrf-対策) を参照。
+> `provider_type` も同様にリクエストボディでの上書きを許可しません
+> （接続先/認証情報が意図せず切り替わるリスクを避けるため、デプロイ時に固定する設計）。
 
 | 環境変数 | デフォルト | 説明 |
 |---|---|---|
+| `CODE_REVIEW_PROVIDER_TYPE` | `openai` | バックエンド種別（`openai` / `ollama`）。リクエスト単位のオーバーライド不可 |
 | `CODE_REVIEW_MODEL_ID` | `gpt-4o` | 使用するモデル ID（プロバイダーごとのモデル名を指定） |
-| `CODE_REVIEW_LLM_BASE_URL` | `None`（OpenAI デフォルト使用） | OpenAI API 互換エンドポイントの Base URL |
+| `CODE_REVIEW_LLM_BASE_URL` | `None` | `provider_type=openai` 時は `None` で OpenAI 本家のデフォルトエンドポイントを使用。`provider_type=ollama` 時は `/v1` を含まない Ollama サーバーの素の URL を指定するが、`None`（未設定）の場合は `http://localhost:11434` にフォールバックする（`create_model_provider` 実装のデフォルト） |
 
 **プロバイダー別設定一覧**:
 
-| プロバイダー | `CODE_REVIEW_LLM_BASE_URL` | `CODE_REVIEW_MODEL_ID` | `OPENAI_API_KEY` |
-|---|---|---|---|
-| OpenAI（デフォルト） | 設定不要 | `gpt-4o` | `sk-...` |
-| Ollama（ローカル） | `http://localhost:11434/v1` | `gemma4:e4b` | `ollama`（ダミー） |
-| LM Studio（ローカル） | `http://localhost:1234/v1` | `lmstudio-community/...` | `lm-studio`（ダミー） |
-| OpenRouter | `https://openrouter.ai/api/v1` | `openai/gpt-4o` | `sk-or-...` |
+| プロバイダー | `CODE_REVIEW_PROVIDER_TYPE` | `CODE_REVIEW_LLM_BASE_URL` | `CODE_REVIEW_MODEL_ID` | `OPENAI_API_KEY` |
+|---|---|---|---|---|
+| OpenAI（デフォルト） | 設定不要（`openai`） | 設定不要 | `gpt-4o` | `sk-...` |
+| Ollama（ローカル・ネイティブ） | `ollama` | `http://localhost:11434`（`/v1` なし） | `gemma4:e4b` | 不要 |
+| LM Studio（ローカル） | 設定不要（`openai`） | `http://localhost:1234/v1` | `lmstudio-community/...` | `lm-studio`（ダミー） |
+| OpenRouter | 設定不要（`openai`） | `https://openrouter.ai/api/v1` | `openai/gpt-4o` | `sk-or-...` |
 
-**Strands Agents への渡し方**（`ReviewerConfig` 拡張後のイメージ）:
+**Strands Agents への渡し方**（`ReviewerConfig.provider_type` 経由、実装は
+`src/code_review_agent/agents/model_provider_factory.py::create_model_provider`）:
 
 ```python
-from strands.models.openai import OpenAIModel
+from code_review_agent.agents.model_provider_factory import create_model_provider
 
-model = OpenAIModel(
-    model_id=config.model_id,
-    **({"base_url": config.llm_base_url} if config.llm_base_url else {}),
+model = create_model_provider(
+    config.provider_type,
+    config.model_id,
+    llm_base_url=config.llm_base_url,
+    temperature=0.1,
 )
 ```
 
@@ -811,18 +822,22 @@ GITHUB_TOKEN=ghp_...           # GitHub PAT（classic PAT: repo スコープ / f
 # ─── LLM プロバイダー設定（1 つのみ有効にする）──────────
 # --- OpenAI（デフォルト、設定不要） ---
 CODE_REVIEW_MODEL_ID=gpt-4o
+# CODE_REVIEW_PROVIDER_TYPE=openai   # デフォルト。明示不要
 
-# --- Ollama（ローカル）を使う場合 ---
-# CODE_REVIEW_LLM_BASE_URL=http://localhost:11434/v1
+# --- Ollama（ローカル・ネイティブ SDK 経由）を使う場合 ---
+# CODE_REVIEW_PROVIDER_TYPE=ollama
+# CODE_REVIEW_LLM_BASE_URL=http://localhost:11434   # /v1 を付けない
 # CODE_REVIEW_MODEL_ID=gemma4:e4b
-# OPENAI_API_KEY=ollama
+# OPENAI_API_KEY は provider_type=ollama では使用されない
 
-# --- LM Studio（ローカル）を使う場合 ---
+# --- LM Studio（ローカル、OpenAI 互換のまま）を使う場合 ---
+# CODE_REVIEW_PROVIDER_TYPE=openai
 # CODE_REVIEW_LLM_BASE_URL=http://localhost:1234/v1
 # CODE_REVIEW_MODEL_ID=lmstudio-community/gemma-3-4b-it-GGUF
 # OPENAI_API_KEY=lm-studio
 
-# --- OpenRouter を使う場合 ---
+# --- OpenRouter（OpenAI 互換のまま）を使う場合 ---
+# CODE_REVIEW_PROVIDER_TYPE=openai
 # CODE_REVIEW_LLM_BASE_URL=https://openrouter.ai/api/v1
 # CODE_REVIEW_MODEL_ID=openai/gpt-4o
 # OPENAI_API_KEY=sk-or-...
@@ -987,13 +1002,67 @@ curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
 
 ### 10.4 Ollama 切り替えテスト
 
+Issue #214 により、Ollama は OpenAI 互換 `/v1` シムではなく Strands のネイティブ
+`strands.models.ollama.OllamaModel` を経由するようになった（詳細は
+[docs/model-provider-factory-spec.md](model-provider-factory-spec.md) 参照）。
+`CODE_REVIEW_PROVIDER_TYPE=ollama` を指定すると `create_model_provider()` がこの
+分岐を選択する。ホスト URL はネイティブ API 用の素の URL（`/v1` サフィックスなし）を渡す。
+
+> **注意**: `main()` が呼ぶ `load_dotenv()` は既存の環境変数を上書きしない仕様のため、
+> シェルで `unset OPENAI_API_KEY` するだけでは `.env` に書かれた値がそのまま読み込まれる。
+> ネイティブ Ollama 経路が本当に API キーなしで動くことを確認するには、`.env` の
+> `OPENAI_API_KEY` 行を一時的にコメントアウトしてから起動すること。
+
 ```bash
-export CODE_REVIEW_LLM_BASE_URL="http://localhost:11434/v1"
-export CODE_REVIEW_MODEL_ID="gemma4:e4b"
-export OPENAI_API_KEY="ollama"
+# --- ターミナル 1: サーバー起動 ---
+export CODE_REVIEW_PROVIDER_TYPE="ollama"
+export CODE_REVIEW_LLM_BASE_URL="http://localhost:11434"   # /v1 を付けない
+export CODE_REVIEW_MODEL_ID="gemma4:e4b"                   # 例。手元で ollama pull 済みのモデルに置き換える
+export GITHUB_TOKEN="ghp_..."
+# OllamaModel はネイティブ SDK 経由のため OPENAI_API_KEY は不要
+# （.env の OPENAI_API_KEY 行は上記注意のとおりコメントアウトしておく）
 
 uv run code-review-agent
-# → 上記と同じ手順で動作確認
+```
+
+サーバー起動確認だけでなく、実際に Ollama 経由の推論まで検証する。別ターミナルから
+Orchestrator に実タスクを投入し、`Authorization: Bearer` ヘッダーで GitHub トークンを
+渡す（§ 6.1.1 の認証方式）：
+
+```bash
+# --- ターミナル 2: 実リクエスト ---
+RESP=$(curl -s -X POST http://localhost:8000/orchestrator/tasks/send \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -d '{
+    "message": {
+      "role": "user",
+      "parts": [{
+        "kind": "data",
+        "data": {
+          "owner": "<OWNER>",
+          "repo": "<REPO>",
+          "pr_number": <PR_NUMBER>
+        }
+      }]
+    }
+  }')
+
+TASK_ID=$(echo "$RESP" | jq -r '.task.id')
+echo "Task ID: $TASK_ID"
+
+# ポーリングで状態確認（completed になるまで待つ。Ollama 実推論のため数分かかりうる）
+while true; do
+  STATUS=$(curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" | jq -r '.status')
+  echo "Status: $STATUS"
+  [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ] && break
+  sleep 10
+done
+
+# status が completed であること、Ollama 経由の実推論結果（レビュー本文）が
+# 返っていることの両方を確認する
+curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
+  | jq -r '.message.parts[] | select(.kind == "text") | .text'
 ```
 
 ### 10.5 既存テストの通過確認

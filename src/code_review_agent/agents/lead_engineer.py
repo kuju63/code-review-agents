@@ -10,7 +10,6 @@ import logging
 from typing import ClassVar, cast
 
 from strands import Agent
-from strands.models.openai import OpenAIModel
 
 from ..models.lead_engineer import (
     DecisionVerdict,
@@ -25,6 +24,7 @@ from ..models.lead_engineer import (
 from ..models.review import ReviewFinding, ReviewPerspective, ReviewReport
 from .base_reviewer import ReviewerConfig
 from .exceptions import StructuredOutputMissingError
+from .model_provider_factory import create_model_provider
 
 logger = logging.getLogger(__name__)
 
@@ -102,25 +102,14 @@ class LeadEngineerAgent:
                 invoking the forced structured-output tool.
         """
         prompt, index_map = self._build_prompt_and_index(report)
-        extra_params: dict[str, int | float] = {}
-        if self._config.max_tokens is not None:
-            extra_params["max_tokens"] = self._config.max_tokens
-        if self._config.frequency_penalty is not None:
-            extra_params["frequency_penalty"] = self._config.frequency_penalty
-
-        if self._config.llm_base_url:
-            model = OpenAIModel(
-                model_id=self._config.model_id,
-                client_args={"base_url": self._config.llm_base_url},
-                params={
-                    "temperature": 0.3,
-                    **extra_params,
-                },
-            )
-        elif extra_params:
-            model = OpenAIModel(model_id=self._config.model_id, params=extra_params)
-        else:
-            model = OpenAIModel(model_id=self._config.model_id)
+        model = create_model_provider(
+            self._config.provider_type,
+            self._config.model_id,
+            llm_base_url=self._config.llm_base_url,
+            temperature=0.3,
+            max_tokens=self._config.max_tokens,
+            frequency_penalty=self._config.frequency_penalty,
+        )
         agent = Agent(model=model, system_prompt=self.system_prompt, tools=[])
         result = agent(
             prompt,

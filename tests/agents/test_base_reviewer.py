@@ -14,6 +14,7 @@ from code_review_agent.agents.base_reviewer import (
     compose_system_prompt,
 )
 from code_review_agent.agents.exceptions import StructuredOutputMissingError
+from code_review_agent.agents.model_provider_factory import ProviderType
 from code_review_agent.skills.agent_skills_factory import AgentSkillType
 from code_review_agent.models.pr_info import (
     FileChange,
@@ -460,13 +461,20 @@ class TestReview:
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
             patch(f"{_BASE}.Agent", return_value=mock_agent),
-            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+            patch(f"{_BASE}.create_model_provider") as mock_factory,
         ):
             reviewer.review(_make_context())
 
-        mock_model_cls.assert_called_once_with(model_id="gpt-4o-mini")
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o-mini",
+            llm_base_url=None,
+            temperature=0.1,
+            max_tokens=None,
+            frequency_penalty=None,
+        )
 
-    def test_passes_llm_base_url_to_openai_model_when_set(self):
+    def test_passes_llm_base_url_to_model_provider_when_set(self):
         reviewer = _StubReviewer(
             ReviewerConfig(
                 github_token="tok",
@@ -481,17 +489,20 @@ class TestReview:
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
             patch(f"{_BASE}.Agent", return_value=mock_agent),
-            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+            patch(f"{_BASE}.create_model_provider") as mock_factory,
         ):
             reviewer.review(_make_context())
 
-        mock_model_cls.assert_called_once_with(
-            model_id="gpt-4o",
-            client_args={"base_url": "http://localhost:11434/v1"},
-            params={"temperature": 0.1},
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url="http://localhost:11434/v1",
+            temperature=0.1,
+            max_tokens=None,
+            frequency_penalty=None,
         )
 
-    def test_omits_base_url_from_openai_model_when_not_set(self):
+    def test_omits_base_url_from_model_provider_when_not_set(self):
         reviewer = _StubReviewer(ReviewerConfig(github_token="tok", model_id="gpt-4o"))
         mock_mcp = _mock_mcp()
         mock_agent = MagicMock()
@@ -500,13 +511,20 @@ class TestReview:
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
             patch(f"{_BASE}.Agent", return_value=mock_agent),
-            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+            patch(f"{_BASE}.create_model_provider") as mock_factory,
         ):
             reviewer.review(_make_context())
 
-        mock_model_cls.assert_called_once_with(model_id="gpt-4o")
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url=None,
+            temperature=0.1,
+            max_tokens=None,
+            frequency_penalty=None,
+        )
 
-    def test_passes_max_tokens_and_frequency_penalty_to_openai_model_when_set(self):
+    def test_passes_max_tokens_and_frequency_penalty_to_model_provider_when_set(self):
         reviewer = _StubReviewer(
             ReviewerConfig(
                 github_token="tok",
@@ -523,14 +541,17 @@ class TestReview:
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
             patch(f"{_BASE}.Agent", return_value=mock_agent),
-            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+            patch(f"{_BASE}.create_model_provider") as mock_factory,
         ):
             reviewer.review(_make_context())
 
-        mock_model_cls.assert_called_once_with(
-            model_id="gpt-4o",
-            client_args={"base_url": "http://localhost:11434/v1"},
-            params={"temperature": 0.1, "max_tokens": 4096, "frequency_penalty": 0.4},
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url="http://localhost:11434/v1",
+            temperature=0.1,
+            max_tokens=4096,
+            frequency_penalty=0.4,
         )
 
     def test_passes_generation_limits_without_base_url(self):
@@ -549,12 +570,46 @@ class TestReview:
         with (
             patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
             patch(f"{_BASE}.Agent", return_value=mock_agent),
-            patch(f"{_BASE}.OpenAIModel") as mock_model_cls,
+            patch(f"{_BASE}.create_model_provider") as mock_factory,
         ):
             reviewer.review(_make_context())
 
-        mock_model_cls.assert_called_once_with(
-            model_id="gpt-4o", params={"max_tokens": 4096, "frequency_penalty": 0.4}
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url=None,
+            temperature=0.1,
+            max_tokens=4096,
+            frequency_penalty=0.4,
+        )
+
+    def test_passes_ollama_provider_type_to_model_provider(self):
+        reviewer = _StubReviewer(
+            ReviewerConfig(
+                github_token="tok",
+                model_id="ornith:latest",
+                llm_base_url="http://localhost:11434",
+                provider_type=ProviderType.OLLAMA,
+            )
+        )
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent),
+            patch(f"{_BASE}.create_model_provider") as mock_factory,
+        ):
+            reviewer.review(_make_context())
+
+        mock_factory.assert_called_once_with(
+            ProviderType.OLLAMA,
+            "ornith:latest",
+            llm_base_url="http://localhost:11434",
+            temperature=0.1,
+            max_tokens=None,
+            frequency_penalty=None,
         )
 
 

@@ -15,6 +15,7 @@ import pytest
 from httpx import ConnectError
 from strands.types.exceptions import EventLoopException
 
+from code_review_agent.agents.model_provider_factory import ProviderType
 from code_review_agent.agents.pr_info_collector import (
     GITHUB_MCP_URL,
     PRInfoCollector,
@@ -275,7 +276,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             return collector.collect("mui", "material-ui", 48591)
 
@@ -359,7 +360,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=mock_agent) as agent_cls,
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             result = collector.collect("mui", "material-ui", 48591)
 
@@ -384,7 +385,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=failing_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             result = collector.collect("mui", "material-ui", 48591)
         assert result.project_summary == ""
@@ -407,7 +408,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=failing_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
             pytest.raises(EventLoopException),
         ):
             collector.collect("mui", "material-ui", 48591)
@@ -431,7 +432,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
             pytest.raises(ConnectError),
         ):
             collector.collect("mui", "material-ui", 48591)
@@ -455,7 +456,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
             pytest.raises(ConnectError),
         ):
             collector.collect("mui", "material-ui", 48591)
@@ -474,7 +475,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=MagicMock()),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
             pytest.raises(RuntimeError, match="startup failed"),
         ):
             collector.collect("mui", "material-ui", 48591)
@@ -487,7 +488,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=MagicMock()),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
             pytest.raises(RuntimeError, match="boom"),
         ):
             collector.collect("mui", "material-ui", 48591)
@@ -528,7 +529,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp) as factory,
             patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             collector.collect("mui", "material-ui", 48591)
         factory.assert_called_once_with(
@@ -538,7 +539,7 @@ class TestPRInfoCollectorCollect:
             retry_backoff_seconds=2.5,
         )
 
-    def test_passes_llm_base_url_to_openai_model_when_set(self):
+    def test_passes_llm_base_url_to_model_provider_when_set(self):
         collector = PRInfoCollector(
             github_token="tok", llm_base_url="http://localhost:11434/v1"
         )
@@ -546,13 +547,14 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
-            patch(f"{_MOD}.OpenAIModel") as model_cls,
+            patch(f"{_MOD}.create_model_provider") as mock_factory,
         ):
             collector.collect("mui", "material-ui", 48591)
-        model_cls.assert_called_once_with(
-            model_id="gpt-4o",
-            client_args={"base_url": "http://localhost:11434/v1"},
-            params={"temperature": 0.3},
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url="http://localhost:11434/v1",
+            temperature=0.3,
         )
 
     def test_logs_response_size(self, caplog):
@@ -644,16 +646,39 @@ class TestPRInfoCollectorCollect:
             result = self._run(_make_mcp())
         assert isinstance(result, PRInfoResult)
 
-    def test_omits_base_url_from_openai_model_when_not_set(self):
+    def test_omits_base_url_from_model_provider_when_not_set(self):
         collector = PRInfoCollector(github_token="tok")
         mcp = _make_mcp()
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
-            patch(f"{_MOD}.OpenAIModel") as model_cls,
+            patch(f"{_MOD}.create_model_provider") as mock_factory,
         ):
             collector.collect("mui", "material-ui", 48591)
-        model_cls.assert_called_once_with(model_id="gpt-4o")
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI, "gpt-4o", llm_base_url=None, temperature=0.3
+        )
+
+    def test_passes_ollama_provider_type_to_model_provider(self):
+        collector = PRInfoCollector(
+            github_token="tok",
+            model_id="ornith:latest",
+            llm_base_url="http://localhost:11434",
+            provider_type=ProviderType.OLLAMA,
+        )
+        mcp = _make_mcp()
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
+            patch(f"{_MOD}.create_model_provider") as mock_factory,
+        ):
+            collector.collect("mui", "material-ui", 48591)
+        mock_factory.assert_called_once_with(
+            ProviderType.OLLAMA,
+            "ornith:latest",
+            llm_base_url="http://localhost:11434",
+            temperature=0.3,
+        )
 
     def test_summary_agent_called_with_default_limits(self):
         """_summarize_readme passes limits={"turns": 30} by default."""
@@ -663,7 +688,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             collector.collect("mui", "material-ui", 48591)
 
@@ -678,7 +703,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             collector.collect("mui", "material-ui", 48591)
 
@@ -708,7 +733,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
             caplog.at_level(
                 logging.WARNING, logger="code_review_agent.agents.pr_info_collector"
             ),
@@ -731,7 +756,7 @@ class TestPRInfoCollectorCollect:
         with (
             patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
             caplog.at_level(
                 logging.WARNING, logger="code_review_agent.agents.pr_info_collector"
             ),

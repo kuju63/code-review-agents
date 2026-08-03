@@ -6,6 +6,7 @@ import pytest
 
 from code_review_agent.agents.base_reviewer import ReviewerConfig
 from code_review_agent.agents.exceptions import StructuredOutputMissingError
+from code_review_agent.agents.model_provider_factory import ProviderType
 from code_review_agent.models.lead_engineer import (
     FindingImpact,
     FindingPriority,
@@ -474,7 +475,7 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent) as mock_agent_cls,
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             self._agent().evaluate(_make_report())
 
@@ -491,7 +492,7 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             self._agent().evaluate(_make_report())
 
@@ -509,7 +510,7 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             self._agent().evaluate(_make_report())
 
@@ -529,7 +530,7 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             LeadEngineerAgent(config).evaluate(_make_report())
 
@@ -547,7 +548,7 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             with pytest.raises(StructuredOutputMissingError, match="LeadEngineer"):
                 self._agent().evaluate(_make_report())
@@ -565,7 +566,7 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             result = self._agent().evaluate(_make_report())
 
@@ -589,14 +590,14 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel"),
+            patch(f"{_MOD}.create_model_provider"),
         ):
             result = self._agent().evaluate(_make_report(errors=errors))
 
         assert len(result.reviewer_errors) == 1
         assert result.reviewer_errors[0].reviewer_id == "spring-technical"
 
-    def test_model_id_passed_to_openai_model(self):
+    def test_model_id_passed_to_model_provider(self):
         from code_review_agent.models.lead_engineer import LeadEngineerOutput
 
         config = ReviewerConfig(github_token="tok", model_id="gpt-4o")
@@ -607,15 +608,22 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+            patch(f"{_MOD}.create_model_provider") as mock_factory,
         ):
             from code_review_agent.agents.lead_engineer import LeadEngineerAgent
 
             LeadEngineerAgent(config).evaluate(_make_report())
 
-        mock_model_cls.assert_called_once_with(model_id="gpt-4o")
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url=None,
+            temperature=0.3,
+            max_tokens=None,
+            frequency_penalty=None,
+        )
 
-    def test_passes_llm_base_url_to_openai_model_when_set(self):
+    def test_passes_llm_base_url_to_model_provider_when_set(self):
         from code_review_agent.agents.lead_engineer import LeadEngineerAgent
         from code_review_agent.models.lead_engineer import LeadEngineerOutput
 
@@ -631,17 +639,20 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+            patch(f"{_MOD}.create_model_provider") as mock_factory,
         ):
             LeadEngineerAgent(config).evaluate(_make_report())
 
-        mock_model_cls.assert_called_once_with(
-            model_id="gpt-4o",
-            client_args={"base_url": "http://localhost:11434/v1"},
-            params={"temperature": 0.3},
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url="http://localhost:11434/v1",
+            temperature=0.3,
+            max_tokens=None,
+            frequency_penalty=None,
         )
 
-    def test_omits_base_url_from_openai_model_when_not_set(self):
+    def test_omits_base_url_from_model_provider_when_not_set(self):
         from code_review_agent.agents.lead_engineer import LeadEngineerAgent
         from code_review_agent.models.lead_engineer import LeadEngineerOutput
 
@@ -653,13 +664,20 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+            patch(f"{_MOD}.create_model_provider") as mock_factory,
         ):
             LeadEngineerAgent(config).evaluate(_make_report())
 
-        mock_model_cls.assert_called_once_with(model_id="gpt-4o")
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url=None,
+            temperature=0.3,
+            max_tokens=None,
+            frequency_penalty=None,
+        )
 
-    def test_passes_max_tokens_and_frequency_penalty_to_openai_model_when_set(self):
+    def test_passes_max_tokens_and_frequency_penalty_to_model_provider_when_set(self):
         from code_review_agent.agents.lead_engineer import LeadEngineerAgent
         from code_review_agent.models.lead_engineer import LeadEngineerOutput
 
@@ -677,14 +695,17 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+            patch(f"{_MOD}.create_model_provider") as mock_factory,
         ):
             LeadEngineerAgent(config).evaluate(_make_report())
 
-        mock_model_cls.assert_called_once_with(
-            model_id="gpt-4o",
-            client_args={"base_url": "http://localhost:11434/v1"},
-            params={"temperature": 0.3, "max_tokens": 4096, "frequency_penalty": 0.4},
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url="http://localhost:11434/v1",
+            temperature=0.3,
+            max_tokens=4096,
+            frequency_penalty=0.4,
         )
 
     def test_passes_generation_limits_without_base_url(self):
@@ -704,10 +725,45 @@ class TestLeadEngineerAgentEvaluate:
 
         with (
             patch(f"{_MOD}.Agent", return_value=mock_agent),
-            patch(f"{_MOD}.OpenAIModel") as mock_model_cls,
+            patch(f"{_MOD}.create_model_provider") as mock_factory,
         ):
             LeadEngineerAgent(config).evaluate(_make_report())
 
-        mock_model_cls.assert_called_once_with(
-            model_id="gpt-4o", params={"max_tokens": 4096, "frequency_penalty": 0.4}
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url=None,
+            temperature=0.3,
+            max_tokens=4096,
+            frequency_penalty=0.4,
+        )
+
+    def test_passes_ollama_provider_type_to_model_provider(self):
+        from code_review_agent.agents.lead_engineer import LeadEngineerAgent
+        from code_review_agent.models.lead_engineer import LeadEngineerOutput
+
+        config = ReviewerConfig(
+            github_token="",
+            model_id="ornith:latest",
+            llm_base_url="http://localhost:11434",
+            provider_type=ProviderType.OLLAMA,
+        )
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = LeadEngineerOutput(
+            overall_summary="ok", decisions=[]
+        )
+
+        with (
+            patch(f"{_MOD}.Agent", return_value=mock_agent),
+            patch(f"{_MOD}.create_model_provider") as mock_factory,
+        ):
+            LeadEngineerAgent(config).evaluate(_make_report())
+
+        mock_factory.assert_called_once_with(
+            ProviderType.OLLAMA,
+            "ornith:latest",
+            llm_base_url="http://localhost:11434",
+            temperature=0.3,
+            max_tokens=None,
+            frequency_penalty=None,
         )
