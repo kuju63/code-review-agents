@@ -612,7 +612,7 @@ class TestMakeLlmSemanticJudge:
         mock_agent.return_value.structured_output = SemanticMatchVerdict(is_match=True)
         with (
             patch.object(score_evaluation, "Agent", return_value=mock_agent),
-            patch.object(score_evaluation, "OpenAIModel"),
+            patch.object(score_evaluation, "create_model_provider"),
         ):
             judge = make_llm_semantic_judge("gpt-4o")
             result = judge("missing null check", "npe risk on unchecked value")
@@ -625,7 +625,7 @@ class TestMakeLlmSemanticJudge:
         mock_agent.return_value.structured_output = None
         with (
             patch.object(score_evaluation, "Agent", return_value=mock_agent),
-            patch.object(score_evaluation, "OpenAIModel"),
+            patch.object(score_evaluation, "create_model_provider"),
         ):
             judge = make_llm_semantic_judge("gpt-4o")
             result = judge("a", "b")
@@ -635,7 +635,7 @@ class TestMakeLlmSemanticJudge:
         mock_agent = MagicMock(side_effect=TimeoutError("upstream timed out"))
         with (
             patch.object(score_evaluation, "Agent", return_value=mock_agent),
-            patch.object(score_evaluation, "OpenAIModel"),
+            patch.object(score_evaluation, "create_model_provider"),
         ):
             judge = make_llm_semantic_judge("gpt-4o")
             result = judge("a", "b")

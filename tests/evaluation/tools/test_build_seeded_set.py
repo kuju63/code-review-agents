@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from pydantic import ValidationError
 
+from code_review_agent.agents.model_provider_factory import ProviderType
 from tests.evaluation.conftest import load_eval_tool_module
 
 build_seeded_set = load_eval_tool_module("build_seeded_set", "build_seeded_set.py")
@@ -267,7 +268,9 @@ class TestMainCLI:
         monkeypatch.setattr(
             build_seeded_set,
             "make_llm_mutation_generator",
-            lambda model_id, llm_base_url=None: lambda patch, rule, lang: None,
+            lambda model_id, llm_base_url=None, provider_type=ProviderType.OPENAI: (
+                lambda patch, rule, lang: None
+            ),
         )
 
     def test_no_duplicate_ids_in_output(self, tmp_path, monkeypatch):
@@ -1505,7 +1508,9 @@ class TestMakeLlmMutationGenerator:
 
         mock_model = MagicMock()
         mock_model.structured_output = fake_structured_output
-        with patch.object(build_seeded_set, "OpenAIModel", return_value=mock_model):
+        with patch.object(
+            build_seeded_set, "create_model_provider", return_value=mock_model
+        ):
             generate = make_llm_mutation_generator("gpt-4o")
             result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
 
@@ -1521,7 +1526,9 @@ class TestMakeLlmMutationGenerator:
 
         mock_model = MagicMock()
         mock_model.structured_output = empty_structured_output
-        with patch.object(build_seeded_set, "OpenAIModel", return_value=mock_model):
+        with patch.object(
+            build_seeded_set, "create_model_provider", return_value=mock_model
+        ):
             generate = make_llm_mutation_generator("gpt-4o")
             result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
 
@@ -1540,7 +1547,9 @@ class TestMakeLlmMutationGenerator:
 
         mock_model = MagicMock()
         mock_model.structured_output = failing_structured_output
-        with patch.object(build_seeded_set, "OpenAIModel", return_value=mock_model):
+        with patch.object(
+            build_seeded_set, "create_model_provider", return_value=mock_model
+        ):
             generate = make_llm_mutation_generator("gpt-4o")
             result = generate(_ORIGINAL_SINGLE_HUNK, RULES[0], "ts")
 
@@ -1548,13 +1557,30 @@ class TestMakeLlmMutationGenerator:
         assert call_count == 1  # no retry on failure
 
     def test_uses_base_url_client_args_when_provided(self):
-        with patch.object(build_seeded_set, "OpenAIModel") as mock_model_cls:
+        with patch.object(build_seeded_set, "create_model_provider") as mock_factory:
             make_llm_mutation_generator("gpt-4o", "https://openrouter.example/api/v1")
 
-        _, kwargs = mock_model_cls.call_args
-        assert kwargs["client_args"] == {
-            "base_url": "https://openrouter.example/api/v1"
-        }
+        mock_factory.assert_called_once_with(
+            ProviderType.OPENAI,
+            "gpt-4o",
+            llm_base_url="https://openrouter.example/api/v1",
+            temperature=0.1,
+        )
+
+    def test_passes_ollama_provider_type(self):
+        with patch.object(build_seeded_set, "create_model_provider") as mock_factory:
+            make_llm_mutation_generator(
+                "ornith:latest",
+                "http://localhost:11434",
+                ProviderType.OLLAMA,
+            )
+
+        mock_factory.assert_called_once_with(
+            ProviderType.OLLAMA,
+            "ornith:latest",
+            llm_base_url="http://localhost:11434",
+            temperature=0.1,
+        )
 
 
 class TestPassesPostGenerationChecks:
@@ -1882,7 +1908,7 @@ class TestMainCLIModelConfigValidation:
         monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
         monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "env-model")
         mock_factory = MagicMock(
-            side_effect=lambda model_id, llm_base_url=None: (
+            side_effect=lambda model_id, llm_base_url=None, provider_type=ProviderType.OPENAI: (
                 lambda patch, rule, lang: None
             )
         )
@@ -1916,7 +1942,7 @@ class TestMainCLIModelConfigValidation:
         monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
         monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "env-model")
         mock_factory = MagicMock(
-            side_effect=lambda model_id, llm_base_url=None: (
+            side_effect=lambda model_id, llm_base_url=None, provider_type=ProviderType.OPENAI: (
                 lambda patch, rule, lang: None
             )
         )
@@ -1975,7 +2001,9 @@ class TestMainCLIEndToEnd:
         monkeypatch.setattr(
             build_seeded_set,
             "make_llm_mutation_generator",
-            lambda model_id, llm_base_url=None: generate_fn,
+            lambda model_id, llm_base_url=None, provider_type=ProviderType.OPENAI: (
+                generate_fn
+            ),
         )
         monkeypatch.setattr(
             sys,

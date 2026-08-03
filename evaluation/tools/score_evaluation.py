@@ -18,8 +18,11 @@ from typing import Any, Callable, cast
 
 from pydantic import BaseModel
 from strands import Agent
-from strands.models.openai import OpenAIModel
 
+from code_review_agent.agents.model_provider_factory import (
+    ProviderType,
+    create_model_provider,
+)
 from eval_logging import setup_logging
 
 logger = logging.getLogger(__name__)
@@ -39,27 +42,27 @@ class SemanticMatchVerdict(BaseModel):
 
 
 def make_llm_semantic_judge(
-    model_id: str, llm_base_url: str | None = None
+    model_id: str,
+    llm_base_url: str | None = None,
+    provider_type: ProviderType = ProviderType.OPENAI,
 ) -> SemanticJudge:
-    """Build a semantic judge backed by an OpenAI-compatible LLM.
+    """Build a semantic judge backed by an LLM.
 
-    Mirrors the model-selection pattern used by the review agents
-    (``base_reviewer.py`` / ``lead_engineer.py``): a custom ``llm_base_url``
-    gets a fixed low temperature for reproducibility; the default endpoint is
-    used as-is otherwise.
+    Uses :func:`create_model_provider` -- the same model-selection factory
+    used by the review agents (``base_reviewer.py`` / ``lead_engineer.py``):
+    a custom ``llm_base_url`` gets a fixed low temperature for
+    reproducibility; the default endpoint is used as-is otherwise. This
+    judge's own model configuration deliberately stays independent of the
+    ``CODE_REVIEW_*``-prefixed settings used by the agents under evaluation,
+    to avoid biasing scoring toward whatever model is being graded.
 
     Returns:
         A callable that takes ``(gold_summary, pred_summary)`` and returns
         ``True`` when the LLM judges them the same underlying defect.
     """
-    if llm_base_url:
-        model = OpenAIModel(
-            model_id=model_id,
-            client_args={"base_url": llm_base_url},
-            params={"temperature": 0.0},
-        )
-    else:
-        model = OpenAIModel(model_id=model_id)
+    model = create_model_provider(
+        provider_type, model_id, llm_base_url=llm_base_url, temperature=0.0
+    )
 
     agent = Agent(model=model, system_prompt=_SEMANTIC_JUDGE_SYSTEM_PROMPT, tools=[])
 
@@ -504,6 +507,12 @@ def main() -> int:
         default=None,
         help="Optional OpenAI-compatible base URL used when --semantic-judge is set",
     )
+    parser.add_argument(
+        "--provider-type",
+        default=ProviderType.OPENAI.value,
+        choices=[p.value for p in ProviderType],
+        help="Backend for --semantic-judge (openai or ollama)",
+    )
     args = parser.parse_args()
 
     gold_rows = read_jsonl(args.gold)
@@ -513,7 +522,9 @@ def main() -> int:
     pred_by_id = {row["id"]: row for row in pred_rows}
 
     semantic_judge = (
-        make_llm_semantic_judge(args.model_id, args.llm_base_url)
+        make_llm_semantic_judge(
+            args.model_id, args.llm_base_url, ProviderType(args.provider_type)
+        )
         if args.semantic_judge
         else None
     )
