@@ -1872,6 +1872,76 @@ class TestMainCLIModelConfigValidation:
         assert any("[SEEDED-ERROR]" in r.getMessage() for r in caplog.records)
         assert not output_path.exists()
 
+    def test_env_provider_type_is_resolved_and_passed_to_generator(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "env-model")
+        monkeypatch.setenv("SEEDED_GEN_PROVIDER_TYPE", "ollama")
+        mock_factory = MagicMock(
+            side_effect=lambda model_id, llm_base_url=None, provider_type=ProviderType.OPENAI: (
+                lambda patch, rule, lang: None
+            )
+        )
+        monkeypatch.setattr(
+            build_seeded_set, "make_llm_mutation_generator", mock_factory
+        )
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 0
+        assert mock_factory.call_args.args[2] is ProviderType.OLLAMA
+
+    def test_cli_provider_type_takes_priority_over_env(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(build_seeded_set, "load_dotenv", lambda *a, **k: None)
+        monkeypatch.setenv("SEEDED_GEN_MODEL_ID", "env-model")
+        monkeypatch.setenv("SEEDED_GEN_PROVIDER_TYPE", "ollama")
+        mock_factory = MagicMock(
+            side_effect=lambda model_id, llm_base_url=None, provider_type=ProviderType.OPENAI: (
+                lambda patch, rule, lang: None
+            )
+        )
+        monkeypatch.setattr(
+            build_seeded_set, "make_llm_mutation_generator", mock_factory
+        )
+        gold_path, catalog_path = self._gold_and_catalog(tmp_path)
+        output_path = tmp_path / "seeded.jsonl"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "build_seeded_set.py",
+                "--gold",
+                str(gold_path),
+                "--catalog",
+                str(catalog_path),
+                "--output",
+                str(output_path),
+                "--provider-type",
+                "openai",
+            ],
+        )
+
+        exit_code = main()
+
+        assert exit_code == 0
+        assert mock_factory.call_args.args[2] is ProviderType.OPENAI
+
     def test_exits_with_error_when_llm_max_attempts_is_zero(
         self, tmp_path, monkeypatch, caplog
     ):

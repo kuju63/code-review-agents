@@ -761,7 +761,7 @@ OpenRouter 等）に切り替えられ、`provider_type=ollama` の場合は Str
 |---|---|---|
 | `CODE_REVIEW_PROVIDER_TYPE` | `openai` | バックエンド種別（`openai` / `ollama`）。リクエスト単位のオーバーライド不可 |
 | `CODE_REVIEW_MODEL_ID` | `gpt-4o` | 使用するモデル ID（プロバイダーごとのモデル名を指定） |
-| `CODE_REVIEW_LLM_BASE_URL` | `None`（OpenAI デフォルト使用） | `provider_type=openai` 時は OpenAI 互換エンドポイントの Base URL。`provider_type=ollama` 時は `/v1` を含まない Ollama サーバーの素の URL |
+| `CODE_REVIEW_LLM_BASE_URL` | `None` | `provider_type=openai` 時は `None` で OpenAI 本家のデフォルトエンドポイントを使用。`provider_type=ollama` 時は `/v1` を含まない Ollama サーバーの素の URL を指定するが、`None`（未設定）の場合は `http://localhost:11434` にフォールバックする（`create_model_provider` 実装のデフォルト） |
 
 **プロバイダー別設定一覧**:
 
@@ -1008,14 +1008,61 @@ Issue #214 により、Ollama は OpenAI 互換 `/v1` シムではなく Strands
 `CODE_REVIEW_PROVIDER_TYPE=ollama` を指定すると `create_model_provider()` がこの
 分岐を選択する。ホスト URL はネイティブ API 用の素の URL（`/v1` サフィックスなし）を渡す。
 
+> **注意**: `main()` が呼ぶ `load_dotenv()` は既存の環境変数を上書きしない仕様のため、
+> シェルで `unset OPENAI_API_KEY` するだけでは `.env` に書かれた値がそのまま読み込まれる。
+> ネイティブ Ollama 経路が本当に API キーなしで動くことを確認するには、`.env` の
+> `OPENAI_API_KEY` 行を一時的にコメントアウトしてから起動すること。
+
 ```bash
+# --- ターミナル 1: サーバー起動 ---
 export CODE_REVIEW_PROVIDER_TYPE="ollama"
 export CODE_REVIEW_LLM_BASE_URL="http://localhost:11434"   # /v1 を付けない
-export CODE_REVIEW_MODEL_ID="gemma4:e4b"
+export CODE_REVIEW_MODEL_ID="gemma4:e4b"                   # 例。手元で ollama pull 済みのモデルに置き換える
+export GITHUB_TOKEN="ghp_..."
 # OllamaModel はネイティブ SDK 経由のため OPENAI_API_KEY は不要
+# （.env の OPENAI_API_KEY 行は上記注意のとおりコメントアウトしておく）
 
 uv run code-review-agent
-# → 上記と同じ手順で動作確認
+```
+
+サーバー起動確認だけでなく、実際に Ollama 経由の推論まで検証する。別ターミナルから
+Orchestrator に実タスクを投入し、`Authorization: Bearer` ヘッダーで GitHub トークンを
+渡す（§ 6.1.1 の認証方式）：
+
+```bash
+# --- ターミナル 2: 実リクエスト ---
+RESP=$(curl -s -X POST http://localhost:8000/orchestrator/tasks/send \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -d '{
+    "message": {
+      "role": "user",
+      "parts": [{
+        "kind": "data",
+        "data": {
+          "owner": "<OWNER>",
+          "repo": "<REPO>",
+          "pr_number": <PR_NUMBER>
+        }
+      }]
+    }
+  }')
+
+TASK_ID=$(echo "$RESP" | jq -r '.task.id')
+echo "Task ID: $TASK_ID"
+
+# ポーリングで状態確認（completed になるまで待つ。Ollama 実推論のため数分かかりうる）
+while true; do
+  STATUS=$(curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" | jq -r '.status')
+  echo "Status: $STATUS"
+  [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ] && break
+  sleep 10
+done
+
+# status が completed であること、Ollama 経由の実推論結果（レビュー本文）が
+# 返っていることの両方を確認する
+curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
+  | jq -r '.message.parts[] | select(.kind == "text") | .text'
 ```
 
 ### 10.5 既存テストの通過確認
