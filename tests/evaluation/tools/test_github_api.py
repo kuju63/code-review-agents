@@ -133,11 +133,11 @@ class TestRestrictedRedirectHandler:
 
 class TestApiGetUrlValidation:
     def test_rejects_disallowed_initial_url(self):
-        with pytest.raises(ValueError, match="api.github.com"):
+        with pytest.raises(ValueError, match="api\.github\.com"):
             api_get("https://evil.example.com/x", "token")
 
     def test_rejects_http_scheme_initial_url(self):
-        with pytest.raises(ValueError, match="api.github.com"):
+        with pytest.raises(ValueError, match="api\.github\.com"):
             api_get("http://api.github.com/x", "token")
 
 
