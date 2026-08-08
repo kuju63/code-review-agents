@@ -187,6 +187,53 @@ class TestSeededItemReviewerParallelism:
         overlap = min(f_end, s_end) - max(f_start, s_start)
         assert overlap > 0
 
+    def test_file_changes_not_overridden_by_seeded_item(self, monkeypatch):
+        """evaluate_seeded_item passes pr-info-collector's file_changes through
+        unmodified; a Seeded item's own file_changes key (a leftover, purely
+        informational field from dataset generation) must not overlay it.
+        Unlike the retired mutation-injection pipeline, the Seeded item's PR
+        is real, so pr-info-collector's response already reflects the actual
+        diff.
+        """
+        real_file_changes = [{"filePath": "src/real.ts", "patch": "real patch"}]
+        seen_payloads: dict[str, dict] = {}
+
+        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
+            name = endpoint.rsplit("/", 1)[-1]
+            if name == "pr-info-collector":
+                return {"pr_info": {"file_changes": real_file_changes}}
+            seen_payloads[name] = data
+            return {"reviewer": name}
+
+        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
+        monkeypatch.setattr(
+            run_agent_evaluation,
+            "_to_predictions",
+            lambda data, pr_id: {"id": pr_id, "agent_findings": []},
+        )
+
+        item = {
+            "id": "seeded-1",
+            "repository": "a/b",
+            "pr_number": 1,
+            "stack": "react",
+            "file_changes": [{"path": "src/decoy.ts", "patch": "decoy patch"}],
+        }
+        run_agent_evaluation.evaluate_seeded_item(
+            item,
+            client=object(),
+            base_url="http://x",
+            poll_interval=0.01,
+            timeout=5,
+            model_id="m",
+        )
+
+        for reviewer_name in ("react-reviewer", "security-reviewer"):
+            assert (
+                seen_payloads[reviewer_name]["pr_info"]["pr_info"]["file_changes"]
+                == real_file_changes
+            )
+
 
 class TestEvaluateSeededItemStackRouting:
     """evaluate_seeded_item routes the technical reviewer call by stack
