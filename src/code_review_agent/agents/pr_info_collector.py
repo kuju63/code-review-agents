@@ -37,7 +37,7 @@ with no preamble, headings, or markdown.
 """
 
 _TARGET_EXTENSIONS = frozenset(
-    [".ts", ".tsx", ".js", ".jsx", ".css", ".scss", ".html", ".svelte"]
+    [".ts", ".tsx", ".js", ".jsx", ".css", ".scss", ".html", ".svelte", ".vue"]
 )
 _TARGET_FILENAMES = frozenset(
     ["package.json", "angular.json", "svelte.config.js", "svelte.config.ts"]
