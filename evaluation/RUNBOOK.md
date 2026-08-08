@@ -101,80 +101,37 @@ Checkpoint:
 
 ## 3. Build Seeded set
 
-Requires a Seeded mutation generation model to be configured (Phase2:
-LLM inference + deterministic post-generation checks, see
-[docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
-3.2). Set `SEEDED_GEN_MODEL_ID` in `.env` (see `.env.example`), or pass
-`--model-id` explicitly; there is no implicit default model.
-`SEEDED_GEN_PROVIDER_TYPE` / `--provider-type` select the backend
-(`openai` default, or `ollama` for Strands' native Ollama SDK; see
-[docs/model-provider-factory-spec.md](../docs/model-provider-factory-spec.md)).
-
-Each (file, rule) combo gets up to `--llm-max-attempts` LLM generation
-attempts (default 3) before falling back to Phase1 (design doc §9.4).
-The <30% fallback-rate result reported in design doc §9.7-§9.8 was
-measured with this default *and* a generation model shown there to
-reliably preserve existing patch content while injecting the required
-pattern (§9.2's model comparison) -- retries alone do not compensate for
-a model too small/misaligned to pass the post-generation checks even
-once (§9.6, §9.9). If your configured model's fallback rate stays high
-despite `--llm-max-attempts 3`, try a larger/more capable model before
-assuming the pipeline itself is broken.
+Fetches real PRs from the dedicated seed repositories
+(`kuju63/{react,vue,angular,svelte}-seeded`, Issue #224) and resolves each
+PR's `INTENTIONAL` marker comment(s) to a `must_find` entry using the
+hand-authored metadata in `evaluation/input/seeded_pr_targets_{stack}.json`.
+See [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)
+for the full design. Requires `GITHUB_TOKEN` (same token as step 2); there
+is no generation model to configure.
 
 uv run python evaluation/tools/build_seeded_set.py \
-  --gold evaluation/data/gold_pr_set.jsonl \
-  --catalog evaluation/config/seeded_mutations.json \
-  --output evaluation/data/seeded_set.jsonl \
-  --multiplier 2
+  --targets evaluation/input/seeded_pr_targets_react.json \
+            evaluation/input/seeded_pr_targets_vue.json \
+            evaluation/input/seeded_pr_targets_angular.json \
+            evaluation/input/seeded_pr_targets_svelte.json \
+  --output evaluation/data/seeded_set.jsonl
 
 Checkpoint:
 
-- `evaluation/data/seeded_set.jsonl` exists
-- Must-find labels are present
-- Each row's `generation_source` is either `"llm"` (LLM mutation passed
-  all post-generation checks) or `"deterministic_fallback"` (checks
-  failed or no LLM output; Phase1 logic was used instead) -- both are
-  expected, not an error
-- Check the LLM Adoption Rate (EVALUATION_PLAN.md §3.2) by rule_id:
+- `evaluation/data/seeded_set.jsonl` exists with one row per PR (59 as of
+  Issue #224's initial migration) and every row's `must_find` has at least
+  one entry
+- The build fails closed rather than producing a partial file: a missing
+  marker, a marker/metadata count mismatch, or a marker sitting on a file
+  `pr_info_collector.is_target_file()` would exclude from review all raise
+  and stop the run. If the build fails, fix the failing PR's metadata entry
+  (or the seed repository's PR) rather than working around the error.
+- To inspect one PR's markers before writing its metadata (or to debug a
+  fail-closed error), use `--print-markers` with `--pr`:
 
-  ```bash
-  python -c "
-  import collections, json
-  rows = [json.loads(l) for l in open('evaluation/data/seeded_set.jsonl')]
-  by_rule = collections.Counter(
-      (mf['rule_id'], r['generation_source']) for r in rows for mf in r['must_find']
-  )
-  rules = sorted({mf['rule_id'] for r in rows for mf in r['must_find']})
-  for rule_id in rules:
-      llm = by_rule[(rule_id, 'llm')]
-      fallback = by_rule[(rule_id, 'deterministic_fallback')]
-      total = llm + fallback
-      print(f'{rule_id}: llm={llm} fallback={fallback} rate={llm/total:.0%}' if total else f'{rule_id}: n/a')
-  "
-  ```
-
-  Not a hard release gate (EVALUATION_PLAN.md §3.2), but a working target
-  of fallback rate < 30% overall applies with the default
-  `--llm-max-attempts` and a sufficiently capable model (design doc
-  §9.4-§9.8). A persistently low rate for a specific `rule_id` may
-  indicate that rule's snippet violates the self-containment principle
-  (docs/eval-seeded-mutation-injection-design.md §7.3) and should be
-  reviewed.
-
-### Regenerating after a Seeded generation model change
-
-`SEEDED_GEN_MODEL_ID` / `SEEDED_GEN_LLM_BASE_URL` / `SEEDED_GEN_PROVIDER_TYPE`
-is not part of the cache key for `evaluation/data/seeded_set.jsonl` (design doc 3.2.4:
-generation is a build-time, one-off process). If you change the
-generation model, delete and rebuild manually -- it will not happen
-automatically:
-
-rm evaluation/data/seeded_set.jsonl
-uv run python evaluation/tools/build_seeded_set.py \
-  --gold evaluation/data/gold_pr_set.jsonl \
-  --catalog evaluation/config/seeded_mutations.json \
-  --output evaluation/data/seeded_set.jsonl \
-  --multiplier 2
+  uv run python evaluation/tools/build_seeded_set.py \
+    --targets evaluation/input/seeded_pr_targets_vue.json \
+    --pr kuju63/vue-seeded#13 --print-markers
 
 ## 4. Run review agent pipeline
 
@@ -334,16 +291,25 @@ If Gold rows are too few:
 
 If Seeded recall is unstable:
 
-- Increase multiplier from 2 to 3
-- Review mutation catalog by stack
+- Check whether it's a location-precision issue (line tolerance ±5) or a
+  genuine miss by re-running the failing item with `--print-markers`
+  against the same PR
+- Review that PR's defect for reachability -- since seed PRs are real,
+  hand-authored code, an unstable recall on a specific PR usually means
+  the reviewer isn't covering that defect category, not a dataset defect
 
-If `build_seeded_set.py` exits with
-`[SEEDED-ERROR] no generation model configured`:
+If `build_seeded_set.py` exits with a fail-closed `ValueError`
+(marker/metadata mismatch, or a marker on a file `is_target_file()`
+excludes):
 
-- Set `SEEDED_GEN_MODEL_ID` in `.env` (see `.env.example`), or pass
-  `--model-id` explicitly
-- This is intentional: there is no implicit default generation model
-  (see docs/eval-seeded-mutation-injection-design.md 3.2.6)
+- This is intentional (see
+  [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)
+  §5.2): a silent mismatch would otherwise reproduce the mutation-injection
+  pipeline's characteristic failure mode of a must_find quietly scoring
+  zero
+- Re-run with `--pr owner/repo#N --print-markers` for the failing PR to see
+  what markers were actually detected, then fix the corresponding
+  `seeded_pr_targets_{stack}.json` entry (or the seed repository's PR)
 
 If stack balance is broken:
 

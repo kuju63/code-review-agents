@@ -5,7 +5,6 @@
   "type": "object",
   "required": [
     "id",
-    "base_source",
     "repository",
     "pr_number",
     "stack",
@@ -14,11 +13,8 @@
   ],
   "properties": {
     "id": {
-      "type": "string"
-    },
-    "base_source": {
       "type": "string",
-      "description": "Original Gold item id"
+      "description": "seeded::{repository}#{pr_number}, e.g. seeded::kuju63/vue-seeded#13"
     },
     "repository": {
       "type": "string"
@@ -44,6 +40,8 @@
     },
     "must_find": {
       "type": "array",
+      "minItems": 1,
+      "description": "One or more defects; a Seed PR may embed multiple INTENTIONAL markers (see docs/eval-seeded-repo-based-generation-spec.md).",
       "items": {
         "type": "object",
         "required": ["rule_id", "category", "severity", "path", "line", "summary"],

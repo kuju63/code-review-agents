@@ -12,6 +12,12 @@ STACK_INPUTS=(
   "$EVAL_DIR/input/pr_targets_angular.json"
   "$EVAL_DIR/input/pr_targets_svelte.json"
 )
+SEEDED_INPUTS=(
+  "$EVAL_DIR/input/seeded_pr_targets_react.json"
+  "$EVAL_DIR/input/seeded_pr_targets_vue.json"
+  "$EVAL_DIR/input/seeded_pr_targets_angular.json"
+  "$EVAL_DIR/input/seeded_pr_targets_svelte.json"
+)
 TARGETS_OUTPUT="$EVAL_DIR/data/pr_targets.json"
 GOLD_OUTPUT="$EVAL_DIR/data/gold_pr_set.jsonl"
 SEEDED_OUTPUT="$EVAL_DIR/data/seeded_set.jsonl"
@@ -25,7 +31,6 @@ MIN_SEVERITY="medium"
 IMPACT=""
 PRIORITY=""
 BALANCED=1
-SEEDED_MULTIPLIER=2
 
 SKIP_SELECT=0
 SKIP_GOLD=0
@@ -38,7 +43,8 @@ Usage:
 
 Options:
   --profile <default|security>       Selection profile (default: default)
-  --stack-inputs <csv>               Per-stack target JSON paths
+  --stack-inputs <csv>               Per-stack Gold target JSON paths
+  --seeded-inputs <csv>              seeded_pr_targets_{stack}.json paths
   --targets-output <path>            Output execution target JSON path
   --gold-output <path>               Gold JSONL output path
   --seeded-output <path>             Seeded JSONL output path
@@ -53,7 +59,6 @@ Options:
   --impact <csv>                     Impact filter: security, correctness,
                                       performance, maintainability
   --priority <csv>                   Priority filter: low, medium, high
-  --seeded-multiplier <n>            Seeded items per Gold item (default: 2)
   --no-balanced                      Disable balanced stack selection
   --skip-select                      Skip per-stack target selection step
   --skip-gold                        Skip Gold build step
@@ -62,8 +67,12 @@ Options:
 
 Notes:
   - Gold build requires GITHUB_TOKEN.
-  - Seeded build requires SEEDED_GEN_MODEL_ID or an explicit model configured
-    through its standalone CLI.
+  - Seeded build also requires GITHUB_TOKEN: it fetches real PRs from the
+    dedicated seed repositories (kuju63/{stack}-seeded), it does not derive
+    from the Gold set. --sample-n/--limit/--min-severity/--impact/--priority
+    only affect Gold selection; the Seeded set is always built from all
+    entries in --seeded-inputs (see
+    docs/eval-seeded-repo-based-generation-spec.md).
   - This script prepares datasets; it does not run or score the review agent.
   - The default uses --sample-n. Use --limit for deterministic weekly or
     release-gate runs (EVALUATION_PLAN.md section 5.1).
@@ -78,6 +87,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --stack-inputs)
       IFS=',' read -r -a STACK_INPUTS <<< "$2"
+      shift 2
+      ;;
+    --seeded-inputs)
+      IFS=',' read -r -a SEEDED_INPUTS <<< "$2"
       shift 2
       ;;
     --targets-output)
@@ -116,10 +129,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --priority)
       PRIORITY="$2"
-      shift 2
-      ;;
-    --seeded-multiplier)
-      SEEDED_MULTIPLIER="$2"
       shift 2
       ;;
     --no-balanced)
@@ -213,12 +222,14 @@ else
 fi
 
 if [[ "$SKIP_SEEDED" -eq 0 ]]; then
-  echo "[3/3] Building Seeded set..."
+  echo "[3/3] Building Seeded set from dedicated seed repositories..."
+  if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+    echo "GITHUB_TOKEN is required for Seeded build step." >&2
+    exit 3
+  fi
   uv run python "$EVAL_DIR/tools/build_seeded_set.py" \
-    --gold "$GOLD_OUTPUT" \
-    --catalog "$EVAL_DIR/config/seeded_mutations.json" \
-    --output "$SEEDED_OUTPUT" \
-    --multiplier "$SEEDED_MULTIPLIER"
+    --targets "${SEEDED_INPUTS[@]}" \
+    --output "$SEEDED_OUTPUT"
 else
   echo "[3/3] Skipped Seeded build step."
 fi

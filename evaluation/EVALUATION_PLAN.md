@@ -148,26 +148,64 @@ Additional recommendation:
 
 Definition:
 
-- Synthetic diffs with intentionally injected defects
+- Real, open PRs in dedicated per-stack seed repositories
+  (`kuju63/{react,vue,angular,svelte}-seeded`), each embedding one or more
+  intentional defects at authoring time
 - Each sample has explicit must-find labels
+
+This replaces the earlier mutation-injection approach (splicing synthetic
+defects into Gold PR diffs after the fact via
+`evaluation/tools/build_seeded_set.py`), which could not guarantee the
+injected code was reachable or contextually coherent -- see
+[docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
+(now superseded) for that approach's history, and
+[docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)
+for the current design. Reachability and contextual coherence are not
+tooling-enforced: `build_seeded_item()` validates only structure (an
+`INTENTIONAL` marker exists, its file isn't one
+`pr_info_collector.is_target_file()` would exclude from review, and marker
+counts match the hand-authored metadata) -- it does not semantically
+analyze the defect. What changed is that each defect is now written
+directly into a real, working PR by a human (most seed PRs also add a
+test exercising the defective code path), making reachability and
+coherence an authoring-time property that is intended and reviewed by
+construction, rather than something post-hoc text-splicing could ever
+produce or verify.
+
+**設計上の既知の制限（Seed PRのリビジョン非固定）**: `build_seeded_set.py`は
+`GET /repos/{owner}/{repo}/pulls/{pr}/files` で各PRの**現在の**headを取得する。
+このエンドポイントは特定コミットSHAへの固定取得をサポートしないため、Seed PR側で
+force-push/amendが起きた場合、週次再構築の結果が黙って変わり得る。3通りのドリフトの
+うち、マーカー位置の移動は行解決ロジックが動的に追従し、マーカー自体の削除は
+`build_seeded_item()`がfail-closedで例外を送出するため、どちらも検知可能。唯一
+検知できないのは「マーカー位置は保たれたまま欠陥の実装が変わる」ケースで、この場合は
+手書きmetadata（rule_id/category/severity/summary）が実際のコードと無言で乖離する。
+恒久対応にはCompare API（`/compare/{base_sha}...{head_sha}`）ベースの取得方式への
+書き換えとPR単位の`head_sha`/`base_sha`記録が必要だが、これはfiles取得の実装そのものを
+作り直す規模の変更であり、かつGold set（`build_gold_set.py`）も同じ非固定の性質を
+共有しているため、Seededだけを先に固定すると両セットの再現性セマンティクスが割れる。
+両セットを対象にした専用対応は別Issueで扱う。
 
 Purpose:
 
 - Deterministic gate for critical miss prevention
 - CI-friendly acceptance criteria
 
-Must include stack-specific traps:
+Traps actually represented across the 59 seed PRs (illustrative, not
+exhaustive -- see each stack's `evaluation/input/seeded_pr_targets_{stack}.json`
+for the authoritative list):
 
-- React/Vue/Svelte/Angular: XSS vectors (innerHTML, dangerouslySetInnerHTML), eval injection, unsafe dynamic HTML, heavy sequential API calls (N+1)
-- React-specific: useEffect missing dependency causing stale state, uncontrolled component to controlled transition, avoidable request waterfalls, bundle regressions, and component composition defects
-- Angular-specific: signal/effect misuse, dependency-injection scope defects, observable subscription leaks, template correctness, and version-incompatible API recommendations
-- Svelte-specific: rune misuse (`$state`/`$derived`/`$effect`), state updates inside effects, non-keyed each blocks, legacy-feature regressions (`$:`, `export let`, `on:click`, `<slot>`), and version-incompatible API recommendations (for example async expressions before Svelte 5.36)
-- Common frontend: CSRF on state-mutating requests, sensitive data in localStorage, exposed secrets in client bundle
+- React/Vue/Svelte/Angular: XSS vectors (innerHTML, dangerouslySetInnerHTML, `{@html}`, `bypassSecurityTrustHtml`), tokens/credentials in localStorage, CSRF-exposed requests, missing `postMessage` origin checks, list keys using array index instead of a stable id, and missing effect/subscription cleanup
+- React-specific: components defined inside another component's render, per-render allocation instead of memoization, module-scope side-effecting imports
+- Angular-specific: signal/effect misuse (`effect()` used for derived state), RxJS nested subscribes, observable subscription leaks, unconditional root-service polling, `@for` `track` using `$index`
+- Vue-specific: direct Pinia store-state mutation, untyped `defineProps`/`defineEmits` array syntax, store getters with side effects, `watch` used where `computed` would do
+- Svelte-specific: rune misuse (`$state`/`$derived`/`$effect`), props/state destructuring that loses Svelte 5 reactivity, non-bindable props mutated directly, `onMount(async)` losing its cleanup return, prop drilling, God Component
+- Common frontend: CSP misconfiguration, secrets hardcoded in the client bundle, client-only session/authorization state trusted without server-side verification
 
-Backend-stack mutation rules (Rails, Spring Boot) were removed from
-`seeded_mutations.json`: with current review resources it isn't realistic to
-cover every stack, so Seeded-set generation is scoped to frontend-only traps
-for now to focus on improving frontend review accuracy.
+Backend-stack traps (Rails, Spring Boot) are out of scope: with current
+review resources it isn't realistic to cover every stack, so Seeded-set
+generation is scoped to frontend-only traps for now to focus on improving
+frontend review accuracy.
 
 ## 3. Metrics
 
@@ -251,27 +289,22 @@ Matching rule:
 - Must-Find Recall: detected_must_find / all_must_find
 - Critical Miss Rate: missed_critical / all_critical
 - False Positive Rate (seeded): non_seeded_flags / all_agent_issues
-- LLM Adoption Rate (`generation_source`): `llm` count / all seeded items,
-  reported overall and broken down by `rule_id`. Computed from the
-  `generation_source` field each `seeded_set.jsonl` row already carries (see
-  [docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
-  §3.2.7/§7.7). Measures how often Phase 2 (LLM mutation generation +
-  deterministic post-generation checks) is actually adopted versus falling
-  back to Phase 1's deterministic logic — a low rate means the R1/R3
-  improvement Phase 2 was built for (§3.2 of the design doc) isn't being
-  realized. A fallback rate below 30% (i.e. LLM Adoption Rate above 70%)
-  is the working target established and measured in
-  [docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
-  §9.4-§9.8, achieved with a sufficiently capable generation model
-  (§9.7) and bounded retry (§9.4, `--llm-max-attempts`, default 3). This
-  target is model-dependent, not a property of the pipeline code alone —
-  see §9.9 for what changing the configured generation model does to it.
 
-  Reported as a soft observability metric, not a Hard/Domain hard gate
-  (§4): unlike Must-Find Recall/Critical Miss Rate, a low adoption rate
-  does not by itself indicate a wrong or unsafe Seeded item — Phase 1
-  fallback items remain valid must-find labels (§3.2.3, "both are
-  expected, not an error").
+LLM Adoption Rate (`generation_source`) has been retired along with the
+mutation-injection pipeline it measured (Issue #224). The seed-repository
+approach has no generation phase to adopt or fall back from: every
+`must_find` is a hand-authored record resolved against a real PR's diff
+(see [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)).
+
+Category-matching asymmetry to keep in mind when reading Must-Find Recall:
+`run_agent_evaluation.py::_to_predictions` normalizes the agent's
+perspective-based `technical` category to `unknown`, keeping only
+`security` as-is (§3.1.2's matching rule). A `must_find.category` of
+`maintainability`/`correctness`/`performance` therefore skips the category
+check (one side is `unknown`), while `security` must_find entries are
+held to a strict gate — they only match a prediction the agent itself
+labeled `security`. §4's Security Must-Find Recall target should be read
+with this asymmetry in mind.
 
 ## 3.3 Operational Metrics
 
@@ -297,6 +330,17 @@ Domain hard gates:
 - React technical reviews must expose both Vercel skill indexes; Angular technical reviews must expose the official Angular skill index
 - Seeded items must route to the technical reviewer matching their `stack` label (`react`→`ReactReviewer`, `vue`→`VueReviewer`, `angular`→`AngularReviewer`, `svelte`→`SvelteReviewer`) plus `SecurityReviewer`; an unsupported or missing `stack` must fail the item explicitly rather than default to `ReactReviewer`
 
+Seeded set size note: the seed-repository migration (Issue #224) fixed the
+Seeded set at 59 items (PRs) across the four seed repositories, carrying
+63 `must_find` entries in total (several PRs embed more than one marker) —
+up from roughly 30 mutated items under the retired pipeline, at
+`--multiplier 2`. Must-Find Recall's denominator (`all_must_find`, §3.2)
+is the 63 count, not the 59 item count; Critical Miss Rate's denominator
+is the subset of those 63 marked `severity: critical`. The Hard gate
+thresholds above are carried over unchanged; whether they should be
+revisited for the larger, fixed denominators is left to a follow-up once
+enough runs exist to judge achievability.
+
 Soft targets:
 
 - Gold Issue Recall >= 0.70
@@ -309,7 +353,10 @@ Soft targets:
 **評価パスの前提（2026-07-29 更新）**:
 
 Gold set は `evaluate_gold_item()` を通じてオーケストレータ経由でパイプライン全体を実行する。
-Seeded set は `evaluate_seeded_item()` でセード変異を注入するため個別エンドポイントを呼ぶ。
+Seeded set は `evaluate_seeded_item()` で個別エンドポイントを呼ぶ。Seed PRは専用リポジトリ
+（`kuju63/{stack}-seeded`）上の実PRであるため、Gold同様pr-info-collectorが返す
+`file_changes` をそのまま使い、mutation注入方式当時のような差し替えは行わない
+（Issue #224、[docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)）。
 Seeded set も項目の `stack` ラベルに応じた技術レビュアー（`react`→`ReactReviewer` /
 `vue`→`VueReviewer` / `angular`→`AngularReviewer` / `svelte`→`SvelteReviewer`）と
 `SecurityReviewer` を選んで呼び出す（両者は並列実行、詳細は
@@ -329,7 +376,7 @@ PR の diff が閾値（`CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` chars・`CODE_REVIE
 ### 5.1 Offline Weekly Run
 
 1. Rebuild Gold snapshots from selected PRs
-2. Rebuild Seeded samples from mutation catalog
+2. Rebuild Seeded samples from the seed repositories
 3. Run agent pipeline on all samples
 4. Score using evaluator script
 5. Publish report and failures

@@ -50,6 +50,8 @@ class TestIsTargetFile:
             "src/App.svelte",
             "svelte.config.js",
             "svelte.config.ts",
+            "src/App.vue",
+            "components/UserProfile.vue",
         ],
     )
     def test_included_files(self, path: str):

@@ -145,13 +145,19 @@ def evaluate_seeded_item(
     timeout: float,
     model_id: str,
 ) -> dict[str, Any]:
-    """Evaluate a seeded item: collect real PR metadata, inject seeded file_changes.
+    """Evaluate a seeded item: collect real PR metadata from its seed repository.
 
     ``item["stack"]`` is resolved to a technical reviewer endpoint via
     ``_technical_reviewer_endpoint`` before any A2A call is made, so an
     unknown stack fails closed (propagating ``ValueError``) instead of
     wasting a ``pr-info-collector`` call or falling back to an unrelated
     reviewer.
+
+    Unlike the retired mutation-injection pipeline, a Seeded item's PR is a
+    real, open PR in a dedicated seed repository (kuju63/{stack}-seeded,
+    see docs/eval-seeded-repo-based-generation-spec.md) -- there is no
+    synthetic ``file_changes`` to overlay on top of what pr-info-collector
+    returns, so its response is passed to the reviewers unmodified.
 
     Returns:
         The lead engineer's synthesized result, converted to
@@ -170,17 +176,7 @@ def evaluate_seeded_item(
         timeout,
     )
 
-    # Step 2: Override file_changes with seeded mutations
-    # seeded format: {"path": ..., "patch": ...}
-    # PRInfoResult format: file_changes[].filePath and .patch
-    seeded_file_changes = [
-        {"filePath": fc["path"], "patch": fc.get("patch")}
-        for fc in item.get("file_changes", [])
-        if fc.get("patch")
-    ]
-    pr_info_data["pr_info"]["file_changes"] = seeded_file_changes
-
-    # Step 3: Run the stack's technical reviewer and Security reviewer in
+    # Step 2: Run the stack's technical reviewer and Security reviewer in
     # parallel. They are independent of each other's output, so running them
     # concurrently only affects wall-clock time, not what is found.
     with ThreadPoolExecutor(max_workers=2) as executor:
@@ -203,7 +199,7 @@ def evaluate_seeded_item(
         technical_result = technical_future.result()
         security_result = security_future.result()
 
-    # Step 4: Lead engineer synthesis
+    # Step 3: Lead engineer synthesis
     review_report = {"results": [technical_result, security_result], "errors": []}
     lead_data = _run_a2a(
         client,

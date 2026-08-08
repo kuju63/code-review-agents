@@ -1,5 +1,13 @@
 # Seeded set生成: (ファイル, ルール)組み合わせ重複 修正 設計ドキュメント
 
+> **廃止済み**: 本ドキュメントが対象とする `--multiplier` によるmutation注入の
+> 確率的サンプリングは、Issue #224によりmutation注入方式自体が専用Seedリポジトリ
+> 方式へ移行し廃止されたため、この重複問題は構造的に発生しなくなった(Seeded set
+> は固定PRリストから1PR=1アイテムで決定論的に構築される)。バグ修正の経緯記録として
+> 残す。現行の設計は
+> [docs/eval-seeded-repo-based-generation-spec.md](eval-seeded-repo-based-generation-spec.md)
+> を参照。
+
 `evaluation/tools/build_seeded_set.py` の `--multiplier >= 2` 実行時に、同一 Gold item に対して
 同一の (ファイル, ルール) 組み合わせが確率的に再抽選され、内容が完全に一致する重複 Seeded item
 が生成される不具合 (Issue #94) を修正する。

@@ -1,0 +1,146 @@
+{
+  "repository": "kuju63/react-seeded",
+  "stack": "react",
+  "prs": [
+    {
+      "pr_number": 8,
+      "defects": [
+        {
+          "path": "src/components/Notification.tsx",
+          "occurrence": 0,
+          "rule_id": "react_dangerously_set_innerhtml_weak_sanitizer",
+          "category": "security",
+          "severity": "high",
+          "summary": "Renders sanitizeNotificationMarkup output via dangerouslySetInnerHTML; the denylist-based sanitizer misses unquoted event handlers and other bypasses, leaving an XSS vector.",
+          "line_offset": 2
+        }
+      ]
+    },
+    {
+      "pr_number": 9,
+      "defects": [
+        {
+          "path": "src/lib/session.ts",
+          "occurrence": 0,
+          "rule_id": "react_sensitive_data_in_local_storage",
+          "category": "security",
+          "severity": "medium",
+          "summary": "Persists and restores the authenticated user's profile via localStorage with no integrity check, exposing session data to any script with page access and allowing the stored value to be tampered with.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 10,
+      "defects": [
+        {
+          "path": "src/context/AuthProvider.tsx",
+          "occurrence": 0,
+          "rule_id": "react_auth_token_in_local_storage",
+          "category": "security",
+          "severity": "high",
+          "summary": "Persists the raw authentication token in localStorage instead of relying on the httpOnly session cookie already set by the API, exposing it to any script with page access (e.g. XSS).",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 11,
+      "defects": [
+        {
+          "path": "src/mocks/handlers.ts",
+          "occurrence": 0,
+          "rule_id": "react_csrf_state_changing_get_endpoint",
+          "category": "security",
+          "severity": "high",
+          "summary": "Adds a state-changing GET /api/logout endpoint and weakens the session cookie's SameSite attribute from Strict to Lax, making the logout action triggerable via CSRF (e.g. a cross-site <img> tag).",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 12,
+      "defects": [
+        {
+          "path": "src/app/(app)/products/page.tsx",
+          "occurrence": 0,
+          "rule_id": "react_use_effect_missing_cleanup",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "useEffect starts a setInterval polling loop but never returns a cleanup function to clearInterval, leaking a timer and continuing to fetch after the component unmounts.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 13,
+      "defects": [
+        {
+          "path": "src/app/(app)/checkout/page.tsx",
+          "occurrence": 0,
+          "rule_id": "react_component_defined_inside_component",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Defines CheckoutProgress as a new function component inside CheckoutPage's render body; React treats it as a different component identity on every render, forcing a full unmount/remount instead of a diff/update.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 14,
+      "defects": [
+        {
+          "path": "src/components/ProductTile.tsx",
+          "occurrence": 0,
+          "rule_id": "react_expensive_object_construction_on_every_render",
+          "category": "performance",
+          "severity": "low",
+          "summary": "Constructs a new Intl.NumberFormat instance on every render inside a per-item component instead of memoizing it or hoisting it to module scope; formatter construction is comparatively expensive and repeats once per item on every re-render.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 15,
+      "defects": [
+        {
+          "path": "src/app/(app)/cart/page.tsx",
+          "occurrence": 0,
+          "rule_id": "react_list_key_uses_index",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Uses the array index as the React key for CartLineItem instead of the stable entry.item.id; reordering, inserting, or removing cart entries then misattributes component state to the wrong row.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 16,
+      "defects": [
+        {
+          "path": "src/components/Header.tsx",
+          "occurrence": 0,
+          "rule_id": "react_use_effect_missing_cleanup",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "useEffect registers a window scroll listener but never returns a cleanup function to remove it, leaking the listener and calling setState after the component unmounts.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 17,
+      "defects": [
+        {
+          "path": "src/mocks/MswProvider.tsx",
+          "occurrence": 0,
+          "rule_id": "react_module_level_side_effect_import",
+          "category": "maintainability",
+          "severity": "medium",
+          "summary": "Kicks off the dynamic import('./browser') at module scope instead of inside the effect that needs it; merely importing this module now triggers the worker bundle load as an unintended side effect.",
+          "line_offset": null
+        }
+      ]
+    }
+  ]
+}
