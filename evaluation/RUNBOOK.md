@@ -202,6 +202,16 @@ across all shard invocations, and shutdown is the sole responsibility of
 [.claude/skills/run-evaluation/SKILL.md](../.claude/skills/run-evaluation/SKILL.md)
 Step 5 (`scripts/stop_a2a_container.sh`), run once every shard has finished.
 
+**Seeded items' timeout budget** (Issue #237): Seeded items now execute all
+three pipeline stages (pr-info-collector, parallel technical+security review,
+lead engineer synthesis) inside a single polled `/orchestrator` task, the same
+as Gold items. Before Issue #237, Seeded items had a separate `--timeout`
+budget per stage across three individually polled A2A calls; that per-stage
+margin is gone. If Seeded items start hitting `--timeout` more often after
+this change, raise `--timeout` rather than `--concurrency` first — the shard
+formula below is unaffected, but each item's per-run safety margin is
+smaller than it used to be.
+
 **Choosing `--shard-count`**: pick the smallest value satisfying
 
 ```text

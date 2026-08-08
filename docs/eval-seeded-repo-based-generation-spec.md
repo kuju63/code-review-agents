@@ -260,6 +260,23 @@ matching their stack label ... plus SecurityReviewer」)により、stack別
 `docs/seeded-reviewer-stack-routing-spec.md`(Issue #181で実装済み)のルーティング
 設計自体は変更しない。
 
+> **判断の反転（2026-08-08更新、Issue #237）**: 上記「統合はしない」の判断は覆した。
+> 理由はその根拠だったEVALUATION_PLAN.md §4のstack別明示ルーティング要件自体を、
+> ユーザーが「`detect_project_types`による自動検出のみに一本化する」方針に決定した
+> ため。この決定により`evaluate_gold_item()`と`evaluate_seeded_item()`(本節で述べた
+> file_changes上書き削除後)は文字通り同一の実装(owner/repo抽出→`/orchestrator`へ
+> POST→`_to_predictions`)に帰着するため、両者は`evaluate_item()`に統合された。
+> `_technical_reviewer_endpoint`と`docs/seeded-reviewer-stack-routing-spec.md`の
+> クライアント側ルーティング設計(§6)は削除・supersededとなった。`evaluate_item()`は
+> `stack`を一切参照しないため、EVALUATION_PLAN.md §4後半のfail-closed要件(unsupported/
+> missing stackを明示的に失敗させる)は59件のいずれに対しても実行されなくなった。実測で
+> 判明している誤ルーティングは4件(Issue #238)だが、これは`detect_project_types`の
+> 副産物として現時点で一致している55件を含む恒久的な保証ではない。EVALUATION_PLAN.md
+> §4のhard gate文言自体は変更していないため、この状態は期限付きの既知逸脱として
+> EVALUATION_PLAN.md §5に記録されている。詳細は
+> [docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)
+> を参照。
+
 ## 7. `seeded_item.schema.json` の変更
 
 `base_source`(「Original Gold item id」の説明、Gold itemが存在しなくなるため
@@ -302,8 +319,11 @@ Vue Seed PRを機能させる前提条件として併せて修正する。
 - CLI: `--print-markers`モードの出力フォーマット、`--pr`単一PR指定、
   `--stacks`フィルタ。
 - `run_agent_evaluation.py`: `evaluate_seeded_item()`が`file_changes`を
-  上書きしないことを検証するテストを追加。既存のstack別ルーティングテストは
-  変更不要。
+  上書きしないことを検証するテストを追加。~~既存のstack別ルーティングテストは
+  変更不要。~~ (2026-08-08更新、Issue #237で誤り: `evaluate_seeded_item()`自体が
+  `evaluate_item()`に統合されたため、stack別ルーティングテストは削除され
+  `TestEvaluateItem`に置き換わった。詳細は
+  [docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)。)
 - `test_pr_info_collector.py`: `.vue`拡張子ケースを追加。
 
 `tests/evaluation/tools/test_build_seeded_set.py`は全面書き換えとする。

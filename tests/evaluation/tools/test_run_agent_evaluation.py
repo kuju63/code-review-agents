@@ -1,10 +1,15 @@
-"""Tests for the concurrency changes in evaluation/tools/run_agent_evaluation.py.
+"""Tests for evaluation/tools/run_agent_evaluation.py.
 
-These tests exercise the new `_evaluate_concurrently` helper (used to run
+These tests exercise the `_evaluate_concurrently` helper (used to run
 Gold/Seeded items with bounded parallelism instead of a strict sequential
-for-loop) and the parallelized technical/security reviewer calls inside
-`evaluate_seeded_item`. No live A2A server or network access is used;
-`evaluate_fn` / `_run_a2a` are replaced with lightweight fakes.
+for-loop) and `evaluate_item`, the single function used to evaluate both
+Gold and Seeded items via the `/orchestrator` endpoint (Issue #237 merged
+the former `evaluate_gold_item`/`evaluate_seeded_item` split, since Seeded
+items are real PRs in dedicated seed repositories and no longer need
+client-side stack-label routing or file_changes overlay -- see
+docs/eval-seeded-orchestrator-unification-spec.md). No live A2A server or
+network access is used; `evaluate_fn` / `_run_a2a` are replaced with
+lightweight fakes.
 """
 
 from __future__ import annotations
@@ -12,8 +17,6 @@ from __future__ import annotations
 import logging
 import threading
 import time
-
-import pytest
 
 from tests.evaluation.conftest import load_eval_tool_module
 
@@ -143,37 +146,34 @@ class TestEvaluateConcurrentlyFailureIsolation:
             assert any(item["id"] in r.getMessage() for r in done_records)
 
 
-class TestSeededItemReviewerParallelism:
-    def test_technical_and_security_reviewer_calls_overlap(self, monkeypatch):
-        windows: dict[str, tuple[float, float]] = {}
-        lock = threading.Lock()
+class TestEvaluateItem:
+    """evaluate_item is the single function used to evaluate both Gold and
+    Seeded items (Issue #237): it always POSTs to /orchestrator and lets
+    the server's own detect_project_types select reviewers, instead of the
+    former client-side stack-label routing that only applied to Seeded
+    items.
+    """
 
+    def _run_a2a_capture(self, calls: list[tuple[str, dict]]):
         def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
-            name = endpoint.rsplit("/", 1)[-1]
-            start = time.monotonic()
-            time.sleep(0.05)
-            end = time.monotonic()
-            with lock:
-                windows[name] = (start, end)
-            if name == "pr-info-collector":
-                return {"pr_info": {"file_changes": []}}
-            return {"reviewer": name}
+            calls.append((endpoint, data))
+            return {"lead_report": "data"}
 
-        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
+        return fake_run_a2a
+
+    def test_calls_orchestrator_exactly_once_with_expected_payload(self, monkeypatch):
+        calls: list[tuple[str, dict]] = []
+        monkeypatch.setattr(
+            run_agent_evaluation, "_run_a2a", self._run_a2a_capture(calls)
+        )
         monkeypatch.setattr(
             run_agent_evaluation,
             "_to_predictions",
             lambda data, pr_id: {"id": pr_id, "agent_findings": []},
         )
 
-        item = {
-            "id": "seeded-1",
-            "repository": "a/b",
-            "pr_number": 1,
-            "stack": "react",
-            "file_changes": [],
-        }
-        run_agent_evaluation.evaluate_seeded_item(
+        item = {"id": "owner/repo#1", "repository": "owner/repo", "pr_number": 1}
+        run_agent_evaluation.evaluate_item(
             item,
             client=object(),
             base_url="http://x",
@@ -182,49 +182,74 @@ class TestSeededItemReviewerParallelism:
             model_id="m",
         )
 
-        f_start, f_end = windows["react-reviewer"]
-        s_start, s_end = windows["security-reviewer"]
-        overlap = min(f_end, s_end) - max(f_start, s_start)
-        assert overlap > 0
+        assert len(calls) == 1
+        endpoint, data = calls[0]
+        assert endpoint == "http://x/orchestrator"
+        assert data == {
+            "owner": "owner",
+            "repo": "repo",
+            "pr_number": 1,
+            "model_id": "m",
+        }
 
-    def test_file_changes_not_overridden_by_seeded_item(self, monkeypatch):
-        """evaluate_seeded_item passes pr-info-collector's file_changes through
-        unmodified; a Seeded item's own file_changes key (a leftover, purely
-        informational field from dataset generation) must not overlay it.
-        Unlike the retired mutation-injection pipeline, the Seeded item's PR
-        is real, so pr-info-collector's response already reflects the actual
-        diff.
-        """
-        real_file_changes = [{"filePath": "src/real.ts", "patch": "real patch"}]
-        seen_payloads: dict[str, dict] = {}
+    def test_passes_item_id_through_to_to_predictions(self, monkeypatch):
+        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", self._run_a2a_capture([]))
+        captured: dict[str, str] = {}
 
-        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
-            name = endpoint.rsplit("/", 1)[-1]
-            if name == "pr-info-collector":
-                # A copy, not the same object as real_file_changes: if
-                # evaluate_seeded_item ever mutated the list in place, the
-                # assertion below would otherwise trivially still pass
-                # (comparing the same object to itself).
-                return {"pr_info": {"file_changes": list(real_file_changes)}}
-            seen_payloads[name] = data
-            return {"reviewer": name}
+        def fake_to_predictions(data, pr_id):
+            captured["pr_id"] = pr_id
+            return {"id": pr_id, "agent_findings": []}
 
-        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
+        monkeypatch.setattr(
+            run_agent_evaluation, "_to_predictions", fake_to_predictions
+        )
+
+        item = {
+            "id": "seeded::kuju63/vue-seeded#13",
+            "repository": "kuju63/vue-seeded",
+            "pr_number": 13,
+        }
+        run_agent_evaluation.evaluate_item(
+            item,
+            client=object(),
+            base_url="http://x",
+            poll_interval=0.01,
+            timeout=5,
+            model_id="m",
+        )
+
+        assert captured["pr_id"] == "seeded::kuju63/vue-seeded#13"
+
+    def test_gold_shaped_and_seeded_shaped_items_both_succeed(self, monkeypatch):
+        calls: list[tuple[str, dict]] = []
+        monkeypatch.setattr(
+            run_agent_evaluation, "_run_a2a", self._run_a2a_capture(calls)
+        )
         monkeypatch.setattr(
             run_agent_evaluation,
             "_to_predictions",
             lambda data, pr_id: {"id": pr_id, "agent_findings": []},
         )
 
-        item = {
-            "id": "seeded-1",
-            "repository": "a/b",
-            "pr_number": 1,
+        gold_item = {"id": "owner/repo#1", "repository": "owner/repo", "pr_number": 1}
+        seeded_item = {
+            "id": "seeded::kuju63/react-seeded#5",
+            "repository": "kuju63/react-seeded",
+            "pr_number": 5,
             "stack": "react",
             "file_changes": [{"path": "src/decoy.ts", "patch": "decoy patch"}],
         }
-        run_agent_evaluation.evaluate_seeded_item(
-            item,
+
+        result_gold = run_agent_evaluation.evaluate_item(
+            gold_item,
+            client=object(),
+            base_url="http://x",
+            poll_interval=0.01,
+            timeout=5,
+            model_id="m",
+        )
+        result_seeded = run_agent_evaluation.evaluate_item(
+            seeded_item,
             client=object(),
             base_url="http://x",
             poll_interval=0.01,
@@ -232,232 +257,77 @@ class TestSeededItemReviewerParallelism:
             model_id="m",
         )
 
-        for reviewer_name in ("react-reviewer", "security-reviewer"):
-            assert (
-                seen_payloads[reviewer_name]["pr_info"]["pr_info"]["file_changes"]
-                == real_file_changes
-            )
+        assert result_gold["id"] == "owner/repo#1"
+        assert result_seeded["id"] == "seeded::kuju63/react-seeded#5"
+        # Both payloads must be endpoint + {owner, repo, pr_number, model_id}
+        # only -- asserting full equality (not just the endpoint) guards
+        # against `stack`/`file_changes` leaking back into the request if
+        # someone reintroduces per-item branching later.
+        assert calls == [
+            (
+                "http://x/orchestrator",
+                {
+                    "owner": "owner",
+                    "repo": "repo",
+                    "pr_number": 1,
+                    "model_id": "m",
+                },
+            ),
+            (
+                "http://x/orchestrator",
+                {
+                    "owner": "kuju63",
+                    "repo": "react-seeded",
+                    "pr_number": 5,
+                    "model_id": "m",
+                },
+            ),
+        ]
 
-
-class TestEvaluateSeededItemStackRouting:
-    """evaluate_seeded_item routes the technical reviewer call by stack
-    (Issue #181): each Seeded item is reviewed by the reviewer matching its
-    own stack plus SecurityReviewer, instead of always calling the (formerly
-    React-only) Frontend reviewer regardless of the item's actual stack.
-    """
-
-    def _run(self, monkeypatch, stack: str) -> list[str]:
-        called_endpoints: list[str] = []
-
-        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
-            name = endpoint.rsplit("/", 1)[-1]
-            called_endpoints.append(name)
-            if name == "pr-info-collector":
-                return {"pr_info": {"file_changes": []}}
-            return {"reviewer": name}
-
-        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
+    def test_unknown_or_missing_stack_does_not_raise(self, monkeypatch):
+        """Regression guard for Issue #237: stack-label fail-closed
+        validation was removed along with the client-side routing it
+        guarded. An unrecognized or absent stack must no longer raise --
+        /orchestrator's own detect_project_types decides reviewer
+        selection, and evaluate_item does not inspect `stack` at all.
+        """
+        calls: list[tuple[str, dict]] = []
+        monkeypatch.setattr(
+            run_agent_evaluation, "_run_a2a", self._run_a2a_capture(calls)
+        )
         monkeypatch.setattr(
             run_agent_evaluation,
             "_to_predictions",
             lambda data, pr_id: {"id": pr_id, "agent_findings": []},
         )
 
-        item = {
-            "id": "seeded-1",
+        item_unknown_stack = {
+            "id": "seeded::a/b#1",
             "repository": "a/b",
             "pr_number": 1,
-            "stack": stack,
-            "file_changes": [],
+            "stack": "solid",
         }
-        run_agent_evaluation.evaluate_seeded_item(
-            item,
+        item_missing_stack = {
+            "id": "seeded::a/b#2",
+            "repository": "a/b",
+            "pr_number": 2,
+        }
+
+        run_agent_evaluation.evaluate_item(
+            item_unknown_stack,
             client=object(),
             base_url="http://x",
             poll_interval=0.01,
             timeout=5,
             model_id="m",
         )
-        return called_endpoints
-
-    def test_react_stack_calls_react_reviewer(self, monkeypatch):
-        called = self._run(monkeypatch, "react")
-        assert set(called) == {
-            "pr-info-collector",
-            "react-reviewer",
-            "security-reviewer",
-            "lead-engineer",
-        }
-
-    def test_vue_stack_calls_vue_reviewer(self, monkeypatch):
-        called = self._run(monkeypatch, "vue")
-        assert set(called) == {
-            "pr-info-collector",
-            "vue-reviewer",
-            "security-reviewer",
-            "lead-engineer",
-        }
-
-    def test_angular_stack_calls_angular_reviewer(self, monkeypatch):
-        called = self._run(monkeypatch, "angular")
-        assert set(called) == {
-            "pr-info-collector",
-            "angular-reviewer",
-            "security-reviewer",
-            "lead-engineer",
-        }
-
-    def test_svelte_stack_calls_svelte_reviewer(self, monkeypatch):
-        called = self._run(monkeypatch, "svelte")
-        assert set(called) == {
-            "pr-info-collector",
-            "svelte-reviewer",
-            "security-reviewer",
-            "lead-engineer",
-        }
-
-    def test_unknown_stack_raises_value_error_without_calling_any_reviewer(
-        self, monkeypatch
-    ):
-        called_endpoints: list[str] = []
-
-        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
-            called_endpoints.append(endpoint.rsplit("/", 1)[-1])
-            return {"pr_info": {"file_changes": []}}
-
-        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
-
-        item = {
-            "id": "seeded-1",
-            "repository": "a/b",
-            "pr_number": 1,
-            "stack": "solid",
-            "file_changes": [],
-        }
-
-        with pytest.raises(ValueError, match="solid"):
-            run_agent_evaluation.evaluate_seeded_item(
-                item,
-                client=object(),
-                base_url="http://x",
-                poll_interval=0.01,
-                timeout=5,
-                model_id="m",
-            )
-        # Fails closed before any A2A call is made, including
-        # pr-info-collector -- no wasted work and no accidental fallback to
-        # an unrelated reviewer.
-        assert called_endpoints == []
-
-    def test_missing_stack_key_raises_value_error_not_key_error(self, monkeypatch):
-        called_endpoints: list[str] = []
-
-        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
-            called_endpoints.append(endpoint.rsplit("/", 1)[-1])
-            return {"pr_info": {"file_changes": []}}
-
-        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
-
-        item = {
-            "id": "seeded-1",
-            "repository": "a/b",
-            "pr_number": 1,
-            "file_changes": [],
-        }
-
-        with pytest.raises(ValueError, match="None"):
-            run_agent_evaluation.evaluate_seeded_item(
-                item,
-                client=object(),
-                base_url="http://x",
-                poll_interval=0.01,
-                timeout=5,
-                model_id="m",
-            )
-        assert called_endpoints == []
-
-    def test_none_stack_raises_value_error(self, monkeypatch):
-        called_endpoints: list[str] = []
-
-        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
-            called_endpoints.append(endpoint.rsplit("/", 1)[-1])
-            return {"pr_info": {"file_changes": []}}
-
-        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
-
-        item = {
-            "id": "seeded-1",
-            "repository": "a/b",
-            "pr_number": 1,
-            "stack": None,
-            "file_changes": [],
-        }
-
-        with pytest.raises(ValueError, match="None"):
-            run_agent_evaluation.evaluate_seeded_item(
-                item,
-                client=object(),
-                base_url="http://x",
-                poll_interval=0.01,
-                timeout=5,
-                model_id="m",
-            )
-        assert called_endpoints == []
-
-    def test_non_string_stack_raises_value_error(self, monkeypatch):
-        called_endpoints: list[str] = []
-
-        def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
-            called_endpoints.append(endpoint.rsplit("/", 1)[-1])
-            return {"pr_info": {"file_changes": []}}
-
-        monkeypatch.setattr(run_agent_evaluation, "_run_a2a", fake_run_a2a)
-
-        item = {
-            "id": "seeded-1",
-            "repository": "a/b",
-            "pr_number": 1,
-            "stack": 42,
-            "file_changes": [],
-        }
-
-        with pytest.raises(ValueError, match="42"):
-            run_agent_evaluation.evaluate_seeded_item(
-                item,
-                client=object(),
-                base_url="http://x",
-                poll_interval=0.01,
-                timeout=5,
-                model_id="m",
-            )
-        assert called_endpoints == []
-
-
-class TestTechnicalReviewerEndpoint:
-    """Direct unit tests for the resolver used by evaluate_seeded_item."""
-
-    def test_known_stacks_resolve(self):
-        assert run_agent_evaluation._technical_reviewer_endpoint("react") == (
-            "react-reviewer"
-        )
-        assert run_agent_evaluation._technical_reviewer_endpoint("vue") == (
-            "vue-reviewer"
-        )
-        assert run_agent_evaluation._technical_reviewer_endpoint("angular") == (
-            "angular-reviewer"
-        )
-        assert run_agent_evaluation._technical_reviewer_endpoint("svelte") == (
-            "svelte-reviewer"
+        run_agent_evaluation.evaluate_item(
+            item_missing_stack,
+            client=object(),
+            base_url="http://x",
+            poll_interval=0.01,
+            timeout=5,
+            model_id="m",
         )
 
-    def test_none_raises_value_error(self):
-        with pytest.raises(ValueError, match="None"):
-            run_agent_evaluation._technical_reviewer_endpoint(None)
-
-    def test_non_string_raises_value_error(self):
-        with pytest.raises(ValueError, match="42"):
-            run_agent_evaluation._technical_reviewer_endpoint(42)
-
-    def test_unknown_string_raises_value_error(self):
-        with pytest.raises(ValueError, match="solid"):
-            run_agent_evaluation._technical_reviewer_endpoint("solid")
+        assert len(calls) == 2
