@@ -1,0 +1,206 @@
+{
+  "repository": "kuju63/vue-seeded",
+  "stack": "vue",
+  "prs": [
+    {
+      "pr_number": 8,
+      "defects": [
+        {
+          "path": "app/pages/login.vue",
+          "occurrence": 0,
+          "rule_id": "vue_dom_based_xss_innerhtml",
+          "category": "security",
+          "severity": "critical",
+          "summary": "Assigns a URL hash fragment value directly to element.innerHTML without sanitization; an attacker-crafted link (e.g. a #notice=<script>... deep link) executes arbitrary script in the victim's session.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 9,
+      "defects": [
+        {
+          "path": "app/pages/settings.vue",
+          "occurrence": 0,
+          "rule_id": "vue_client_supplied_account_id_authorization",
+          "category": "security",
+          "severity": "high",
+          "summary": "Derives the account id used for the change-password request from a client-controlled query parameter (?account=) instead of always using the authenticated user's own id, letting a crafted deep link target another account if the backend trusts this value.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 10,
+      "defects": [
+        {
+          "path": "app/stores/auth.ts",
+          "occurrence": 0,
+          "rule_id": "vue_auth_token_in_local_storage",
+          "category": "security",
+          "severity": "high",
+          "summary": "Persists the raw authentication token in localStorage when 'keep signed in' is enabled, exposing it to any script with page access (e.g. XSS) instead of relying on the httpOnly session cookie already set by the API.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 11,
+      "defects": [
+        {
+          "path": "app/pages/settings.vue",
+          "occurrence": 0,
+          "rule_id": "vue_csrf_state_changing_credentials_include",
+          "category": "security",
+          "severity": "high",
+          "summary": "Adds credentials: 'include' to the password-change request, sending the session cookie on cross-origin requests too; without a CSRF token or a stricter SameSite cookie, this makes the endpoint forgeable from another origin.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 12,
+      "defects": [
+        {
+          "path": "app/pages/products.vue",
+          "occurrence": 0,
+          "rule_id": "vue_store_state_mutated_directly",
+          "category": "maintainability",
+          "severity": "medium",
+          "summary": "Deletes a key directly from the Pinia store's quantities state instead of calling the existing cart.remove() action, bypassing any store-internal invariants or side effects that action encapsulates.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 13,
+      "defects": [
+        {
+          "path": "app/components/ProductTile.vue",
+          "occurrence": 0,
+          "rule_id": "vue_untyped_props_array_syntax",
+          "category": "maintainability",
+          "severity": "low",
+          "summary": "Declares props using the untyped array syntax (defineProps(['product', 'selected', 'quantity'])) instead of the typed generic form (defineProps<Props>()), losing compile-time type checking for prop names and types.",
+          "line_offset": null
+        },
+        {
+          "path": "app/components/ProductTile.vue",
+          "occurrence": 1,
+          "rule_id": "vue_untyped_emits_array_syntax",
+          "category": "maintainability",
+          "severity": "low",
+          "summary": "Declares emits using the untyped array syntax (defineEmits(['select', 'remove'])) instead of the typed generic form, losing compile-time type checking for emitted event names and payloads.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 14,
+      "defects": [
+        {
+          "path": "app/pages/cart.vue",
+          "occurrence": 0,
+          "rule_id": "vue_list_key_uses_index",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Uses the array index as the v-for :key instead of the stable item id; reordering, inserting, or removing cart entries then misattributes rendered/component state to the wrong row.",
+          "line_offset": null
+        },
+        {
+          "path": "app/pages/products.vue",
+          "occurrence": 0,
+          "rule_id": "vue_list_key_uses_index",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Uses the array index as the v-for :key instead of the stable product id; reordering or filtering the catalog then misattributes rendered/component state (e.g. selection) to the wrong tile.",
+          "line_offset": 5
+        }
+      ]
+    },
+    {
+      "pr_number": 15,
+      "defects": [
+        {
+          "path": "app/components/AppHeader.vue",
+          "occurrence": 0,
+          "rule_id": "vue_event_listener_missing_cleanup",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "onMounted registers a window resize listener but there is no onUnmounted to remove it, leaking the listener and updating a ref after the component is unmounted.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 16,
+      "defects": [
+        {
+          "path": "app/stores/cart.ts",
+          "occurrence": 0,
+          "rule_id": "vue_store_getter_has_side_effect",
+          "category": "maintainability",
+          "severity": "medium",
+          "summary": "The subtotal getter dispatches a window CustomEvent as a side effect of being read; getters are expected to be pure derived values, and this makes every subtotal access potentially refire the event unpredictably.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 17,
+      "defects": [
+        {
+          "path": "app/pages/payment.vue",
+          "occurrence": 0,
+          "rule_id": "vue_watch_used_for_derived_state",
+          "category": "maintainability",
+          "severity": "low",
+          "summary": "Manually syncs displayedTotal from cart.total via a ref + watch instead of using a computed; this is strictly more code and introduces a render frame where the two values can be briefly out of sync.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 18,
+      "defects": [
+        {
+          "path": "app/pages/payment.vue",
+          "occurrence": 0,
+          "rule_id": "vue_post_message_missing_origin_check",
+          "category": "security",
+          "severity": "high",
+          "summary": "The window 'message' handler processes payment-widget status updates without checking event.origin, letting any origin (including malicious iframes/tabs) forge payment status/data messages that update the page's payment state.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 19,
+      "defects": [
+        {
+          "path": "app/pages/settings.vue",
+          "occurrence": 0,
+          "rule_id": "vue_redundant_script_block_for_component_name",
+          "category": "maintainability",
+          "severity": "low",
+          "summary": "Adds a separate Options-API <script> block just to set the component name, instead of defineOptions({ name: ... }) inside the existing <script setup> block, unnecessarily splitting the component definition in two.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 20,
+      "defects": [
+        {
+          "path": "app/plugins/analytics.client.ts",
+          "occurrence": 0,
+          "rule_id": "vue_secret_hardcoded_in_client_bundle",
+          "category": "security",
+          "severity": "critical",
+          "summary": "Hardcodes an analytics client credential in a Nuxt .client.ts plugin, which ships directly in the browser bundle; anyone can extract it from the shipped JavaScript.",
+          "line_offset": null
+        }
+      ]
+    }
+  ]
+}
