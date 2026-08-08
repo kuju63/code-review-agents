@@ -9,6 +9,7 @@ fetched via the GitHub REST API.
 from __future__ import annotations
 
 import json
+import os
 from unittest.mock import patch
 
 import pytest
@@ -209,9 +210,9 @@ class TestResolveDefectLine:
         with pytest.raises(ValueError, match="outside an added line"):
             resolve_defect_line(hit, line_offset=5)
 
-    def test_raises_when_explicit_offset_is_not_positive(self):
-        # A non-positive defect_idx must not silently wrap around to the
-        # end of hunk via Python's negative indexing.
+    def test_raises_when_explicit_offset_is_negative_and_wraps_around(self):
+        # A negative offset must not silently wrap around to the end of
+        # hunk via Python's negative indexing.
         hunk = [
             "@@ -10,2 +11,3 @@",
             "   const x = 1;",
@@ -219,8 +220,37 @@ class TestResolveDefectLine:
             "+  window.location.assign(returnUrl);",
         ]
         hit = MarkerHit(hunk=tuple(hunk), marker_idx=2)
-        with pytest.raises(ValueError, match="outside an added line"):
+        with pytest.raises(ValueError, match="line_offset must be positive"):
             resolve_defect_line(hit, line_offset=-2)
+
+    def test_raises_when_explicit_offset_is_zero(self):
+        # line_offset=0 would resolve to the marker's own comment line,
+        # which itself starts with `+` and would otherwise pass the
+        # added-line check silently.
+        hunk = [
+            "@@ -10,2 +11,3 @@",
+            "   const x = 1;",
+            "+  // INTENTIONAL",
+            "+  window.location.assign(returnUrl);",
+        ]
+        hit = MarkerHit(hunk=tuple(hunk), marker_idx=2)
+        with pytest.raises(ValueError, match="line_offset must be positive"):
+            resolve_defect_line(hit, line_offset=0)
+
+    def test_raises_when_negative_offset_would_land_on_a_valid_added_line(self):
+        # A negative offset that happens to land on a real `+` line
+        # *before* the marker must still be rejected, not silently
+        # accepted as if it were the defect.
+        hunk = [
+            "@@ -10,3 +11,4 @@",
+            "   const x = 1;",
+            "+  const y = 2;",
+            "+  // INTENTIONAL",
+            "+  window.location.assign(returnUrl);",
+        ]
+        hit = MarkerHit(hunk=tuple(hunk), marker_idx=3)
+        with pytest.raises(ValueError, match="line_offset must be positive"):
+            resolve_defect_line(hit, line_offset=-1)
 
     def test_marker_hit_is_hashable(self):
         # MarkerHit.hunk must be a tuple, not a list: a frozen dataclass
@@ -838,3 +868,62 @@ class TestMainCLI:
                 main()
 
         assert not output_path.exists()
+
+    def test_existing_output_preserved_when_write_fails(self, tmp_path, monkeypatch):
+        # A failure while writing the temp file (disk full, I/O error)
+        # must not truncate or otherwise touch a pre-existing, previously
+        # good output file: the write is staged to a temp file and only
+        # published via os.replace() once fully written.
+        monkeypatch.setenv("GITHUB_TOKEN", "fake-token")
+        targets_path = self._write_targets(tmp_path)
+        output_path = tmp_path / "out.jsonl"
+        original_content = '{"id": "previous-run"}\n'
+        output_path.write_text(original_content, encoding="utf-8")
+
+        files = _files_response(
+            (
+                "a.vue",
+                "@@ -1,1 +1,2 @@\n const a = 1;\n+  // INTENTIONAL\n+const b = 2;\n",
+            )
+        )
+
+        class _RaisingFile:
+            def __init__(self, fd):
+                self._fd = fd
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                os.close(self._fd)
+                return False
+
+            def write(self, data):
+                raise OSError("simulated disk full")
+
+        argv = [
+            "build_seeded_set.py",
+            "--targets",
+            targets_path,
+            "--output",
+            str(output_path),
+            "--sleep",
+            "0",
+        ]
+        with (
+            patch("sys.argv", argv),
+            patch.object(build_seeded_set, "fetch_pr_files", return_value=files),
+            patch.object(
+                build_seeded_set.os,
+                "fdopen",
+                side_effect=lambda fd, *a, **k: _RaisingFile(fd),
+            ),
+        ):
+            with pytest.raises(OSError, match="simulated disk full"):
+                main()
+
+        assert output_path.read_text(encoding="utf-8") == original_content
+        leftover_tmp_files = [
+            p for p in tmp_path.iterdir() if p.name.startswith(".out.jsonl.")
+        ]
+        assert leftover_tmp_files == []

@@ -37,6 +37,7 @@ import json
 import logging
 import os
 import re
+import tempfile
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -218,21 +219,27 @@ def resolve_defect_line(hit: MarkerHit, line_offset: int | None = None) -> int:
         The 1-based new-file line number of the defect.
 
     Raises:
-        ValueError: No substantive added line follows the marker, or an
-            explicit ``line_offset`` lands outside the hunk or off an
-            added line.
+        ValueError: No substantive added line follows the marker; an
+            explicit ``line_offset`` is not positive; or a positive
+            ``line_offset`` still lands outside the hunk or off an added
+            line.
     """
     hunk = hit.hunk
     if line_offset is not None:
-        defect_idx = hit.marker_idx + line_offset
-        if defect_idx <= 0:
-            # A non-positive index would either hit the `@@ ... @@` header
-            # (idx 0) or wrap around to the end of hunk via Python's
-            # negative indexing below, silently resolving to the wrong
-            # line instead of failing closed.
+        if line_offset <= 0:
+            # A defect is always scanned forward from its marker (every
+            # real seed PR's explicit line_offset is positive). Rejecting
+            # on defect_idx <= 0 alone isn't enough: line_offset=0 resolves
+            # to the marker's own comment line, which itself starts with
+            # `+` and would pass the added-line check below; a negative
+            # offset can likewise land on a legitimate `+` line that
+            # precedes the marker instead of failing, or wrap around to
+            # the end of hunk via Python's negative indexing.
             raise ValueError(
-                f"line_offset resolves outside an added line: idx={defect_idx}"
+                f"line_offset must be positive (a defect is always after "
+                f"its marker), got {line_offset}"
             )
+        defect_idx = hit.marker_idx + line_offset
     else:
         defect_idx = hit.marker_idx + 1
         while defect_idx < len(hunk) and (
@@ -531,10 +538,26 @@ def main() -> int:
         items.append(build_seeded_item(target, token))
         time.sleep(args.sleep)
 
-    os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
-    with open(args.output, "w", encoding="utf-8") as out:
-        for item in items:
-            out.write(json.dumps(item, ensure_ascii=False) + "\n")
+    # Write to a temp file in the same directory and publish it atomically
+    # via os.replace(): if the write itself fails partway (disk full, I/O
+    # error), the previously-existing args.output must be left untouched
+    # rather than truncated by opening it directly in "w" mode.
+    output_dir = os.path.dirname(args.output) or "."
+    os.makedirs(output_dir, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(
+        dir=output_dir, prefix=f".{os.path.basename(args.output)}.", suffix=".tmp"
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as out:
+            for item in items:
+                out.write(json.dumps(item, ensure_ascii=False) + "\n")
+        os.replace(tmp_path, args.output)
+    except BaseException:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
 
     logger.info("Done. Seeded items: %d", len(items))
     return 0

@@ -160,9 +160,31 @@ injected code was reachable or contextually coherent -- see
 [docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
 (now superseded) for that approach's history, and
 [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)
-for the current design. Because the seed PRs are real and hand-authored,
-reachability and contextual coherence are guaranteed at authoring time
-instead of enforced after the fact by an ever-growing exclusion filter.
+for the current design. Reachability and contextual coherence are not
+tooling-enforced: `build_seeded_item()` validates only structure (an
+`INTENTIONAL` marker exists, its file isn't one
+`pr_info_collector.is_target_file()` would exclude from review, and marker
+counts match the hand-authored metadata) -- it does not semantically
+analyze the defect. What changed is that each defect is now written
+directly into a real, working PR by a human (most seed PRs also add a
+test exercising the defective code path), making reachability and
+coherence an authoring-time property that is intended and reviewed by
+construction, rather than something post-hoc text-splicing could ever
+produce or verify.
+
+**設計上の既知の制限（Seed PRのリビジョン非固定）**: `build_seeded_set.py`は
+`GET /repos/{owner}/{repo}/pulls/{pr}/files` で各PRの**現在の**headを取得する。
+このエンドポイントは特定コミットSHAへの固定取得をサポートしないため、Seed PR側で
+force-push/amendが起きた場合、週次再構築の結果が黙って変わり得る。3通りのドリフトの
+うち、マーカー位置の移動は行解決ロジックが動的に追従し、マーカー自体の削除は
+`build_seeded_item()`がfail-closedで例外を送出するため、どちらも検知可能。唯一
+検知できないのは「マーカー位置は保たれたまま欠陥の実装が変わる」ケースで、この場合は
+手書きmetadata（rule_id/category/severity/summary）が実際のコードと無言で乖離する。
+恒久対応にはCompare API（`/compare/{base_sha}...{head_sha}`）ベースの取得方式への
+書き換えとPR単位の`head_sha`/`base_sha`記録が必要だが、これはfiles取得の実装そのものを
+作り直す規模の変更であり、かつGold set（`build_gold_set.py`）も同じ非固定の性質を
+共有しているため、Seededだけを先に固定すると両セットの再現性セマンティクスが割れる。
+両セットを対象にした専用対応は別Issueで扱う。
 
 Purpose:
 
