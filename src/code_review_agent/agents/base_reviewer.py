@@ -24,6 +24,7 @@ from ..models.review import (
 )
 from ..skills.agent_skills_factory import AgentSkillType, create_agent_skills
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
+from ..tools.tool_result_sanitizer import OllamaUnsupportedContentSanitizer
 from .exceptions import StructuredOutputMissingError
 from .model_provider_factory import ProviderType, create_model_provider
 
@@ -309,6 +310,14 @@ class LLMReviewAgent(ReviewAgent):
             tools.append(file_read)
             plugins.append(create_agent_skills(self.skill_type))
 
+        # OllamaModel cannot serialize a "document"-shaped ToolResultContent
+        # (e.g. file_read's model-chosen mode="document"); this sanitizer
+        # strips such blocks after any tool call so the review doesn't fail
+        # with a TypeError. See docs/ollama-tool-result-content-sanitizer-spec.md.
+        hooks: list = []
+        if self._config.provider_type == ProviderType.OLLAMA:
+            hooks.append(OllamaUnsupportedContentSanitizer())
+
         agent: Agent | None = None
         try:
             agent = Agent(
@@ -316,6 +325,7 @@ class LLMReviewAgent(ReviewAgent):
                 system_prompt=compose_system_prompt(self.system_prompt),
                 tools=tools,
                 plugins=plugins,
+                hooks=hooks,
             )
             limits: Limits = {"turns": self._config.max_agent_turns}
             result = agent(
