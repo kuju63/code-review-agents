@@ -309,10 +309,14 @@ Domain hard gates:
 - Seeded items must route to the technical reviewer matching their `stack` label (`react`→`ReactReviewer`, `vue`→`VueReviewer`, `angular`→`AngularReviewer`, `svelte`→`SvelteReviewer`) plus `SecurityReviewer`; an unsupported or missing `stack` must fail the item explicitly rather than default to `ReactReviewer`
 
 Seeded set size note: the seed-repository migration (Issue #224) fixed the
-Seeded set at 59 items across the four seed repositories (up from roughly
-30 mutated items under the retired pipeline, at `--multiplier 2`). The Hard
-gate thresholds above are carried over unchanged; whether they should be
-revisited for the larger, fixed denominator is left to a follow-up once
+Seeded set at 59 items (PRs) across the four seed repositories, carrying
+63 `must_find` entries in total (several PRs embed more than one marker) —
+up from roughly 30 mutated items under the retired pipeline, at
+`--multiplier 2`. Must-Find Recall's denominator (`all_must_find`, §3.2)
+is the 63 count, not the 59 item count; Critical Miss Rate's denominator
+is the subset of those 63 marked `severity: critical`. The Hard gate
+thresholds above are carried over unchanged; whether they should be
+revisited for the larger, fixed denominators is left to a follow-up once
 enough runs exist to judge achievability.
 
 Soft targets:

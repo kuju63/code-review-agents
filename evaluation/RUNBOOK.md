@@ -129,11 +129,9 @@ Checkpoint:
 - To inspect one PR's markers before writing its metadata (or to debug a
   fail-closed error), use `--print-markers` with `--pr`:
 
-  ```bash
   uv run python evaluation/tools/build_seeded_set.py \
     --targets evaluation/input/seeded_pr_targets_vue.json \
     --pr kuju63/vue-seeded#13 --print-markers
-  ```
 
 ## 4. Run review agent pipeline
 

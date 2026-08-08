@@ -163,7 +163,7 @@ class TestResolveDefectLine:
             "+  // INTENTIONAL",
             "+  window.location.assign(returnUrl);",
         ]
-        hit = MarkerHit(hunk=hunk, marker_idx=2)
+        hit = MarkerHit(hunk=tuple(hunk), marker_idx=2)
         assert resolve_defect_line(hit) == 13
 
     def test_skips_comment_only_line_after_marker(self):
@@ -177,7 +177,7 @@ class TestResolveDefectLine:
             "+  // eslint-disable-next-line no-unsanitized/property",
             "+  el.innerHTML = raw;",
         ]
-        hit = MarkerHit(hunk=hunk, marker_idx=2)
+        hit = MarkerHit(hunk=tuple(hunk), marker_idx=2)
         assert resolve_defect_line(hit) == 14
 
     def test_explicit_line_offset_overrides_scan(self):
@@ -190,7 +190,7 @@ class TestResolveDefectLine:
             "+  return (",
             "+    <div dangerouslySetInnerHTML={{ __html: markup }} />",
         ]
-        hit = MarkerHit(hunk=hunk, marker_idx=2)
+        hit = MarkerHit(hunk=tuple(hunk), marker_idx=2)
         assert resolve_defect_line(hit, line_offset=2) == 24
 
     def test_raises_when_no_added_line_follows_marker(self):
@@ -199,15 +199,34 @@ class TestResolveDefectLine:
             "   const x = 1;",
             "+  // INTENTIONAL",
         ]
-        hit = MarkerHit(hunk=hunk, marker_idx=2)
+        hit = MarkerHit(hunk=tuple(hunk), marker_idx=2)
         with pytest.raises(ValueError, match="no defect line"):
             resolve_defect_line(hit)
 
     def test_raises_when_explicit_offset_lands_outside_hunk(self):
         hunk = ["@@ -10,1 +11,2 @@", "+  // INTENTIONAL"]
-        hit = MarkerHit(hunk=hunk, marker_idx=1)
+        hit = MarkerHit(hunk=tuple(hunk), marker_idx=1)
         with pytest.raises(ValueError, match="outside an added line"):
             resolve_defect_line(hit, line_offset=5)
+
+    def test_raises_when_explicit_offset_is_not_positive(self):
+        # A non-positive defect_idx must not silently wrap around to the
+        # end of hunk via Python's negative indexing.
+        hunk = [
+            "@@ -10,2 +11,3 @@",
+            "   const x = 1;",
+            "+  // INTENTIONAL",
+            "+  window.location.assign(returnUrl);",
+        ]
+        hit = MarkerHit(hunk=tuple(hunk), marker_idx=2)
+        with pytest.raises(ValueError, match="outside an added line"):
+            resolve_defect_line(hit, line_offset=-2)
+
+    def test_marker_hit_is_hashable(self):
+        # MarkerHit.hunk must be a tuple, not a list: a frozen dataclass
+        # with a list field raises TypeError when hashed.
+        hunk = ("@@ -1,1 +1,1 @@", "+  // INTENTIONAL")
+        hash(MarkerHit(hunk=hunk, marker_idx=1))
 
 
 class TestLoadTargets:
@@ -496,6 +515,89 @@ class TestBuildSeededItem:
             with pytest.raises(ValueError, match="found 1 marker"):
                 build_seeded_item(target, token="fake-token")
 
+    def test_raises_when_defect_declares_duplicate_path_occurrence(self):
+        target = SeededPrTarget(
+            repository="kuju63/vue-seeded",
+            stack="vue",
+            pr_number=13,
+            defects=[
+                Defect(
+                    path="a.vue",
+                    occurrence=0,
+                    rule_id="r1",
+                    category="security",
+                    severity="high",
+                    summary="s1",
+                ),
+                Defect(
+                    path="a.vue",
+                    occurrence=0,
+                    rule_id="r2",
+                    category="security",
+                    severity="high",
+                    summary="s2",
+                ),
+            ],
+        )
+        files = _files_response(
+            (
+                "a.vue",
+                "@@ -1,2 +1,5 @@\n"
+                " const a = 1;\n"
+                "+  // INTENTIONAL\n"
+                "+const b = 2;\n"
+                "+  // INTENTIONAL\n"
+                "+const c = 3;\n",
+            )
+        )
+        with patch.object(build_seeded_set, "fetch_pr_files", return_value=files):
+            with pytest.raises(ValueError, match="duplicate defect"):
+                build_seeded_item(target, token="fake-token")
+
+    def test_raises_when_marker_not_covered_by_metadata(self):
+        # A negative `occurrence` passes the existing `>=len(hits)` bounds
+        # check (Python allows negative indices) and would otherwise
+        # silently resolve to the wrong marker via wraparound indexing;
+        # the post-loop coverage check catches the marker this leaves
+        # unclaimed instead.
+        target = SeededPrTarget(
+            repository="kuju63/vue-seeded",
+            stack="vue",
+            pr_number=13,
+            defects=[
+                Defect(
+                    path="a.vue",
+                    occurrence=-1,
+                    rule_id="r1",
+                    category="security",
+                    severity="high",
+                    summary="s1",
+                ),
+                Defect(
+                    path="a.vue",
+                    occurrence=0,
+                    rule_id="r2",
+                    category="security",
+                    severity="high",
+                    summary="s2",
+                ),
+            ],
+        )
+        files = _files_response(
+            (
+                "a.vue",
+                "@@ -1,2 +1,5 @@\n"
+                " const a = 1;\n"
+                "+  // INTENTIONAL\n"
+                "+const b = 2;\n"
+                "+  // INTENTIONAL\n"
+                "+const c = 3;\n",
+            )
+        )
+        with patch.object(build_seeded_set, "fetch_pr_files", return_value=files):
+            with pytest.raises(ValueError, match="not covered by metadata"):
+                build_seeded_item(target, token="fake-token")
+
     def test_raises_when_marker_file_is_excluded_by_pr_info_collector(self):
         # .md is outside pr_info_collector._TARGET_EXTENSIONS, so a marker
         # placed there would never reach a reviewer at evaluation time.
@@ -661,3 +763,78 @@ class TestMainCLI:
             assert main() == 0
         out = capsys.readouterr().out
         assert out == ""
+
+    def test_no_output_file_written_when_a_later_target_fails(
+        self, tmp_path, monkeypatch
+    ):
+        # If target N fails, targets 1..N-1 having already succeeded must
+        # not leave a truncated, silently-partial output file on disk.
+        monkeypatch.setenv("GITHUB_TOKEN", "fake-token")
+        payload = {
+            "repository": "kuju63/vue-seeded",
+            "stack": "vue",
+            "prs": [
+                {
+                    "pr_number": 8,
+                    "defects": [
+                        {
+                            "path": "a.vue",
+                            "occurrence": 0,
+                            "rule_id": "r",
+                            "category": "security",
+                            "severity": "high",
+                            "summary": "s",
+                        }
+                    ],
+                },
+                {
+                    "pr_number": 9,
+                    "defects": [
+                        {
+                            "path": "b.vue",
+                            "occurrence": 0,
+                            "rule_id": "r",
+                            "category": "security",
+                            "severity": "high",
+                            "summary": "s",
+                        }
+                    ],
+                },
+            ],
+        }
+        targets_path = tmp_path / "seeded_pr_targets_vue.json"
+        targets_path.write_text(json.dumps(payload), encoding="utf-8")
+        output_path = tmp_path / "out.jsonl"
+
+        good_files = _files_response(
+            (
+                "a.vue",
+                "@@ -1,1 +1,2 @@\n const a = 1;\n+  // INTENTIONAL\n+const b = 2;\n",
+            )
+        )
+        bad_files = _files_response(
+            ("b.vue", "@@ -1,1 +1,2 @@\n const a = 1;\n+const b = 2;\n")
+        )
+        responses = iter([good_files, bad_files])
+
+        argv = [
+            "build_seeded_set.py",
+            "--targets",
+            str(targets_path),
+            "--output",
+            str(output_path),
+            "--sleep",
+            "0",
+        ]
+        with (
+            patch("sys.argv", argv),
+            patch.object(
+                build_seeded_set,
+                "fetch_pr_files",
+                side_effect=lambda *a, **k: next(responses),
+            ),
+        ):
+            with pytest.raises(ValueError, match="no INTENTIONAL marker"):
+                main()
+
+        assert not output_path.exists()

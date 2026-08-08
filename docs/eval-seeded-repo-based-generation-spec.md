@@ -9,7 +9,7 @@
 LLM推論/決定論的にmutationを注入するハイブリッド方式で生成していた。この設計の
 経緯は `docs/eval-seeded-mutation-injection-design.md` に記録されている。
 
-4件のIssue(#110/#111/#112/#127/#131)と数ヶ月の調整を経てもなお、fallback率は
+5件のIssue(#110/#111/#112/#127/#131)と数ヶ月の調整を経てもなお、fallback率は
 目標の30%を安定して下回れず、`.d.ts`型定義ファイルへの`eval()`注入や
 CSS-in-JSスタイル定義ファイルへの`useEffect`欠陥注入のような、意味的に成立しない
 注入がスコアリングの妥当性そのものを汚染する事象が繰り返し確認された(詳細は
@@ -131,8 +131,8 @@ resolve_defect_line(hunk_lines, marker_idx, line_offset=None):
   return parse_hunk_new_start(hunk_lines[0]) + count_new_lines_before(hunk_lines, defect_idx) - 1
 ```
 
-`line_offset`は`react-seeded#8`のみメタデータで明示指定する(実装時に実データで
-2または3を確定させる)。それ以外の58件は自動解決に委ねる。
+`line_offset`は`react-seeded#8`のみメタデータで明示指定する(実データで`2`固定)。
+それ以外の58件は自動解決に委ねる。
 
 ## 4. 入力ファイルスキーマ: `evaluation/input/seeded_pr_targets_{stack}.json`
 
@@ -218,7 +218,7 @@ PR番号一覧とmust_findメタデータは1ファイルに統合する。分�
 
 ### 5.3 CLI
 
-```
+```text
 usage: build_seeded_set.py --targets PATH [PATH ...] --output PATH
                             [--stacks react,vue,...] [--pr REPO#NUMBER]
                             [--print-markers] [--sleep 0.2]

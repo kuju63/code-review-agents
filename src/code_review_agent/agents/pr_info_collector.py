@@ -70,7 +70,8 @@ _FILES_PER_PAGE = 100
 def is_target_file(file_path: str) -> bool:
     """Return True if the file should be included in the review.
 
-    Includes TypeScript/JavaScript, CSS/SCSS, HTML, and package.json files.
+    Includes TypeScript/JavaScript, CSS/SCSS, HTML, Svelte, Vue, and
+    package.json files.
 
     Args:
         file_path: Relative path to the file within the repository.

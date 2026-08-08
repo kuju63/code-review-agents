@@ -38,6 +38,7 @@ import logging
 import os
 import re
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -103,7 +104,7 @@ def parse_hunk_new_start(header_line: str) -> int:
     return int(m.group(1)) if m else 1
 
 
-def count_new_lines_before(hunk_lines: list[str], insertion_idx: int) -> int:
+def count_new_lines_before(hunk_lines: Sequence[str], insertion_idx: int) -> int:
     """Count new-file lines consumed between the hunk header and insertion_idx.
 
     Context (` `) and added (`+`) lines advance the new file's line
@@ -164,9 +165,14 @@ class SeededPrTarget:
 
 @dataclass(frozen=True)
 class MarkerHit:
-    """One INTENTIONAL marker's location within a single file's patch."""
+    """One INTENTIONAL marker's location within a single file's patch.
 
-    hunk: list[str]
+    ``hunk`` is a tuple (not a list) so instances of this frozen dataclass
+    stay safely hashable -- a frozen dataclass with a list field raises
+    ``TypeError`` if ever hashed, since ``list`` itself isn't hashable.
+    """
+
+    hunk: tuple[str, ...]
     marker_idx: int  # index within hunk; 0 is the `@@ ... @@` header
 
 
@@ -183,11 +189,12 @@ def detect_intentional_markers(patch: str) -> list[MarkerHit]:
     """
     hits: list[MarkerHit] = []
     for hunk in split_hunks(patch):
+        hunk_tuple = tuple(hunk)
         for idx, line in enumerate(hunk):
             if idx == 0:
                 continue  # header line
             if line.startswith("+") and _INTENTIONAL_RE.search(line):
-                hits.append(MarkerHit(hunk=hunk, marker_idx=idx))
+                hits.append(MarkerHit(hunk=hunk_tuple, marker_idx=idx))
     return hits
 
 
@@ -218,6 +225,14 @@ def resolve_defect_line(hit: MarkerHit, line_offset: int | None = None) -> int:
     hunk = hit.hunk
     if line_offset is not None:
         defect_idx = hit.marker_idx + line_offset
+        if defect_idx <= 0:
+            # A non-positive index would either hit the `@@ ... @@` header
+            # (idx 0) or wrap around to the end of hunk via Python's
+            # negative indexing below, silently resolving to the wrong
+            # line instead of failing closed.
+            raise ValueError(
+                f"line_offset resolves outside an added line: idx={defect_idx}"
+            )
     else:
         defect_idx = hit.marker_idx + 1
         while defect_idx < len(hunk) and (
@@ -245,13 +260,18 @@ def load_targets(paths: list[str]) -> list[SeededPrTarget]:
         Flattened list of SeededPrTarget across all input files.
 
     Raises:
-        ValueError: A file declares an unknown stack, an unknown
-            category/severity, or a PR entry with no defects.
+        ValueError: A file is missing a required key, declares an unknown
+            stack, an unknown category/severity, or a PR entry with no
+            defects.
     """
     targets: list[SeededPrTarget] = []
     for path in paths:
         with open(path, encoding="utf-8") as f:
             raw = json.load(f)
+
+        for key in ("repository", "stack", "prs"):
+            if key not in raw:
+                raise ValueError(f"{path}: missing required key {key!r}")
 
         repository = raw["repository"]
         stack = raw["stack"]
@@ -262,9 +282,19 @@ def load_targets(paths: list[str]) -> list[SeededPrTarget]:
             )
 
         for pr_item in raw["prs"]:
+            if "pr_number" not in pr_item:
+                raise ValueError(
+                    f"{path}: {repository}: PR entry missing required key 'pr_number'"
+                )
             pr_number = int(pr_item["pr_number"])
             defects: list[Defect] = []
             for d in pr_item.get("defects", []):
+                for key in ("path", "rule_id", "category", "severity", "summary"):
+                    if key not in d:
+                        raise ValueError(
+                            f"{path}: {repository}#{pr_number}: defect missing "
+                            f"required key {key!r}"
+                        )
                 category = d["category"]
                 severity = d["severity"]
                 if category not in _CATEGORIES:
@@ -324,12 +354,13 @@ def build_seeded_item(target: SeededPrTarget, token: str) -> dict[str, Any]:
 
     Raises:
         ValueError: No marker found at all; the marker count doesn't match
-            the metadata's defect count; a metadata entry names a
-            (path, occurrence) with no matching marker; or a marker's file
-            would be excluded from review by
-            ``pr_info_collector.is_target_file`` (the file would never
-            reach a reviewer, so its must_find would score zero for a
-            reason invisible to the scorer).
+            the metadata's defect count; two defects declare the same
+            (path, occurrence); a metadata entry names a (path, occurrence)
+            with no matching marker; a detected marker has no corresponding
+            metadata entry; or a marker's file would be excluded from
+            review by ``pr_info_collector.is_target_file`` (the file would
+            never reach a reviewer, so its must_find would score zero for
+            a reason invisible to the scorer).
     """
     owner, repo = target.repository.split("/", maxsplit=1)
     files = fetch_pr_files(owner, repo, target.pr_number, token)
@@ -353,7 +384,16 @@ def build_seeded_item(target: SeededPrTarget, token: str) -> dict[str, Any]:
         )
 
     must_find: list[dict[str, Any]] = []
+    consumed: set[tuple[str, int]] = set()
     for defect in target.defects:
+        key = (defect.path, defect.occurrence)
+        if key in consumed:
+            raise ValueError(
+                f"{target.repository}#{target.pr_number}: duplicate defect "
+                f"declared for path={defect.path!r} occurrence={defect.occurrence}"
+            )
+        consumed.add(key)
+
         hits = markers_by_path.get(defect.path)
         if not hits or defect.occurrence >= len(hits):
             raise ValueError(
@@ -377,6 +417,18 @@ def build_seeded_item(target: SeededPrTarget, token: str) -> dict[str, Any]:
                 "line": line,
                 "summary": defect.summary,
             }
+        )
+
+    all_marker_keys = {
+        (path, occurrence)
+        for path, hits in markers_by_path.items()
+        for occurrence in range(len(hits))
+    }
+    unconsumed = all_marker_keys - consumed
+    if unconsumed:
+        raise ValueError(
+            f"{target.repository}#{target.pr_number}: marker(s) not covered "
+            f"by metadata: {sorted(unconsumed)}"
         )
 
     return {
@@ -470,16 +522,21 @@ def main() -> int:
         logger.error("--output is required unless --print-markers is set")
         return 2
 
-    os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
-    count = 0
-    with open(args.output, "w", encoding="utf-8") as out:
-        for target in targets:
-            item = build_seeded_item(target, token)
-            out.write(json.dumps(item, ensure_ascii=False) + "\n")
-            count += 1
-            time.sleep(args.sleep)
+    # Build every item before writing anything: build_seeded_item fails
+    # closed (raises) on the first bad PR, and writing incrementally would
+    # otherwise leave a truncated, silently-partial output file on disk
+    # from an interrupted run -- worse than no file at all.
+    items = []
+    for target in targets:
+        items.append(build_seeded_item(target, token))
+        time.sleep(args.sleep)
 
-    logger.info("Done. Seeded items: %d", count)
+    os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
+    with open(args.output, "w", encoding="utf-8") as out:
+        for item in items:
+            out.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+    logger.info("Done. Seeded items: %d", len(items))
     return 0
 
 

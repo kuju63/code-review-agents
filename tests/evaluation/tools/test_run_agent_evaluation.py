@@ -201,7 +201,11 @@ class TestSeededItemReviewerParallelism:
         def fake_run_a2a(client, endpoint, data, poll_interval, timeout):
             name = endpoint.rsplit("/", 1)[-1]
             if name == "pr-info-collector":
-                return {"pr_info": {"file_changes": real_file_changes}}
+                # A copy, not the same object as real_file_changes: if
+                # evaluate_seeded_item ever mutated the list in place, the
+                # assertion below would otherwise trivially still pass
+                # (comparing the same object to itself).
+                return {"pr_info": {"file_changes": list(real_file_changes)}}
             seen_payloads[name] = data
             return {"reviewer": name}
 
