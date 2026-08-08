@@ -1,0 +1,272 @@
+{
+  "repository": "kuju63/angular-seeded",
+  "stack": "angular",
+  "prs": [
+    {
+      "pr_number": 5,
+      "defects": [
+        {
+          "path": "src/app/features/products/product-list/product-list.ts",
+          "occurrence": 0,
+          "rule_id": "angular_bypass_security_trust_html",
+          "category": "security",
+          "severity": "critical",
+          "summary": "Bypasses Angular's built-in HTML sanitizer via DomSanitizer.bypassSecurityTrustHtml on an untrusted catalog description string, allowing arbitrary script execution if the description ever contains attacker-controlled markup.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 6,
+      "defects": [
+        {
+          "path": "src/app/core/services/auth.service.ts",
+          "occurrence": 0,
+          "rule_id": "angular_access_token_in_local_storage",
+          "category": "security",
+          "severity": "high",
+          "summary": "Persists the raw access token in localStorage when persistent sign-in is requested, exposing it to any script with page access (e.g. XSS) instead of relying on an httpOnly session cookie.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 7,
+      "defects": [
+        {
+          "path": "src/app/features/settings/settings-page/settings-page.ts",
+          "occurrence": 0,
+          "rule_id": "angular_client_supplied_user_id_authorization",
+          "category": "security",
+          "severity": "high",
+          "summary": "Derives the target user id for a password change from a 'member' query parameter instead of always using the signed-in user's own id, letting a crafted deep link target another account's password change if the backend trusts this value.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 8,
+      "defects": [
+        {
+          "path": "src/app/core/services/checkout-api.service.ts",
+          "occurrence": 0,
+          "rule_id": "angular_csrf_with_credentials",
+          "category": "security",
+          "severity": "high",
+          "summary": "Adds withCredentials: true to the payment request, sending the session cookie on cross-origin requests too; without a CSRF token or a stricter SameSite cookie, this makes the payment endpoint forgeable from another origin.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 9,
+      "defects": [
+        {
+          "path": "src/app/features/auth/login/login.ts",
+          "occurrence": 0,
+          "rule_id": "angular_open_redirect_unvalidated_return_url",
+          "category": "security",
+          "severity": "high",
+          "summary": "Redirects to a returnUrl taken directly from the query string without validating it against the app's own origin; a crafted login link (?returnUrl=https://evil.example.com) sends users to an attacker-controlled destination after a successful login.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 10,
+      "defects": [
+        {
+          "path": "src/app/features/payment/payment-page/payment-page.ts",
+          "occurrence": 0,
+          "rule_id": "angular_post_message_missing_origin_check",
+          "category": "security",
+          "severity": "high",
+          "summary": "The window 'message' listener processes payment-completion events without checking event.origin, letting any origin forge a payment.complete message that marks the payment as successful.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 11,
+      "defects": [
+        {
+          "path": "src/app/core/services/catalog-api.service.ts",
+          "occurrence": 0,
+          "rule_id": "angular_math_random_for_request_id",
+          "category": "maintainability",
+          "severity": "low",
+          "summary": "Generates the X-Request-Id header value with Math.random() instead of crypto.randomUUID(); Math.random() is not collision-resistant, which matters if this identifier is ever relied on for correlation beyond debug tracing.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 12,
+      "defects": [
+        {
+          "path": "src/app/core/services/auth-api.service.ts",
+          "occurrence": 0,
+          "rule_id": "angular_sensitive_data_logged_to_console",
+          "category": "security",
+          "severity": "high",
+          "summary": "Logs the full request body -- including the plaintext password on login/register/changePassword -- to the browser console, exposing credentials to devtools, browser extensions that read console output, or session recordings.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 13,
+      "defects": [
+        {
+          "path": "src/app/core/services/catalog.service.ts",
+          "occurrence": 0,
+          "rule_id": "angular_root_service_unconditional_polling",
+          "category": "maintainability",
+          "severity": "medium",
+          "summary": "Starts a 30-second polling interval unconditionally in the root-scoped CatalogService's constructor at app startup instead of scoping it to when the catalog view is active; the app keeps polling in the background for the whole session even with no catalog UI visible.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 14,
+      "defects": [
+        {
+          "path": "src/app/core/services/cart.service.ts",
+          "occurrence": 0,
+          "rule_id": "angular_effect_used_for_derived_state",
+          "category": "maintainability",
+          "severity": "medium",
+          "summary": "Uses effect() to manually copy subtotal/tax/total/currency/savings into a separate writable pricingSummary signal instead of deriving it with computed(); this is the anti-pattern Angular's signals docs warn against -- effects are for side effects, not synchronizing derived state.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 15,
+      "defects": [
+        {
+          "path": "src/app/layout/app-header/app-header.ts",
+          "occurrence": 0,
+          "rule_id": "angular_observable_subscription_leak",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Subscribes to router.events in the constructor without ever unsubscribing (no takeUntilDestroyed() or manual teardown), leaking the subscription for the lifetime of the app even after this component is destroyed.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 16,
+      "defects": [
+        {
+          "path": "src/app/core/services/application-error.handler.ts",
+          "occurrence": 0,
+          "rule_id": "angular_global_error_handler_console_only",
+          "category": "maintainability",
+          "severity": "low",
+          "summary": "The global ErrorHandler only logs errors via console.info, with no error-tracking/monitoring integration and no user-facing feedback, so production errors are easy to miss.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 17,
+      "defects": [
+        {
+          "path": "src/app/features/cart/cart-page/cart-page.html",
+          "occurrence": 0,
+          "rule_id": "angular_for_track_uses_index",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Uses $index as the @for track expression instead of the stable item.id; reordering cart items then misattributes rendered/component state to the wrong row.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 18,
+      "defects": [
+        {
+          "path": "src/app/layout/app-shell/app-shell.ts",
+          "occurrence": 0,
+          "rule_id": "angular_nested_subscribe",
+          "category": "maintainability",
+          "severity": "medium",
+          "summary": "Subscribes to getNavigationMetric() inside the outer navigation subscribe callback instead of composing it with switchMap/mergeMap; this is the classic RxJS nested-subscribe anti-pattern, creating one new inner subscription per navigation with no explicit teardown of its own.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 19,
+      "defects": [
+        {
+          "path": "src/app/app.routes.ts",
+          "occurrence": 0,
+          "rule_id": "angular_route_lazy_load_regression",
+          "category": "performance",
+          "severity": "low",
+          "summary": "Replaces the settings route's lazy-loaded loadComponent() with a static import and component:, pulling SettingsPage into the main bundle instead of a separate chunk fetched on demand -- a bundle-size regression for a route not every user visits.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 20,
+      "defects": [
+        {
+          "path": "src/app/features/cart/cart-page/cart-page.html",
+          "occurrence": 0,
+          "rule_id": "angular_template_method_call_recomputed_every_check",
+          "category": "performance",
+          "severity": "low",
+          "summary": "Replaces the memoized cartService.subtotal() signal with a plain calculateSubtotal() method called directly from the template; Angular re-invokes template method calls on every change-detection pass, redoing the full cart reduce each time instead of reusing the already-computed value.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 21,
+      "defects": [
+        {
+          "path": "src/app/core/services/navigation-history.service.ts",
+          "occurrence": 0,
+          "rule_id": "angular_unrelated_state_in_service",
+          "category": "maintainability",
+          "severity": "low",
+          "summary": "Adds transient settings-section UI selection state to NavigationHistoryService, a root-scoped service whose responsibility is navigation history; this couples an unrelated UI concern to a singleton service instead of keeping it local to the settings component.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 22,
+      "defects": [
+        {
+          "path": "src/app/core/interceptors/api-session-header.interceptor.ts",
+          "occurrence": 0,
+          "rule_id": "angular_bearer_token_attached_to_all_requests",
+          "category": "security",
+          "severity": "critical",
+          "summary": "The HTTP interceptor attaches the stored access token as a Bearer header to every outgoing request regardless of destination, including absolute URLs to third-party origins; any external API the app calls receives the user's session token.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 23,
+      "defects": [
+        {
+          "path": "src/app/features/payment/payment-page/payment-page.html",
+          "occurrence": 0,
+          "rule_id": "angular_ngclass_used_for_static_class",
+          "category": "maintainability",
+          "severity": "low",
+          "summary": "Uses [ngClass]=\"'payment-error-notification'\" with a static string literal to add a single class instead of a plain class attribute, pulling in the NgClass directive and its per-check diffing overhead for something that never changes.",
+          "line_offset": null
+        }
+      ]
+    }
+  ]
+}
