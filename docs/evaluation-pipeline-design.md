@@ -153,34 +153,34 @@ sequenceDiagram
     participant W2 as Worker#2
     participant A2A as A2Aサーバー
 
-    Runner->>W1: evaluate_gold_item(item_1)
-    Runner->>W2: evaluate_gold_item(item_2)
+    Runner->>W1: evaluate_item(item_1)
+    Runner->>W2: evaluate_item(item_2)
     Note over Runner: --concurrency 2 のため<br/>同時実行は最大2項目まで
     W1->>A2A: POST /orchestrator (item_1)
     W2->>A2A: POST /orchestrator (item_2)
     A2A-->>W1: polling → completed
     A2A-->>W2: polling → completed
-    Runner->>W1: evaluate_gold_item(item_3)
+    Runner->>W1: evaluate_item(item_3)
     Note over Runner: item_1完了により空いた枠に<br/>item_3を投入(以降同様)
 
-    Note over Runner,A2A: Seeded項目は1項目内でも並列化
-    Runner->>W1: evaluate_seeded_item(seeded_1)
-    par 技術レビュアー/security 並列呼び出し
-        W1->>A2A: POST /{stack}-reviewer
-    and
-        W1->>A2A: POST /security-reviewer
-    end
-    A2A-->>W1: 両方completed後 → /lead-engineer
+    Note over A2A: /orchestrator内部では引き続き<br/>技術レビュアー/security-reviewerを並列実行
 ```
+
+`evaluate_item()`はGold/Seeded項目を区別せず、いずれも`/orchestrator`への単一POSTのみを行う
+(Issue #237)。以前存在した「Seeded項目内でのみクライアント側が技術レビュアー+
+security-reviewerを個別に並列呼び出しする」という枝分かれは廃止された。
 
 ### Gold と Seeded のレビュアー選択
 
-Gold項目は`/orchestrator`経由で評価され、orchestratorがproject-type検出に基づいて
-レビュアーを選ぶ(例: Svelte項目には`/svelte-reviewer`)。Seeded項目はorchestratorを経由しないが、
-項目の`stack`ラベルから技術レビュアーのendpoint(`/react-reviewer` / `/vue-reviewer` /
-`/angular-reviewer` / `/svelte-reviewer`)を解決し、`/security-reviewer`と並列で直接呼び出す。
-未知のstack値は明示的に失敗させ、無関係な技術レビュアーへフォールバックしない。詳細は
-[Seeded評価のスタック別レビュアールーティング仕様](seeded-reviewer-stack-routing-spec.md)を参照。
+Gold・Seeded項目とも`/orchestrator`経由で評価され、`ReviewOrchestrator._select_reviewers`が
+`detect_project_types()`によるproject-type自動検出に基づいてレビュアーを選ぶ(例: Svelte項目には
+`SvelteReviewer`)。以前Seeded項目は項目の`stack`ラベルから技術レビュアーのendpointを明示的に
+解決していたが(Issue #181)、Issue #237でこのクライアント側ルーティングは廃止され、Gold同様の
+自動検出に一本化された。ただし`detect_project_types`は`svelte-seeded#8`・`#9`、
+`vue-seeded#16`・`#20`の4件を`ReactReviewer`に誤ルーティングする既知の制限があり、
+[Issue #238](https://github.com/kuju63/code-review-agents/issues/238)で追跡中。詳細は
+[Seeded評価のスタック別レビュアールーティング仕様](seeded-reviewer-stack-routing-spec.md)(supersededの記録)、
+[docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)を参照。
 
 ### なぜ既定を2並列にするか
 
@@ -189,8 +189,10 @@ Gold項目は`/orchestrator`経由で評価され、orchestratorがproject-type�
 上げる場合、各タスクのポーリングタイムアウト(`--timeout`、既定1800秒)に達するリスクが高まるため、
 `--concurrency`を上げる際は`--timeout`も合わせて見直すこと。
 
-Seeded項目内の技術レビュアー/security-reviewer呼び出しの並列化は、`--concurrency`の値とは独立に
-常に行われる。両者は互いの結果に依存しない独立処理であり、並列化しても精度(検出内容)には影響しない。
+技術レビュアー/security-reviewer呼び出しの並列化は`/orchestrator`内部(`ReviewOrchestrator`)で
+Gold・Seeded問わず常に行われる。両者は互いの結果に依存しない独立処理であり、並列化しても
+精度(検出内容)には影響しない。Issue #237以前はSeeded項目に限りこの並列化がクライアント側
+(`run_agent_evaluation.py`)の責務だったが、現在はGold同様サーバ側の責務である。
 
 ---
 
@@ -214,7 +216,8 @@ Seeded項目内の技術レビュアー/security-reviewer呼び出しの並列�
 ## 7. 関連ドキュメント
 
 - [docs/goldset-per-stack-spec.md](goldset-per-stack-spec.md) — スタック別ターゲット選定の仕様
-- [docs/seeded-reviewer-stack-routing-spec.md](seeded-reviewer-stack-routing-spec.md) — Seeded評価のスタック別レビュアールーティング仕様
+- [docs/seeded-reviewer-stack-routing-spec.md](seeded-reviewer-stack-routing-spec.md) — Seeded評価のスタック別レビュアールーティング仕様(一部superseded)
+- [docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md) — Seeded評価を`/orchestrator`単一呼び出しへ統合した仕様
 - [docs/adr/0005-per-stack-evaluation-target-pipeline.md](adr/0005-per-stack-evaluation-target-pipeline.md) — 正規経路化の設計判断
 - [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md) — 何を測るか・合否基準・データセット戦略
 - [evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md) — 評価実行の具体的な手順

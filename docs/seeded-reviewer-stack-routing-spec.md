@@ -2,6 +2,17 @@
 
 関連Issue: #181
 
+> **一部supersededです（2026-08-08、Issue #237）**: §6（stack→endpointテーブルとクライアント側
+> ルーティング）および§8の`run_agent_evaluation.py`関連記述は、Seeded評価が`/orchestrator`単一
+> 呼び出しに統合されたことに伴い廃止されました。クライアント側の明示的stackルーティングは
+> 存在せず、Gold項目と同じ`detect_project_types`による自動検出に一本化されています。
+> §2〜§5（`VueReviewer`新設、`/vue-reviewer`・`/angular-reviewer`エンドポイント公開、
+> `FrontendReviewer`→`ReactReviewer`改名など）はレビュアー自体の実装として引き続き有効です。
+> 詳細は
+> [docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)、
+> 既知の誤ルーティング4件は
+> [Issue #238](https://github.com/kuju63/code-review-agents/issues/238)を参照してください。
+
 ## 1. 背景
 
 `run_agent_evaluation.py`の`evaluate_seeded_item()`は、対象PRのスタックに関わらず常に
@@ -77,7 +88,10 @@ seeded_set.jsonl (stackあり)
 `AgentSkillType.FRONTEND_REVIEW`は`AgentSkillType.REACT_REVIEW`へ改名する。
 いずれも互換エイリアスは設けず、旧名は削除する。
 
-## 6. Seeded評価のルーティング変更
+## 6. Seeded評価のルーティング変更（superseded、Issue #237で廃止）
+
+> 本節はIssue #237（Seeded評価の`/orchestrator`統合）により廃止されました。以下は歴史的記録
+> として残します。
 
 `evaluate_seeded_item()`は、項目の`stack`から技術レビュアーのURLプレフィックスを解決する。
 
@@ -109,8 +123,12 @@ seeded_set.jsonl (stackあり)
   `gold_item["stack"]`をSeeded項目へ引き継ぐことを検証する。
 - `registry.py`: Vue検出規則(`.vue`ファイル、`vue.config.{js,ts}`、React規則との優先順位)を検証する。
 - `reviewers/vue.py`: `VueReviewer`のメタデータ・スキル束解決を検証する。
-- `run_agent_evaluation.py`: stackごとに正しいエンドポイントが呼ばれること、未知stackで
-  明示的に失敗すること、技術レビュアーとSecurityReviewerの並列実行が維持されることを検証する。
+- `run_agent_evaluation.py`: ~~stackごとに正しいエンドポイントが呼ばれること、未知stackで
+  明示的に失敗すること、技術レビュアーとSecurityReviewerの並列実行が維持されることを検証する。~~
+  （superseded、Issue #237）該当テストは削除され、`evaluate_item()`が`/orchestrator`のみを
+  呼ぶことを検証するテストに置き換わった。詳細は
+  [docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)
+  を参照。
 - API層: `/react-reviewer`・`/vue-reviewer`・`/angular-reviewer`のagent card・タスク送信・
   ポーリングの一連の振る舞いを既存の`/svelte-reviewer`テストと同様に検証する。
 - 改名に伴い、`frontend-technical`/`FrontendReviewer`/`frontend-reviewer`を参照する既存テストは

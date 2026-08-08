@@ -350,21 +350,37 @@ Soft targets:
 
 ## 5. Evaluation Workflow
 
-**評価パスの前提（2026-07-29 更新）**:
+**評価パスの前提（2026-08-08 更新）**:
 
-Gold set は `evaluate_gold_item()` を通じてオーケストレータ経由でパイプライン全体を実行する。
-Seeded set は `evaluate_seeded_item()` で個別エンドポイントを呼ぶ。Seed PRは専用リポジトリ
-（`kuju63/{stack}-seeded`）上の実PRであるため、Gold同様pr-info-collectorが返す
-`file_changes` をそのまま使い、mutation注入方式当時のような差し替えは行わない
-（Issue #224、[docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)）。
-Seeded set も項目の `stack` ラベルに応じた技術レビュアー（`react`→`ReactReviewer` /
-`vue`→`VueReviewer` / `angular`→`AngularReviewer` / `svelte`→`SvelteReviewer`）と
-`SecurityReviewer` を選んで呼び出す（両者は並列実行、詳細は
-[docs/seeded-reviewer-stack-routing-spec.md](../docs/seeded-reviewer-stack-routing-spec.md)）。
+Gold set・Seeded set はいずれも `evaluate_item()` を通じて `/orchestrator` 単一エンドポイントを
+呼び出し、パイプライン全体（pr-info-collector → `ReviewOrchestrator`（`detect_project_types`に
+よる自動stack検出）→ Lead Engineer）をサーバ側1タスクとして実行する（Issue #237）。
+Seed PRは専用リポジトリ（`kuju63/{stack}-seeded`）上の実PRであるため、Gold同様
+pr-info-collectorが返す `file_changes` をそのまま使い、mutation注入方式当時のような差し替えは
+行わない（Issue #224、
+[docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)）。
+以前はSeeded項目の`stack`ラベルに応じてクライアント側が技術レビュアーを明示的に選択していたが
+（[docs/seeded-reviewer-stack-routing-spec.md](../docs/seeded-reviewer-stack-routing-spec.md)、
+Issue #181）、Issue #237でこの明示ルーティングは廃止し、Gold同様`detect_project_types`による
+自動検出に一本化した。詳細は
+[docs/eval-seeded-orchestrator-unification-spec.md](../docs/eval-seeded-orchestrator-unification-spec.md)
+を参照。
 PR の diff が閾値（`CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` chars・`CODE_REVIEW_PATCH_MAX_FILES` ファイル、
 デフォルト 30,000 chars・30 ファイル）以内の場合、両評価パスのレビュアーは
 `PRInfoResult.file_changes` に含まれる patch を参照する（GitHub MCP フェッチは発生しない）。
 閾値超過の PR は引き続き `patch=None` にフォールバックし、レビュアーが MCP フェッチを行う。
+
+**既知の逸脱（§4 ルーティングhard gateとの不整合、Issue #238で解消予定）**: 自動検出への一本化に
+伴い、`detect_project_types`（`src/code_review_agent/agents/registry.py`）がSeeded set 59件中
+4件（`svelte-seeded#8`・`#9`、`vue-seeded#16`・`#20`）を`ReactReviewer`に誤ルーティングする。
+原因はいずれも「該当PRの変更ファイルがフレームワーク固有拡張子（`.svelte`/`.vue`）を含まず、かつ
+manifestシグナルも構造的に立たない」ため：Svelteは`svelte-seeded`リポジトリに
+`svelte.config.js`/`.ts`自体が存在せず、Vueは`vue.config.js`/`.ts`が
+`pr_info_collector.py`の`_DEPENDENCY_FILENAMES`に含まれていないため`dependency_files`に載らない。
+`score_evaluation.py`はレビュアー選択の正しさ自体を検査しないため、Release Gateの数値は
+この誤ルーティングの有無に関わらずPASSしうる。§4の「Seeded items must route to the technical
+reviewer matching their stack label」は文言を変更していないが、この4件については現時点で
+未達である。検出ロジックの修正はIssue #238で追跡し、解消後はこの段落を削除する。
 
 **設計上の既知の制限（行番号精度）**: `_build_prompt` が付与する行番号アノテーション（`+L{N}:` 形式）は
 `PRInfoResult.file_changes` に含まれる patch にのみ適用される。
