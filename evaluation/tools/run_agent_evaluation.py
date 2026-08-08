@@ -50,45 +50,6 @@ def _run_a2a(
     return a2a_poll(client, endpoint, task_id, poll_interval, timeout)
 
 
-_STACK_TECHNICAL_REVIEWER_ENDPOINT = {
-    "react": "react-reviewer",
-    "vue": "vue-reviewer",
-    "angular": "angular-reviewer",
-    "svelte": "svelte-reviewer",
-}
-
-
-def _technical_reviewer_endpoint(stack: Any) -> str:
-    """Resolve the technical reviewer endpoint name for a Seeded item's stack.
-
-    Unlike Gold items (evaluated via ``/orchestrator``, which detects the
-    stack itself from PR file changes), a Seeded item carries its own
-    ``stack`` label from dataset generation (see
-    docs/seeded-reviewer-stack-routing-spec.md). This resolves that label to
-    the matching technical reviewer's endpoint name, failing closed on a
-    missing, non-string, or unknown stack rather than silently falling back
-    to an unrelated reviewer.
-
-    Args:
-        stack: The Seeded item's ``stack`` label. Typed as ``Any`` (rather
-            than ``str``) because callers pass ``item.get("stack")``, which
-            is ``None`` for a malformed item missing the key entirely; that
-            case must also fail closed with ``ValueError`` here rather than
-            raising ``KeyError`` at the call site.
-
-    Returns:
-        The endpoint name (for example ``"react-reviewer"``).
-
-    Raises:
-        ValueError: If ``stack`` is missing, not a string, or not one of the
-            known stacks.
-    """
-    if not isinstance(stack, str) or stack not in _STACK_TECHNICAL_REVIEWER_ENDPOINT:
-        allowed = ", ".join(sorted(_STACK_TECHNICAL_REVIEWER_ENDPOINT))
-        raise ValueError(f"unknown stack {stack!r}; expected one of: {allowed}")
-    return _STACK_TECHNICAL_REVIEWER_ENDPOINT[stack]
-
-
 def _to_predictions(lead_report_data: dict[str, Any], pr_id: str) -> dict[str, Any]:
     """Convert LeadEngineerReport dict to agent_predictions.jsonl format.
 
@@ -110,7 +71,7 @@ def _to_predictions(lead_report_data: dict[str, Any], pr_id: str) -> dict[str, A
     return pred
 
 
-def evaluate_gold_item(
+def evaluate_item(
     item: dict[str, Any],
     client: httpx.Client,
     base_url: str,
@@ -118,7 +79,14 @@ def evaluate_gold_item(
     timeout: float,
     model_id: str,
 ) -> dict[str, Any]:
-    """Evaluate a gold PR item via the orchestrator endpoint.
+    """Evaluate a Gold or Seeded PR item via the orchestrator endpoint.
+
+    Both Gold and Seeded items are real PRs, so a single ``/orchestrator``
+    call is sufficient for either: the server's own ``pr-info-collector``
+    call and ``detect_project_types``-based reviewer selection determine
+    what gets reviewed (see docs/eval-seeded-orchestrator-unification-spec.md,
+    Issue #237). A Seeded item's ``stack`` and ``file_changes`` fields are
+    dataset-generation-time metadata only and are not read here.
 
     Returns:
         The orchestrator's result, converted to ``agent_predictions.jsonl``
@@ -134,81 +102,6 @@ def evaluate_gold_item(
     lead_data = _run_a2a(
         client, f"{base_url}/orchestrator", data, poll_interval, timeout
     )
-    return _to_predictions(lead_data, item["id"])
-
-
-def evaluate_seeded_item(
-    item: dict[str, Any],
-    client: httpx.Client,
-    base_url: str,
-    poll_interval: float,
-    timeout: float,
-    model_id: str,
-) -> dict[str, Any]:
-    """Evaluate a seeded item: collect real PR metadata from its seed repository.
-
-    ``item["stack"]`` is resolved to a technical reviewer endpoint via
-    ``_technical_reviewer_endpoint`` before any A2A call is made, so an
-    unknown stack fails closed (propagating ``ValueError``) instead of
-    wasting a ``pr-info-collector`` call or falling back to an unrelated
-    reviewer.
-
-    Unlike the retired mutation-injection pipeline, a Seeded item's PR is a
-    real, open PR in a dedicated seed repository (kuju63/{stack}-seeded,
-    see docs/eval-seeded-repo-based-generation-spec.md) -- there is no
-    synthetic ``file_changes`` to overlay on top of what pr-info-collector
-    returns, so its response is passed to the reviewers unmodified.
-
-    Returns:
-        The lead engineer's synthesized result, converted to
-        ``agent_predictions.jsonl`` format.
-    """
-    owner, repo = item["repository"].split("/")
-    pr_number = item["pr_number"]
-    technical_endpoint = _technical_reviewer_endpoint(item.get("stack"))
-
-    # Step 1: Collect PR info (real PR metadata)
-    pr_info_data = _run_a2a(
-        client,
-        f"{base_url}/pr-info-collector",
-        {"owner": owner, "repo": repo, "pr_number": pr_number, "model_id": model_id},
-        poll_interval,
-        timeout,
-    )
-
-    # Step 2: Run the stack's technical reviewer and Security reviewer in
-    # parallel. They are independent of each other's output, so running them
-    # concurrently only affects wall-clock time, not what is found.
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        technical_future = executor.submit(
-            _run_a2a,
-            client,
-            f"{base_url}/{technical_endpoint}",
-            {"pr_info": pr_info_data, "model_id": model_id},
-            poll_interval,
-            timeout,
-        )
-        security_future = executor.submit(
-            _run_a2a,
-            client,
-            f"{base_url}/security-reviewer",
-            {"pr_info": pr_info_data, "model_id": model_id},
-            poll_interval,
-            timeout,
-        )
-        technical_result = technical_future.result()
-        security_result = security_future.result()
-
-    # Step 3: Lead engineer synthesis
-    review_report = {"results": [technical_result, security_result], "errors": []}
-    lead_data = _run_a2a(
-        client,
-        f"{base_url}/lead-engineer",
-        {"review_report": review_report, "model_id": model_id},
-        poll_interval,
-        timeout,
-    )
-
     return _to_predictions(lead_data, item["id"])
 
 
@@ -483,7 +376,7 @@ def _run_evaluation(args: argparse.Namespace) -> int:
         logger.info("--- Gold set evaluation (concurrency=%d) ---", args.concurrency)
         gold_predictions, gold_failed = _evaluate_concurrently(
             gold_items,
-            lambda item: evaluate_gold_item(
+            lambda item: evaluate_item(
                 item, client, args.base_url, args.poll_interval, args.timeout, model_id
             ),
             args.concurrency,
@@ -494,7 +387,7 @@ def _run_evaluation(args: argparse.Namespace) -> int:
         logger.info("--- Seeded set evaluation (concurrency=%d) ---", args.concurrency)
         seeded_predictions, seeded_failed = _evaluate_concurrently(
             seeded_items,
-            lambda item: evaluate_seeded_item(
+            lambda item: evaluate_item(
                 item, client, args.base_url, args.poll_interval, args.timeout, model_id
             ),
             args.concurrency,
