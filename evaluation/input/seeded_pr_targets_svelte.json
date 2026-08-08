@@ -1,0 +1,262 @@
+{
+  "repository": "kuju63/svelte-seeded",
+  "stack": "svelte",
+  "prs": [
+    {
+      "pr_number": 5,
+      "defects": [
+        {
+          "path": "src/routes/(auth)/login/+page.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_plaintext_credentials_in_local_storage",
+          "category": "security",
+          "severity": "critical",
+          "summary": "Persists the entered email and plaintext password together in localStorage when 'keep me signed in' is checked, and reads them back to prefill the login form; any script with page access (e.g. XSS) can read the raw password directly.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 6,
+      "defects": [
+        {
+          "path": "src/lib/components/ProductCard.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_at_html_unsanitized_content",
+          "category": "security",
+          "severity": "critical",
+          "summary": "Renders the catalog item's description via Svelte's {@html} tag without sanitization; if the description ever contains attacker-controlled markup, arbitrary script executes in the viewer's session.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 7,
+      "defects": [
+        {
+          "path": "src/routes/(app)/+layout.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_client_only_session_restoration",
+          "category": "security",
+          "severity": "critical",
+          "summary": "Restores the authenticated user from an unvalidated localStorage cache with no server-side session/token check; editing the cached value in devtools impersonates any user, since the app trusts client-stored state alone as proof of authentication.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 8,
+      "defects": [
+        {
+          "path": "src/lib/api/client.ts",
+          "occurrence": 0,
+          "rule_id": "svelte_signing_key_hardcoded_in_client_bundle",
+          "category": "security",
+          "severity": "critical",
+          "summary": "Defines a payment-signing key as a VITE_-prefixed env var with a hardcoded fallback secret, both of which end up inlined into the client-side JavaScript bundle at build time; anyone can extract the signing key from the shipped code.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 9,
+      "defects": [
+        {
+          "path": "src/app.html",
+          "occurrence": 0,
+          "rule_id": "svelte_csp_overly_permissive",
+          "category": "security",
+          "severity": "high",
+          "summary": "Sets a Content-Security-Policy with script-src allowing 'unsafe-inline', 'unsafe-eval', and any https: origin; this combination defeats CSP's main XSS mitigation.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 10,
+      "defects": [
+        {
+          "path": "src/routes/(app)/cart/+page.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_effect_used_for_derived_state",
+          "category": "maintainability",
+          "severity": "medium",
+          "summary": "Uses $effect to derive actionLabel from calculation and to reset errorMessage as a side effect, instead of computing actionLabel with $derived; effects are meant for side effects, not for producing a value that could simply be a derived expression.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 11,
+      "defects": [
+        {
+          "path": "src/lib/components/ProductCard.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_props_destructured_loses_reactivity",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Destructures name/description/price/tags out of the item prop into plain consts; this snapshots the values at that point, so updates to item after the initial render are not reflected in the rendered fields.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 12,
+      "defects": [
+        {
+          "path": "src/lib/components/CartLineItem.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_non_bindable_prop_mutated_directly",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Calls item.tags.sort() directly on a non-bindable prop, mutating the parent's array in place; child components should treat props as one-way data from the parent, and this mutation can silently affect the parent's state.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 13,
+      "defects": [
+        {
+          "path": "src/routes/+layout.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_on_mount_async_loses_cleanup",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Makes the onMount callback async and returns a cleanup function from inside it; onMount only treats a synchronously returned function as a teardown callback, so the async callback's return value is a Promise, and the intended worker.stop() cleanup is silently never registered.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 14,
+      "defects": [
+        {
+          "path": "src/routes/(app)/payment/+page.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_dom_event_registered_via_on_mount_not_effect",
+          "category": "maintainability",
+          "severity": "low",
+          "summary": "Registers the keydown listener inside onMount instead of $effect; Svelte 5's guidance is to use $effect for DOM-interfacing side effects since it composes with reactivity and unifies cleanup timing, rather than mixing onMount (mount-once) and $effect lifecycles for closely related DOM wiring.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 15,
+      "defects": [
+        {
+          "path": "src/lib/components/OrderSummary.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_props_untyped_any",
+          "category": "maintainability",
+          "severity": "medium",
+          "summary": "Removes the typed Props interface and destructures $props() without a type annotation, making every prop implicitly any and losing all compile-time type checking for this component's public API.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 16,
+      "defects": [
+        {
+          "path": "src/routes/(app)/+layout.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_goto_keep_focus_misuse",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Passes { keepFocus: true } to goto() on a full-page navigation after logout; this suppresses SvelteKit's default focus reset to <body>, leaving keyboard/screen-reader focus on an element from the page that no longer exists.",
+          "line_offset": null
+        },
+        {
+          "path": "src/routes/(auth)/login/+page.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_goto_keep_focus_misuse",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Passes { keepFocus: true } to goto() on a full-page navigation after a successful login; this suppresses SvelteKit's default focus reset to <body>, leaving keyboard/screen-reader focus on an element from the login page that no longer exists.",
+          "line_offset": null
+        },
+        {
+          "path": "src/routes/(auth)/register/+page.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_goto_keep_focus_misuse",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Passes { keepFocus: true } to goto() on a full-page navigation after a successful registration; this suppresses SvelteKit's default focus reset to <body>, leaving keyboard/screen-reader focus on an element from the registration page that no longer exists.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 17,
+      "defects": [
+        {
+          "path": "src/routes/(app)/+page.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_state_destructured_loses_reactivity",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Destructures cart out of the appState class instance into a local const; this snapshots the reactive property's value once, so subsequent updates to appState.cart are not reflected in the destructured binding used for quantity display.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 18,
+      "defects": [
+        {
+          "path": "src/routes/(app)/payment/+page.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_deep_reactivity_performance_regression",
+          "category": "performance",
+          "severity": "low",
+          "summary": "Changes the catalog state from $state.raw (shallow, reference-based reactivity) to plain $state, which deeply proxies every item in the array; since the catalog is only ever replaced wholesale from the API response, this adds proxy-wrapping overhead with no reactivity benefit.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 19,
+      "defects": [
+        {
+          "path": "src/lib/components/AppHeader.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_store_subscribe_missing_unsubscribe",
+          "category": "correctness",
+          "severity": "medium",
+          "summary": "Calls connectivity.subscribe() inside onMount but discards the returned unsubscribe function; the subscription is never torn down when the component unmounts, leaking a store subscription for the lifetime of the app.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 20,
+      "defects": [
+        {
+          "path": "src/lib/components/CartItemList.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_props_drilling",
+          "category": "maintainability",
+          "severity": "low",
+          "summary": "Threads a hardcoded currency prop through the new CartItemList intermediate component purely to forward it to CartLineItem, without CartItemList itself using the value; this is prop drilling for a constant that could be a module-level constant or context instead.",
+          "line_offset": null
+        }
+      ]
+    },
+    {
+      "pr_number": 21,
+      "defects": [
+        {
+          "path": "src/routes/(app)/+page.svelte",
+          "occurrence": 0,
+          "rule_id": "svelte_god_component_absorbs_child_presentation_logic",
+          "category": "maintainability",
+          "severity": "medium",
+          "summary": "Moves price formatting and tag-type classification out of ProductCard (a presentational concern belonging with the component rendering it) into the top-level route component, which now owns formatting/classification logic for every card instead of letting each card be self-contained -- a step toward a God Component absorbing unrelated responsibilities.",
+          "line_offset": null
+        }
+      ]
+    }
+  ]
+}
