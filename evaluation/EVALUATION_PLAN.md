@@ -370,17 +370,28 @@ PR の diff が閾値（`CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` chars・`CODE_REVIE
 `PRInfoResult.file_changes` に含まれる patch を参照する（GitHub MCP フェッチは発生しない）。
 閾値超過の PR は引き続き `patch=None` にフォールバックし、レビュアーが MCP フェッチを行う。
 
-**既知の逸脱（§4 ルーティングhard gateとの不整合、Issue #238で解消予定）**: 自動検出への一本化に
-伴い、`detect_project_types`（`src/code_review_agent/agents/registry.py`）がSeeded set 59件中
-4件（`svelte-seeded#8`・`#9`、`vue-seeded#16`・`#20`）を`ReactReviewer`に誤ルーティングする。
-原因はいずれも「該当PRの変更ファイルがフレームワーク固有拡張子（`.svelte`/`.vue`）を含まず、かつ
-manifestシグナルも構造的に立たない」ため：Svelteは`svelte-seeded`リポジトリに
-`svelte.config.js`/`.ts`自体が存在せず、Vueは`vue.config.js`/`.ts`が
+**既知の逸脱（§4 ルーティングhard gateとの不整合、Issue #238で解消予定）**: `evaluate_item()`は
+`item["stack"]`を一切参照しない。そのため§4後半の「an unsupported or missing `stack` must fail
+the item explicitly rather than default to `ReactReviewer`」というfail-closed要件は、現在
+Seeded set 59件のいずれに対しても実行されない（対応する検証コード
+`_technical_reviewer_endpoint`はIssue #237で削除済み）。「`stack`ラベルと一致するレビュアーへ
+ルーティングされる」という前半の性質も、`detect_project_types`（
+`src/code_review_agent/agents/registry.py`）の自動検出結果がたまたま`stack`ラベルと一致した
+場合にのみ成立する副産物であり、恒久的な保証ではない。
+
+現時点の実測では、55件は一致するが4件（`svelte-seeded#8`・`#9`、`vue-seeded#16`・`#20`）は
+`ReactReviewer`に誤ルーティングされる。原因はいずれも「該当PRの変更ファイルがフレームワーク
+固有拡張子（`.svelte`/`.vue`）を含まず、かつmanifestシグナルも構造的に立たない」ため：Svelteは
+`svelte-seeded`リポジトリに`svelte.config.js`/`.ts`自体が存在せず、Vueは`vue.config.js`/`.ts`が
 `pr_info_collector.py`の`_DEPENDENCY_FILENAMES`に含まれていないため`dependency_files`に載らない。
+この「4件」は現時点のスナップショットであり、新しいSeed PRが追加された際に増える可能性がある
+（fail-closedの検証機構自体が存在しないため、新規不一致はツールでは検知されない）。
+
 `score_evaluation.py`はレビュアー選択の正しさ自体を検査しないため、Release Gateの数値は
-この誤ルーティングの有無に関わらずPASSしうる。§4の「Seeded items must route to the technical
-reviewer matching their stack label」は文言を変更していないが、この4件については現時点で
-未達である。検出ロジックの修正はIssue #238で追跡し、解消後はこの段落を削除する。
+このルーティング不一致の有無に関わらずPASSしうる。§4の文言自体は変更しない（統合を先行させ、
+ルーティング検出ロジックの修正はIssue #238で追跡する、という優先順位の判断による）。Issue #238
+解消後、この段落を削除し、恒久的なルーティング正しさの検証（新規Release Gateまたはテスト）の
+要否を改めて検討する。
 
 **設計上の既知の制限（行番号精度）**: `_build_prompt` が付与する行番号アノテーション（`+L{N}:` 形式）は
 `PRInfoResult.file_changes` に含まれる patch にのみ適用される。

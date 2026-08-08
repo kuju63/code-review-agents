@@ -85,12 +85,13 @@ manifestファイル名または拡張子で判定する。Seeded set 59件の�
 75行目)は`project_type`引数を無視して独自に`detect_project_types`を再実行する
 自己ガードを持つため、svelte#8/#9では技術レビューが完全にスキップされる(空findings)。
 
-`score_evaluation.py`はレビュアー選択の正しさ自体を検査しないため、Release Gateの
-数値はこの誤判定の有無に関わらずPASSしうる。EVALUATION_PLAN.md §4の
-「Seeded items must route to the technical reviewer matching their stack label」
-は文言を変更していないが、この4件については現時点で未達である。この逸脱は
-EVALUATION_PLAN.md §5に期限付きの既知逸脱として明記し、Issue #238で追跡する。
-Issue #238解消後、EVALUATION_PLAN.md §5の当該段落は削除する。
+重要なのは、この「4件」が問題の全体像ではない点である。`evaluate_item()`は
+`item["stack"]`を一切参照しないため、EVALUATION_PLAN.md §4後半のfail-closed要件
+(unsupported/missing stackを明示的に失敗させる)は、59件のいずれに対しても実行
+されていない。55件が`stack`ラベルと一致しているのは`detect_project_types`の
+副産物に過ぎず、恒久的な保証ではない。詳細と現在の扱い(§4文言は変更せず、
+Issue #238解消まで期限付きの既知逸脱として記録する判断)は
+[evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md) §5を参照。
 
 ## 5. タイムアウト予算への影響
 

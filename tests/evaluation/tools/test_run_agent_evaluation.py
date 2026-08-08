@@ -259,9 +259,29 @@ class TestEvaluateItem:
 
         assert result_gold["id"] == "owner/repo#1"
         assert result_seeded["id"] == "seeded::kuju63/react-seeded#5"
-        assert [endpoint for endpoint, _ in calls] == [
-            "http://x/orchestrator",
-            "http://x/orchestrator",
+        # Both payloads must be endpoint + {owner, repo, pr_number, model_id}
+        # only -- asserting full equality (not just the endpoint) guards
+        # against `stack`/`file_changes` leaking back into the request if
+        # someone reintroduces per-item branching later.
+        assert calls == [
+            (
+                "http://x/orchestrator",
+                {
+                    "owner": "owner",
+                    "repo": "repo",
+                    "pr_number": 1,
+                    "model_id": "m",
+                },
+            ),
+            (
+                "http://x/orchestrator",
+                {
+                    "owner": "kuju63",
+                    "repo": "react-seeded",
+                    "pr_number": 5,
+                    "model_id": "m",
+                },
+            ),
         ]
 
     def test_unknown_or_missing_stack_does_not_raise(self, monkeypatch):

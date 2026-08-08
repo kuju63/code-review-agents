@@ -267,10 +267,13 @@ matching their stack label ... plus SecurityReviewer」)により、stack別
 > file_changes上書き削除後)は文字通り同一の実装(owner/repo抽出→`/orchestrator`へ
 > POST→`_to_predictions`)に帰着するため、両者は`evaluate_item()`に統合された。
 > `_technical_reviewer_endpoint`と`docs/seeded-reviewer-stack-routing-spec.md`の
-> クライアント側ルーティング設計(§6)は削除・supersededとなった。ただし
-> `detect_project_types`の自動検出には既知の誤ルーティング(59件中4件、Issue #238)が
-> あり、EVALUATION_PLAN.md §4のhard gate文言自体は変更していないため、この4件は
-> 期限付きの既知逸脱としてEVALUATION_PLAN.md §5に記録されている。詳細は
+> クライアント側ルーティング設計(§6)は削除・supersededとなった。`evaluate_item()`は
+> `stack`を一切参照しないため、EVALUATION_PLAN.md §4後半のfail-closed要件(unsupported/
+> missing stackを明示的に失敗させる)は59件のいずれに対しても実行されなくなった。実測で
+> 判明している誤ルーティングは4件(Issue #238)だが、これは`detect_project_types`の
+> 副産物として現時点で一致している55件を含む恒久的な保証ではない。EVALUATION_PLAN.md
+> §4のhard gate文言自体は変更していないため、この状態は期限付きの既知逸脱として
+> EVALUATION_PLAN.md §5に記録されている。詳細は
 > [docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)
 > を参照。
 
