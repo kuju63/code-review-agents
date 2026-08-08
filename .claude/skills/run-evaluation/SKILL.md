@@ -26,19 +26,18 @@ Gold set・Seeded setの準備 → A2Aサーバー起動 → 評価実行 → �
 作業ディレクトリがリポジトリルートであることを確認する。
 
 ```bash
-# .env の存在確認（GITHUB_TOKEN と SEEDED_GEN_MODEL_ID が必要）
+# .env の存在確認（GITHUB_TOKEN が必要。Gold/Seeded set両方の構築に使う）
 if [ ! -f .env ]; then
-  echo "ERROR: .env not found. Create it with GITHUB_TOKEN and SEEDED_GEN_MODEL_ID."
+  echo "ERROR: .env not found. Create it with GITHUB_TOKEN."
   exit 1
 fi
 set -a
 source .env
 set +a
 [ -n "${GITHUB_TOKEN:-}" ] || { echo "ERROR: GITHUB_TOKEN not set in .env"; exit 1; }
-[ -n "${SEEDED_GEN_MODEL_ID:-}" ] || { echo "ERROR: SEEDED_GEN_MODEL_ID not set in .env"; exit 1; }
 echo ".env OK"
 
-# canonical per-stack target filesの存在確認
+# canonical per-stack target filesの存在確認（Gold set用）
 for stack in react vue angular svelte; do
   path="evaluation/input/pr_targets_${stack}.json"
   if [ ! -f "$path" ]; then
@@ -47,6 +46,16 @@ for stack in react vue angular svelte; do
   fi
 done
 echo "per-stack target files OK"
+
+# Seeded PR targets（must_findメタデータ）の存在確認
+for stack in react vue angular svelte; do
+  path="evaluation/input/seeded_pr_targets_${stack}.json"
+  if [ ! -f "$path" ]; then
+    echo "ERROR: $path not found."
+    exit 1
+  fi
+done
+echo "seeded PR target files OK"
 
 # A2Aサーバーをコンテナで起動するため podman が必要
 command -v podman > /dev/null 2>&1 || { echo "ERROR: podman not found."; exit 1; }
@@ -102,11 +111,11 @@ fi
 ```bash
 if [ ! -s evaluation/data/seeded_set.jsonl ]; then
   uv run python -u evaluation/tools/build_seeded_set.py \
-    --gold evaluation/data/gold_pr_set.jsonl \
-    --catalog evaluation/config/seeded_mutations.json \
-    --output evaluation/data/seeded_set.jsonl \
-    --multiplier 2 \
-    --model-id "$SEEDED_GEN_MODEL_ID"
+    --targets evaluation/input/seeded_pr_targets_react.json \
+              evaluation/input/seeded_pr_targets_vue.json \
+              evaluation/input/seeded_pr_targets_angular.json \
+              evaluation/input/seeded_pr_targets_svelte.json \
+    --output evaluation/data/seeded_set.jsonl
 else
   echo "Seeded set already exists, skipping build."
 fi

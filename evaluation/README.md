@@ -25,7 +25,7 @@ Main business domain:
 - Scorer: `evaluation/tools/score_evaluation.py`
 - Target selector: `evaluation/tools/select_stack_targets.py`
 - Pipeline runner: `evaluation/tools/run_evaluation_pipeline.sh`
-- Mutation catalog: `evaluation/config/seeded_mutations.json`
+- Seeded PR targets & must_find metadata: `evaluation/input/seeded_pr_targets_{stack}.json`
 
 ## Recommended Entry Point
 
@@ -123,20 +123,22 @@ Expected output:
 - `evaluation/data/gold_pr_set.jsonl`
 - Each row contains filtered frontend diffs and normalized inline-review findings (human or AI review bot)
 
-## 3) Build Seeded set automatically
+## 3) Build Seeded set from the dedicated seed repositories
 
 ```bash
+export GITHUB_TOKEN=your_token
 uv run python evaluation/tools/build_seeded_set.py \
-  --gold evaluation/data/gold_pr_set.jsonl \
-  --catalog evaluation/config/seeded_mutations.json \
-  --output evaluation/data/seeded_set.jsonl \
-  --multiplier 2
+  --targets evaluation/input/seeded_pr_targets_react.json \
+            evaluation/input/seeded_pr_targets_vue.json \
+            evaluation/input/seeded_pr_targets_angular.json \
+            evaluation/input/seeded_pr_targets_svelte.json \
+  --output evaluation/data/seeded_set.jsonl
 ```
 
 Expected output:
 
 - `evaluation/data/seeded_set.jsonl`
-- Each row includes one must-find issue with category/severity/line metadata
+- Each row includes one or more must-find issues with category/severity/line metadata, resolved against a real PR in `kuju63/{stack}-seeded` (see [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md))
 
 ## 4) Run your review agents against both sets
 
@@ -194,8 +196,12 @@ Minimum recommended start point:
 
 - You do not need to handcraft Gold data from scratch.
   - Use public PR review comments as weak supervision.
-- You do not need to handwrite all Seeded data.
-  - Generate from Gold with mutation catalog and iterate monthly.
+- Seeded data does need to be hand-authored: each seed repository PR's
+  `must_find` metadata (rule_id/category/severity/summary) is written by a
+  human reading the PR's diff (see
+  [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)).
+  Adding a new stack-specific trap means opening a PR against the relevant
+  `kuju63/{stack}-seeded` repository and adding its metadata entry.
 - Keep versioned snapshots:
   - `evaluation/data/v1/*`
   - `evaluation/data/v2/*`
@@ -204,4 +210,4 @@ Minimum recommended start point:
 
 - Gold extraction currently relies on review comments API and simple heuristics.
 - Severity/category normalization is keyword-based and should be calibrated with small manual checks.
-- Mutation injection currently supports Front-end patterns only (React/Vue/Angular/Svelte); backend-specific traps (Rails, Spring Boot) are intentionally out of scope while resources are focused on frontend review accuracy, and can be reconsidered later in `seeded_mutations.json`.
+- Seed repositories currently cover Front-end patterns only (React/Vue/Angular/Svelte); backend-specific traps (Rails, Spring Boot) are intentionally out of scope while resources are focused on frontend review accuracy, and can be reconsidered later as new seed repositories.
