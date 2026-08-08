@@ -1,5 +1,15 @@
 # Seeded set生成: mutation注入ロジック 要件と設計ドキュメント
 
+> **廃止済み**: 本ドキュメントが記述するmutation注入方式(Gold PRのdiffにLLM推論/
+> 決定論的にsynthetic defectを注入する方式)は、Issue #224により専用Seedリポジトリ方式
+> (`kuju63/{react,vue,angular,svelte}-seeded` の実PRを検知できるかで評価する方式)へ
+> 移行し廃止された。§9.7-9.8まで改善を重ねてもfallback率30%未満の目標達成がモデル依存
+> でしか成り立たず、「実PRのdiffに後から異物を継ぎ足す」構造そのものが到達可能性(R1)・
+> 文脈的整合性(R3)を原理的に担保しにくいという結論に至った経緯は、この移行を正当化する
+> 一次資料として本ドキュメントに残す。現行の設計は
+> [docs/eval-seeded-repo-based-generation-spec.md](eval-seeded-repo-based-generation-spec.md)
+> を参照。
+
 2026-07-08評価 (`evaluation/data/report_*.md`; `evaluation/data/` は `.gitignore` の
 `evaluation/data/` エントリで除外される生成物のためリポジトリには含まれず、
 `bash evaluation/tools/run_evaluation_pipeline.sh` 等の再実行で再現できる) で

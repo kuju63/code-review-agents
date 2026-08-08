@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seeded_pr_targets.schema.json",
+  "title": "SeededPrTargets",
+  "description": "Input for evaluation/tools/build_seeded_set.py (Issue #224): the PRs in one dedicated seed repository, and the must_find metadata for each PR's INTENTIONAL marker(s). See docs/eval-seeded-repo-based-generation-spec.md. Documentation only; not used for runtime validation.",
+  "type": "object",
+  "required": ["repository", "stack", "prs"],
+  "properties": {
+    "repository": {
+      "type": "string",
+      "description": "owner/repo of the dedicated seed repository, e.g. kuju63/vue-seeded"
+    },
+    "stack": {
+      "type": "string",
+      "enum": ["react", "vue", "angular", "svelte"]
+    },
+    "prs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pr_number", "defects"],
+        "properties": {
+          "pr_number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "defects": {
+            "type": "array",
+            "minItems": 1,
+            "description": "One entry per INTENTIONAL marker expected in this PR's diff.",
+            "items": {
+              "type": "object",
+              "required": ["path", "occurrence", "rule_id", "category", "severity", "summary"],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "description": "File path the marker/defect lives in."
+                },
+                "occurrence": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "0-based index of this defect's marker among all INTENTIONAL markers detected on `path`, in diff order. Disambiguates PRs with multiple markers in the same file."
+                },
+                "rule_id": {
+                  "type": "string",
+                  "description": "Snake_case defect-type identifier, e.g. vue_dom_based_xss_innerhtml. Never derived from svelte-seeded's SEED-nnn marker suffix, whose numbering collides across PRs."
+                },
+                "category": {
+                  "type": "string",
+                  "enum": ["security", "performance", "correctness", "maintainability"]
+                },
+                "severity": {
+                  "type": "string",
+                  "enum": ["critical", "high", "medium", "low"]
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "line_offset": {
+                  "type": ["integer", "null"],
+                  "minimum": 0,
+                  "description": "Explicit line count from the marker to the defect line, overriding the default scan-forward resolution (first added line after the marker that isn't blank/comment-only). Omit or set null for the default."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
