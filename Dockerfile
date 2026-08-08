@@ -13,7 +13,7 @@ FROM ghcr.io/astral-sh/uv:0.12.3@sha256:2d890623d310b57771ce840f0da5eed5fc6d657d
 # - ABI 互換: cryptography / cffi / uvloop 等のバイナリ拡張の互換を保証
 # - multi-arch index ダイジェスト固定: amd64 / arm64 を同一参照で提供
 ###############################################################################
-FROM registry.access.redhat.com/hi/python:3.14-builder@sha256:9bb63fe25da81a72b2c384b3b6a2c5b236b0f32ae1f00b55055a4a4afa3b2ab7 AS builder
+FROM registry.access.redhat.com/hi/python:3.14-builder@sha256:a4780b661281101fa0f92263ad1428a8e5f3819adad73d5f61bedf956e3f2639 AS builder
 
 USER root
 
