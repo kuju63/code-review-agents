@@ -30,7 +30,12 @@ def clean_registry() -> Iterator[None]:
     registry._REGISTRY.extend(saved)
 
 
-def _pr_info(*, file_paths: list[str], dependency_files: list[str]) -> PRInfoResult:
+def _pr_info(
+    *,
+    file_paths: list[str],
+    dependency_files: list[str],
+    manifest_contents: dict[str, str] | None = None,
+) -> PRInfoResult:
     return PRInfoResult(
         repository_info=RepositoryInfo(owner="o", repository="r"),
         project_summary="s",
@@ -40,6 +45,7 @@ def _pr_info(*, file_paths: list[str], dependency_files: list[str]) -> PRInfoRes
             file_changes=[FileChange(filePath=p) for p in file_paths],
         ),
         dependency_files=dependency_files,
+        manifest_contents=manifest_contents or {},
     )
 
 
@@ -272,3 +278,166 @@ class TestDetectProjectTypes:
     def test_no_detection_without_ts_js_or_manifest(self):
         pr = _pr_info(file_paths=["styles/main.css", "index.html"], dependency_files=[])
         assert detect_project_types(pr) == set()
+
+
+class TestDetectProjectTypesFromManifestContent:
+    """Tier 2: package.json/lock-file content resolves what the coarse
+    extension fallback (Tier 3) cannot -- Vue/Nuxt/Next.js projects whose
+    changed files carry no distinguishing extension, and metaframeworks
+    that share their base framework's extensions entirely."""
+
+    def test_detects_vue_from_package_json_content_without_vue_file(self):
+        pr = _pr_info(
+            file_paths=["src/util.ts"],
+            dependency_files=["package.json"],
+            manifest_contents={"package.json": '{"dependencies": {"vue": "^3.5.40"}}'},
+        )
+        assert detect_project_types(pr) == {ProjectType.VUE}
+
+    def test_nuxt_takes_priority_over_vue_from_content(self):
+        # Mirrors kuju63/vue-seeded's real package.json: labelled "vue" but
+        # actually a Nuxt app (Issue #238).
+        pr = _pr_info(
+            file_paths=["src/util.ts"],
+            dependency_files=["package.json"],
+            manifest_contents={
+                "package.json": (
+                    '{"dependencies": {"nuxt": "^4.5.1", "vue": "^3.5.40"}}'
+                )
+            },
+        )
+        assert detect_project_types(pr) == {ProjectType.NUXT}
+
+    def test_nextjs_takes_priority_over_react_from_content(self):
+        # Mirrors kuju63/react-seeded's real package.json: labelled "react"
+        # but actually a Next.js app.
+        pr = _pr_info(
+            file_paths=["src/util.ts"],
+            dependency_files=["package.json"],
+            manifest_contents={
+                "package.json": '{"dependencies": {"next": "16.2.12", "react": "19.2.4"}}'
+            },
+        )
+        assert detect_project_types(pr) == {ProjectType.NEXTJS}
+
+    def test_detects_svelte_from_sveltejs_kit_content_without_svelte_file(self):
+        # Mirrors kuju63/svelte-seeded's real package.json: no bare "svelte"
+        # dependency, only @sveltejs/kit -- and no svelte.config.js/.ts at
+        # all, so Tier 1 has no signal either (Issue #238).
+        pr = _pr_info(
+            file_paths=["src/util.ts"],
+            dependency_files=["package.json"],
+            manifest_contents={
+                "package.json": '{"devDependencies": {"@sveltejs/kit": "^2.63.0"}}'
+            },
+        )
+        assert detect_project_types(pr) == {ProjectType.SVELTE}
+
+    def test_detects_angular_from_content_without_extension_signal(self):
+        pr = _pr_info(
+            file_paths=["src/main.ts"],
+            dependency_files=["package.json"],
+            manifest_contents={
+                "package.json": '{"dependencies": {"@angular/core": "^22.1.0"}}'
+            },
+        )
+        assert detect_project_types(pr) == {ProjectType.ANGULAR}
+
+    def test_tier1_extension_match_wins_over_conflicting_content(self):
+        # A .svelte file change is Tier 1 and returns immediately, before
+        # manifest content (which here would otherwise resolve to React) is
+        # even consulted.
+        pr = _pr_info(
+            file_paths=["src/App.svelte"],
+            dependency_files=["package.json"],
+            manifest_contents={"package.json": '{"dependencies": {"react": "19.2.4"}}'},
+        )
+        assert detect_project_types(pr) == {ProjectType.SVELTE}
+
+    def test_aggregates_workspace_package_json_content(self):
+        pr = _pr_info(
+            file_paths=["packages/web/src/index.ts"],
+            dependency_files=["package.json"],
+            manifest_contents={
+                "package.json": "{}",
+                "packages/web/package.json": '{"dependencies": {"vue": "^3"}}',
+            },
+        )
+        assert detect_project_types(pr) == {ProjectType.VUE}
+
+    def test_unknown_package_falls_through_to_coarse_react_fallback(self):
+        pr = _pr_info(
+            file_paths=["src/util.ts"],
+            dependency_files=["package.json"],
+            manifest_contents={
+                "package.json": '{"dependencies": {"lodash": "^4.17.21"}}'
+            },
+        )
+        assert detect_project_types(pr) == {ProjectType.REACT_TS}
+
+
+class TestMetaframeworkReviewerFallback:
+    """get_reviewer_classes routes NEXTJS/NUXT to the base framework's
+    reviewers, since no dedicated Next.js/Nuxt reviewer is registered."""
+
+    def test_nextjs_selects_react_reviewer(self, clean_registry):
+        @register_reviewer
+        class _React(LLMReviewAgent):
+            reviewer_id = "react-technical"
+            perspective = ReviewPerspective.TECHNICAL
+            project_types = frozenset({ProjectType.REACT_TS})
+            system_prompt = "x"
+
+        assert _React in get_reviewer_classes(ProjectType.NEXTJS)
+
+    def test_nuxt_selects_vue_reviewer(self, clean_registry):
+        @register_reviewer
+        class _Vue(LLMReviewAgent):
+            reviewer_id = "vue-technical"
+            perspective = ReviewPerspective.TECHNICAL
+            project_types = frozenset({ProjectType.VUE})
+            system_prompt = "x"
+
+        assert _Vue in get_reviewer_classes(ProjectType.NUXT)
+
+    def test_nextjs_selects_security_reviewer_shared_with_react(self, clean_registry):
+        @register_reviewer
+        class _Security(LLMReviewAgent):
+            reviewer_id = "security"
+            perspective = ReviewPerspective.SECURITY
+            project_types = frozenset({ProjectType.REACT_TS, ProjectType.VUE})
+            system_prompt = "x"
+
+        assert _Security in get_reviewer_classes(ProjectType.NEXTJS)
+        assert _Security in get_reviewer_classes(ProjectType.NUXT)
+
+    def test_non_metaframework_type_has_no_fallback(self, clean_registry):
+        @register_reviewer
+        class _React(LLMReviewAgent):
+            reviewer_id = "react-technical"
+            perspective = ReviewPerspective.TECHNICAL
+            project_types = frozenset({ProjectType.REACT_TS})
+            system_prompt = "x"
+
+        assert get_reviewer_classes(ProjectType.SPRING_BOOT) == []
+
+    def test_reviewer_registered_directly_for_nextjs_is_also_selected(
+        self, clean_registry
+    ):
+        @register_reviewer
+        class _Next(LLMReviewAgent):
+            reviewer_id = "next-technical"
+            perspective = ReviewPerspective.TECHNICAL
+            project_types = frozenset({ProjectType.NEXTJS})
+            system_prompt = "x"
+
+        @register_reviewer
+        class _React(LLMReviewAgent):
+            reviewer_id = "react-technical"
+            perspective = ReviewPerspective.TECHNICAL
+            project_types = frozenset({ProjectType.REACT_TS})
+            system_prompt = "x"
+
+        selected = get_reviewer_classes(ProjectType.NEXTJS)
+        assert _Next in selected
+        assert _React in selected

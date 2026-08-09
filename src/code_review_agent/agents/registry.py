@@ -15,8 +15,22 @@ from typing import TypeVar
 from ..models.pr_info import PRInfoResult
 from ..models.review import ProjectType, ReviewPerspective
 from .base_reviewer import ReviewAgent
+from .manifest_detection import (
+    collect_direct_package_names,
+    detect_project_type_from_packages,
+)
 
 _REGISTRY: list[type[ReviewAgent]] = []
+
+# Next.js and Nuxt share their base framework's file extensions entirely, so
+# they carry no dedicated reviewer (see manifest_detection.py). A PR detected
+# as one of these metaframeworks still gets reviewed by its base framework's
+# registered reviewers, so "no NextReviewer yet" never means "no review at
+# all" -- see get_reviewer_classes.
+_METAFRAMEWORK_BASE: dict[ProjectType, ProjectType] = {
+    ProjectType.NEXTJS: ProjectType.REACT_TS,
+    ProjectType.NUXT: ProjectType.VUE,
+}
 
 _ReviewerT = TypeVar("_ReviewerT", bound=ReviewAgent)
 
@@ -65,10 +79,14 @@ _ANGULAR_SOURCE_SUFFIXES = (
     ".pipe.ts",
 )
 
-# Ordered by specificity: framework rules precede the coarse React/TypeScript
-# rule so a JS/TS or ``package.json`` signal does not misclassify an Angular,
-# Svelte, or Vue project as React. Adding a stack means adding a rule here
-# (and, when the stack ships a reviewer, registering that reviewer).
+# Ordered by specificity: framework rules with an unambiguous file pattern
+# precede the content-based tier and the coarse React/TypeScript fallback
+# (see detect_project_types), so a JS/TS or ``package.json`` signal does not
+# misclassify an Angular, Svelte, or Vue project as React. Adding a stack
+# with its own unambiguous pattern means adding a rule here (and, when the
+# stack ships a reviewer, registering that reviewer); a stack without one
+# (a metaframework, or a library sharing its host language's extensions)
+# instead belongs in manifest_detection.py's package-name priority table.
 _DETECTION_RULES: tuple[_DetectionRule, ...] = (
     _DetectionRule(
         project_type=ProjectType.ANGULAR,
@@ -85,12 +103,26 @@ _DETECTION_RULES: tuple[_DetectionRule, ...] = (
         manifests=("vue.config.js", "vue.config.ts"),
         source_suffixes=(".vue",),
     ),
-    _DetectionRule(
-        project_type=ProjectType.REACT_TS,
-        manifests=("package.json",),
-        source_suffixes=(".ts", ".tsx", ".js", ".jsx"),
-    ),
 )
+
+# The coarse last-resort fallback (tier 3 of detect_project_types): a PR
+# touching package.json or generic TS/JS/JSX files, with no signal from the
+# rules above or from manifest content, is assumed to be React/TypeScript.
+_COARSE_REACT_MANIFEST = "package.json"
+_COARSE_REACT_SOURCE_SUFFIXES = (".ts", ".tsx", ".js", ".jsx")
+
+
+def _matches_manifest_name(paths: set[str], name: str) -> bool:
+    """Return True when any path in ``paths`` matches manifest ``name``.
+
+    Args:
+        paths: Candidate repository-relative paths.
+        name: Manifest basename to match (for example ``package.json``).
+
+    Returns:
+        True when any path in ``paths`` is ``name`` or ends with ``/name``.
+    """
+    return any(_matches_manifest(path, name) for path in paths)
 
 
 def register_reviewer(cls: type[_ReviewerT]) -> type[_ReviewerT]:
@@ -127,18 +159,26 @@ def get_reviewer_classes(
     """Select reviewer classes applicable to a project type.
 
     Args:
-        project_type: The project type to select reviewers for.
+        project_type: The project type to select reviewers for. When this is
+            a metaframework with no dedicated reviewer (``NEXTJS``, ``NUXT``;
+            see :data:`_METAFRAMEWORK_BASE`), reviewers registered for its
+            base framework (``REACT_TS``, ``VUE``) are included too, so
+            detecting the metaframework never yields zero reviewers.
         perspectives: Optional set of perspectives to restrict the selection
             to.  When ``None``, all perspectives are included.
 
     Returns:
-        Registered reviewer classes that apply to ``project_type`` and, when
-        given, match one of ``perspectives``.
+        Registered reviewer classes that apply to ``project_type`` (or its
+        metaframework base) and, when given, match one of ``perspectives``.
     """
     allowed = set(perspectives) if perspectives is not None else None
+    matching_types = {project_type}
+    base_type = _METAFRAMEWORK_BASE.get(project_type)
+    if base_type is not None:
+        matching_types.add(base_type)
     selected: list[type[ReviewAgent]] = []
     for cls in _REGISTRY:
-        if project_type not in cls.project_types:
+        if not (cls.project_types & matching_types):
             continue
         if allowed is not None and cls.perspective not in allowed:
             continue
@@ -150,29 +190,45 @@ def detect_project_types(pr_info: PRInfoResult) -> set[ProjectType]:
     """Infer applicable project types from collected PR information.
 
     Used as the default reviewer selection when the caller does not specify a
-    project type explicitly. Detection is driven by :data:`_DETECTION_RULES`,
-    an ordered table; adding a new stack (for example ``pom.xml`` for Spring
-    Boot) means adding a rule there rather than editing this function.
+    project type explicitly. Detection runs in three tiers, each returning
+    immediately on a match (Issue #230):
 
-    Two signals are combined: the PR-changed files and ``dependency_files``.
-    A rule's ``manifests`` are matched against both (repository-level), while
-    its ``source_suffixes`` are matched against PR-changed files only. Rules
-    are evaluated in order and the first match wins, so more specific framework
-    rules precede the coarse React/TypeScript rule.
+    1. :data:`_DETECTION_RULES` -- file-extension/manifest-name rules for
+       stacks with an unambiguous pattern (Angular, Svelte, Vue). Evaluated
+       in order; the first match wins, so more specific framework rules
+       precede the coarse React/TypeScript rule below.
+    2. Content-based detection via :func:`~.manifest_detection.collect_direct_package_names`
+       and :func:`~.manifest_detection.detect_project_type_from_packages`,
+       using ``pr_info.manifest_contents`` (``package.json``/lock-file text).
+       This resolves what tier 1 cannot: metaframeworks (Next.js, Nuxt) that
+       share their base framework's extensions entirely, and any stack whose
+       PR touches neither a distinguishing file nor a manifest *filename*
+       (only its *content* reveals the framework).
+    3. The coarse fallback: a PR touching ``package.json`` or generic
+       TS/JS/JSX changes, with no signal from tiers 1-2, is assumed to be
+       React/TypeScript.
+
+    Two signals feed tier 1: the PR-changed files and ``dependency_files``. A
+    rule's ``manifests`` are matched against both (repository-level), while
+    its ``source_suffixes`` are matched against PR-changed files only.
 
     Note:
         Angular takes priority over Svelte, which takes priority over Vue,
-        and all three take priority over the coarse React/TypeScript
-        heuristic, in mixed-signal repositories. Because ``dependency_files``
-        is repository-level, a PR that changes only non-stack files in a
-        JS/TS repo can still be detected as React/TypeScript via
-        ``package.json``.
+        and all three take priority over content-based detection and the
+        coarse React/TypeScript heuristic, in mixed-signal repositories.
+        Because ``dependency_files`` is repository-level, a PR that changes
+        only non-stack files in a JS/TS repo can still be detected as
+        React/TypeScript via ``package.json``. Detecting more than one
+        project type for a single PR (for example a monorepo with distinct
+        workspace packages on different stacks) is not supported: exactly
+        one type is returned whenever any tier matches.
 
     Args:
         pr_info: Structured PR information from the PR Info Collector.
 
     Returns:
-        The set of detected project types (empty when none match).
+        The set of detected project types (empty when none match; otherwise
+        exactly one).
     """
     paths = [change.filePath for change in pr_info.pr_info.file_changes]
     all_files = set(pr_info.dependency_files) | set(paths)
@@ -186,4 +242,14 @@ def detect_project_types(pr_info: PRInfoResult) -> set[ProjectType]:
         has_source = any(path.endswith(rule.source_suffixes) for path in paths)
         if has_manifest or has_source:
             return {rule.project_type}
+
+    package_names = collect_direct_package_names(pr_info.manifest_contents)
+    content_type = detect_project_type_from_packages(package_names)
+    if content_type is not None:
+        return {content_type}
+
+    if _matches_manifest_name(all_files, _COARSE_REACT_MANIFEST) or any(
+        path.endswith(_COARSE_REACT_SOURCE_SUFFIXES) for path in paths
+    ):
+        return {ProjectType.REACT_TS}
     return set()
