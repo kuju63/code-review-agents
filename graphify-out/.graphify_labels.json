@@ -374,5 +374,11 @@
   "372": "worktree-error-surfacing.test.mjs",
   "373": "_clear_handlers",
   "374": "TestErrorPropagation",
-  "376": "._build_model"
+  "375": "revalidate_existing_targets",
+  "376": "._build_model",
+  "377": "A2A API 実装プラン",
+  "378": "TestLoadTargets",
+  "379": "collect_review_texts",
+  "380": "TestMaybeGenerateReport",
+  "381": "TestVueReview"
 }

@@ -200,8 +200,8 @@
     "semantic_hash": ""
   },
   "src/code_review_agent/agents/base_reviewer.py": {
-    "mtime": 1786242307.5255713,
-    "ast_hash": "29c9eb8ec90388b7d5fe8c7ae1cfb224",
+    "mtime": 1786246352.7496486,
+    "ast_hash": "cd7922f4f43d838579d0ded395ebb7c9",
     "semantic_hash": ""
   },
   "src/code_review_agent/agents/exceptions.py": {
@@ -400,8 +400,8 @@
     "semantic_hash": "d41d8cd98f00b204e9800998ecf8427e"
   },
   "tests/agents/test_base_reviewer.py": {
-    "mtime": 1786242307.5460675,
-    "ast_hash": "47674460bc79a6fd477f99bae25ec821",
+    "mtime": 1786246352.7496486,
+    "ast_hash": "fff9e9be77c2f2758524109995f38574",
     "semantic_hash": ""
   },
   "tests/agents/test_exceptions.py": {
@@ -2067,6 +2067,21 @@
   "docs/model-provider-factory-spec.md": {
     "mtime": 1786242307.4926786,
     "ast_hash": "c17a7bdda941e328bf84dfc87242a882",
+    "semantic_hash": ""
+  },
+  "src/code_review_agent/tools/tool_result_sanitizer.py": {
+    "mtime": 1786246352.7496486,
+    "ast_hash": "87b013423bd07a9296151d205a9d03b2",
+    "semantic_hash": ""
+  },
+  "tests/tools/test_tool_result_sanitizer.py": {
+    "mtime": 1786246352.7496486,
+    "ast_hash": "5db32771a39eeb506c7d188b6888f916",
+    "semantic_hash": ""
+  },
+  "docs/ollama-tool-result-content-sanitizer-spec.md": {
+    "mtime": 1786246352.7496486,
+    "ast_hash": "2407b7f65d1b912fdac1fd77f05651a5",
     "semantic_hash": ""
   }
 }
