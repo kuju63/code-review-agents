@@ -374,6 +374,5 @@
   "372": "worktree-error-surfacing.test.mjs",
   "373": "_clear_handlers",
   "374": "TestErrorPropagation",
-  "375": "TestSvelteReview",
   "376": "._build_model"
 }

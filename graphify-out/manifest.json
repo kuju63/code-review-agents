@@ -135,8 +135,8 @@
     "semantic_hash": ""
   },
   "evaluation/tools/target_criteria.py": {
-    "mtime": 1786243290.1647105,
-    "ast_hash": "0b0ed8f1ca35ef2918bbf015d3b000e1",
+    "mtime": 1786244791.9594433,
+    "ast_hash": "67c3962dad4207f7840d773ccb6d577b",
     "semantic_hash": ""
   },
   "evaluation/tools/verify_a2a_api.py": {
@@ -215,8 +215,8 @@
     "semantic_hash": ""
   },
   "src/code_review_agent/agents/pr_info_collector.py": {
-    "mtime": 1786243189.2898722,
-    "ast_hash": "1a114ab04c6a5fdbaf9daf791451e45e",
+    "mtime": 1786244930.997848,
+    "ast_hash": "f63aefe97a62c2df6b2e07f18743fd84",
     "semantic_hash": ""
   },
   "src/code_review_agent/agents/registry.py": {
@@ -415,8 +415,8 @@
     "semantic_hash": ""
   },
   "tests/agents/test_pr_info_collector.py": {
-    "mtime": 1786243045.7635171,
-    "ast_hash": "c3ed275c2e14e94b336201ccb9a0f08c",
+    "mtime": 1786244930.997848,
+    "ast_hash": "3f6249e1e8820f3ae9691884b595914e",
     "semantic_hash": ""
   },
   "tests/agents/test_registry.py": {
@@ -530,8 +530,8 @@
     "semantic_hash": ""
   },
   "tests/evaluation/tools/test_target_criteria.py": {
-    "mtime": 1786243272.2689154,
-    "ast_hash": "aad9a544dd56d863f6e8907e86b2f309",
+    "mtime": 1786244778.1196017,
+    "ast_hash": "719a4cc67f78cbb8b042851290f68901",
     "semantic_hash": ""
   },
   "tests/infrastructure/test_container_build.py": {
@@ -865,8 +865,8 @@
     "semantic_hash": ""
   },
   "docs/review-agents-design.md": {
-    "mtime": 1786242391.5230546,
-    "ast_hash": "cb4a9b53ffedb31e7a1029d58b3c62f4",
+    "mtime": 1786245072.3842177,
+    "ast_hash": "d8e3da8a00cc87a46756d710c41b53c5",
     "semantic_hash": ""
   },
   "docs/review-knowledge-provisioning-options.md": {
@@ -885,8 +885,8 @@
     "semantic_hash": ""
   },
   "evaluation/EVALUATION_PLAN.md": {
-    "mtime": 1786243551.1177106,
-    "ast_hash": "80cb95b2be41285cc22b05effe010fa6",
+    "mtime": 1786245062.796324,
+    "ast_hash": "912ade8a46f3c36c26ac8196999e3416",
     "semantic_hash": ""
   },
   "evaluation/PR_COLLECTOR_ACCURACY_GEMMA4_E4B_AFTER_FIX.md": {
