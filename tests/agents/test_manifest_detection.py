@@ -32,6 +32,9 @@ class TestExtractDirectDependenciesFromPackageJson:
         content = json.dumps({"dependencies": {"vue": "^3"}})
         assert extract_direct_dependencies_from_package_json(content) == {"vue"}
 
+    def test_non_object_json_returns_empty_set(self):
+        assert extract_direct_dependencies_from_package_json("[1, 2, 3]") == set()
+
 
 class TestExtractDirectDependenciesFromPackageLock:
     def test_root_entry_dependencies_and_dev_dependencies(self):
@@ -73,6 +76,9 @@ class TestExtractDirectDependenciesFromPackageLock:
     def test_invalid_json_returns_empty_set(self):
         assert extract_direct_dependencies_from_package_lock("not json") == set()
 
+    def test_non_object_json_returns_empty_set(self):
+        assert extract_direct_dependencies_from_package_lock("[1, 2, 3]") == set()
+
 
 class TestExtractDirectDependenciesFromPnpmLock:
     def test_importers_root_dependencies_and_dev_dependencies(self):
@@ -107,6 +113,10 @@ dependencies:
 
     def test_empty_content_returns_empty_set(self):
         assert extract_direct_dependencies_from_pnpm_lock("") == set()
+
+    def test_importers_root_entry_not_a_mapping_returns_empty_set(self):
+        content = "importers:\n  .: not-a-mapping\n"
+        assert extract_direct_dependencies_from_pnpm_lock(content) == set()
 
 
 class TestDetectProjectTypeFromPackages:
@@ -169,6 +179,10 @@ class TestCollectDirectPackageNames:
         lock_content = json.dumps({"packages": {"": {"dependencies": {"nuxt": "^4"}}}})
         manifests = {"package-lock.json": lock_content}
         assert collect_direct_package_names(manifests) == {"nuxt"}
+
+    def test_falls_back_to_pnpm_lock_when_no_package_json_present(self):
+        manifests = {"pnpm-lock.yaml": "dependencies:\n  vue:\n    version: 3\n"}
+        assert collect_direct_package_names(manifests) == {"vue"}
 
     def test_does_not_fall_back_when_package_json_yields_names(self):
         manifests = {
