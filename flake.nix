@@ -20,6 +20,7 @@
             pnpm
             biome
             git
+            gh
             # Python side kept in the devShell until Issue #255 removes it
             # (Python and TypeScript coexist for the duration of the Epic).
             python314
@@ -32,6 +33,14 @@
             echo "pnpm: $(pnpm -v)"
             echo "python: $(python3 --version)"
             echo "uv: $(uv --version)"
+            echo "gh: $(gh --version | head -1)"
+
+            # Keep everyone on the same Stacked PR tooling: gh extensions
+            # aren't Nix packages, so install/update it here. Idempotent
+            # and network-optional after the first successful install.
+            gh extension install github/gh-stack >/dev/null 2>&1 \
+              && echo "gh-stack: $(gh stack --version)" \
+              || echo "warning: could not install/verify gh-stack extension (offline?)"
           '';
         };
       }

@@ -122,7 +122,15 @@ Nix flakeは**gitの管理下にないファイルを評価対象外として無
 - #252スコープへの影響
 -->
 
-## 6. #251以降への申し送り
+## 6. Stacked PR運用（`gh` + `gh-stack`）
+
+Epic全体(#249〜#255)を直列のStacked PRとして進めるにあたり、`gh`(GitHub CLI)と拡張機能[`gh-stack`](https://github.com/github/gh-stack)をNix devShell経由で提供する。手動での`git switch -c` + `gh pr create --base <直前のブランチ>` + マージ後の`gh pr edit --base main`付け替えは、ブランチ数が増えるほど付け替え忘れのリスクが高くなるため、`gh-stack`のスタック管理コマンド（`push` / `submit` / `sync` / `rebase` / `up` / `down` / `top` / `bottom`等）に置き換える。
+
+- `flake.nix`の`devShells.default.packages`に`gh`を追加済み（`nix develop`で`gh`が使用可能）。
+- `gh-stack`拡張はNixパッケージではなく`gh`のプラグイン機構で管理されるため`packages`には含められないが、**全員が同一の環境になるよう`shellHook`で`gh extension install github/gh-stack`を自動実行する**（冪等: 既にインストール済みなら即座に成功する）。手動でのインストール手順を案内する必要はなく、`nix develop`するだけで`gh stack`コマンドが使えるようになる。
+- 各Sub-Issueのブランチ作成・PR作成・親ブランチへのリベース/追従は`gh stack`コマンド経由で行う。詳細な運用（コミット粒度・PRタイトル規約等）は#251着手時に確定させる。
+
+## 7. #251以降への申し送り
 
 - 次のSub-Issueは[#251](https://github.com/kuju63/code-review-agents/issues/251)（models/ → TS型 + Zod）。ブランチは本Sub-Issueのブランチ(`feat/ts-migration/250-toolchain`)から分岐する。
 - モデル配置先: `packages/agent-core/src/models/`（本ドキュメント§2.1の決定に従う）。
