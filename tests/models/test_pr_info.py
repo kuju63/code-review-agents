@@ -101,6 +101,31 @@ class TestPRInfoResult:
         )
         assert result.dependency_files == []
 
+    def test_manifest_contents_default_empty(self):
+        repo = RepositoryInfo(owner="o", repository="r")
+        pr = PRInfo(title="T", pr_number=1)
+        result = PRInfoResult(
+            repository_info=repo,
+            project_summary="Summary.",
+            pr_info=pr,
+        )
+        assert result.manifest_contents == {}
+
+    def test_manifest_contents_round_trip(self):
+        repo = RepositoryInfo(owner="o", repository="r")
+        pr = PRInfo(title="T", pr_number=1)
+        result = PRInfoResult(
+            repository_info=repo,
+            project_summary="Summary.",
+            pr_info=pr,
+            manifest_contents={"package.json": '{"dependencies": {"vue": "^3"}}'},
+        )
+        assert result.manifest_contents == {
+            "package.json": '{"dependencies": {"vue": "^3"}}'
+        }
+        restored = PRInfoResult.model_validate(result.model_dump())
+        assert restored == result
+
     def test_json_round_trip(self):
         result = self._make_result()
         data = result.model_dump()
