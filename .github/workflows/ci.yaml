@@ -2,8 +2,7 @@ name: CI
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  pull_request: {}
 
 jobs:
   ci-check:
@@ -48,3 +47,33 @@ jobs:
         with:
           use_oidc: true
           report_type: coverage
+
+  ts-ci-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '26'
+      - name: Install pnpm
+        run: npm install --global pnpm@11.20.0
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run linter
+        run: pnpm run lint
+      - name: Run type checker
+        run: pnpm run typecheck
+      - name: Run tests
+        run: pnpm run test
+      - name: Build node-runtime image (validation only, not pushed)
+        run: docker build --target node-runtime -t code-review-agent:node-runtime-ci .
