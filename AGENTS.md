@@ -41,6 +41,24 @@ uv run code-review-agent
 
 Current CLI entrypoint is a placeholder that prints `Hello from code-review-agent!`.
 
+### TypeScript Toolchain (Issue #250)
+
+The TypeScript toolchain (pnpm, biome, vitest, node-builder/node-runtime container
+stages, plus `uv`/`python3.14`/`gh`/`gh-stack` for the duration of the Python↔TS
+migration Epic, see [#249](https://github.com/kuju63/code-review-agents/issues/249))
+is provided by the Nix flake at the repository root. **Always prefix shell commands
+that need this toolchain with `nix develop --command`** (or run them from inside an
+active `nix develop` shell) rather than assuming pnpm/biome/gh/etc. are on the host
+PATH — see [docs/typescript-toolchain-spec.md](docs/typescript-toolchain-spec.md) for
+the full toolchain spec.
+
+```bash
+nix develop --command pnpm install --frozen-lockfile
+nix develop --command pnpm run lint
+nix develop --command pnpm run typecheck
+nix develop --command pnpm run test
+```
+
 ### Evaluation Pipeline
 
 ```bash
