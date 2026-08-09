@@ -38,3 +38,19 @@ repos:
         entry: shellcheck
         args:
           - -x
+
+      # TypeScript side of the toolchain (Issue #250). husky/lint-staged
+      # is decided as the TS linter/formatter runner (see
+      # docs/typescript-toolchain-spec.md), but the git hook entry point
+      # itself stays owned by this pre-commit framework: core.hooksPath
+      # is shared across all git worktrees of this repo, so switching it
+      # to husky mid-Epic would silently disable pre-commit enforcement
+      # (secret detection, ruff, etc.) in every concurrently checked-out
+      # worktree that hasn't adopted the TS toolchain yet. Revisit this
+      # once #255 removes the Python side entirely.
+      - id: lint-staged
+        name: lint-staged (biome)
+        language: unsupported
+        entry: nix develop --command pnpm exec lint-staged
+        pass_filenames: false
+        files: \.(ts|tsx|js|jsx|mjs|cjs|json)$

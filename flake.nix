@@ -19,6 +19,7 @@
             nodejs_26
             pnpm
             biome
+            git
           ];
 
           shellHook = ''

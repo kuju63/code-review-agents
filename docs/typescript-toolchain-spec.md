@@ -60,6 +60,17 @@ pytestの`--cov-fail-under=75`(CI引数側で指定)と役割を揃える必要�
 
 **採用**: CIは`actions/setup-node@v...`(Node 26) + `npm install -g pnpm@<pin>`で実行する。Nix flakeはローカル開発環境専用。
 
+### 2.5 git hook（pre-commit）の実行主体: husky vs 既存pre-commitフレームワーク
+
+決定済み事項(§1)の「pre-commit → husky + lint-staged」は文字通りには「git hookの所有権をhuskyに移す」ことを意味するが、実装中に重大な副作用が判明したため、**git hookの所有権そのものは#255までPython側`pre-commit`フレームワークに残す**方針に修正する。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① huskyの`prepare`スクリプトで`core.hooksPath`をhusky管理下に切り替え | `pnpm install`実行時に`git config core.hooksPath .husky/_`が走り、huskyが`.git`の実質的なhookエントリポイントになる | 却下（実装中に発覚した事故から） | `core.hooksPath`は`.git/config`への書き込みであり**リポジトリの全worktreeで共有**される。実際に試したところ、TS移行と無関係な他のworktree(main含む)のpre-commit(シークレット検知・ruff等)まで無条件に無効化された。`pnpm install`を叩くたびに再発するため、Epic期間中(#251〜#254の各worktreeが本ブランチから分岐するたびに`pnpm install`が走る)繰り返しリスクになる。 |
+| ② 既存`pre-commit`フレームワークがgit hookの所有権を維持し、`.pre-commit-config.yaml`に`local`フック(`lint-staged (biome)`)を1件追加してTS側を委譲する | `entry: nix develop --command pnpm exec lint-staged`を、既存の`shellcheck`ローカルフックと同じ`language: unsupported`パターンで追加。`files: \.(ts|tsx|js|jsx|mjs|cjs|json)$`で対象ファイルが無ければ自動skip | **採用** | worktree間の副作用が一切発生しない。lint-staged(ステージ済みファイルへのbiome適用)という決定事項自体は変更せず、「誰がgit hookのエントリポイントを持つか」だけを変更している。huskyは`.husky/pre-commit`スクリプトとしてリポジトリに存在させておくが、`package.json`に`"prepare": "husky"`は**置かない**(=`pnpm install`では有効化されない)。 |
+
+**採用**: `.pre-commit-config.yaml`の`local`フックとして`lint-staged`を追加(既存`shellcheck`フックと同じ`language: unsupported`パターン)。`core.hooksPath`の切り替え(=huskyへの実質移行)は、Python側`.pre-commit-config.yaml`自体が消える#255のタイミングで改めて実施する。
+
 ## 3. Nix flakeに関する運用上の注意（重要）
 
 Nix flakeは**gitの管理下にないファイルを評価対象外として無視する**。`flake.nix`を新規作成した直後に`nix flake check`や`nix develop`を実行しても、`git add`されていなければ評価に反映されない（最悪、ファイルごと存在しないものとして扱われる）。
