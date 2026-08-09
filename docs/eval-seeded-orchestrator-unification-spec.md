@@ -66,31 +66,36 @@
   4. `stack`が未知の値または欠落していても例外を投げず正常評価されること(削除される
      fail-closedテストの裏返しとしての回帰ガード)。
 
-## 4. 既知の逸脱（Issue #238で解消予定）
+## 4. ルーティング不一致の解消（Issue #238、旧・既知の逸脱）
 
 `/orchestrator`が使う自動stack検出(`detect_project_types`、
-`src/code_review_agent/agents/registry.py`)は、Angular→Svelte→Vue→React_TSの順に
-manifestファイル名または拡張子で判定する。Seeded set 59件の実`file_changes`に
-このロジックを適用すると、55件は`stack`ラベルと一致するが、4件で誤判定が発生する:
+`src/code_review_agent/agents/registry.py`)は、Angular→Svelte→Vueの拡張子/manifest
+ファイル名ルールに加え、Issue #230でcontent-basedの層（`package.json`等の直接依存
+パッケージ名からの判定）を持つ。当初55/59件は`stack`ラベルと一致していたが、
+以下の4件は変更ファイルが`.svelte`/`.vue`を含まずmanifestファイル名シグナルも
+立たないため`REACT_TS`に誤判定されていた:
 
-| 項目 | 誤判定結果 | 原因 |
-|---|---|---|
-| `svelte-seeded#8` | `REACT_TS` | 変更ファイルが`.svelte`を含まず、リポジトリに`svelte.config.js/.ts`も不在 |
-| `svelte-seeded#9` | `REACT_TS` | 同上 |
-| `vue-seeded#16` | `REACT_TS` | 変更ファイルが`.vue`を含まず、`vue.config.js/.ts`が`pr_info_collector.py`の`_DEPENDENCY_FILENAMES`に未登録のためmanifest検出が構造的に不能 |
-| `vue-seeded#20` | `REACT_TS` | 同上 |
+| 項目 | 旧誤判定結果 | 原因 | Issue #230適用後 |
+|---|---|---|---|
+| `svelte-seeded#8` | `REACT_TS` | 変更ファイルが`.svelte`を含まず、リポジトリに`svelte.config.js/.ts`も不在 | `SVELTE`（実`package.json`が`@sveltejs/kit`を直接依存に持つ） |
+| `svelte-seeded#9` | `REACT_TS` | 同上 | `SVELTE` |
+| `vue-seeded#16` | `REACT_TS` | 変更ファイルが`.vue`を含まず、`vue.config.js/.ts`が`pr_info_collector.py`の`_DEPENDENCY_FILENAMES`に未登録のためmanifest検出が構造的に不能 | `NUXT`→`vue-technical`にフォールバック（実`package.json`は`nuxt`+`vue`を直接依存に持つ実質Nuxtアプリ） |
+| `vue-seeded#20` | `REACT_TS` | 同上 | `NUXT`→`vue-technical` |
 
-`SecurityReviewer`は4スタック全てを`project_types`に持つため、この誤判定の影響を
-受けない。`SvelteReviewer.review()`(`src/code_review_agent/agents/reviewers/svelte.py`
-75行目)は`project_type`引数を無視して独自に`detect_project_types`を再実行する
-自己ガードを持つため、svelte#8/#9では技術レビューが完全にスキップされる(空findings)。
+`vue-seeded`は検出結果自体は`ProjectType.NUXT`になる（実体がNuxtアプリのため）が、
+`get_reviewer_classes`のメタフレームワークフォールバック（`NUXT`→`VUE`）により
+`VueReviewer`がそのまま選択されるため、レビュアールーティングの結果は`stack`ラベル
+（`vue`）と一致する。`SecurityReviewer`は4スタック全てを`project_types`に持つため、
+元々この誤判定の影響を受けていない。`SvelteReviewer.review()`
+(`src/code_review_agent/agents/reviewers/svelte.py` 75行目)の自己ガードも、
+content-based検出により`ProjectType.SVELTE`を返すようになったため機能する。
 
-重要なのは、この「4件」が問題の全体像ではない点である。`evaluate_item()`は
-`item["stack"]`を一切参照しないため、EVALUATION_PLAN.md §4後半のfail-closed要件
-(unsupported/missing stackを明示的に失敗させる)は、59件のいずれに対しても実行
-されていない。55件が`stack`ラベルと一致しているのは`detect_project_types`の
-副産物に過ぎず、恒久的な保証ではない。詳細と現在の扱い(§4文言は変更せず、
-Issue #238解消まで期限付きの既知逸脱として記録する判断)は
+`evaluate_item()`が`item["stack"]`を一切参照しない設計（Issue #237）自体は変更して
+いないため、EVALUATION_PLAN.md §4後半のfail-closed要件(unsupported/missing stackを
+明示的に失敗させる)は引き続きテストコードでは検証されない。恒久的なルーティング
+正しさの検証は `tests/agents/test_registry.py` の
+`TestDetectProjectTypesFromManifestContent`/`TestMetaframeworkReviewerFallback`
+（実リポジトリの`package.json`を使った回帰フィクスチャを含む）で行う。詳細は
 [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md) §5を参照。
 
 ## 5. タイムアウト予算への影響
