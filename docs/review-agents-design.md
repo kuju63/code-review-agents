@@ -114,9 +114,12 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
   デコレータ登録だけで完結する。
 - `detect_project_types(pr_info)` が変更ファイルの拡張子・manifest、および `PRInfoResult.manifest_contents`
   （`package.json`/`package-lock.json`/`pnpm-lock.yaml` の中身、詳細は2節参照）から種別を推定する。
-  `dependency_files` は「リポジトリ直下に存在する」manifest（PRでの変更有無を問わない）、
-  `manifest_contents` はそのうち中身を取得できたものの実データである。両者を組み合わせても
-  決め手がない場合、`src/*.tsx` だけ変更する典型 PR を取りこぼさないよう、TS/JS/JSX の変更が
+  `dependency_files` は「リポジトリ直下に存在する」manifest（PRでの変更有無を問わない）の
+  パス一覧である。`manifest_contents` はそのうち中身を取得できたものの実データに加え、ルート
+  `package.json` の `workspaces` フィールドから解決されたworkspace配下各パッケージの
+  `package.json` の中身も含む（`dependency_files` 自体はリポジトリ直下のみでworkspace配下は
+  含まない）。両者を組み合わせても決め手がない場合、`src/*.tsx` だけ変更する典型 PR を
+  取りこぼさないよう、TS/JS/JSX の変更が
   あれば（package.json 変更がなくても）react_ts と判定する最終フォールバックへ落ちる。
   package.json 単独の変更（依存更新）も単体で該当する。明示指定がない場合のデフォルト選択に使い、
   将来種別の判定分岐はここに足す。

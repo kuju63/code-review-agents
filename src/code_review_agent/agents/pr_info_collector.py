@@ -25,6 +25,7 @@ from strands.models import Model
 from ..models.pr_info import FileChange, PRInfo, PRInfoResult, RepositoryInfo
 from ..tools.github_mcp import GITHUB_MCP_URL, create_github_mcp_client
 from .exceptions import INFRA_EXCEPTIONS
+from .manifest_detection import extract_direct_dependencies_from_package_json
 from .model_provider_factory import ProviderType, create_model_provider
 
 logger = logging.getLogger(__name__)
@@ -618,14 +619,15 @@ class PRInfoCollector:
         ``package.json`` resolved from the root manifest's ``workspaces``
         field (see :meth:`_resolve_workspace_package_json_paths``). Lock
         files (``package-lock.json``, ``pnpm-lock.yaml``) are fetched only
-        when the root ``package.json`` could not be read (absent from
-        ``dependency_files``, or its fetch failed): once package.json content
-        is available,
-        :func:`~code_review_agent.agents.manifest_detection.collect_direct_package_names`
-        never falls back to lock-file content, so fetching it too would be a
-        wasted GitHub MCP call. ``yarn.lock`` is intentionally never fetched:
-        its v1 format mixes direct and transitive dependencies with no way to
-        tell them apart, so its content cannot safely drive detection.
+        as a fallback, when no fetched ``package.json`` (root or workspace)
+        yielded any direct dependency name -- matching
+        :func:`~code_review_agent.agents.manifest_detection.collect_direct_package_names`'s
+        own fallback condition exactly, rather than the coarser "package.json
+        was readable at all" (a successfully-fetched but dependency-free
+        root manifest, common in workspace roots, must still fall back).
+        ``yarn.lock`` is intentionally never fetched: its v1 format mixes
+        direct and transitive dependencies with no way to tell them apart,
+        so its content cannot safely drive detection.
 
         A manifest that fails to fetch (missing, transient error) is simply
         omitted rather than failing the whole collection -- content-based
@@ -638,30 +640,37 @@ class PRInfoCollector:
         """
         contents: dict[str, str] = {}
         dependency_file_set = set(dependency_files)
+        package_json_names: set[str] = set()
 
-        root_package_json_text: str | None = None
         if _ROOT_PACKAGE_JSON in dependency_file_set:
             root_package_json_text = self._read_file_text(
                 mcp_client, owner, repo, ref, _ROOT_PACKAGE_JSON
             )
             if root_package_json_text is not None:
                 contents[_ROOT_PACKAGE_JSON] = root_package_json_text
+                package_json_names.update(
+                    extract_direct_dependencies_from_package_json(
+                        root_package_json_text
+                    )
+                )
+                for workspace_path in self._resolve_workspace_package_json_paths(
+                    mcp_client, owner, repo, ref, root_package_json_text
+                ):
+                    text = self._read_file_text(
+                        mcp_client, owner, repo, ref, workspace_path
+                    )
+                    if text is not None:
+                        contents[workspace_path] = text
+                        package_json_names.update(
+                            extract_direct_dependencies_from_package_json(text)
+                        )
 
-        if root_package_json_text is None:
+        if not package_json_names:
             for lock_name in _LOCKFILE_CONTENT_NAMES:
                 if lock_name in dependency_file_set:
                     text = self._read_file_text(mcp_client, owner, repo, ref, lock_name)
                     if text is not None:
                         contents[lock_name] = text
-        else:
-            for workspace_path in self._resolve_workspace_package_json_paths(
-                mcp_client, owner, repo, ref, root_package_json_text
-            ):
-                text = self._read_file_text(
-                    mcp_client, owner, repo, ref, workspace_path
-                )
-                if text is not None:
-                    contents[workspace_path] = text
 
         return contents
 

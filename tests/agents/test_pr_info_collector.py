@@ -794,9 +794,12 @@ class TestPRInfoCollectorCollect:
             "pnpm-lock.yaml": "dependencies:\n  vue:\n    version: 3\n"
         }
 
-    def test_manifest_contents_omits_lock_files_when_package_json_available(self):
-        """When package.json fetches successfully, lock files listed in
-        dependency_files are not fetched at all (not just unused)."""
+    def test_manifest_contents_omits_lock_files_when_package_json_has_dependencies(
+        self,
+    ):
+        """When package.json fetches successfully AND yields at least one
+        direct dependency, lock files listed in dependency_files are not
+        fetched at all (not just unused)."""
         mcp = _make_mcp(
             manifest_texts={
                 "package.json": '{"dependencies": {"vue": "^3"}}',
@@ -814,6 +817,58 @@ class TestPRInfoCollectorCollect:
             and c.args[2].get("path") == "pnpm-lock.yaml"
         ]
         assert lock_calls == []
+
+    def test_manifest_contents_fetches_lock_file_when_package_json_has_no_deps(self):
+        """A successfully-fetched package.json with no dependencies field
+        (e.g. a bare workspace-root manifest) must not suppress the lock-file
+        fallback -- collect_direct_package_names only skips lock files when
+        package.json actually yielded a dependency name, not merely when it
+        was readable."""
+        mcp = _make_mcp(
+            manifest_texts={
+                "package.json": '{"name": "root", "private": true}',
+                "pnpm-lock.yaml": "dependencies:\n  vue:\n    version: 3\n",
+            }
+        )
+        result = self._run(mcp)
+        assert result.manifest_contents == {
+            "package.json": '{"name": "root", "private": true}',
+            "pnpm-lock.yaml": "dependencies:\n  vue:\n    version: 3\n",
+        }
+
+    def test_manifest_contents_fetches_lock_file_when_package_json_unparseable(self):
+        """Malformed package.json content also counts as "yielded no
+        dependency names", so the lock-file fallback still engages."""
+        # _ROOT_LISTING (the default dependency_files fixture) lists
+        # pnpm-lock.yaml, not package-lock.json, as the repo's lock file.
+        mcp = _make_mcp(
+            manifest_texts={
+                "package.json": "not valid json",
+                "pnpm-lock.yaml": "dependencies:\n  react:\n    version: 19\n",
+            }
+        )
+        result = self._run(mcp)
+        assert "pnpm-lock.yaml" in result.manifest_contents
+
+    def test_manifest_contents_skips_lock_fallback_when_workspace_pkg_has_deps(self):
+        """A dependency-free root package.json whose *workspace* package.json
+        has dependencies must still suppress the lock-file fallback -- the
+        aggregate across root + workspace manifests is what matters."""
+        mcp = _make_mcp(
+            manifest_texts={
+                "package.json": json.dumps(
+                    {"private": True, "workspaces": ["packages/*"]}
+                ),
+                "packages/web/package.json": '{"dependencies": {"react": "^19"}}',
+                "pnpm-lock.yaml": "dependencies:\n  vue:\n    version: 3\n",
+            },
+            dir_listings={
+                "packages": [{"type": "dir", "name": "web", "path": "packages/web"}]
+            },
+        )
+        result = self._run(mcp)
+        assert "pnpm-lock.yaml" not in result.manifest_contents
+        assert "packages/web/package.json" in result.manifest_contents
 
     def test_manifest_contents_empty_when_manifest_fetch_fails(self):
         """A 404-like failure for package.json is tolerated, not raised."""
@@ -918,7 +973,10 @@ class TestPRInfoCollectorCollect:
             for c in mcp.call_tool_sync.call_args_list
             if c.args[1] == "get_file_contents"
         }
-        assert not any(".." in p or p.startswith("/etc") for p in requested_paths)
+        assert not any(".." in p for p in requested_paths)
+        # "/" is the legitimate repo-root directory listing (dependency
+        # files); every other requested path must be relative, not absolute.
+        assert all(p == "/" or not p.startswith("/") for p in requested_paths)
 
     def test_manifest_contents_caps_workspace_globs_processed(self):
         """Only the first _MAX_WORKSPACE_GLOBS (10) glob patterns are
