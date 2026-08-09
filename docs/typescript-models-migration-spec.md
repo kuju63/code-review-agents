@@ -33,12 +33,13 @@ Python側の `src/code_review_agent/models/` は削除しない。撤去は #255
 
 | 選択肢 | 概要 | 採用/却下 | 理由 |
 |---|---|---|---|
-| ① `z.enum([...] as const)` | 文字列リテラル配列を単一のソースとし、スキーマとTS型の両方をそこから導出 | **採用** | Zodの標準的な列挙表現で、`.toJSONSchema()`相当のJSON Schema出力が構造化出力(LLM)にそのまま使える。配列そのものを`FindingSeverity`等のソート順(Python版`list(FindingSeverity).index(...)`相当)の導出元にも使え、宣言順とソート順が二重管理にならない |
-| ② TS `enum` + `z.nativeEnum` | Pythonの`StrEnum`にAPIとして最も近い | 却下 | TS `enum`はJSON Schema生成・tree-shakingとの相性が悪く、Zodエコシステムでは非推奨気味。`z.nativeEnum`もv4では`z.enum`に統合される方向で、あえて別経路を採る理由がない |
+| ① `z.enum({ KEY: "value", ... })`（オブジェクト形式） | key→valueのマップを単一のソースとし、スキーマ・TS型・名前付きメンバーアクセス(`.enum.KEY`)・宣言順配列(`.options`)の全てをそこから導出 | **採用** | Zodの標準的な列挙表現で、JSON Schema出力が構造化出力(LLM)にそのまま使える。実機で`.enum`(名前→値)と`.options`(宣言順の値配列)の両方が取得できることを確認済み。`ProjectType.enum.REACT_TS`のようにPython`StrEnum`のメンバーアクセス(`ProjectType.REACT_TS`)に近い書き味を保ちつつ、`FindingSeverity`等のソート順(Python版`list(FindingSeverity).index(...)`相当)は`.options.indexOf(value)`でこの1箇所から導出できる |
+| ② `z.enum([...] as const)`（配列形式） | 文字列リテラル配列のみを渡す | 却下 | 値の配列は得られるが名前付きメンバー(`.REACT_TS`等)を持たず、呼び出し側は生文字列リテラルを直接書くことになる。Python版の`Enum.MEMBER`という書き味との差が大きい |
+| ③ TS `enum` + `z.nativeEnum` | Pythonの`StrEnum`にAPIとして最も近い | 却下 | TS `enum`はJSON Schema生成・tree-shakingとの相性が悪く、Zodエコシステムでは非推奨気味。`z.nativeEnum`もv4では`z.enum`に統合される方向で、あえて別経路を採る理由がない |
 
 **採用**: 全ての列挙型(`ProjectType`, `ReviewPerspective`, `ReviewPriority`, `DecisionVerdict`,
-`FindingSeverity`, `FindingImpact`, `FindingPriority`)を`z.enum([...] as const)`で定義する。
-`FindingSeverity`/`FindingPriority`のソート順は、この配列を`indexOf`で参照する形にし、
+`FindingSeverity`, `FindingImpact`, `FindingPriority`)をオブジェクト形式の`z.enum({...})`で定義する。
+`FindingSeverity`/`FindingPriority`のソート順は、`.options`配列を`indexOf`で参照する形にし、
 手書きの並行マップを作らない。
 
 ### 2.3 フィールド命名（camelCase化）
