@@ -169,6 +169,12 @@ Lead Engineer 自体は本リリースの対象外です。
 - **モノレポでの複数種別同時検出**: `workspaces` 配下の各パッケージが異なるフレームワークを
   使う場合でも、`detect_project_types()` は単一の `ProjectType` のみを返す（優先順位表に従い
   最初に一致した種別を採用）。1つのPRから複数種別を同時に返す設計は将来課題。
+- **マニフェスト収集の範囲制限**: `PRInfoCollector._read_manifest_contents` はルート
+  `package.json` の `workspaces` フィールドのみを解決対象とし、`pnpm-workspace.yaml`
+  （pnpmの標準的なworkspace宣言方法）は読まない。そのため`pnpm-workspace.yaml`のみで
+  workspaceを宣言するpnpmモノレポでは、各パッケージの`package.json`が収集されず検出精度が
+  低下する。また`yarn.lock`は直接依存と推移的依存を構造的に区別できないため意図的に取得しない
+  （`package.json`/`package-lock.json`/`pnpm-lock.yaml`のみ取得）。いずれも将来課題。
 
 > **実装済みに変更（旧「未配線」、Issue #230）**: 「`ProjectType.NEXTJS` 等は宣言済みだが未配線」
 > および「`@angular/core` 依存判定は `package.json` の中身を見ないため `angular.json` とファイル

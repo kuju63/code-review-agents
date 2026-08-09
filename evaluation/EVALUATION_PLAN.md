@@ -329,6 +329,7 @@ Domain hard gates:
 - Angular samples carrying `angular.json` or Angular source naming conventions must route to `AngularReviewer`, not `ReactReviewer`
 - React technical reviews must expose both Vercel skill indexes; Angular technical reviews must expose the official Angular skill index
 - Seeded items must route to the technical reviewer matching their `stack` label (`react`→`ReactReviewer`, `vue`→`VueReviewer`, `angular`→`AngularReviewer`, `svelte`→`SvelteReviewer`) plus `SecurityReviewer`; an unsupported or missing `stack` must fail the item explicitly rather than default to `ReactReviewer`
+  （前半のルーティング正しさは`tests/agents/test_registry.py`で回帰検証しているが、後半のfail-closed要件は`score_evaluation.py`のRelease Gate実行では自動検証されない。目標仕様であり自動判定されるhard gateではない点に注意。詳細は§5参照）
 
 Seeded set size note: the seed-repository migration (Issue #224) fixed the
 Seeded set at 59 items (PRs) across the four seed repositories, carrying
