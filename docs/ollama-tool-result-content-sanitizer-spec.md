@@ -10,7 +10,7 @@ Seeded評価(`angular-seeded#10`, `#22`)で `TypeError: content_type=<document> 
 
 `bash .claude/skills/run-evaluation/scripts/start_a2a_container.sh` 経由のSeeded評価(2026-08-08実行, Ollamaバックエンド `hf.co/deepreinforce-ai/Ornith-1.0-35B-GGUF:Q4_K_M`)で、Angularスタックの2件(`angular-seeded#10`, `#22`)が次のエラーで失敗した。
 
-```
+```text
 Task ... failed: content_type=<document> | unsupported type
 ```
 
