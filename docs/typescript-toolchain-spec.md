@@ -114,13 +114,42 @@ Nix flakeは**gitの管理下にないファイルを評価対象外として無
 
 `@strands-agents/sdk`（npm, GA 1.0）はA2Aプロトコル(Server/Client両対応)・Agent Skills・MCP・Bedrock/Anthropic/OpenAI/Ollama等のモデルプロバイダを標準サポートしていることをWeb調査で確認済み。Ollamaは`VercelModel`アダプタ経由でコミュニティプロバイダ`ai-sdk-ollama`を利用する構成（tool calling対応を理由にStrands側が選定）。
 
-現行`model_provider_factory.py`が持つ2経路（OpenAI互換`base_url`指定 / ネイティブOllama `host`指定）がTS SDK上でどう再現されるかの実地検証（インストール・型・実呼び出しレベル）は**未実施**。本Sub-Issue内のタスクとして実施し、結果をこのセクションに追記する。結果次第で#252(agents/tools移行)のスコープ（Ollama対応の実装方式）に影響するため、確定した時点で親Epic(#249)にも申し送りコメントを残す。
+現行`model_provider_factory.py`が持つ2経路（OpenAI互換`base_url`指定 / ネイティブOllama `host`指定）がTS SDK上でどう再現されるかを`scripts/spike/model-provider-spike.ts`で実地検証した(型チェック + `node --experimental-strip-types`での実行、いずれも成功)。
 
-<!-- TODO: スパイク実施後、以下を追記する
-- (a) OpenAI互換base_url指定でのモデル生成: 成立可否・使用API
-- (b) VercelModel + ai-sdk-ollama経由でのOllamaモデル生成: 成立可否・使用API・tool calling動作
-- #252スコープへの影響
--->
+### (a) OpenAI互換 `base_url` 指定
+
+`@strands-agents/sdk/models/openai`の`OpenAIModel`が`clientConfig: { baseURL }`を受け付ける。Python版`client_args={"base_url": llm_base_url}`と対応する。
+
+```typescript
+new OpenAIModel({
+  api: "chat", // Python版はChat Completions相当。デフォルトはResponses APIなので明示指定が必要
+  modelId: "gpt-oss-120b",
+  clientConfig: { baseURL: "http://localhost:11434/v1" },
+});
+```
+
+**成立**。`api: "chat"`を明示しないとデフォルトのResponses APIになり、OpenAI互換サーバー(vLLM/Ollamaの`/v1`エンドポイント等)の多くが未対応のため、#252実装時にこの明示指定を引き継ぐ必要がある。
+
+### (b) VercelModel + ai-sdk-ollama経由でのOllama
+
+**成立するが、パッケージバージョンを固定する必要がある(重要な発見)**。
+
+- `@strands-agents/sdk@1.12.0`(2026-08-10時点の最新)は`VercelModel`の`provider`に`@ai-sdk/provider@^3.0.0`ベースの`LanguageModelV3`を要求する(`peerDependencies`で明記)。
+- `ai-sdk-ollama`の最新版(`4.1.0`)は`ai@^7.0.0`(`@ai-sdk/provider` V4世代、`LanguageModelV4`)に追従済みで、`VercelModel`に渡すと型エラーになる(`Type 'LanguageModelV4' is not assignable to type 'LanguageModelV3'`)。
+- `ai-sdk-ollama@3.8.x`系(`peerDependencies: { ai: "^6.0.197" }`, `@ai-sdk/provider@^3.0.10`)まで下げると`@strands-agents/sdk`の要求と一致し、型チェック・構築ともに成功する。
+
+```typescript
+import { VercelModel } from "@strands-agents/sdk/models/vercel";
+import { ollama } from "ai-sdk-ollama"; // ★ "ai-sdk-ollama": "3.8.x" に固定する
+
+const model = new VercelModel({ provider: ollama("gpt-oss-120b") });
+```
+
+**#252スコープへの影響**: `ai-sdk-ollama`の依存を`3.8.x`にピン留めする(Renovate等の自動更新が`4.x`へ上げないよう除外設定が必要)。`@strands-agents/sdk`側が将来`@ai-sdk/provider` V4に対応した時点でピン留めを解除できるか再確認する。この制約は#252着手時に`packages/agent-core/package.json`へ引き継ぐ。
+
+### 検証コード
+
+`scripts/spike/model-provider-spike.ts`(リポジトリにコミット済み、ビルド成果物としては#251以降に引き継がれるまでの参照用)。`pnpm run typecheck`の対象(`packages/**`)には含めていない(#250はツールチェーンのみが責務のため、このスパイク自体をCIの継続的なゲートにはしない)。
 
 ## 6. Stacked PR運用（`gh` + `gh-stack`）
 
