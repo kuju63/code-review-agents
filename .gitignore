@@ -2,6 +2,12 @@
 .claude/local/
 .claude/settings.local.json
 
+# Node.js / TypeScript (Issue #250)
+node_modules/
+.pnpm-store/
+coverage/
+*.tsbuildinfo
+
 # Visual Studio Code
 .vscode/*
 !.vscode/settings.json
