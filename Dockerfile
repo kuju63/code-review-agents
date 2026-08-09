@@ -52,10 +52,64 @@ RUN uv sync --frozen --no-dev --no-editable --no-cache && \
     chmod +x /app/bin/code-review-agent
 
 ###############################################################################
-# Stage 2: runtime
+# Stage 2: node-builder (Issue #250 — TypeScript toolchain, coexists with the
+# Python stages until Issue #255 removes them)
+# Red Hat Hardened Image の Node.js builder variant。
+# - corepack は同梱されていないため pnpm は npm 経由で直接インストールする
+# - multi-arch index ダイジェスト固定: amd64 / arm64 を同一参照で提供
+###############################################################################
+FROM registry.access.redhat.com/hi/nodejs:26-builder@sha256:ff5a04e4f7f5e788759fb91b7212a583f845d780707efb7ec32d0071d2088eda AS node-builder
+
+USER root
+
+# packageManager (package.json) と一致させる
+RUN npm install --global pnpm@11.20.0
+
+WORKDIR /app
+
+# 依存マニフェストを先にコピーしてレイヤーキャッシュを最大化
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/agent-core/package.json packages/agent-core/
+COPY packages/evaluation/package.json packages/evaluation/
+
+RUN pnpm install --frozen-lockfile
+
+COPY tsconfig.base.json tsconfig.json biome.json vitest.config.ts ./
+COPY packages/ packages/
+
+# ビルド検証: lint + 型チェックが通ることをコンテナビルド時にも保証する
+# (フルテストスイートは CI 側の別ジョブで実行し、ビルドを遅くしない)
+RUN pnpm run lint && pnpm run typecheck
+
+###############################################################################
+# Stage 3: node-runtime (Issue #250)
+# Red Hat Hardened Image — nonroot UID 65532 がビルトイン。
+# 本Sub-Issue時点ではプロダクションのエントリポイントはまだ存在しない
+# (agents/api/a2aの移行は #252/#253)。このステージは pnpm install や
+# 依存物のコピーが最終形で成立することを確認する「ビルド検証専用」ステージであり、
+# `--target node-runtime` を明示しない限りビルドされない。
+# registryへのpushはEpic完了(#255)までPython版(`runtime`)に固定する
+# (docs/typescript-toolchain-spec.md §4.1、.github/workflows/build-image.yml参照)。
+###############################################################################
+FROM registry.access.redhat.com/hi/nodejs:26@sha256:cef409ce19cab123c46867f4ad5a4e1f2eba139bcec97f03717a894b85731c0a AS node-runtime
+
+WORKDIR /app
+
+COPY --from=node-builder /app/node_modules ./node_modules
+COPY --from=node-builder /app/packages ./packages
+COPY --from=node-builder /app/package.json ./package.json
+
+USER 65532
+
+CMD ["node", "-e", "console.log('code-review-agent TypeScript toolchain image (Issue #250)')"]
+
+###############################################################################
+# Stage 4: runtime
 # Red Hat Hardened Image — UBI ベース、シェルなし
 # - nonroot UID 65532 がビルトイン
 # - multi-arch index ダイジェスト固定: amd64 / arm64 を同一参照で提供
+# - デフォルトターゲット（ファイル末尾）: `docker build .` / `podman build .`
+#   は --target 未指定時にこのステージを使う。Epic完了(#255)まで維持する。
 ###############################################################################
 FROM registry.access.redhat.com/hi/python:3.14@sha256:e9e50710328aaad73f033442d7e4062679b0433bc34732d75a723e0bb68bd0e8 AS runtime
 
