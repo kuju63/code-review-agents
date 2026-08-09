@@ -885,8 +885,8 @@
     "semantic_hash": ""
   },
   "evaluation/EVALUATION_PLAN.md": {
-    "mtime": 1786245062.796324,
-    "ast_hash": "912ade8a46f3c36c26ac8196999e3416",
+    "mtime": 1786246140.636009,
+    "ast_hash": "c049d33357a8a403efd11378f9cca6b7",
     "semantic_hash": ""
   },
   "evaluation/PR_COLLECTOR_ACCURACY_GEMMA4_E4B_AFTER_FIX.md": {
@@ -2050,8 +2050,8 @@
     "semantic_hash": ""
   },
   "docs/eval-seeded-orchestrator-unification-spec.md": {
-    "mtime": 1786243579.1693845,
-    "ast_hash": "c97a0f3af34615e7ac3999a0ad61b28b",
+    "mtime": 1786246121.7642279,
+    "ast_hash": "6f87e4a96952e9b6a4515809af972238",
     "semantic_hash": ""
   },
   "docs/eval-seeded-repo-based-generation-spec.md": {

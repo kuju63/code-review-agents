@@ -1,16 +1,16 @@
 # Graph Report - issue-230-manifest-stack-detection  (2026-08-09)
 
 ## Corpus Check
-- 405 files · ~285,110 words
+- 405 files · ~285,224 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4363 nodes · 7897 edges · 376 communities (259 shown, 117 thin omitted)
+- 4363 nodes · 7897 edges · 376 communities (258 shown, 118 thin omitted)
 - Extraction: 84% EXTRACTED · 16% INFERRED · 0% AMBIGUOUS · INFERRED: 1238 edges (avg confidence: 0.58)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `a846e355`
+- Built from commit: `eeb3fc5f`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -402,7 +402,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (376 total, 117 thin omitted)
+## Communities (376 total, 118 thin omitted)
 
 ### Community 0 - "make_finding"
 Cohesion: 0.06
@@ -597,8 +597,8 @@ Cohesion: 0.16
 Nodes (11): _make_settings(), parametrize, `ReactReviewer` replaced `FrontendReviewer`; the old alias must be gone., `ReactReviewer` replaced `FrontendReviewer`; the old alias must be gone., `ReactReviewer` replaced `FrontendReviewer`; the old alias must be gone., Skill input/output schemas must be resolvable standalone JSON Schemas.      The, TestAgentCards, TestGetTaskEndpoints (+3 more)
 
 ### Community 48 - "test_select_stack_targets.py"
-Cohesion: 0.12
-Nodes (10): ModuleType, load_eval_tool_module(), Shared helpers for testing standalone scripts under evaluation/tools/.  evaluati, Load a module from evaluation/tools/<filename> under the given name.      evalua, Tests for evaluation/tools/run_agent_evaluation.py.  These tests exercise the `_, Each outcome record must carry its own label so a WARNING can't         visually, TestEvaluateConcurrentlyBoundedParallelism, TestEvaluateConcurrentlyFailureIsolation (+2 more)
+Cohesion: 0.13
+Nodes (11): ModuleType, load_eval_tool_module(), Shared helpers for testing standalone scripts under evaluation/tools/.  evaluati, Load a module from evaluation/tools/<filename> under the given name.      evalua, fixture, Tests for evaluation/tools/eval_logging.py., _restore_root_logger(), Tests for evaluation/tools/run_agent_evaluation.py.  These tests exercise the `_ (+3 more)
 
 ### Community 49 - "test_frontend_reviewer.py"
 Cohesion: 0.38
@@ -645,8 +645,8 @@ Cohesion: 0.12
 Nodes (15): 1. 背景と根本原因, 2. 変更①: 欠落の可視化, 3. 変更②: 位置情報の転記を明示的に指示（緩和）, 4. 非対象（Non-goals）, 5. 検証方針（評価）, これは2つの別問題である, 位置情報欠落によるfinding/decisionのサイレントドロップ: 可視化と緩和 設計ドキュメント, 根本原因（1件の再現診断から再構成） (+7 more)
 
 ### Community 61 - "build_target"
-Cohesion: 0.44
-Nodes (4): build_target(), Evaluate a pull request against eligibility filters and classify accepted target, Create a sample repository candidate for testing.          Returns:, TestBuildTarget
+Cohesion: 0.26
+Nodes (7): build_target(), collect_review_texts(), Evaluate a pull request against eligibility filters and classify accepted target, Aggregate non-blank inline comment and review bodies (any author).      Returns:, Create a sample repository candidate for testing.          Returns:, TestBuildTarget, TestCollectReviewTexts
 
 ### Community 62 - "test_lead_engineer_router.py"
 Cohesion: 0.09
@@ -679,10 +679,6 @@ Nodes (3): has_review_comments(), Return whether the PR has a qualifying inline 
 ### Community 72 - "code_review_agent/__init__.py"
 Cohesion: 0.08
 Nodes (24): 0. Requirements, 1. Clone and enter workspace, 2. Create virtual environment and install package, 3. Enable Git hooks (pre-commit), 4. Build package, 5. Run application, 6. Test, 7. Lint and format (Ruff) (+16 more)
-
-### Community 73 - "TestMutationGenSystemPrompt"
-Cohesion: 0.50
-Nodes (3): collect_review_texts(), Aggregate non-blank inline comment and review bodies (any author).      Returns:, TestCollectReviewTexts
 
 ### Community 74 - "TestCreateAgentSkills"
 Cohesion: 0.22
@@ -1093,7 +1089,7 @@ Cohesion: 0.22
 Nodes (4): Context7 usage, Reference files, Reviewing framework-specific concerns, Shared component design checks (all frameworks)
 
 ### Community 202 - "reviewing-universal/SKILL.md"
-Cohesion: 0.22
+Cohesion: 0.25
 Nodes (3): Quick triage, Reference files, Reviewing universal concerns
 
 ### Community 203 - "Accessibility checks"
@@ -1169,7 +1165,7 @@ Cohesion: 0.25
 Nodes (8): Bundle size, Contents, Dependency audit checks, Duplication, Issue format, Justification, License, Maintenance status
 
 ### Community 221 - "Test quality checks"
-Cohesion: 0.29
+Cohesion: 0.25
 Nodes (7): Assertion presence, Behavior vs implementation detail, Contents, Coverage of changed paths, Issue format, Test isolation, Test quality checks
 
 ### Community 222 - "@attach.md"
@@ -1365,8 +1361,8 @@ Cohesion: 0.33
 Nodes (3): common.sh script, start_a2a_container.sh script, stop_a2a_container.sh script
 
 ### Community 373 - "_clear_handlers"
-Cohesion: 0.27
-Nodes (6): _clear_handlers(), fixture, Tests for evaluation/tools/eval_logging.py., Remove pytest's own root handler(s) for this test.      pytest re-attaches its `, _restore_root_logger(), TestSetupLogging
+Cohesion: 0.47
+Nodes (3): _clear_handlers(), Remove pytest's own root handler(s) for this test.      pytest re-attaches its `, TestSetupLogging
 
 ### Community 376 - "._build_model"
 Cohesion: 0.40
@@ -1375,7 +1371,7 @@ Nodes (3): Model, Build the model for README summarisation.          Returns:   
 ## Knowledge Gaps
 - **1561 isolated node(s):** `common.sh script`, `start_a2a_container.sh script`, `stop_a2a_container.sh script`, `uvx`, `start-mcp-server` (+1556 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **117 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **118 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
