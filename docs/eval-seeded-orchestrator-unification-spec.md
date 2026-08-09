@@ -91,12 +91,18 @@
 content-based検出により`ProjectType.SVELTE`を返すようになったため機能する。
 
 `evaluate_item()`が`item["stack"]`を一切参照しない設計（Issue #237）自体は変更して
-いないため、EVALUATION_PLAN.md §4後半のfail-closed要件(unsupported/missing stackを
-明示的に失敗させる)は引き続きテストコードでは検証されない。恒久的なルーティング
-正しさの検証は `tests/agents/test_registry.py` の
+いないため、`score_evaluation.py`のRelease Gate実行時にunsupported/missing `stack`を
+実行時に明示的に失敗させるfail-closedチェックは存在しない（今後追加する場合は
+Issue #237の「クライアント側ルーティング廃止」という設計判断を覆すことになるため、
+別途Issueとして扱う）。ルーティング正しさの恒久的な検証は
+`tests/agents/test_registry.py` の
 `TestDetectProjectTypesFromManifestContent`/`TestMetaframeworkReviewerFallback`
-（実リポジトリの`package.json`を使った回帰フィクスチャを含む）で行う。詳細は
-[evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md) §5を参照。
+（実リポジトリの`package.json`を使った回帰フィクスチャを含む）による**コードレベルの
+回帰テスト**として行い、`uv run pytest`がリリース前のゲートとなる。
+EVALUATION_PLAN.md §4のhard gate文言はこの検証方法に合わせて更新済み（旧
+「unsupported or missing stackを明示的に失敗させる」という評価実行時fail-closedの
+文言は撤回）。詳細は[evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md)
+§4・§5を参照。
 
 ## 5. タイムアウト予算への影響
 

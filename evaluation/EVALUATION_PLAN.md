@@ -328,8 +328,8 @@ Domain hard gates:
 - XSS/injection must-find misses must be 0 in frontend application samples
 - Angular samples carrying `angular.json` or Angular source naming conventions must route to `AngularReviewer`, not `ReactReviewer`
 - React technical reviews must expose both Vercel skill indexes; Angular technical reviews must expose the official Angular skill index
-- Seeded items must route to the technical reviewer matching their `stack` label (`react`→`ReactReviewer`, `vue`→`VueReviewer`, `angular`→`AngularReviewer`, `svelte`→`SvelteReviewer`) plus `SecurityReviewer`; an unsupported or missing `stack` must fail the item explicitly rather than default to `ReactReviewer`
-  （前半のルーティング正しさは`tests/agents/test_registry.py`で回帰検証しているが、後半のfail-closed要件は`score_evaluation.py`のRelease Gate実行では自動検証されない。目標仕様であり自動判定されるhard gateではない点に注意。詳細は§5参照）
+- Seeded items must route to the technical reviewer matching their `stack` label (`react`→`ReactReviewer`, `vue`→`VueReviewer`, `angular`→`AngularReviewer`, `svelte`→`SvelteReviewer`; a metaframework detection such as `nuxt` routes via `get_reviewer_classes`' base-framework fallback to the same reviewer, e.g. `vue`→`VueReviewer`) plus `SecurityReviewer`.
+  **Verification method (updated, supersedes the "must fail the item explicitly" wording this bullet previously carried)**: Issue #237 removed client-side `stack`-based routing/validation in favor of `detect_project_types`'s automatic detection; `evaluate_item()` does not read `item["stack"]` and therefore cannot fail-closed on an unsupported/missing value at evaluation run time. This gate is instead verified as a **code-level regression suite**, not a `score_evaluation.py` Release Gate metric: `tests/agents/test_registry.py`'s `TestDetectProjectTypesFromManifestContent`/`TestMetaframeworkReviewerFallback` (including fixtures built from the real Seeded-repository `package.json` files) must pass as part of `uv run pytest` before any release. See §5 for the full history of this gate's evolution (Issue #237 → #238 → #230).
 
 Seeded set size note: the seed-repository migration (Issue #224) fixed the
 Seeded set at 59 items (PRs) across the four seed repositories, carrying
@@ -384,8 +384,10 @@ content-basedの層が読むことで、`svelte-technical`/`vue-technical`（+`s
 恒久的な検証は `tests/agents/test_registry.py` の `TestDetectProjectTypesFromManifestContent` /
 `TestMetaframeworkReviewerFallback`（実リポジトリの`package.json`を使った回帰フィクスチャを含む）で
 行う。`evaluate_item()`が`item["stack"]`を参照しない設計（Issue #237）自体は変更していないため、
-§4後半のfail-closed要件（unsupported/missing stackを明示的に失敗させる）は引き続きテストコードでは
-検証されない点に変わりはない。
+評価実行時（`score_evaluation.py`のRelease Gate）にunsupported/missing `stack`を明示的に失敗させる
+fail-closedチェックは依然として存在しない。§4のルーティングhard gateは、この事実を踏まえて
+「評価実行時のfail-closed要件」から「コードレベルの回帰テストによる検証」へ文言を正式に更新した
+（旧文言の削除であり、Issue #237の設計判断自体を変更するものではない）。
 
 **設計上の既知の制限（行番号精度）**: `_build_prompt` が付与する行番号アノテーション（`+L{N}:` 形式）は
 `PRInfoResult.file_changes` に含まれる patch にのみ適用される。
