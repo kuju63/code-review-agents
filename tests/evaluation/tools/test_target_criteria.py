@@ -17,6 +17,40 @@ class TestProductionCodeCriteria:
     def test_accepts_package_json(self):
         assert criteria.is_production_code_file("package.json") is True
 
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "angular.json",
+            "svelte.config.js",
+            "svelte.config.ts",
+            "vue.config.js",
+            "vue.config.ts",
+        ],
+    )
+    def test_accepts_framework_manifest_files(self, path):
+        # Mirrors pr_info_collector.py's _TARGET_FILENAMES (Issue #230): a PR
+        # that only changes one of these framework manifests must still
+        # qualify as a reviewable production-code change for Gold-set
+        # eligibility, the same way it already qualifies for review.
+        assert criteria.is_production_code_file(path) is True
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "src/my-angular.json",
+            "src/not-package.json",
+        ],
+    )
+    def test_rejects_filenames_that_only_end_with_special_file_text(self, path):
+        # SPECIAL_FILES must match the basename exactly, mirroring
+        # pr_info_collector.py's is_dependency_file/_matches_manifest: a
+        # suffix-only endswith() check would wrongly admit an unrelated file
+        # whose name happens to end with e.g. "angular.json". Note this is
+        # about the .json-suffixed SPECIAL_FILES entries specifically --
+        # e.g. "legacy-vue.config.js" is correctly accepted regardless,
+        # since it independently matches ALLOWED_EXTENSIONS' ".js".
+        assert criteria.is_production_code_file(path) is False
+
     def test_rejects_backend_source(self):
         assert criteria.is_production_code_file("backend/app.py") is False
 

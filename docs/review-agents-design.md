@@ -38,10 +38,21 @@
 | 要件整合性 (requirements)| ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 | ⏳ 予定 |
 
 - ✅ = 実装済。⏳ = enum 値・拡張点のみ用意（未登録）。
-- `detect_project_types()` は `angular.json`/Angular固有のファイル命名、`.svelte`/`svelte.config.*`、
-  `.vue`/`vue.config.*` を検出した場合、粗い TypeScript/JavaScript 判定より優先してそれぞれ
-  `ProjectType.ANGULAR` / `SVELTE` / `VUE` を返す。優先順位は Angular → Svelte → Vue → React/TypeScript。
-- React/Angular/Svelte/Vue 混在モノレポでも、この優先順位に従い最初に一致した種別を採用する。
+- `detect_project_types()` は3段階で判定する（Issue #230）。
+  1. `angular.json`/Angular固有のファイル命名、`.svelte`/`svelte.config.*`、`.vue`/`vue.config.*` を
+     検出した場合、粗い TypeScript/JavaScript 判定より優先してそれぞれ `ProjectType.ANGULAR` /
+     `SVELTE` / `VUE` を返す（ファイル拡張子・manifestファイル名のみで判定、中身は見ない）。
+  2. 1.で決まらない場合、収集済みの `package.json`/`package-lock.json`/`pnpm-lock.yaml` の中身
+     （直接依存のパッケージ名）から `ANGULAR` → `SVELTE` → `NUXT` → `VUE` → `NEXTJS` → `REACT_TS`
+     の優先順で判定する。SvelteKitプロジェクトのように `svelte` パッケージを直接依存に持たず
+     `@sveltejs/kit` のみを使うケースも `@sveltejs/` プレフィックスで拾う。
+  3. どちらでも決まらない場合、従来の粗いフォールバック（`package.json` の存在または
+     `.ts`/`.tsx`/`.js`/`.jsx` の変更）で `REACT_TS` と推定する。
+- `ProjectType.NEXTJS`/`NUXT` はメタフレームワーク専用のレビュアーを持たないため、
+  `get_reviewer_classes()` が内部的に `NEXTJS`→`REACT_TS`、`NUXT`→`VUE` にフォールバックし、
+  基盤フレームワークのレビュアー（+`SecurityReviewer`）をそのまま再利用する。
+- React/Angular/Svelte/Vue 混在モノレポでも、この優先順位に従い最初に一致した種別を採用する
+  （1つのPRから複数種別を同時に返すことは現時点では対象外）。
 - 同一レビュアーを複数種別に登録でき、`SecurityReviewer` は React/TypeScript・Angular・Vue・Svelte で共有する。
 
 ---
@@ -101,12 +112,17 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
 - `get_reviewer_classes(project_type, perspectives=None)` が、対象種別に適用され観点フィルタに
   合致するレビュアークラス群を返す。**拡張の中心点**であり、新しいセルの追加はクラス追加 +
   デコレータ登録だけで完結する。
-- `detect_project_types(pr_info)` が変更ファイルの拡張子・manifest から種別を推定する。
-  `dependency_files` は「PRで変更された」manifest のみのため、`src/*.tsx` だけ変更する典型 PR を
-  取りこぼさないよう、TS/JS/JSX の変更があれば（package.json 変更がなくても）react_ts と判定する。
+- `detect_project_types(pr_info)` が変更ファイルの拡張子・manifest、および `PRInfoResult.manifest_contents`
+  （`package.json`/`package-lock.json`/`pnpm-lock.yaml` の中身、詳細は2節参照）から種別を推定する。
+  `dependency_files` は「リポジトリ直下に存在する」manifest（PRでの変更有無を問わない）の
+  パス一覧である。`manifest_contents` はそのうち中身を取得できたものの実データに加え、ルート
+  `package.json` の `workspaces` フィールドから解決されたworkspace配下各パッケージの
+  `package.json` の中身も含む（`dependency_files` 自体はリポジトリ直下のみでworkspace配下は
+  含まない）。両者を組み合わせても決め手がない場合、`src/*.tsx` だけ変更する典型 PR を
+  取りこぼさないよう、TS/JS/JSX の変更が
+  あれば（package.json 変更がなくても）react_ts と判定する最終フォールバックへ落ちる。
   package.json 単独の変更（依存更新）も単体で該当する。明示指定がない場合のデフォルト選択に使い、
-  将来種別の判定分岐はここに足す。なお現状は PR 変更ファイルのみのヒューリスティックで、
-  リポジトリ直下 manifest 等のより確実な signal は将来の入力拡張時に取り込む。
+  将来種別の判定分岐はここに足す。
 
 ### 3.4 オーケストレータ — `ReviewOrchestrator`
 
@@ -148,13 +164,26 @@ Lead Engineer 自体は本リリースの対象外です。
 
 ## 5. 未配線の拡張点（本リリースで意図的に未実装）
 
-- **フレームワーク別 ProjectType**: `ProjectType.ANGULAR` は配線済み。`ProjectType.NEXTJS` 等は
-  宣言済みだが未配線で、`detect_project_types()` は React/TypeScript として返す。`next.config.*`
-  等の manifest を検出して個別に返すよう拡張可能。
-- **`@angular/core` 依存判定**: `dependency_files` はパスのみで中身を持たないため、現状は
-  `angular.json` とファイル命名を signal とする。`package.json` の中身解析による判定精度向上は将来課題。
 - **spec / requirement 入力**: `ReviewContext` の拡張フィールドとして追加予定（4 節参照）。
 - **Lead Engineer 合成**: `ReviewReport` を入力とする合成エージェントを別途実装予定。
+- **Next.js/Nuxt 専用レビュアー**: `ProjectType.NEXTJS`/`NUXT` は検出できるが、専用の
+  `NextReviewer`/`NuxtReviewer` は未実装。現状は `get_reviewer_classes()` のフォールバックで
+  `ReactReviewer`/`VueReviewer` を再利用する（2節参照）。
+- **モノレポでの複数種別同時検出**: `workspaces` 配下の各パッケージが異なるフレームワークを
+  使う場合でも、`detect_project_types()` は単一の `ProjectType` のみを返す（優先順位表に従い
+  最初に一致した種別を採用）。1つのPRから複数種別を同時に返す設計は将来課題。
+- **マニフェスト収集の範囲制限**: `PRInfoCollector._read_manifest_contents` はルート
+  `package.json` の `workspaces` フィールドのみを解決対象とし、`pnpm-workspace.yaml`
+  （pnpmの標準的なworkspace宣言方法）は読まない。そのため`pnpm-workspace.yaml`のみで
+  workspaceを宣言するpnpmモノレポでは、各パッケージの`package.json`が収集されず検出精度が
+  低下する。また`yarn.lock`は直接依存と推移的依存を構造的に区別できないため意図的に取得しない
+  （`package.json`/`package-lock.json`/`pnpm-lock.yaml`のみ取得）。いずれも将来課題。
+
+> **実装済みに変更（旧「未配線」、Issue #230）**: 「`ProjectType.NEXTJS` 等は宣言済みだが未配線」
+> および「`@angular/core` 依存判定は `package.json` の中身を見ないため `angular.json` とファイル
+> 命名のみに頼る」という制限はいずれも解消した。`detect_project_types()` は `PRInfoResult.manifest_contents`
+> 経由で `package.json`/`package-lock.json`/`pnpm-lock.yaml` の直接依存パッケージ名を見て
+> `NEXTJS`/`NUXT`/`ANGULAR`/`SVELTE`/`VUE`/`REACT_TS` を判定できる（2節参照）。
 
 > **実装済みに変更（旧「未配線」）**: 参照ドキュメント取得は `AgentSkills` と
 > `src/code_review_agent/skills/` 内のスキルパッケージとして実装した。`ReactReviewer` は

@@ -37,7 +37,19 @@ ALLOWED_EXTENSIONS = (
 )
 
 # Files that count as production code despite not matching ALLOWED_EXTENSIONS.
-SPECIAL_FILES = ("package.json",)
+# Mirrors pr_info_collector.py's _TARGET_FILENAMES; angular.json is the only
+# entry that doesn't already qualify via ALLOWED_EXTENSIONS (the svelte/vue
+# config filenames end in .js/.ts and match there already), but all of
+# _TARGET_FILENAMES is listed here explicitly so the two lists stay visibly
+# in sync rather than agreeing by extension-matching coincidence.
+SPECIAL_FILES = (
+    "package.json",
+    "angular.json",
+    "svelte.config.js",
+    "svelte.config.ts",
+    "vue.config.js",
+    "vue.config.ts",
+)
 
 _TEST_PATH_PATTERNS = (
     "/__tests__/",
@@ -92,7 +104,12 @@ def is_production_code_file(path: str) -> bool:
         return False
     if is_test_file(path) or is_doc_file(path):
         return False
-    if path.endswith(SPECIAL_FILES):
+    # SPECIAL_FILES must match the basename exactly (mirrors
+    # pr_info_collector.py's is_dependency_file/_matches_manifest): a plain
+    # endswith() would also admit an unrelated file merely ending with, for
+    # example, "angular.json" (e.g. "src/my-angular.json").
+    basename = _normalized_path(path).rsplit("/", 1)[-1]
+    if basename in SPECIAL_FILES:
         return True
     return path.endswith(ALLOWED_EXTENSIONS)
 

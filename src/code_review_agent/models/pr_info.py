@@ -61,6 +61,12 @@ class PRInfoResult(BaseModel):
             repository at the PR head, describing the project's dependency
             context regardless of whether the PR changed them
             (e.g. ``package.json``, ``pyproject.toml``).
+        manifest_contents: Raw text content of a subset of ``dependency_files``
+            (``package.json``/``package-lock.json``/``pnpm-lock.yaml``, root
+            and resolved workspace packages), keyed by repository-relative
+            path. Used for content-based project-type detection (see
+            :func:`~code_review_agent.agents.manifest_detection.collect_direct_package_names`);
+            empty when a manifest could not be fetched or parsed.
     """
 
     repository_info: RepositoryInfo = Field(..., description="Repository information")
@@ -73,5 +79,13 @@ class PRInfoResult(BaseModel):
             "the PR head, describing the project's dependency context "
             "regardless of whether the PR changed them "
             "(e.g. package.json, pyproject.toml)"
+        ),
+    )
+    manifest_contents: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Raw text content of package.json/package-lock.json/pnpm-lock.yaml "
+            "(root and resolved workspace packages), keyed by repository-"
+            "relative path, used for content-based project-type detection"
         ),
     )

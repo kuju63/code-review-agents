@@ -13,6 +13,7 @@ dependencies = [
     "pydantic>=2.13.4",
     "pydantic-settings>=2.0",
     "python-dotenv>=1.0",
+    "pyyaml>=6.0",
     "strands-agents-tools>=0.8.2",
     "strands-agents[openai,ollama]>=1.45.0",
     "tenacity>=9.0",
