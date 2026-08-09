@@ -52,7 +52,9 @@ evaluation/data/gold_pr_set.jsonl
 production file と inline comment の判定は `evaluation/tools/target_criteria.py` を
 `discover_candidate_prs.py` と `build_gold_set.py` が共有する。対象拡張子は
 `.js`, `.jsx`, `.ts`, `.tsx`, `.vue`, `.svelte`, `.css`, `.scss`, `.html`、
-特別対象は `package.json` である。test / docs file と backend-only 変更は除外する。
+特別対象は `package.json`/`angular.json`/`svelte.config.js`/`svelte.config.ts`/
+`vue.config.js`/`vue.config.ts`（`pr_info_collector.py` の `_TARGET_FILENAMES` と
+同期、Issue #230）である。test / docs file と backend-only 変更は除外する。
 
 inline comment の投稿者は人間・AI review bot のいずれでもよい。review body は
 LLM の分類コンテキストには含めるが、file location がないため PR の受理条件には

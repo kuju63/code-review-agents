@@ -17,6 +17,23 @@ class TestProductionCodeCriteria:
     def test_accepts_package_json(self):
         assert criteria.is_production_code_file("package.json") is True
 
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "angular.json",
+            "svelte.config.js",
+            "svelte.config.ts",
+            "vue.config.js",
+            "vue.config.ts",
+        ],
+    )
+    def test_accepts_framework_manifest_files(self, path):
+        # Mirrors pr_info_collector.py's _TARGET_FILENAMES (Issue #230): a PR
+        # that only changes one of these framework manifests must still
+        # qualify as a reviewable production-code change for Gold-set
+        # eligibility, the same way it already qualifies for review.
+        assert criteria.is_production_code_file(path) is True
+
     def test_rejects_backend_source(self):
         assert criteria.is_production_code_file("backend/app.py") is False
 

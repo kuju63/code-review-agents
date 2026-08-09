@@ -37,7 +37,19 @@ ALLOWED_EXTENSIONS = (
 )
 
 # Files that count as production code despite not matching ALLOWED_EXTENSIONS.
-SPECIAL_FILES = ("package.json",)
+# Mirrors pr_info_collector.py's _TARGET_FILENAMES; angular.json is the only
+# entry that doesn't already qualify via ALLOWED_EXTENSIONS (the svelte/vue
+# config filenames end in .js/.ts and match there already), but all of
+# _TARGET_FILENAMES is listed here explicitly so the two lists stay visibly
+# in sync rather than agreeing by extension-matching coincidence.
+SPECIAL_FILES = (
+    "package.json",
+    "angular.json",
+    "svelte.config.js",
+    "svelte.config.ts",
+    "vue.config.js",
+    "vue.config.ts",
+)
 
 _TEST_PATH_PATTERNS = (
     "/__tests__/",
