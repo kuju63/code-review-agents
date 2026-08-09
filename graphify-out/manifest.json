@@ -215,8 +215,8 @@
     "semantic_hash": ""
   },
   "src/code_review_agent/agents/pr_info_collector.py": {
-    "mtime": 1786244930.997848,
-    "ast_hash": "f63aefe97a62c2df6b2e07f18743fd84",
+    "mtime": 1786245583.7303407,
+    "ast_hash": "3da2bc4e3667c1b44fc7c71b2773a113",
     "semantic_hash": ""
   },
   "src/code_review_agent/agents/registry.py": {
@@ -415,8 +415,8 @@
     "semantic_hash": ""
   },
   "tests/agents/test_pr_info_collector.py": {
-    "mtime": 1786244930.997848,
-    "ast_hash": "3f6249e1e8820f3ae9691884b595914e",
+    "mtime": 1786245613.1260045,
+    "ast_hash": "1fec8421aec2be1defbdfb2d9e00c2c7",
     "semantic_hash": ""
   },
   "tests/agents/test_registry.py": {
@@ -865,8 +865,8 @@
     "semantic_hash": ""
   },
   "docs/review-agents-design.md": {
-    "mtime": 1786245072.3842177,
-    "ast_hash": "d8e3da8a00cc87a46756d710c41b53c5",
+    "mtime": 1786245634.4817605,
+    "ast_hash": "904ba40b9bfc512d25488178d8946d11",
     "semantic_hash": ""
   },
   "docs/review-knowledge-provisioning-options.md": {
