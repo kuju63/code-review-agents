@@ -40,7 +40,14 @@ _TARGET_EXTENSIONS = frozenset(
     [".ts", ".tsx", ".js", ".jsx", ".css", ".scss", ".html", ".svelte", ".vue"]
 )
 _TARGET_FILENAMES = frozenset(
-    ["package.json", "angular.json", "svelte.config.js", "svelte.config.ts"]
+    [
+        "package.json",
+        "angular.json",
+        "svelte.config.js",
+        "svelte.config.ts",
+        "vue.config.js",
+        "vue.config.ts",
+    ]
 )
 _DEPENDENCY_FILENAMES = frozenset(
     [
@@ -48,6 +55,8 @@ _DEPENDENCY_FILENAMES = frozenset(
         "angular.json",
         "svelte.config.js",
         "svelte.config.ts",
+        "vue.config.js",
+        "vue.config.ts",
         "package-lock.json",
         "yarn.lock",
         "pnpm-lock.yaml",
@@ -58,6 +67,16 @@ _DEPENDENCY_FILENAMES = frozenset(
         "Pipfile.lock",
     ]
 )
+
+# Manifest content fetched for stack detection (Issue #230). yarn.lock is
+# deliberately excluded: its v1 format mixes direct and transitive
+# dependencies with no way to tell them apart from the file alone.
+_ROOT_PACKAGE_JSON = "package.json"
+_LOCKFILE_CONTENT_NAMES = ("package-lock.json", "pnpm-lock.yaml")
+# Bounds on workspace resolution to cap GitHub MCP calls against a
+# `workspaces` declaration with many glob patterns or matched packages.
+_MAX_WORKSPACE_GLOBS = 10
+_MAX_WORKSPACE_PACKAGES = 20
 
 # README is truncated before summarisation to keep the single LLM call cheap
 # and within context limits for small local models.
@@ -272,6 +291,11 @@ class PRInfoCollector:
             dependency_files = self._read_dependency_files(
                 mcp_client, owner, repo, head_ref
             )
+            # Content-based stack detection (Issue #230) needs the actual
+            # text of package.json/lock files, not just their paths.
+            manifest_contents = self._read_manifest_contents(
+                mcp_client, owner, repo, head_ref, dependency_files
+            )
         finally:
             mcp_client.stop(None, None, None)
 
@@ -331,6 +355,7 @@ class PRInfoCollector:
                 file_changes=file_changes,
             ),
             dependency_files=dependency_files,
+            manifest_contents=manifest_contents,
         )
 
         result_json = result.model_dump_json()
@@ -415,34 +440,33 @@ class PRInfoCollector:
             page += 1
         return files
 
-    def _read_dependency_files(
-        self, mcp_client: Any, owner: str, repo: str, ref: str | None
-    ) -> list[str]:
-        """List dependency manifest files at the repo root for the given ref.
+    def _list_directory_entries(
+        self, mcp_client: Any, owner: str, repo: str, ref: str | None, path: str
+    ) -> list[dict[str, Any]]:
+        """List the raw ``get_file_contents`` directory entries at ``path``.
 
-        Returns the paths of dependency manifests (see
-        :func:`is_dependency_file`) present at the repository root at ``ref``,
-        describing the project's dependency context regardless of whether the
-        PR changed them.  Returns an empty list if the listing is unavailable.
-        Infra failures (MCP connection lost, etc.) are re-raised rather than
-        degraded to an empty list -- see :data:`INFRA_EXCEPTIONS`.
+        Shared by :meth:`_read_dependency_files` (repo root, filtered to
+        manifest files) and workspace resolution (a workspace glob's parent
+        directory, filtered to subdirectories). Infra failures (MCP
+        connection lost, etc.) are re-raised rather than degraded to an
+        empty list -- see :data:`INFRA_EXCEPTIONS`.
 
         Returns:
-            Sorted paths of dependency manifest files at the repo root, or an
+            The raw entry dicts as returned by the GitHub MCP server, or an
             empty list if the listing is unavailable or unparseable.
 
         Raises:
-            INFRA_EXCEPTIONS: The repo-root listing call failed due to an
+            INFRA_EXCEPTIONS: The listing call failed due to an
                 infrastructure-level error (model connection lost, GitHub MCP
                 client init failure, transport-level timeout) rather than a
                 business-level failure.
         """
-        args: dict[str, Any] = {"owner": owner, "repo": repo, "path": "/"}
+        args: dict[str, Any] = {"owner": owner, "repo": repo, "path": path}
         if ref:
             args["ref"] = ref
         try:
             result = mcp_client.call_tool_sync(
-                "root-listing", "get_file_contents", args
+                f"dir-listing-{path}", "get_file_contents", args
             )
             texts = _tool_text_blocks(result)
         except INFRA_EXCEPTIONS:
@@ -455,8 +479,23 @@ class PRInfoCollector:
             entries = json.loads(texts[-1])
         except (ValueError, TypeError):
             return []
-        if not isinstance(entries, list):
-            return []
+        return entries if isinstance(entries, list) else []
+
+    def _read_dependency_files(
+        self, mcp_client: Any, owner: str, repo: str, ref: str | None
+    ) -> list[str]:
+        """List dependency manifest files at the repo root for the given ref.
+
+        Returns the paths of dependency manifests (see
+        :func:`is_dependency_file`) present at the repository root at ``ref``,
+        describing the project's dependency context regardless of whether the
+        PR changed them.  Returns an empty list if the listing is unavailable.
+
+        Returns:
+            Sorted paths of dependency manifest files at the repo root, or an
+            empty list if the listing is unavailable or unparseable.
+        """
+        entries = self._list_directory_entries(mcp_client, owner, repo, ref, "/")
         # Sort for deterministic output regardless of server-side listing order.
         return sorted(
             entry["path"]
@@ -466,19 +505,19 @@ class PRInfoCollector:
             and is_dependency_file(entry.get("path", ""))
         )
 
-    def _read_readme(
-        self, mcp_client: Any, owner: str, repo: str, ref: str | None = None
+    def _read_file_text(
+        self, mcp_client: Any, owner: str, repo: str, ref: str | None, path: str
     ) -> str | None:
-        """Fetch the repository README text at ``ref``, or None if unavailable.
+        """Fetch a repository file's text content at ``ref``, or None.
 
-        Pinning to the PR head ref keeps ``project_summary`` reproducible and
-        reflects README changes made on the PR branch rather than the moving
-        default branch. Infra failures (MCP connection lost, etc.) are
-        re-raised rather than degraded to ``None`` -- see
+        Shared by README, ``package.json``, and lock-file/workspace-manifest
+        fetches -- they all call the same ``get_file_contents`` tool and
+        return its last text block. Infra failures (MCP connection lost,
+        etc.) are re-raised rather than degraded to ``None`` -- see
         :data:`INFRA_EXCEPTIONS`.
 
         Returns:
-            The README text at ``ref``, or ``None`` if unavailable.
+            The file's text content at ``ref``, or ``None`` if unavailable.
 
         Raises:
             INFRA_EXCEPTIONS: The file-contents call failed due to an
@@ -486,19 +525,151 @@ class PRInfoCollector:
                 client init failure, transport-level timeout) rather than a
                 business-level failure.
         """
-        args: dict[str, Any] = {"owner": owner, "repo": repo, "path": "README.md"}
+        args: dict[str, Any] = {"owner": owner, "repo": repo, "path": path}
         if ref:
             args["ref"] = ref
         try:
-            result = mcp_client.call_tool_sync("readme", "get_file_contents", args)
+            result = mcp_client.call_tool_sync(
+                f"file-{path}", "get_file_contents", args
+            )
             texts = _tool_text_blocks(result)
         except INFRA_EXCEPTIONS:
             raise
         except Exception:
             return None
-        # ``get_file_contents`` returns a status block followed by the file
-        # body; the last text block holds the README content.
         return texts[-1] if texts else None
+
+    def _resolve_workspace_package_json_paths(
+        self,
+        mcp_client: Any,
+        owner: str,
+        repo: str,
+        ref: str | None,
+        root_package_json_text: str,
+    ) -> list[str]:
+        """Resolve a root ``package.json``'s ``workspaces`` field to paths.
+
+        Supports the common workspace declaration shapes -- a plain glob
+        array (npm/pnpm) and yarn's ``{"packages": [...]}`` object form.
+        Only exact paths and a single trailing ``/*`` wildcard are resolved;
+        nested or multi-segment globs are skipped (documented limitation,
+        see docs/review-agents-design.md). Resolution is bounded by
+        :data:`_MAX_WORKSPACE_GLOBS` and :data:`_MAX_WORKSPACE_PACKAGES` to
+        cap GitHub MCP calls against workspace declarations with many
+        packages.
+
+        Returns:
+            Sorted, de-duplicated ``{workspace_dir}/package.json`` paths, or
+            an empty list if ``workspaces`` is absent or unparseable.
+        """
+        try:
+            data = json.loads(root_package_json_text)
+        except (ValueError, TypeError):
+            return []
+        if not isinstance(data, dict):
+            return []
+        workspaces = data.get("workspaces")
+        if isinstance(workspaces, dict):
+            workspaces = workspaces.get("packages")
+        if not isinstance(workspaces, list):
+            return []
+        patterns = [p for p in workspaces if isinstance(p, str)]
+
+        resolved_dirs: set[str] = set()
+        for pattern in patterns[:_MAX_WORKSPACE_GLOBS]:
+            if pattern.endswith("/*"):
+                prefix = pattern[: -len("/*")]
+                entries = self._list_directory_entries(
+                    mcp_client, owner, repo, ref, prefix
+                )
+                resolved_dirs.update(
+                    entry["path"]
+                    for entry in entries
+                    if isinstance(entry, dict)
+                    and entry.get("type") == "dir"
+                    and entry.get("path")
+                )
+            elif "*" not in pattern:
+                resolved_dirs.add(pattern)
+            # Nested/multi-wildcard globs (e.g. "packages/**") are not
+            # supported and are silently skipped.
+
+        return [
+            f"{workspace_dir}/package.json"
+            for workspace_dir in sorted(resolved_dirs)[:_MAX_WORKSPACE_PACKAGES]
+        ]
+
+    def _read_manifest_contents(
+        self,
+        mcp_client: Any,
+        owner: str,
+        repo: str,
+        ref: str | None,
+        dependency_files: list[str],
+    ) -> dict[str, str]:
+        """Fetch the text content of manifests used for stack detection.
+
+        Fetches ``package.json`` and lock files (``package-lock.json``,
+        ``pnpm-lock.yaml``) when GitHub reports them present at the repo
+        root (``dependency_files``), plus each workspace package's
+        ``package.json`` resolved from the root manifest's ``workspaces``
+        field (see :meth:`_resolve_workspace_package_json_paths``).
+        ``yarn.lock`` is intentionally never fetched: its v1 format mixes
+        direct and transitive dependencies with no way to tell them apart,
+        so its content cannot safely drive detection (see
+        :mod:`~code_review_agent.agents.manifest_detection`).
+
+        A manifest that fails to fetch (missing, transient error) is simply
+        omitted rather than failing the whole collection -- content-based
+        detection degrades gracefully to the coarser tiers when content is
+        unavailable.
+
+        Returns:
+            Mapping of repository-relative manifest path to its raw text
+            content, for every manifest that was fetched successfully.
+        """
+        contents: dict[str, str] = {}
+        dependency_file_set = set(dependency_files)
+
+        if _ROOT_PACKAGE_JSON in dependency_file_set:
+            text = self._read_file_text(
+                mcp_client, owner, repo, ref, _ROOT_PACKAGE_JSON
+            )
+            if text is not None:
+                contents[_ROOT_PACKAGE_JSON] = text
+
+        for lock_name in _LOCKFILE_CONTENT_NAMES:
+            if lock_name in dependency_file_set:
+                text = self._read_file_text(mcp_client, owner, repo, ref, lock_name)
+                if text is not None:
+                    contents[lock_name] = text
+
+        root_package_json_text = contents.get(_ROOT_PACKAGE_JSON)
+        if root_package_json_text is not None:
+            for workspace_path in self._resolve_workspace_package_json_paths(
+                mcp_client, owner, repo, ref, root_package_json_text
+            ):
+                text = self._read_file_text(
+                    mcp_client, owner, repo, ref, workspace_path
+                )
+                if text is not None:
+                    contents[workspace_path] = text
+
+        return contents
+
+    def _read_readme(
+        self, mcp_client: Any, owner: str, repo: str, ref: str | None = None
+    ) -> str | None:
+        """Fetch the repository README text at ``ref``, or None if unavailable.
+
+        Pinning to the PR head ref keeps ``project_summary`` reproducible and
+        reflects README changes made on the PR branch rather than the moving
+        default branch.
+
+        Returns:
+            The README text at ``ref``, or ``None`` if unavailable.
+        """
+        return self._read_file_text(mcp_client, owner, repo, ref, "README.md")
 
     def _build_model(self) -> Model:
         """Build the model for README summarisation.

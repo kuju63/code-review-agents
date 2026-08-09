@@ -52,6 +52,9 @@ class TestIsTargetFile:
             "svelte.config.ts",
             "src/App.vue",
             "components/UserProfile.vue",
+            "vue.config.js",
+            "vue.config.ts",
+            "frontend/vue.config.js",
         ],
     )
     def test_included_files(self, path: str):
@@ -95,6 +98,9 @@ class TestIsDependencyFile:
             "svelte.config.js",
             "svelte.config.ts",
             "frontend/svelte.config.js",
+            "vue.config.js",
+            "vue.config.ts",
+            "frontend/vue.config.js",
         ],
     )
     def test_dependency_files(self, path: str):
@@ -205,6 +211,8 @@ def _make_mcp(
     readme_error: bool = False,
     root_listing: list[dict] | None = None,
     root_error: bool = False,
+    manifest_texts: dict[str, str] | None = None,
+    dir_listings: dict[str, list[dict]] | None = None,
 ) -> MagicMock:
     """Build a mock MCP client whose call_tool_sync dispatches by arguments.
 
@@ -215,6 +223,8 @@ def _make_mcp(
     pr_get = _PR_GET if pr_get is None else pr_get
     pr_files = _PR_FILES if pr_files is None else pr_files
     root_listing = _ROOT_LISTING if root_listing is None else root_listing
+    manifest_texts = manifest_texts or {}
+    dir_listings = dir_listings or {}
     if readme_blocks is None:
         readme_blocks = ["successfully downloaded text file", _README_BODY]
 
@@ -226,17 +236,27 @@ def _make_mcp(
             batch = pr_files if page == 1 else []
             return _tool_result(json.dumps(batch))
         if name == "get_file_contents":
-            # Root directory listing (dependency files) vs README file body.
-            if arguments.get("path") == "/":
+            path = arguments.get("path")
+            if path == "/":
                 if root_error:
                     return _tool_result("error", is_error=True)
                 return _tool_result(json.dumps(root_listing))
-            if readme_error:
-                return _tool_result("not found", is_error=True)
-            return {
-                "isError": False,
-                "content": [{"text": t} for t in readme_blocks],
-            }
+            if path == "README.md":
+                if readme_error:
+                    return _tool_result("not found", is_error=True)
+                return {
+                    "isError": False,
+                    "content": [{"text": t} for t in readme_blocks],
+                }
+            # Manifest content / workspace directory listing fetches: any
+            # path not explicitly wired below behaves like a real 404, so
+            # tests that don't care about manifest_contents get an empty
+            # result rather than accidentally being served the README body.
+            if path in dir_listings:
+                return _tool_result(json.dumps(dir_listings[path]))
+            if path in manifest_texts:
+                return _tool_result(manifest_texts[path])
+            return _tool_result("not found", is_error=True)
         raise AssertionError(f"unexpected tool call: {name} {arguments}")
 
     mcp = MagicMock()
@@ -744,6 +764,172 @@ class TestPRInfoCollectorCollect:
         for fc in result.pr_info.file_changes:
             assert fc.patch is None
         assert any("falling back to patch=None" in r.message for r in caplog.records)
+
+    def test_manifest_contents_includes_package_json_when_listed(self):
+        """package.json content is fetched when it's in dependency_files."""
+        result = self._run(
+            _make_mcp(
+                manifest_texts={"package.json": '{"dependencies": {"vue": "^3"}}'}
+            )
+        )
+        assert result.manifest_contents == {
+            "package.json": '{"dependencies": {"vue": "^3"}}'
+        }
+
+    def test_manifest_contents_includes_pnpm_lock_when_listed(self):
+        """_ROOT_LISTING carries pnpm-lock.yaml; its content is fetched too."""
+        result = self._run(
+            _make_mcp(
+                manifest_texts={
+                    "package.json": "{}",
+                    "pnpm-lock.yaml": "dependencies:\n  vue:\n    version: 3\n",
+                }
+            )
+        )
+        assert result.manifest_contents["pnpm-lock.yaml"] == (
+            "dependencies:\n  vue:\n    version: 3\n"
+        )
+
+    def test_manifest_contents_empty_when_manifest_fetch_fails(self):
+        """A 404-like failure for package.json is tolerated, not raised."""
+        result = self._run(_make_mcp())  # no manifest_texts wired -> "not found"
+        assert result.manifest_contents == {}
+
+    def test_manifest_contents_omits_files_not_in_dependency_files(self):
+        """Only manifests GitHub reports as present are ever fetched."""
+        root_listing = [
+            {"type": "file", "name": "README.md", "path": "README.md"},
+        ]
+        mcp = _make_mcp(
+            root_listing=root_listing,
+            manifest_texts={"package.json": '{"dependencies": {"react": "^19"}}'},
+        )
+        result = self._run(mcp)
+        # package.json is not in this repo's dependency_files, so it must
+        # never be fetched even though the fake would happily serve it.
+        assert result.manifest_contents == {}
+        package_json_calls = [
+            c
+            for c in mcp.call_tool_sync.call_args_list
+            if c.args[1] == "get_file_contents"
+            and c.args[2].get("path") == "package.json"
+        ]
+        assert package_json_calls == []
+
+    def test_manifest_contents_fetched_at_pr_head_ref(self):
+        mcp = _make_mcp(manifest_texts={"package.json": "{}"})
+        self._run(mcp)
+        package_json_calls = [
+            c
+            for c in mcp.call_tool_sync.call_args_list
+            if c.args[1] == "get_file_contents"
+            and c.args[2].get("path") == "package.json"
+        ]
+        assert len(package_json_calls) == 1
+        assert package_json_calls[0].args[2]["ref"] == "headsha123"
+
+    def test_manifest_contents_resolves_workspace_packages(self):
+        """A root package.json with a `workspaces` glob pulls in each
+        matching subdirectory's package.json too."""
+        mcp = _make_mcp(
+            manifest_texts={
+                "package.json": json.dumps({"workspaces": ["packages/*"]}),
+                "packages/web/package.json": '{"dependencies": {"react": "^19"}}',
+                "packages/admin/package.json": '{"dependencies": {"vue": "^3"}}',
+            },
+            dir_listings={
+                "packages": [
+                    {"type": "dir", "name": "web", "path": "packages/web"},
+                    {"type": "dir", "name": "admin", "path": "packages/admin"},
+                    {"type": "file", "name": "README.md", "path": "packages/README.md"},
+                ]
+            },
+        )
+        result = self._run(mcp)
+        assert result.manifest_contents["packages/web/package.json"] == (
+            '{"dependencies": {"react": "^19"}}'
+        )
+        assert result.manifest_contents["packages/admin/package.json"] == (
+            '{"dependencies": {"vue": "^3"}}'
+        )
+
+    def test_manifest_contents_resolves_exact_workspace_path(self):
+        """A `workspaces` entry with no glob is fetched directly, without a
+        directory-listing round trip."""
+        mcp = _make_mcp(
+            manifest_texts={
+                "package.json": json.dumps({"workspaces": ["apps/backend"]}),
+                "apps/backend/package.json": '{"dependencies": {"next": "16"}}',
+            },
+        )
+        result = self._run(mcp)
+        assert result.manifest_contents["apps/backend/package.json"] == (
+            '{"dependencies": {"next": "16"}}'
+        )
+
+    def test_manifest_contents_supports_workspaces_packages_object_form(self):
+        """Yarn-style `{"workspaces": {"packages": [...]}}` is also read."""
+        mcp = _make_mcp(
+            manifest_texts={
+                "package.json": json.dumps(
+                    {"workspaces": {"packages": ["apps/backend"]}}
+                ),
+                "apps/backend/package.json": '{"dependencies": {"vue": "^3"}}',
+            },
+        )
+        result = self._run(mcp)
+        assert result.manifest_contents["apps/backend/package.json"] == (
+            '{"dependencies": {"vue": "^3"}}'
+        )
+
+    def test_manifest_contents_no_workspaces_field_resolves_nothing_extra(self):
+        result = self._run(_make_mcp(manifest_texts={"package.json": "{}"}))
+        assert list(result.manifest_contents) == ["package.json"]
+
+    def test_manifest_contents_tolerates_unresolvable_workspace_package(self):
+        """A workspace directory whose package.json 404s is skipped, not fatal."""
+        mcp = _make_mcp(
+            manifest_texts={
+                "package.json": json.dumps({"workspaces": ["packages/*"]}),
+                "packages/web/package.json": '{"dependencies": {"react": "^19"}}',
+                # packages/broken/package.json intentionally NOT wired -> 404
+            },
+            dir_listings={
+                "packages": [
+                    {"type": "dir", "name": "web", "path": "packages/web"},
+                    {"type": "dir", "name": "broken", "path": "packages/broken"},
+                ]
+            },
+        )
+        result = self._run(mcp)
+        assert "packages/web/package.json" in result.manifest_contents
+        assert "packages/broken/package.json" not in result.manifest_contents
+
+    def test_infra_exception_during_manifest_fetch_propagates(self):
+        def dispatch(tool_use_id, name, arguments):
+            if name == "pull_request_read" and arguments["method"] == "get":
+                return _tool_result(json.dumps(_PR_GET))
+            if name == "pull_request_read" and arguments["method"] == "get_files":
+                batch = _PR_FILES if arguments.get("page", 1) == 1 else []
+                return _tool_result(json.dumps(batch))
+            if name == "get_file_contents" and arguments.get("path") == "/":
+                return _tool_result(json.dumps(_ROOT_LISTING))
+            if name == "get_file_contents" and arguments.get("path") == "package.json":
+                raise ConnectError("mcp connection lost")
+            if name == "get_file_contents":
+                return _tool_result("not found", is_error=True)
+            raise AssertionError(f"unexpected tool call: {name} {arguments}")
+
+        mcp = MagicMock()
+        mcp.call_tool_sync.side_effect = dispatch
+        collector = PRInfoCollector(github_token="tok")
+        with (
+            patch(f"{_MOD}.create_github_mcp_client", return_value=mcp),
+            patch(f"{_MOD}.Agent", return_value=MagicMock(return_value="s")),
+            patch(f"{_MOD}.create_model_provider"),
+            pytest.raises(ConnectError),
+        ):
+            collector.collect("mui", "material-ui", 48591)
 
     def test_patches_fallback_when_file_count_exceeds_limit(self, caplog):
         """patch=None for all files when target-file count exceeds the limit."""
