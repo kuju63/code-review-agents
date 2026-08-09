@@ -16,6 +16,9 @@ from code_review_agent.agents.base_reviewer import (
 from code_review_agent.agents.exceptions import StructuredOutputMissingError
 from code_review_agent.agents.model_provider_factory import ProviderType
 from code_review_agent.skills.agent_skills_factory import AgentSkillType
+from code_review_agent.tools.tool_result_sanitizer import (
+    OllamaUnsupportedContentSanitizer,
+)
 from code_review_agent.models.pr_info import (
     FileChange,
     PRInfo,
@@ -611,6 +614,45 @@ class TestReview:
             max_tokens=None,
             frequency_penalty=None,
         )
+
+    def test_ollama_provider_adds_content_sanitizer_hook(self):
+        """OllamaModel cannot serialize a "document"-shaped ToolResultContent
+        (e.g. file_read's model-chosen mode="document"); Ollama reviewers
+        must get the sanitizer hook so any tool call -- file_read, GitHub
+        MCP, or a future MCP -- is covered without per-tool special-casing.
+        See docs/ollama-tool-result-content-sanitizer-spec.md."""
+        reviewer = _StubReviewer(
+            ReviewerConfig(github_token="tok", provider_type=ProviderType.OLLAMA)
+        )
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
+        ):
+            reviewer.review(_make_context())
+
+        hooks = mock_agent_cls.call_args.kwargs["hooks"]
+        assert len(hooks) == 1
+        assert isinstance(hooks[0], OllamaUnsupportedContentSanitizer)
+
+    def test_openai_provider_adds_no_hooks(self):
+        """OpenAIModel already handles "document" content correctly, so the
+        sanitizer must not be attached for the OpenAI (default) provider."""
+        reviewer = _StubReviewer(ReviewerConfig(github_token="tok"))
+        mock_mcp = _mock_mcp()
+        mock_agent = MagicMock()
+        mock_agent.return_value.structured_output = _output()
+
+        with (
+            patch(f"{_BASE}.create_github_mcp_client", return_value=mock_mcp),
+            patch(f"{_BASE}.Agent", return_value=mock_agent) as mock_agent_cls,
+        ):
+            reviewer.review(_make_context())
+
+        assert mock_agent_cls.call_args.kwargs["hooks"] == []
 
 
 class TestReviewWithSharedMcpClient:
