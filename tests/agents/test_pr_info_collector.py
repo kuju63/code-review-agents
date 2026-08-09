@@ -776,19 +776,44 @@ class TestPRInfoCollectorCollect:
             "package.json": '{"dependencies": {"vue": "^3"}}'
         }
 
-    def test_manifest_contents_includes_pnpm_lock_when_listed(self):
-        """_ROOT_LISTING carries pnpm-lock.yaml; its content is fetched too."""
+    def test_manifest_contents_includes_pnpm_lock_when_package_json_fetch_fails(self):
+        """Lock files are a fallback source, fetched only when package.json
+        (listed in dependency_files) could not actually be read -- fetching
+        it unconditionally would be a wasted call, since manifest_detection's
+        collect_direct_package_names never consults lock-file content once
+        package.json content is available."""
         result = self._run(
             _make_mcp(
                 manifest_texts={
-                    "package.json": "{}",
+                    # package.json intentionally NOT wired here -> 404.
                     "pnpm-lock.yaml": "dependencies:\n  vue:\n    version: 3\n",
                 }
             )
         )
-        assert result.manifest_contents["pnpm-lock.yaml"] == (
-            "dependencies:\n  vue:\n    version: 3\n"
+        assert result.manifest_contents == {
+            "pnpm-lock.yaml": "dependencies:\n  vue:\n    version: 3\n"
+        }
+
+    def test_manifest_contents_omits_lock_files_when_package_json_available(self):
+        """When package.json fetches successfully, lock files listed in
+        dependency_files are not fetched at all (not just unused)."""
+        mcp = _make_mcp(
+            manifest_texts={
+                "package.json": '{"dependencies": {"vue": "^3"}}',
+                "pnpm-lock.yaml": "dependencies:\n  react:\n    version: 19\n",
+            }
         )
+        result = self._run(mcp)
+        assert result.manifest_contents == {
+            "package.json": '{"dependencies": {"vue": "^3"}}'
+        }
+        lock_calls = [
+            c
+            for c in mcp.call_tool_sync.call_args_list
+            if c.args[1] == "get_file_contents"
+            and c.args[2].get("path") == "pnpm-lock.yaml"
+        ]
+        assert lock_calls == []
 
     def test_manifest_contents_empty_when_manifest_fetch_fails(self):
         """A 404-like failure for package.json is tolerated, not raised."""
@@ -866,6 +891,74 @@ class TestPRInfoCollectorCollect:
         assert result.manifest_contents["apps/backend/package.json"] == (
             '{"dependencies": {"next": "16"}}'
         )
+
+    def test_manifest_contents_rejects_path_traversal_workspace_entry(self):
+        """A `workspaces` entry containing ".." or an absolute path is never
+        forwarded as a GitHub MCP `path` argument."""
+        mcp = _make_mcp(
+            manifest_texts={
+                "package.json": json.dumps(
+                    {"workspaces": ["../secret", "/etc/passwd", "packages/*"]}
+                ),
+                "packages/web/package.json": '{"dependencies": {"react": "^19"}}',
+            },
+            dir_listings={
+                "packages": [
+                    {"type": "dir", "name": "web", "path": "packages/web"},
+                ]
+            },
+        )
+        result = self._run(mcp)
+        assert list(result.manifest_contents) == [
+            "package.json",
+            "packages/web/package.json",
+        ]
+        requested_paths = {
+            c.args[2].get("path")
+            for c in mcp.call_tool_sync.call_args_list
+            if c.args[1] == "get_file_contents"
+        }
+        assert not any(".." in p or p.startswith("/etc") for p in requested_paths)
+
+    def test_manifest_contents_caps_workspace_globs_processed(self):
+        """Only the first _MAX_WORKSPACE_GLOBS (10) glob patterns are
+        resolved; later ones are never even listed."""
+        globs = [f"group{i}/*" for i in range(15)]
+        manifest_texts = {"package.json": json.dumps({"workspaces": globs})}
+        dir_listings = {
+            f"group{i}": [{"type": "dir", "name": "pkg", "path": f"group{i}/pkg"}]
+            for i in range(15)
+        }
+        mcp = _make_mcp(manifest_texts=manifest_texts, dir_listings=dir_listings)
+        self._run(mcp)
+        listing_calls = {
+            c.args[2].get("path")
+            for c in mcp.call_tool_sync.call_args_list
+            if c.args[1] == "get_file_contents"
+            and c.args[2].get("path") in dir_listings
+        }
+        assert len(listing_calls) == 10
+
+    def test_manifest_contents_caps_total_workspace_packages_fetched(self):
+        """Only the first _MAX_WORKSPACE_PACKAGES (20) resolved workspace
+        directories have their package.json fetched."""
+        manifest_texts = {"package.json": json.dumps({"workspaces": ["packages/*"]})}
+        dir_entries = [
+            {"type": "dir", "name": f"pkg{i}", "path": f"packages/pkg{i}"}
+            for i in range(25)
+        ]
+        mcp = _make_mcp(
+            manifest_texts=manifest_texts,
+            dir_listings={"packages": dir_entries},
+        )
+        self._run(mcp)
+        workspace_package_calls = [
+            c
+            for c in mcp.call_tool_sync.call_args_list
+            if c.args[1] == "get_file_contents"
+            and (c.args[2].get("path") or "").startswith("packages/pkg")
+        ]
+        assert len(workspace_package_calls) == 20
 
     def test_manifest_contents_supports_workspaces_packages_object_form(self):
         """Yarn-style `{"workspaces": {"packages": [...]}}` is also read."""

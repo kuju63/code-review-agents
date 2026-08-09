@@ -104,7 +104,12 @@ def is_production_code_file(path: str) -> bool:
         return False
     if is_test_file(path) or is_doc_file(path):
         return False
-    if path.endswith(SPECIAL_FILES):
+    # SPECIAL_FILES must match the basename exactly (mirrors
+    # pr_info_collector.py's is_dependency_file/_matches_manifest): a plain
+    # endswith() would also admit an unrelated file merely ending with, for
+    # example, "angular.json" (e.g. "src/my-angular.json").
+    basename = _normalized_path(path).rsplit("/", 1)[-1]
+    if basename in SPECIAL_FILES:
         return True
     return path.endswith(ALLOWED_EXTENSIONS)
 
