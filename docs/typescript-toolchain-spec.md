@@ -56,9 +56,11 @@ pytestの`--cov-fail-under=75`(CI引数側で指定)と役割を揃える必要�
 | 選択肢 | 概要 | 採用/却下 | 理由 |
 |---|---|---|---|
 | ① CIでも`cachix/install-nix-action`等を使い`nix develop -c pnpm ...`で実行 | ローカル/CIの環境を完全に一致させる | 却下 | 現行CIはPython側も`actions/setup-python` + `curl`によるuvインストールでありNixを使っていない。対称性の観点でも、Nixインストール自体のCI実行時間・キャッシュ複雑性を考えると、小規模プロジェクトの現時点では投資対効果が低い。 |
-| ② CIは`actions/setup-node`（Node 26）+ `npm install -g pnpm`で直接実行、Nixはローカル開発の再現性確保専用 | ローカルはNix、CIは既存パターン踏襲 | **採用** | 既存CIパターン(Python側)と対称性が取れ、CI変更差分が最小になる。Nixの主目的である「ローカル開発環境の再現性」は損なわれない。将来的にCIもNix化したくなった場合は独立したタスクとして再検討する。 |
+| ② CIは`pnpm/setup@v2`（`runtime: node@26`でNode+pnpmを1ステップ導入）で直接実行、Nixはローカル開発の再現性確保専用 | ローカルはNix、CIは既存パターン踏襲 | **採用** | 既存CIパターン(Python側)と対称性が取れ、CI変更差分が最小になる。Nixの主目的である「ローカル開発環境の再現性」は損なわれない。将来的にCIもNix化したくなった場合は独立したタスクとして再検討する。 |
 
-**採用**: CIは`actions/setup-node@v...`(Node 26) + `npm install -g pnpm@<pin>`で実行する。Nix flakeはローカル開発環境専用。
+**採用**: CIは`pnpm/setup@v2`(`runtime: node@26`)で実行する。pnpmのバージョンは`package.json`の`packageManager`フィールドから自動検出されるため`version`指定は不要。Nix flakeはローカル開発環境専用。
+
+**実装上の注意**: 当初`actions/setup-node@v5` + `npm install -g pnpm`の順で組んだところ、`actions/setup-node`が`package.json`の`packageManager`フィールドを見てpnpmを自動検出しようとし、その時点ではpnpmが未インストールのため`Unable to locate executable file: pnpm`で失敗した(実PRのCIで確認)。`pnpm/action-setup`も検討したが保守停止のため、後継の`pnpm/setup@v2`（Node/Bun/Denoランタイムのセットアップも兼ねる）に統一した。
 
 ### 2.5 git hook（pre-commit）の実行主体: husky vs 既存pre-commitフレームワーク
 
