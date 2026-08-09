@@ -20,12 +20,18 @@
             pnpm
             biome
             git
+            # Python side kept in the devShell until Issue #255 removes it
+            # (Python and TypeScript coexist for the duration of the Epic).
+            python314
+            uv
           ];
 
           shellHook = ''
             echo "code-review-agent TS toolchain devShell"
             echo "node: $(node -v)"
             echo "pnpm: $(pnpm -v)"
+            echo "python: $(python3 --version)"
+            echo "uv: $(uv --version)"
           '';
         };
       }
