@@ -36,11 +36,17 @@
             echo "gh: $(gh --version | head -1)"
 
             # Keep everyone on the same Stacked PR tooling: gh extensions
-            # aren't Nix packages, so install/update it here. Idempotent
-            # and network-optional after the first successful install.
-            gh extension install github/gh-stack >/dev/null 2>&1 \
-              && echo "gh-stack: $(gh stack --version)" \
-              || echo "warning: could not install/verify gh-stack extension (offline?)"
+            # aren't Nix packages, so install it here, pinned to a known
+            # release tag. Only installs once (checked via `gh extension
+            # list` first) so repeat shell entries don't hit the network
+            # or silently drift past the pin via an implicit upgrade.
+            if gh extension list 2>/dev/null | grep -q "github/gh-stack"; then
+              echo "gh-stack: $(gh stack --version)"
+            else
+              gh extension install github/gh-stack --pin v0.1.0 >/dev/null 2>&1 \
+                && echo "gh-stack: $(gh stack --version)" \
+                || echo "warning: could not install gh-stack extension (offline?)"
+            fi
           '';
         };
       }

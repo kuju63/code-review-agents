@@ -69,7 +69,7 @@ pytestの`--cov-fail-under=75`(CI引数側で指定)と役割を揃える必要�
 | 選択肢 | 概要 | 採用/却下 | 理由 |
 |---|---|---|---|
 | ① huskyの`prepare`スクリプトで`core.hooksPath`をhusky管理下に切り替え | `pnpm install`実行時に`git config core.hooksPath .husky/_`が走り、huskyが`.git`の実質的なhookエントリポイントになる | 却下（実装中に発覚した事故から） | `core.hooksPath`は`.git/config`への書き込みであり**リポジトリの全worktreeで共有**される。実際に試したところ、TS移行と無関係な他のworktree(main含む)のpre-commit(シークレット検知・ruff等)まで無条件に無効化された。`pnpm install`を叩くたびに再発するため、Epic期間中(#251〜#254の各worktreeが本ブランチから分岐するたびに`pnpm install`が走る)繰り返しリスクになる。 |
-| ② 既存`pre-commit`フレームワークがgit hookの所有権を維持し、`.pre-commit-config.yaml`に`local`フック(`lint-staged (biome)`)を1件追加してTS側を委譲する | `entry: nix develop --command pnpm exec lint-staged`を、既存の`shellcheck`ローカルフックと同じ`language: unsupported`パターンで追加。`files: \.(ts|tsx|js|jsx|mjs|cjs|json)$`で対象ファイルが無ければ自動skip | **採用** | worktree間の副作用が一切発生しない。lint-staged(ステージ済みファイルへのbiome適用)という決定事項自体は変更せず、「誰がgit hookのエントリポイントを持つか」だけを変更している。huskyは`.husky/pre-commit`スクリプトとしてリポジトリに存在させておくが、`package.json`に`"prepare": "husky"`は**置かない**(=`pnpm install`では有効化されない)。 |
+| ② 既存`pre-commit`フレームワークがgit hookの所有権を維持し、`.pre-commit-config.yaml`に`local`フック(`lint-staged (biome)`)を1件追加してTS側を委譲する | `entry: nix develop --command pnpm exec lint-staged`を、既存の`shellcheck`ローカルフックと同じ`language: unsupported`パターンで追加。`.ts`/`.tsx`/`.js`/`.jsx`/`.mjs`/`.cjs`/`.json`にマッチする`files`正規表現(詳細は`.pre-commit-config.yaml`本体を参照)で、対象ファイルが無ければ自動skip | **採用** | worktree間の副作用が一切発生しない。lint-staged(ステージ済みファイルへのbiome適用)という決定事項自体は変更せず、「誰がgit hookのエントリポイントを持つか」だけを変更している。huskyは`.husky/pre-commit`スクリプトとしてリポジトリに存在させておくが、`package.json`に`"prepare": "husky"`は**置かない**(=`pnpm install`では有効化されない)。 |
 
 **採用**: `.pre-commit-config.yaml`の`local`フックとして`lint-staged`を追加(既存`shellcheck`フックと同じ`language: unsupported`パターン)。`core.hooksPath`の切り替え(=huskyへの実質移行)は、Python側`.pre-commit-config.yaml`自体が消える#255のタイミングで改めて実施する。
 
@@ -110,7 +110,7 @@ Nix flakeは**gitの管理下にないファイルを評価対象外として無
 | デフォルトUSER | `65532`(nonroot)。ビルドステージではPython builderと同様`USER root`への切り替えが必要（`uid=0(root) gid=0(root)`は存在確認済み） |
 | シェル | `sh`は存在するが`which`等の一部coreutilsは非搭載。パス確認は`command -v`または`ls`で代替する |
 
-**pnpm導入方法**: corepackが同梱されていないため、`node-builder`ステージで`USER root`に切り替えた上で`npm install -g pnpm@<pinned-version>`を実行する（Python builderステージの`USER root`パターンを踏襲）。pnpmのバージョンは`packageManager`フィールド(`package.json`)にも明記し、CI/ローカル/コンテナビルドで一致させる。
+**pnpm導入方法**: corepackが同梱されていないため、`node-builder`ステージで`USER root`に切り替えた上で`npm install -g pnpm@11.20.0`を実行する（Python builderステージの`USER root`パターンを踏襲）。pnpmのバージョンは`packageManager`フィールド(`package.json`)にも明記し、CI/ローカル/コンテナビルドで一致させる。Nix flakeの`pnpm`/`nodejs_26`は`nixos-unstable`由来でCI・コンテナと厳密なバージョン一致を保証しない（`flake.lock`でinput自体は固定されるが、パッケージのマイナー/パッチバージョンはCI・コンテナの明示的pinとは独立）。ローカル開発シェルでの多少のバージョン差は許容し、CI・コンテナビルドの`pnpm@11.20.0`/Node 26を実行時の正とする。
 
 ## 5. モデルプロバイダ・スパイクの結果
 
@@ -137,14 +137,16 @@ new OpenAIModel({
 **成立するが、パッケージバージョンを固定する必要がある(重要な発見)**。
 
 - `@strands-agents/sdk@1.12.0`(2026-08-10時点の最新)は`VercelModel`の`provider`に`@ai-sdk/provider@^3.0.0`ベースの`LanguageModelV3`を要求する(`peerDependencies`で明記)。
-- `ai-sdk-ollama`の最新版(`4.1.0`)は`ai@^7.0.0`(`@ai-sdk/provider` V4世代、`LanguageModelV4`)に追従済みで、`VercelModel`に渡すと型エラーになる(`Type 'LanguageModelV4' is not assignable to type 'LanguageModelV3'`)。
+- `ai-sdk-ollama`の最新版(`4.1.0`)は`ai@^7.0.31`(`@ai-sdk/provider` V4世代、`LanguageModelV4`)に追従済みで、`VercelModel`に渡すと型エラーになる(`Type 'LanguageModelV4' is not assignable to type 'LanguageModelV3'`)。
 - `ai-sdk-ollama@3.8.x`系(`peerDependencies: { ai: "^6.0.197" }`, `@ai-sdk/provider@^3.0.10`)まで下げると`@strands-agents/sdk`の要求と一致し、型チェック・構築ともに成功する。
 
 ```typescript
 import { VercelModel } from "@strands-agents/sdk/models/vercel";
-import { ollama } from "ai-sdk-ollama"; // ★ "ai-sdk-ollama": "3.8.x" に固定する
+import { createOllama } from "ai-sdk-ollama"; // ★ "ai-sdk-ollama": "3.8.x" に固定する
 
-const model = new VercelModel({ provider: ollama("gpt-oss-120b") });
+// host(baseURL)はプロバイダ側の設定であり、モデル呼び出し側の第2引数では指定できない
+const ollamaProvider = createOllama({ baseURL: "http://localhost:11434" });
+const model = new VercelModel({ provider: ollamaProvider("gpt-oss-120b") });
 ```
 
 **#252スコープへの影響**: `ai-sdk-ollama`の依存を`3.8.x`にピン留めする(Renovate等の自動更新が`4.x`へ上げないよう除外設定が必要)。`@strands-agents/sdk`側が将来`@ai-sdk/provider` V4に対応した時点でピン留めを解除できるか再確認する。この制約は#252着手時に`packages/agent-core/package.json`へ引き継ぐ。
@@ -158,7 +160,7 @@ const model = new VercelModel({ provider: ollama("gpt-oss-120b") });
 Epic全体(#249〜#255)を直列のStacked PRとして進めるにあたり、`gh`(GitHub CLI)と拡張機能[`gh-stack`](https://github.com/github/gh-stack)をNix devShell経由で提供する。手動での`git switch -c` + `gh pr create --base <直前のブランチ>` + マージ後の`gh pr edit --base main`付け替えは、ブランチ数が増えるほど付け替え忘れのリスクが高くなるため、`gh-stack`のスタック管理コマンド（`push` / `submit` / `sync` / `rebase` / `up` / `down` / `top` / `bottom`等）に置き換える。
 
 - `flake.nix`の`devShells.default.packages`に`gh`を追加済み（`nix develop`で`gh`が使用可能）。
-- `gh-stack`拡張はNixパッケージではなく`gh`のプラグイン機構で管理されるため`packages`には含められないが、**全員が同一の環境になるよう`shellHook`で`gh extension install github/gh-stack`を自動実行する**（冪等: 既にインストール済みなら即座に成功する）。手動でのインストール手順を案内する必要はなく、`nix develop`するだけで`gh stack`コマンドが使えるようになる。
+- `gh-stack`拡張はNixパッケージではなく`gh`のプラグイン機構で管理されるため`packages`には含められないが、**全員が同一の環境になるよう`shellHook`で自動インストールする**。`gh extension list`で未導入の場合のみ`gh extension install github/gh-stack --pin v0.1.0`を実行し(リリースタグに固定、暗黙のアップグレードでpinをすり抜けない)、導入済みの場合はバージョン表示のみで再インストールは行わない(`gh extension install`はデフォルトでは導入済みだと失敗するため、事前チェックで分岐させている)。手動でのインストール手順を案内する必要はなく、`nix develop`するだけで`gh stack`コマンドが使えるようになる。拡張自体を更新する場合は`gh extension upgrade stack`を使い、`--pin`のタグをこのドキュメントとflake.nixの両方で更新する。
 - 各Sub-Issueのブランチ作成・PR作成・親ブランチへのリベース/追従は`gh stack`コマンド経由で行う。詳細な運用（コミット粒度・PRタイトル規約等）は#251着手時に確定させる。
 
 ## 7. #251以降への申し送り

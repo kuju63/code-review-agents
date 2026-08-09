@@ -9,7 +9,7 @@
 import { Agent } from "@strands-agents/sdk";
 import { OpenAIModel } from "@strands-agents/sdk/models/openai";
 import { VercelModel } from "@strands-agents/sdk/models/vercel";
-import { ollama } from "ai-sdk-ollama";
+import { createOllama } from "ai-sdk-ollama";
 
 // (a) OpenAI-compatible base_url, mirrors ProviderType.OPENAI in
 // model_provider_factory.py (client_args={"base_url": llm_base_url}).
@@ -21,11 +21,13 @@ const openaiCompatModel = new OpenAIModel({
 });
 
 // (b) Ollama, mirrors ProviderType.OLLAMA (native host, not the /v1 suffix).
-const ollamaProvider = ollama("gpt-oss-120b", {
-  // ai-sdk-ollama defaults to http://localhost:11434/api; passing baseURL
-  // explicitly here to mirror model_provider_factory.py's `host` param.
+// The host is a property of the *provider* (createOllama), not of the model
+// call — ollama("model-id") only takes model-level settings as its second
+// argument and does not accept a baseURL there.
+const ollamaProvider = createOllama({
+  baseURL: "http://localhost:11434",
 });
-const ollamaModel = new VercelModel({ provider: ollamaProvider });
+const ollamaModel = new VercelModel({ provider: ollamaProvider("gpt-oss-120b") });
 
 // Both construct successfully as Strands `Model` instances; the SDK type
 // system accepts either directly as `Agent({ model })`.
