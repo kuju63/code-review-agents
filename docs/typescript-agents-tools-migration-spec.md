@@ -406,3 +406,98 @@ otherwise an empty set」)。
   (`public`、デフォルト`false`)と`LLMReviewAgent`でのオーバーライド(`this.usesGithubMcp`を返す)を追加した。
   既存の`usesGithubMcp`を`public`に変更しなかったのは、サブクラス側で`protected`のまま再宣言している箇所
   (例: `base-reviewer.review.test.ts`の`NoMcpReviewer`)がTSの可視性の絞り込み禁止規則により壊れるため。
+
+## 7. スライスD: `pr-info-collector`
+
+Sub-Issue [#262](https://github.com/kuju63/code-review-agents/issues/262)。スライスC
+(`feat/ts-migration/261-orchestrator-lead-engineer`、PR #266)の上にStacked PRとして積む。
+`pr_info_collector.py`(716行)を`packages/agent-core/src/agents/pr-info-collector.ts`へ移植する。
+
+**5.7の記述に対する訂正**: 本ドキュメント§5.7は「既知のツール未使用バグ(structured_output単独呼び出しで
+MCPツールを使わず幻覚する問題、未修正)」をスライスD独立の理由として挙げているが、これは執筆時点で参照した
+古い情報に基づく。移植元の現行`pr_info_collector.py`は`docs/pr-info-collector-tooluse-fix-spec.md`が
+記録する経緯を経て**既に案E「完全決定論化」へ修正済み**であり、PR情報はLLMのtool-useループやstructured_output
+ではなく`mcp_client.call_tool_sync()`の直接呼び出し結果をコードから直接マッピングして取得する。LLMが関与する
+のは`project_summary`(READMEの要約)の1箇所のみで、この呼び出しにもツールは渡されない。§5.7の「独立スライス
+にする」という結論(スタックの深さ管理)自体は妥当なため覆さないが、理由付けの前提が古いことをここに記録する。
+
+### 7.1 MCP接続の所有権(`SharedMcpClient`は不使用、単独所有の`connect`/`disconnect`)
+
+ADR-0004(`docs/adr/0004-mcp-client-session-sharing.md`) Decision 1(L96)は「MCP接続の共有範囲は並列
+レビュアー群の内部のみとし、PR情報収集は対象外とする」と明記している。スライスAの`SharedMcpClient`
+(参照カウント方式、`tools/shared-mcp-client.ts`)はレビュアー間の共有を前提にした設計であり、
+pr-info-collectorには適用対象がそもそも存在しない。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `SharedMcpClient`でラップして参照カウント管理する | オーケストレーターと同じ参照カウントパターンを踏襲する | 却下 | pr-info-collectorはMCPクライアントを他の誰とも共有しない唯一の消費者であり、参照カウントは常に1のまま。カウント管理のオーバーヘッドが実体のない抽象化になる。ADR-0004 Decision 1が明示的にスコープ外としている |
+| ② `createGithubMcpClient`(`tools/github-mcp.ts`)を直接使い、`collect()`内で`connect()`→`try`→`finally`で`disconnect()`する | `base-reviewer.ts`の「専有クライアント」分岐(`ownsMcpClient`、L270-304)と同型の単純なtry/finallyパターン | **採用** | ADR-0004の設計方針と一致し、実装も既存パターンの再利用で完結する。`connect()`自体が失敗した場合も`disconnect()`が呼ばれることをテストで保証する(Python版の`start`/`stop`保証テストに対応) |
+
+**採用**: `createGithubMcpClient`を直接使う単独所有パターン。`SharedMcpClient`は使わない。
+
+### 7.2 GitHub MCP接続のretry(既存の`createGithubMcpClient`をそのまま再利用)
+
+`createGithubMcpClient`(`tools/github-mcp.ts` L35-61)は生成時に`connect()`を`withRetry`(`tools/retry.ts`、
+tenacityの`wait_random_exponential`と同じフルジッター指数バックオフ)でラップ済みで、`retryAttempts`/
+`retryBackoffSeconds`オプションを既に公開している。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① pr-info-collector側で独自にretryを組み直す | Python版の`mcp_startup_retry_attempts`/`mcp_startup_retry_backoff_seconds`用に専用のretryラッパーを書く | 却下 | `createGithubMcpClient`が既に同じ意味論(ADR-0003準拠)のretryを内蔵しており、二重実装になる |
+| ② `createGithubMcpClient`のオプションへそのままマッピングする | `PRInfoCollectorConfig.mcpStartupRetryAttempts`/`mcpStartupRetryBackoffSeconds`を`retryAttempts`/`retryBackoffSeconds`として渡す | **採用** | 既存実装の再利用のみで、Python版のリトライ挙動(ADR-0003)を落とさず移植できる |
+
+**採用**: `createGithubMcpClient`のオプションをそのまま使う。追加のretry実装はしない。
+
+### 7.3 MCPツール直接呼び出しのAPI形状(`callTool`は`McpTool`インスタンスを要求する)
+
+Python版`mcp_client.call_tool_sync(tool_use_id, name, arguments)`はツール名を文字列で直接渡せるが、
+`@strands-agents/sdk`の`McpClient.callTool(tool: McpTool, args: JSONValue, options?): Promise<JSONValue>`
+(`dist/src/mcp/client.d.ts` L214、`node_modules`の型定義を一次情報として確認済み)は`McpTool`インスタンスを
+要求し、ツール名文字列は受け付けない。`McpTool`は`listTools(): Promise<McpTool[]>`(同ファイル L193)からのみ
+取得できる。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① 呼び出しの都度`listTools()`し直して名前で検索する | 各`_readXxx`メソッドが個別に`listTools()`を呼ぶ | 却下 | 同一接続内でツール一覧は変わらないため、毎回のリスト取得は無駄なラウンドトリップになる |
+| ② `connect()`直後に一度だけ`listTools()`し、`Map<string, McpTool>`を構築して以降の全呼び出しで再利用する。名前解決に失敗したら明示的なエラーを投げるヘルパー(Python版`_tool_text_blocks`相当の結果テキスト抽出も同じヘルパーに寄せる)を用意する | `collect()`冒頭で1回だけ`listTools()`し、内部ヘルパー`callMcpTool(name, args)`が`Map`から`McpTool`を解決して`client.callTool(tool, args)`を呼ぶ | **採用** | ラウンドトリップを1回に抑えられ、Python版の「ツール名文字列で直接呼ぶ」という呼び出し側の見た目をヘルパー経由で再現できる。未知のツール名は`Map.get`が`undefined`を返すため、フェイルファストなエラーにしやすい |
+
+**採用**: `collect()`冒頭で`await client.listTools()`を1回実行し`Map<string, McpTool>`を構築、`callMcpTool(name, args)`ヘルパー経由で全MCP呼び出しを行う。`McpClient.callTool`の戻り値(`JSONValue`)は実体としてMCP標準の`{content: [...], isError?}`形状(`_client.callTool`の生の戻り値、`dist/src/mcp/client.js` L281で確認済み)なので、Python版`_tool_text_blocks`と同じ`content[].text`抽出ロジックを同ヘルパー内に実装する。
+
+### 7.4 `collect()`の非同期化
+
+Python版`PRInfoCollector.collect()`は同期メソッドで、呼び出し元`api/agents/pr_info_collector.py`が
+`asyncio.to_thread`で包んでいる。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① 同期メソッドとして実装する | Node上で同期I/Oはそもそも成立しない(`McpClient`のAPIは全てPromiseベース) | 却下 | TSでは技術的に不可能。SDKのAPIが非同期のみ |
+| ② `async collect(owner, repository, prNumber): Promise<PRInfoResult>`として実装する | スライスCの`run`/`run_async`統合(§5.4)と同じ方針 | **採用** | JSに「イベントループの外から呼ぶ同期ラッパー」という概念は存在しない。A2Aルーター側の実際の結線(`asyncio.to_thread`相当の扱いが不要になる点を含む)は#253のスコープで、本スライスの対象外 |
+
+**採用**: `async collect(owner, repository, prNumber): Promise<PRInfoResult>`のみを公開する。
+
+### 7.5 インフラエラー判定(既存の`isInfraError`をそのまま再利用)
+
+Python版はMCP呼び出し箇所ごとに`except INFRA_EXCEPTIONS: raise`(インフラ障害は再送出、それ以外は
+フォールバック値で握りつぶし事実データを失わない)というパターンを繰り返す。TS版の`isInfraError`
+(`agents/exceptions.ts`、§5.2で確定済み)は`GithubMcpConnectionError`と内容起因3種を除く`ModelError`を
+infra判定するもので、スライスCがレビュアー/モデル呼び出し向けに定義したものだが、`GithubMcpConnectionError`
+の判定はpr-info-collectorのMCP呼び出し失敗にもそのまま当てはまる。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① pr-info-collector専用の新しいエラー分類を追加する | Python版`INFRA_EXCEPTIONS`(`EventLoopException`/`MCPClientInitializationError`/`ToolProviderException`/`TransportError`)に1:1対応する新規判定関数を作る | 却下 | これらのPython例外はいずれもMCP接続/ツールプロバイダ層の失敗で、TS版では`createGithubMcpClient`が失敗を全て`GithubMcpConnectionError`に集約済み(§2.3/§2.8)。新規分類を追加しても`isInfraError`の`GithubMcpConnectionError`分岐と重複するだけ |
+| ② 既存の`isInfraError`をそのまま再利用する | MCP呼び出しヘルパー(`callMcpTool`)やREADME要約の`Agent.invoke()`の失敗を`isInfraError`で判定し、true→再送出、false→フォールバック値(空配列/null/空文字)で握りつぶす | **採用** | 新規実装ゼロで済み、スライスCとの一貫性も保たれる。`isInfraError`は判定対象が`GithubMcpConnectionError`/`ModelError`系であり、pr-info-collectorが投げうるエラーの種類(MCP接続失敗、README要約のモデル呼び出し失敗)をカバーしている |
+
+**採用**: 既存`isInfraError`をそのまま再利用する。新規のエラー分類は追加しない。
+
+### 7.6 クラス設計(`ReviewAgent`/`LLMReviewAgent`を継承しない独立クラス)
+
+`base-reviewer.ts`の両基底クラスは「`ReviewContext`を受け取り`ReviewResult`を返す」「LLMの`structuredOutputSchema`
+を必ず使う」という契約を持つ。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `LLMReviewAgent`を継承する | 既存レビュアーと同じ基底クラスに寄せる | 却下 | 戻り値型が`ReviewResult`ではなく`PRInfoResult`、MCP呼び出しがLLM経由(`Agent`の`tools`配列)ではなく直接呼び出し、LLMは`structuredOutputSchema`を使わないREADME要約1箇所のみ、という3点いずれも基底クラスの契約と合わない |
+| ② 独立クラス`PRInfoCollector`として新規実装する | `ReviewAgent`/`LLMReviewAgent`を継承しない | **採用** | Python版`PRInfoCollector`も`ReviewAgent`相当の基底クラスを継承しない独立クラスであり、契約の不一致を無理に埋めない方が実体に忠実 |
+
+**採用**: `PRInfoCollector`は独立クラスとして実装する。`models/pr-info.ts`(Zodスキーマ)は流用のみで変更しない。
