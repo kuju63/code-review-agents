@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { PRInfoResult } from "../models/pr-info.js";
-import type { ReviewContext } from "../models/review.js";
+import { ProjectType, type ReviewContext, ReviewPerspective } from "../models/review.js";
 import {
   annotatePatch,
   buildPrompt,
   composeSystemPrompt,
+  LLMReviewAgent,
+  ReviewAgent,
   STRUCTURED_OUTPUT_DIRECTIVE,
 } from "./base-reviewer.js";
 
@@ -24,6 +26,49 @@ function makePrInfo(overrides: Partial<PRInfoResult> = {}): PRInfoResult {
     ...overrides,
   };
 }
+
+class PlainFakeReviewer extends ReviewAgent {
+  static readonly reviewerId = "plain-fake";
+  static readonly perspective = ReviewPerspective.enum.TECHNICAL;
+  static readonly projectTypes = new Set([ProjectType.enum.REACT_TS]);
+  review(): never {
+    throw new Error("not implemented in this fake");
+  }
+}
+
+class DefaultLLMFakeReviewer extends LLMReviewAgent {
+  static readonly reviewerId = "default-llm-fake";
+  static readonly perspective = ReviewPerspective.enum.TECHNICAL;
+  static readonly projectTypes = new Set([ProjectType.enum.REACT_TS]);
+  protected readonly systemPrompt = "fake";
+}
+
+class NoMcpLLMFakeReviewer extends LLMReviewAgent {
+  static readonly reviewerId = "no-mcp-llm-fake";
+  static readonly perspective = ReviewPerspective.enum.TECHNICAL;
+  static readonly projectTypes = new Set([ProjectType.enum.REACT_TS]);
+  protected readonly systemPrompt = "fake";
+  protected readonly usesGithubMcp = false;
+}
+
+describe("ReviewAgent.needsGithubMcp", () => {
+  it("defaults to false on a plain ReviewAgent subclass", () => {
+    const reviewer = new PlainFakeReviewer({ githubToken: "t" });
+    expect(reviewer.needsGithubMcp).toBe(false);
+  });
+});
+
+describe("LLMReviewAgent.needsGithubMcp", () => {
+  it("reflects the default usesGithubMcp = true", () => {
+    const reviewer = new DefaultLLMFakeReviewer({ githubToken: "t" });
+    expect(reviewer.needsGithubMcp).toBe(true);
+  });
+
+  it("reflects usesGithubMcp = false when a reviewer opts out", () => {
+    const reviewer = new NoMcpLLMFakeReviewer({ githubToken: "t" });
+    expect(reviewer.needsGithubMcp).toBe(false);
+  });
+});
 
 describe("STRUCTURED_OUTPUT_DIRECTIVE", () => {
   it("instructs the model to avoid prose/markdown output", () => {

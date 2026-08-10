@@ -238,6 +238,17 @@ export abstract class ReviewAgent {
     return this.constructor as ReviewerClass;
   }
 
+  /**
+   * Orchestrator-facing read of whether this reviewer needs a GitHub MCP
+   * client. Unlike the `usesGithubMcp` behavior knob (protected, subclass
+   * only), this is public so the orchestrator (slice C) can decide whether to
+   * bootstrap a shared client without instantiation-time access to protected
+   * state. Defaults to `false`; `LLMReviewAgent` overrides it.
+   */
+  get needsGithubMcp(): boolean {
+    return false;
+  }
+
   /** Review the change described by `context`. */
   abstract review(context: ReviewContext, projectType?: ProjectType): Promise<ReviewResult>;
 }
@@ -253,6 +264,11 @@ export abstract class LLMReviewAgent extends ReviewAgent {
   protected readonly usesGithubMcp: boolean = true;
   protected readonly usesUrlFetch: boolean = false;
   protected readonly skillType: AgentSkillType = AgentSkillType.NONE;
+
+  /** Public mirror of {@link usesGithubMcp} for the orchestrator (slice C). */
+  override get needsGithubMcp(): boolean {
+    return this.usesGithubMcp;
+  }
 
   /**
    * Run this reviewer's Strands `Agent` against `context` and collect its output.
