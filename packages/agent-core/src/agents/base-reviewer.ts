@@ -7,7 +7,23 @@
  * metadata and system prompt, so behavior is configured rather than re-coded.
  */
 
-import type { ReviewContext } from "../models/review.js";
+import type { McpClient } from "@strands-agents/sdk";
+import { Agent, type Plugin } from "@strands-agents/sdk";
+import { httpRequest } from "@strands-agents/sdk/vended-tools/http-request";
+import {
+  type ProjectType,
+  type ReviewContext,
+  type ReviewOutput,
+  ReviewOutputSchema,
+  type ReviewPerspective,
+  type ReviewResult,
+} from "../models/review.js";
+import { AgentSkillType, createAgentSkills } from "../skills/agent-skills-factory.js";
+import { createFileReadTool } from "../tools/file-read-tool.js";
+import { createGithubMcpClient, GITHUB_MCP_URL } from "../tools/github-mcp.js";
+import { OllamaUnsupportedContentSanitizer } from "../tools/tool-result-sanitizer.js";
+import { StructuredOutputMissingError } from "./exceptions.js";
+import { createModelProvider, ProviderType } from "./model-provider-factory.js";
 
 // Small models sometimes end their turn with a free-form Markdown review
 // report instead of invoking the forced structured-output tool, which the SDK
@@ -156,4 +172,176 @@ export function buildPrompt(context: ReviewContext): string {
   );
 
   return lines.join("\n");
+}
+
+/**
+ * Shared runtime configuration injected into each reviewer.
+ *
+ * Only `githubToken` is required; every other field has a default applied at
+ * its point of use in `LLMReviewAgent.review()`, mirroring Python's frozen
+ * dataclass defaults.
+ */
+export interface ReviewerConfig {
+  /** GitHub token used for the GitHub MCP `Authorization` header. */
+  githubToken: string;
+  /** OpenAI-compatible model ID used by every reviewer. Defaults to `"gpt-4o"`. */
+  modelId?: string;
+  /** GitHub MCP endpoint URL. Defaults to {@link GITHUB_MCP_URL}. */
+  mcpUrl?: string;
+  llmBaseUrl?: string;
+  /** Which backend `createModelProvider` builds the model against. Defaults to `"openai"`. */
+  providerType?: ProviderType;
+  /** Maximum agent loop iterations per invocation. Defaults to `30`. */
+  maxAgentTurns?: number;
+  /** Maximum tokens the model may generate in a single completion. Unset disables the cap. */
+  maxTokens?: number;
+  /** OpenAI-compatible frequency penalty (-2.0 to 2.0). Unset omits it. */
+  frequencyPenalty?: number;
+  /**
+   * Wall-clock timeout in seconds for the full concurrent batch of
+   * reviewers. Not consumed here -- only by the review orchestrator (slice C).
+   */
+  reviewerTimeoutSeconds?: number;
+  /** Maximum GitHub MCP startup attempts (including the first). Defaults to `3`. */
+  mcpStartupRetryAttempts?: number;
+  /** Base wait time in seconds for the startup retry's exponential backoff+jitter. Defaults to `1`. */
+  mcpStartupRetryBackoffSeconds?: number;
+}
+
+/**
+ * Constructor + registry-selection-metadata shape every concrete reviewer
+ * class must satisfy. Declared as `static readonly` on each concrete class
+ * (not on `ReviewAgent` itself) so `registry.ts` can select reviewers by
+ * class -- without instantiating them -- purely against this interface.
+ */
+export interface ReviewerClass<T extends ReviewAgent = ReviewAgent> {
+  new (config: ReviewerConfig): T;
+  readonly reviewerId: string;
+  readonly perspective: ReviewPerspective;
+  readonly projectTypes: ReadonlySet<ProjectType>;
+}
+
+/**
+ * Interface for a reviewer in the parallel review stage.
+ *
+ * Subclasses declare their identity and scope via `static readonly`
+ * properties satisfying {@link ReviewerClass} and implement `review()`. The
+ * registry indexes reviewers by perspective x project types; the
+ * orchestrator instantiates them with a {@link ReviewerConfig} and runs
+ * `review()` concurrently.
+ */
+export abstract class ReviewAgent {
+  constructor(protected readonly config: ReviewerConfig) {}
+
+  /** This instance's own class, typed with its registry-selection metadata. */
+  protected get reviewerClass(): ReviewerClass {
+    return this.constructor as ReviewerClass;
+  }
+
+  /** Review the change described by `context`. */
+  abstract review(context: ReviewContext, projectType?: ProjectType): Promise<ReviewResult>;
+}
+
+/**
+ * LLM-backed reviewer using a Strands `Agent` and GitHub MCP.
+ *
+ * Concrete reviewers set `systemPrompt` (and optionally toggle
+ * `usesGithubMcp`/`usesUrlFetch`/`skillType`).
+ */
+export abstract class LLMReviewAgent extends ReviewAgent {
+  protected abstract readonly systemPrompt: string;
+  protected readonly usesGithubMcp: boolean = true;
+  protected readonly usesUrlFetch: boolean = false;
+  protected readonly skillType: AgentSkillType = AgentSkillType.NONE;
+
+  /**
+   * Run this reviewer's Strands `Agent` against `context` and collect its output.
+   *
+   * Builds the prompt, wires the GitHub MCP client (shared or per-reviewer)
+   * and any configured skill plugin, then forces the agent to emit a
+   * `ReviewOutput` via `structuredOutputSchema`.
+   *
+   * Unlike Python's `agent.cleanup()`, the TS SDK's `Agent` has no cleanup
+   * method at all, so MCP client cleanup ownership lives entirely in this
+   * method's `finally` block (spec doc section 4.2): a shared client
+   * (`context.sharedMcpClient`) is never disconnected here -- that is the
+   * caller's (orchestrator's) responsibility -- while a client this call
+   * created itself is always disconnected.
+   */
+  async review(context: ReviewContext, projectType?: ProjectType): Promise<ReviewResult> {
+    const prompt = buildPrompt(context);
+    const providerType = this.config.providerType ?? ProviderType.OPENAI;
+    const model = createModelProvider(providerType, this.config.modelId ?? "gpt-4o", {
+      llmBaseUrl: this.config.llmBaseUrl,
+      temperature: 0.1,
+      maxTokens: this.config.maxTokens,
+      frequencyPenalty: this.config.frequencyPenalty,
+    });
+
+    const tools: (McpClient | ReturnType<typeof createFileReadTool> | typeof httpRequest)[] = [];
+    let mcpClient: McpClient | undefined;
+    let ownsMcpClient = false;
+    if (this.usesGithubMcp) {
+      if (context.sharedMcpClient) {
+        mcpClient = context.sharedMcpClient;
+      } else {
+        mcpClient = createGithubMcpClient(
+          this.config.githubToken,
+          this.config.mcpUrl ?? GITHUB_MCP_URL,
+          {
+            retryAttempts: this.config.mcpStartupRetryAttempts ?? 3,
+            retryBackoffSeconds: this.config.mcpStartupRetryBackoffSeconds ?? 1,
+          },
+        );
+        ownsMcpClient = true;
+      }
+      tools.push(mcpClient);
+    }
+
+    if (this.usesUrlFetch) {
+      tools.push(httpRequest);
+    }
+
+    const plugins: Plugin[] = [];
+    if (this.skillType !== AgentSkillType.NONE) {
+      tools.push(createFileReadTool());
+      plugins.push(createAgentSkills(this.skillType));
+    }
+
+    if (providerType === ProviderType.OLLAMA) {
+      plugins.push(new OllamaUnsupportedContentSanitizer());
+    }
+
+    try {
+      const agent = new Agent({
+        model,
+        systemPrompt: composeSystemPrompt(this.systemPrompt),
+        tools,
+        plugins,
+      });
+
+      const result = await agent.invoke(prompt, {
+        structuredOutputSchema: ReviewOutputSchema,
+        limits: { turns: this.config.maxAgentTurns ?? 30 },
+      });
+
+      if (result.structuredOutput === undefined) {
+        throw new StructuredOutputMissingError(
+          `Reviewer '${this.reviewerClass.reviewerId}'`,
+          result.stopReason,
+        );
+      }
+
+      return {
+        reviewerId: this.reviewerClass.reviewerId,
+        perspective: this.reviewerClass.perspective,
+        projectType: projectType ?? null,
+        output: result.structuredOutput as ReviewOutput,
+      };
+    } finally {
+      if (ownsMcpClient && mcpClient) {
+        await mcpClient.disconnect();
+      }
+    }
+  }
 }
