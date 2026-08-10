@@ -249,6 +249,8 @@ export class PRInfoCollector {
     // lifecycle. connect() runs inside the try so a failing connect (e.g.
     // auth error, exhausted retries) still reaches finally and disconnects;
     // disconnect() is safe to call even when connect() never completed.
+    let mainOperationFailed = false;
+    let pendingDisconnectError: unknown;
     try {
       await mcpClient.connect();
       const tools = await mcpClient.listTools();
@@ -276,8 +278,33 @@ export class PRInfoCollector {
         headRef,
         dependencyFiles,
       );
+    } catch (error) {
+      mainOperationFailed = true;
+      throw error;
     } finally {
-      await mcpClient.disconnect();
+      // `disconnect()` awaits `_client.close()` then `_transport.close()` in
+      // sequence, so a failure there thrown directly from this `finally`
+      // would silently replace a real error from the block above (JS
+      // `finally`-throw-overrides-`try`-throw semantics, flagged by
+      // biome's `noUnsafeFinally`). When the main operation already failed,
+      // disconnect failures are merely logged so the caller sees the
+      // original, more actionable error; otherwise the disconnect failure
+      // is stashed and thrown below, once control is known to have left
+      // this `finally` without an in-flight exception.
+      try {
+        await mcpClient.disconnect();
+      } catch (disconnectError) {
+        if (mainOperationFailed) {
+          console.warn(
+            `Failed to disconnect the GitHub MCP client while handling a prior error: ${String(disconnectError)}`,
+          );
+        } else {
+          pendingDisconnectError = disconnectError;
+        }
+      }
+    }
+    if (pendingDisconnectError !== undefined) {
+      throw pendingDisconnectError;
     }
 
     // The README summary is the only non-deterministic step. It must never
@@ -387,8 +414,12 @@ export class PRInfoCollector {
     if (firstText === undefined) {
       return {};
     }
-    const parsed: unknown = JSON.parse(firstText);
-    return isPlainRecord(parsed) ? parsed : {};
+    try {
+      const parsed: unknown = JSON.parse(firstText);
+      return isPlainRecord(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
   }
 
   /**
@@ -415,7 +446,14 @@ export class PRInfoCollector {
         perPage: FILES_PER_PAGE,
       });
       const firstText = texts.at(0);
-      const parsed: unknown = firstText !== undefined ? JSON.parse(firstText) : [];
+      let parsed: unknown = [];
+      if (firstText !== undefined) {
+        try {
+          parsed = JSON.parse(firstText);
+        } catch {
+          parsed = [];
+        }
+      }
       const batch: unknown[] = Array.isArray(parsed) ? parsed : [];
       if (batch.length === 0) {
         break;

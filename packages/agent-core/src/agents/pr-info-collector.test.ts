@@ -293,6 +293,40 @@ describe("PRInfoCollector.collect", () => {
     expect(result.prInfo).toMatchObject({ title: "", prNumber: 99, body: null, labels: [] });
   });
 
+  it("defaults PR metadata when the pull_request_read tool returns malformed (non-JSON) text", async () => {
+    const dispatch = createDispatch({
+      directoryListings: { "/": [] },
+      onCall: (toolName, args) => {
+        if (toolName === "pull_request_read" && args.method === "get") {
+          return mcpTextResult("not valid json {");
+        }
+        return undefined;
+      },
+    });
+    mockCreateGithubMcpClient.mockReturnValue(makeMcpClient(dispatch));
+
+    const result = await new PRInfoCollector(BASE_CONFIG).collect("octocat", "hello-world", 99);
+
+    expect(result.prInfo).toMatchObject({ title: "", prNumber: 99, body: null, labels: [] });
+  });
+
+  it("treats a malformed (non-JSON) get_files page as empty and stops paginating", async () => {
+    const dispatch = createDispatch({
+      directoryListings: { "/": [] },
+      onCall: (toolName, args) => {
+        if (toolName === "pull_request_read" && args.method === "get_files") {
+          return mcpTextResult("not valid json {");
+        }
+        return undefined;
+      },
+    });
+    mockCreateGithubMcpClient.mockReturnValue(makeMcpClient(dispatch));
+
+    const result = await new PRInfoCollector(BASE_CONFIG).collect("octocat", "hello-world", 42);
+
+    expect(result.prInfo.fileChanges).toEqual([]);
+  });
+
   it("falls back to patch: null for a changed file with no patch field", async () => {
     const dispatch = createDispatch({
       filesPages: [[{ filename: "src/Icon.tsx" }]],
@@ -711,6 +745,37 @@ describe("PRInfoCollector.collect", () => {
       new PRInfoCollector(BASE_CONFIG).collect("octocat", "hello-world", 42),
     ).rejects.toThrow("connect failed");
     expect(client.disconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it("propagates the original error, not the disconnect() failure, when both fail", async () => {
+    const dispatch = createDispatch();
+    const client = makeMcpClient(dispatch);
+    client.connect.mockRejectedValue(new Error("connect failed"));
+    client.disconnect.mockRejectedValue(new Error("disconnect also failed"));
+    mockCreateGithubMcpClient.mockReturnValue(client);
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
+    await expect(
+      new PRInfoCollector(BASE_CONFIG).collect("octocat", "hello-world", 42),
+    ).rejects.toThrow("connect failed");
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Failed to disconnect the GitHub MCP client while handling a prior error",
+      ),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it("rethrows a disconnect() failure when the main operation otherwise succeeded", async () => {
+    const dispatch = createDispatch({ directoryListings: { "/": [] } });
+    const client = makeMcpClient(dispatch);
+    client.disconnect.mockRejectedValue(new Error("disconnect failed"));
+    mockCreateGithubMcpClient.mockReturnValue(client);
+
+    await expect(
+      new PRInfoCollector(BASE_CONFIG).collect("octocat", "hello-world", 42),
+    ).rejects.toThrow("disconnect failed");
   });
 
   it("throws when the MCP server does not advertise a required tool", async () => {
