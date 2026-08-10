@@ -7,6 +7,8 @@
   "types": "./dist/index.d.ts",
   "dependencies": {
     "@strands-agents/sdk": "^1.12.0",
+    "ai-sdk-ollama": "^3.8.8",
+    "yaml": "^2.9.0",
     "zod": "^4.1.12"
   }
 }
