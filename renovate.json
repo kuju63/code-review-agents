@@ -12,6 +12,10 @@
     {
       "matchPackageNames": ["serena-agent"],
       "allowedVersions": "/^[0-9]+(?:\\.[0-9]+)*$/"
+    },
+    {
+      "matchPackageNames": ["ai-sdk-ollama"],
+      "allowedVersions": "/^3\\.8\\./"
     }
   ],
   "customManagers": [
