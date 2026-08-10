@@ -41,6 +41,29 @@ uv run code-review-agent
 
 Current CLI entrypoint is a placeholder that prints `Hello from code-review-agent!`.
 
+### TypeScript Toolchain (Issue #250)
+
+For **local development**, the repository-root Nix flake provides the TypeScript
+toolchain (Node 26, pnpm, biome, plus `uv`/`python3.14`/`gh`/`gh-stack` for the
+duration of the Python↔TS migration Epic, see
+[#249](https://github.com/kuju63/code-review-agents/issues/249)). **Always prefix
+local shell commands that need this toolchain with `nix develop --command`** (or
+run them from inside an active `nix develop` shell) rather than assuming pnpm/
+biome/gh/etc. are on the host PATH.
+
+Nix is local-only: CI (`.github/workflows/ci.yaml`) sets up Node/pnpm via
+`pnpm/setup@v2`, not Nix, and the container build's `node-builder`/`node-runtime`
+stages use the `registry.access.redhat.com/hi/nodejs:26` hardened images directly.
+See [docs/typescript-toolchain-spec.md](docs/typescript-toolchain-spec.md) §2.4 for
+why CI/containers don't go through Nix.
+
+```bash
+nix develop --command pnpm install --frozen-lockfile
+nix develop --command pnpm run lint
+nix develop --command pnpm run typecheck
+nix develop --command pnpm run test
+```
+
 ### Evaluation Pipeline
 
 ```bash

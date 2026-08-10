@@ -51,17 +51,24 @@ jobs:
         if: github.event_name == 'push'
         with:
           context: .
+          # Explicit target (Issue #250): the Dockerfile now also defines
+          # node-builder/node-runtime stages that coexist with this Python
+          # target until Issue #255. Pinning `target: runtime` guarantees
+          # the pushed image stays the Python production build regardless
+          # of stage order in the file (see docs/typescript-toolchain-spec.md §4.1).
+          target: runtime
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             quay.io/kuju63/code-review-agent:latest
             quay.io/kuju63/code-review-agent:${{ steps.vars.outputs.SHORT_SHA }}
-            
+
       - name: Build and push tagged image
         uses: docker/build-push-action@v7
         if: github.event_name == 'release'
-        with: 
+        with:
           context: .
+          target: runtime
           platforms: linux/amd64,linux/arm64
           push: true
           tags: quay.io/kuju63/code-review-agent:${{ steps.vars-version.outputs.VERSION }}
