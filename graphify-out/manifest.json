@@ -2375,8 +2375,8 @@
     "semantic_hash": ""
   },
   "docs/typescript-agents-tools-migration-spec.md": {
-    "mtime": 1786346655.481657,
-    "ast_hash": "2368782cfbfd89fc3ba4f3032cb1ce40",
+    "mtime": 1786350043.0036788,
+    "ast_hash": "e82b8d128e09ec45e1264b63c0d20ef1",
     "semantic_hash": ""
   },
   "docs/typescript-models-migration-spec.md": {
@@ -2392,6 +2392,16 @@
   "pnpm-workspace.yaml": {
     "mtime": 1786345694.8231404,
     "ast_hash": "311a5b409e9ebf0716e1441f3607c47d",
+    "semantic_hash": ""
+  },
+  "packages/agent-core/src/agents/pr-info-collector.test.ts": {
+    "mtime": 1786351121.881695,
+    "ast_hash": "dbb19fb7edf4f7717fe974570ccb06cf",
+    "semantic_hash": ""
+  },
+  "packages/agent-core/src/agents/pr-info-collector.ts": {
+    "mtime": 1786351121.8702612,
+    "ast_hash": "8581681481eae76932c8da5e109dfe63",
     "semantic_hash": ""
   }
 }
