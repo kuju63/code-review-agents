@@ -51,6 +51,18 @@ describe("SvelteReviewer", () => {
     superReview.mockRestore();
   });
 
+  it("defaults projectType to null for a non-Svelte PR when not given", async () => {
+    const superReview = vi.spyOn(LLMReviewAgent.prototype, "review");
+    const reviewer = new SvelteReviewer({ githubToken: "gh-token" });
+
+    const context = makeContext([{ filePath: "src/App.tsx", patch: null }]);
+    const result = await reviewer.review(context);
+
+    expect(result.projectType).toBeNull();
+
+    superReview.mockRestore();
+  });
+
   it("delegates to LLMReviewAgent.review for a Svelte PR", async () => {
     const sentinel: ReviewResult = {
       reviewerId: "svelte-technical",
