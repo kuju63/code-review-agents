@@ -126,6 +126,26 @@ Issue #252本文は「`src/code_review_agent/skills/**`は言語非依存のた�
 
 **採用**: `export type ProviderType = "openai" | "ollama";` + `export const ProviderType = { OPENAI: "openai", OLLAMA: "ollama" } as const;`。
 
+### 2.8 `INFRA_EXCEPTIONS`(インフラ障害の再送出判定)の移植可否
+
+Python版`agents/exceptions.py`の`INFRA_EXCEPTIONS = (EventLoopException, MCPClientInitializationError,
+ToolProviderException, TransportError)`は、`review_orchestrator.py`(スライスC)が「業務エラーとして
+`ReviewError`に握りつぶすのではなく再送出すべきインフラ障害」を型で判定するためのタプル。
+`@strands-agents/sdk`の`errors.d.ts`を確認したところ、`ModelError`系(`ContextWindowOverflowError`/
+`MaxTokensError`/`ModelThrottledError`等)は存在するが、Python版の`EventLoopException`・
+`ToolProviderException`・`MCPClientInitializationError`に対応する専用クラスは無い。`McpClient.connect()`
+の実装(`mcp/client.js`)を確認したところ、接続失敗はプレーンな`Error`として投げられ、業務エラーと型で
+区別できない。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `exceptions.ts`には`StructuredOutputMissingError`のみ移植し、`INFRA_EXCEPTIONS`相当の判定はスライスCへ持ち越す | 本スライスでは判定を作らない。ただし`github-mcp.ts`(本スライス)がretry尽きた接続失敗を独自の`GithubMcpConnectionError`でラップして投げ、スライスCの`review-orchestrator.ts`が`ModelError`(SDK)+`GithubMcpConnectionError`(本スライス)の組み合わせで判定を組み立てられるようにしておく | **採用** | 存在しないSDKクラスを流用したふりをする(=`instanceof Error`のような無意味な判定を作る)よりも、「今の時点で確実に区別できるものだけを型として用意し、区別できないものは判定の責務ごと後段に渡す」方が正直で壊れにくい。`github-mcp.ts`が自前でエラー型を定義するのは、この階層(接続を実際に確立する場所)が「これは接続初期化の失敗である」と最も正確に判定できる箇所だから |
+| ② 汎用の`isInfraError(error): boolean`関数を`exceptions.ts`に用意し、`error instanceof Error`のような緩い判定で近似する | 型がなくても関数として判定ロジックを一元化する | 却下 | 緩い判定は「業務エラーもインフラ障害も両方`Error`インスタンス」という前提のもとでは実質的に何も判定しないのと同じで、Python版が型で厳密に区別していた意図(A2Aタスク境界での`except Exception`とは別に、インフラ障害だけをタスク失敗として扱う)を満たせない。誤った安心感を持たせるくらいなら判定自体を持ち越す方がよい |
+
+**採用**: `exceptions.ts`は`StructuredOutputMissingError`のみを本スライスで移植する。`GithubMcpConnectionError`は
+`github-mcp.ts`(§2.5参照)で定義し、`INFRA_EXCEPTIONS`相当の組み立てはスライスC(review-orchestrator)の
+Sub-Issue [#261](https://github.com/kuju63/code-review-agents/issues/261)側で行う。
+
 ## 3. 依存関係の追加
 
 - `packages/agent-core/package.json`: `ai-sdk-ollama@^3.8.8`(`docs/typescript-toolchain-spec.md` §5の
