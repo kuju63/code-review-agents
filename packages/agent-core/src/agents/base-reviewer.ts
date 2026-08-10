@@ -7,6 +7,8 @@
  * metadata and system prompt, so behavior is configured rather than re-coded.
  */
 
+import type { ReviewContext } from "../models/review.js";
+
 // Small models sometimes end their turn with a free-form Markdown review
 // report instead of invoking the forced structured-output tool, which the SDK
 // surfaces as `AgentResult.structuredOutput === undefined` with
@@ -104,4 +106,54 @@ export function annotatePatch(patch: string): string {
   }
 
   return result.join("\n");
+}
+
+/**
+ * Serialize the review-relevant PR information into a prompt.
+ *
+ * Shared by every LLM reviewer so the perspective-specific guidance lives
+ * only in the system prompt, not in input formatting.
+ */
+export function buildPrompt(context: ReviewContext): string {
+  const pr = context.prInfo;
+  const repo = pr.repositoryInfo;
+  const lines: string[] = [
+    `Repository: ${repo.owner}/${repo.repository}`,
+    `Project summary: ${pr.projectSummary}`,
+    "",
+    `PR #${pr.prInfo.prNumber}: ${pr.prInfo.title}`,
+    `Body: ${pr.prInfo.body || "(none)"}`,
+    `Labels: ${pr.prInfo.labels.join(", ") || "(none)"}`,
+    `Dependency files: ${pr.dependencyFiles.join(", ") || "(none)"}`,
+    "",
+    "Changed files (diff patches):",
+  ];
+
+  const hasAnnotated = pr.prInfo.fileChanges.some((change) => change.patch);
+  if (hasAnnotated) {
+    lines.push(
+      "Each diff line is prefixed with its actual file line number:",
+      "  +L{N}: line N added in the new file",
+      "  -L{N}: line N removed from the old file (absent in the new file)",
+      "   L{N}: line N unchanged (context) in the new file",
+      "When reporting a finding, use the L{N} value as the line number.",
+      "",
+    );
+  }
+
+  for (const change of pr.prInfo.fileChanges) {
+    lines.push(`--- ${change.filePath} ---`);
+    lines.push(
+      change.patch ? annotatePatch(change.patch) : "(patch unavailable; fetch via GitHub)",
+    );
+  }
+
+  // Known limitation: patches fetched on-demand via GitHub MCP during agent
+  // execution are not annotated and may yield inaccurate line numbers.
+  lines.push(
+    "",
+    "Only the modified sections are provided. Retrieve full files from GitHub as needed.",
+  );
+
+  return lines.join("\n");
 }

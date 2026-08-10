@@ -1,9 +1,29 @@
 import { describe, expect, it } from "vitest";
+import type { PRInfoResult } from "../models/pr-info.js";
+import type { ReviewContext } from "../models/review.js";
 import {
   annotatePatch,
+  buildPrompt,
   composeSystemPrompt,
   STRUCTURED_OUTPUT_DIRECTIVE,
 } from "./base-reviewer.js";
+
+function makePrInfo(overrides: Partial<PRInfoResult> = {}): PRInfoResult {
+  return {
+    repositoryInfo: { owner: "octocat", repository: "hello" },
+    projectSummary: "A demo repo",
+    prInfo: {
+      title: "Add feature",
+      prNumber: 42,
+      body: "Some body",
+      labels: ["bug", "priority"],
+      fileChanges: [{ filePath: "src/a.ts", patch: "@@ -1,1 +1,1 @@\n-old\n+new" }],
+    },
+    dependencyFiles: ["package.json"],
+    manifestContents: {},
+    ...overrides,
+  };
+}
 
 describe("STRUCTURED_OUTPUT_DIRECTIVE", () => {
   it("instructs the model to avoid prose/markdown output", () => {
@@ -102,5 +122,76 @@ describe("annotatePatch", () => {
     const lf = annotatePatch("@@ -1,2 +1,2 @@\n one\n two");
     const crlf = annotatePatch("@@ -1,2 +1,2 @@\r\n one\r\n two");
     expect(crlf).toBe(lf);
+  });
+});
+
+describe("buildPrompt", () => {
+  function context(overrides: Partial<PRInfoResult> = {}): ReviewContext {
+    return { prInfo: makePrInfo(overrides) };
+  }
+
+  it("includes the repository, PR, and dependency file information", () => {
+    const prompt = buildPrompt(context());
+    expect(prompt).toContain("Repository: octocat/hello");
+    expect(prompt).toContain("Project summary: A demo repo");
+    expect(prompt).toContain("PR #42: Add feature");
+    expect(prompt).toContain("Body: Some body");
+    expect(prompt).toContain("Labels: bug, priority");
+    expect(prompt).toContain("Dependency files: package.json");
+  });
+
+  it("falls back to (none) for a missing body, empty labels, and empty dependency files", () => {
+    const prompt = buildPrompt(
+      context({
+        prInfo: {
+          title: "Add feature",
+          prNumber: 42,
+          body: null,
+          labels: [],
+          fileChanges: [],
+        },
+        dependencyFiles: [],
+      }),
+    );
+    expect(prompt).toContain("Body: (none)");
+    expect(prompt).toContain("Labels: (none)");
+    expect(prompt).toContain("Dependency files: (none)");
+  });
+
+  it("annotates each file change's patch and lists the file path header", () => {
+    const prompt = buildPrompt(context());
+    expect(prompt).toContain("--- src/a.ts ---");
+    expect(prompt).toContain("-L1:old");
+    expect(prompt).toContain("+L1:new");
+  });
+
+  it("includes the line-number annotation legend when any patch is present", () => {
+    const prompt = buildPrompt(context());
+    expect(prompt).toContain("Each diff line is prefixed with its actual file line number:");
+    expect(prompt).toContain("When reporting a finding, use the L{N} value as the line number.");
+  });
+
+  it("omits the legend and reports unavailable patches when no patch is present", () => {
+    const prompt = buildPrompt(
+      context({
+        prInfo: {
+          title: "Add feature",
+          prNumber: 42,
+          body: "Some body",
+          labels: [],
+          fileChanges: [{ filePath: "src/b.ts", patch: null }],
+        },
+      }),
+    );
+    expect(prompt).not.toContain("Each diff line is prefixed");
+    expect(prompt).toContain("--- src/b.ts ---");
+    expect(prompt).toContain("(patch unavailable; fetch via GitHub)");
+  });
+
+  it("ends with the retrieval-guidance footer", () => {
+    const prompt = buildPrompt(context());
+    const footer =
+      "Only the modified sections are provided. Retrieve full files from GitHub as needed.";
+    expect(prompt.trimEnd().endsWith(footer)).toBe(true);
   });
 });
