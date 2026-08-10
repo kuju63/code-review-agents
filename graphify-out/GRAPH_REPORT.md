@@ -1,31 +1,31 @@
-# Graph Report - ts-migration-261-orchestrator  (2026-08-10)
+# Graph Report - fix-267-merge-to-main  (2026-08-10)
 
 ## Corpus Check
-- 469 files · ~312,397 words
+- 471 files · ~319,141 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4876 nodes · 8783 edges · 405 communities (289 shown, 116 thin omitted)
-- Extraction: 86% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 1253 edges (avg confidence: 0.58)
+- 4923 nodes · 8888 edges · 403 communities (287 shown, 116 thin omitted)
+- Extraction: 86% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 1255 edges (avg confidence: 0.58)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `37c0a411`
+- Built from commit: `625e8362`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
 - make_finding
 - ReviewerConfig
-- ProjectType
-- A2ADataPart
-- ReviewFinding
-- ._agent
-- ReviewContext
+- base_reviewer.py
+- Settings
+- ReviewError
+- _make_report
+- setup_logging
 - TaskStore
 - models/index.ts
-- PRInfoResult
-- models.py
+- PRInfo
+- A2ADataPart
 - api_get
 - _make_mcp
 - required
@@ -36,16 +36,15 @@
 - _IsolatedSettings
 - collect_direct_package_names
 - TestPRInfoCollectorCollect
-- discover_candidate_prs.py
-- Settings
-- setup_logging
+- has_production_code_change
+- run_agent_evaluation.py
 - OllamaUnsupportedContentSanitizer
-- test_discover_candidate_prs.py
+- discover_candidate_prs.py
 - detect_project_types
 - Seeded set生成: 専用Seedリポジトリ方式 設計ドキュメント
 - select_stack_targets.py
 - build_seeded_set.py
-- make_llm_assessor
+- test_discover_candidate_prs.py
 - generate_evaluation_report.py
 - properties
 - create_model_provider
@@ -53,7 +52,7 @@
 - properties
 - Ollamaバックエンドが処理できないツール結果コンテンツ型の除去 設計ドキュメント
 - Signal Forms
-- Any
+- .collect
 - properties
 - write_jsonl
 - package.json
@@ -85,18 +84,18 @@
 - review-orchestrator.ts
 - required
 - has_review_comments
-- ReviewPerspective
-- test_lead_engineer_router.py
+- PRInfoResult
+- lead_engineer_router
 - Code Review Agent
 - TestEvaluateConcurrentlyFailureIsolation
 - TestCreateAgentSkills
-- wait_for_task_completed
+- ReviewResult
 - 2. 設計方針
 - SkillSource
 - TestAgentSkillType
 - Seeded評価を`/orchestrator`単一呼び出しへ統合する 設計ドキュメント
 - Worktree Plugin Progress Notification Specification
-- test_vue_reviewer.py
+- ReviewAgent
 - 2. 要検討事項（比較表 + 採用/却下理由）
 - renovate.json
 - test_generate_evaluation_report.py
@@ -166,7 +165,7 @@
 - 6. Rendering Performance
 - Contributing Guide
 - ADR-0004: MCPクライアントのセッション共有(レビュアー間)
-- ADR-0006: 指摘単位の severity / impact / priority 評価方式
+- 指摘単位3軸評価仕様 (Issue #168)
 - 評価パイプライン設計: データ生成から実行まで
 - enum
 - Component Styling
@@ -195,7 +194,7 @@
 - 評価レポートへの個別PR詳細（Human Review vs Agent指摘）追加 設計ドキュメント
 - 7. Phase 2運用後に判明した問題 (Issue #131)
 - Seeded set生成: (ファイル, ルール)組み合わせ重複 修正 設計ドキュメント
-- 指摘単位3軸評価仕様 (Issue #168)
+- TestSvelteReviewer
 - スタック別 Gold-set ターゲット選定仕様
 - Review Matching Rubric
 - graphify reference: extra exports and benchmark
@@ -235,7 +234,7 @@
 - Defining Dependency Providers
 - Environment configuration
 - Navigate to Routes
-- base-reviewer.ts
+- pr-info-collector.ts
 - Route Transition Animations
 - Route Guards
 - Show Routes with Outlets
@@ -243,7 +242,7 @@
 - 1. Eliminating Waterfalls
 - 2. Bundle Size Optimization
 - 8. Phase 2生成プロンプトの改善
-- TestLeadEngineerAgentEvaluate
+- .review
 - graphify reference: query, path, explain
 - Memory Maintenance
 - Side Effects with `effect` and `afterRenderEffect`
@@ -261,7 +260,7 @@
 - Testing Fundamentals
 - Passing snippets to components
 - 8. Advanced Patterns
-- .test_paginates_changed_files
+- TestVerifyGithubToken
 - 7.4 対応方針
 - graphify reference: add a URL and watch a folder
 - graphify reference: commit hook and native CLAUDE.md integration
@@ -278,7 +277,7 @@
 - task_completion.md
 - tech_stack.md
 - enum
-- ProjectType
+- base-reviewer.ts
 - architecture-avoid-boolean-props.md
 - architecture-compound-components.md
 - patterns-children-over-render-props.md
@@ -354,8 +353,8 @@
 - server-serialization.md
 - vercel-react-best-practices/rules/_template.md
 - within_change_limits
-- registry.ts
-- main
+- manifest-detection.ts
+- write_stack_outputs
 - opencode.json
 - worktree.js
 - TestLoadFailedIds
@@ -371,33 +370,31 @@
 - graphify reference: transcribe video and audio
 - .claude/CLAUDE.md
 - .claude/skills/graphify/references/extraction-spec.md
-- test_eval_logging.py
-- TestWebSecurityReview
+- _clear_handlers
+- test_model_provider_factory.py
 - TypeScript開発環境・ツールチェーン整備 設計ドキュメント (Issue #250)
 - ._build_model
 - A2A API 実装プラン
-- github-mcp.ts
-- collect_review_texts
-- models/test_lead_engineer.py
-- TestVueReview
+- review-orchestrator.test.ts
+- test_angular_reviewer.py
+- TestErrorPropagation
+- TestSvelteReview
 - agent-core/package.json
 - compilerOptions
 - 2. 要検討事項（比較表 + 採用/却下理由）
 - agent-skills-factory.ts
 - ._resolve_decisions
-- test_react_reviewer.py
 - base-reviewer.review.test.ts
 - agent-core/tsconfig.json
 - evaluation/tsconfig.json
 - tool-result-sanitizer.ts
 - TestValidateShardArgs
-- TestFindingDecisionOutput
+- ._sanitize
 - evaluation/package.json
 - lead-engineer.evaluate.test.ts
 - TestInlineReviewCriteria
 - model-provider-spike.ts
-- .test_no_hallucination_paths_are_verbatim_from_mcp
-- .__init__
+- .test_manifest_contents_resolves_workspace_packages
 - .__init__
 - tsconfig.json
 - github-mcp.test.ts
@@ -429,7 +426,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (405 total, 116 thin omitted)
+## Communities (403 total, 116 thin omitted)
 
 ### Community 0 - "make_finding"
 Cohesion: 0.06
@@ -439,41 +436,41 @@ Nodes (37): _build_item_detail(), _exact_match(), Finding, is_match(), main(), m
 Cohesion: 0.06
 Nodes (57): ReviewOutput, RuntimeError, Shared runtime configuration injected into each reviewer. Attributes:…, ReviewerConfig, Raised when an LLM agent call ends without a structured output result. Strands…, Build the error message from which agent failed and why it stopped. Args:…, StructuredOutputMissingError, ProviderType (+49 more)
 
-### Community 2 - "ProjectType"
-Cohesion: 0.04
-Nodes (67): _ReviewerT, LLMReviewAgent, Base classes for review agents in the parallel review stage. Defines the…, LLM-backed reviewer using a Strands ``Agent`` and GitHub MCP. Concrete…, Shared exception types for the review-stage and lead-engineer agents., Agents for code review workflow., Content-based project-type detection from JS/TS dependency manifests.…, Factory selecting a Strands Model provider (OpenAI-compatible or native Ollama). (+59 more)
+### Community 2 - "base_reviewer.py"
+Cohesion: 0.05
+Nodes (52): _ReviewerT, LLMReviewAgent, Base classes for review agents in the parallel review stage. Defines the…, LLM-backed reviewer using a Strands ``Agent`` and GitHub MCP. Concrete…, Shared exception types for the review-stage and lead-engineer agents., Agents for code review workflow., Content-based project-type detection from JS/TS dependency manifests.…, PR Info Collector agent. Collects pull request information from GitHub and… (+44 more)
 
-### Community 3 - "A2ADataPart"
-Cohesion: 0.08
-Nodes (33): BaseException, A2ADataPart, A structured-data segment of an :class:`A2AMessage`., Helpers for stripping credential-like strings from error messages., Remove token-like strings from exception messages to prevent credential…, sanitize_error(), In-memory storage for A2A tasks, with lock-guarded mutation and TTL expiry., A2A router exposing the Angular Reviewer as an independently callable agent. (+25 more)
+### Community 3 - "Settings"
+Cohesion: 0.09
+Nodes (26): BaseException, BaseSettings, Remove token-like strings from exception messages to prevent credential…, sanitize_error(), _run(), _run(), _run(), pr_info_collector_router() (+18 more)
 
-### Community 4 - "ReviewFinding"
-Cohesion: 0.11
-Nodes (24): Lead Engineer synthesis agent. Evaluates the aggregated outputs of the parallel…, DecisionVerdict, FindingDecision, FindingImpact, FindingPriority, FindingSeverity, LeadEngineerReport, Any (+16 more)
+### Community 4 - "ReviewError"
+Cohesion: 0.06
+Nodes (47): LeadEngineerAgent, ReviewerConfig, Lead Engineer synthesis agent. Evaluates the aggregated outputs of the parallel…, Evaluates parallel reviewer outputs and produces final decisions. Consumes a…, Store the shared runtime configuration for this agent instance. Args: config:…, Factory selecting a Strands Model provider (OpenAI-compatible or native Ollama)., Data models for code review agent., DecisionVerdict (+39 more)
 
-### Community 5 - "._agent"
-Cohesion: 0.14
-Nodes (14): FindingDecisionOutput, LLM output schema for one finding decision. Uses a finding_index reference…, _make_config(), _make_finding(), _make_result(), ReviewFinding, ReviewPerspective, ReviewPriority (+6 more)
+### Community 5 - "_make_report"
+Cohesion: 0.09
+Nodes (20): ReviewError, FindingDecisionOutput, LLM output schema for one finding decision. Uses a finding_index reference…, _make_config(), _make_finding(), _make_report(), _make_result(), ReviewFinding (+12 more)
 
-### Community 6 - "ReviewContext"
-Cohesion: 0.10
-Nodes (20): BaseModel, Record of a reviewer that failed, kept isolated from successes. Attributes:…, Aggregated output of the parallel review stage. This is the hand-off to the…, Input passed to every reviewer. Wraps the PR Info Collector output. Additional…, ReviewContext, ReviewError, ReviewReport, _make_pr_info() (+12 more)
+### Community 6 - "setup_logging"
+Cohesion: 0.15
+Nodes (19): Shared logging configuration for evaluation/tools scripts., Configure the root logger for evaluation/tools scripts. Deliberately omits…, setup_logging(), _failed_ids_path(), main(), merge(), Any, Path (+11 more)
 
 ### Community 7 - "TaskStore"
-Cohesion: 0.10
-Nodes (19): LogCaptureFixture, A2ATaskStatus, StrEnum, Lifecycle state of an :class:`A2ATask`., Tracks :class:`A2ATask` lifecycle in memory, guarded by a single asyncio lock.…, Initialize an empty task store., Create and store a new task in the ``SUBMITTED`` state. Returns: The newly…, Look up a task by id. Returns: The stored task, or ``None`` if ``task_id`` is… (+11 more)
+Cohesion: 0.08
+Nodes (22): LogCaptureFixture, A2ATaskStatus, StrEnum, Lifecycle state of an :class:`A2ATask`., Tracks :class:`A2ATask` lifecycle in memory, guarded by a single asyncio lock.…, Initialize an empty task store., Create and store a new task in the ``SUBMITTED`` state. Returns: The newly…, Look up a task by id. Returns: The stored task, or ``None`` if ``task_id`` is… (+14 more)
 
 ### Community 8 - "models/index.ts"
-Cohesion: 0.10
+Cohesion: 0.11
 Nodes (42): buildPromptAndIndex(), IndexEntry, LeadEngineerAgent, resolveDecisions(), acceptedDecisions(), byVerdict(), DecisionVerdict, EvaluationFormat (+34 more)
 
-### Community 9 - "PRInfoResult"
+### Community 9 - "PRInfo"
 Cohesion: 0.06
-Nodes (36): PRInfoResult, Collect PR information from GitHub and return structured data. Connects to the…, FileChange, PRInfo, PRInfoResult, BaseModel, Diff information for a single changed file. Attributes: filePath: Relative path…, Pull request metadata and file changes. Attributes: title: PR title. pr_number:… (+28 more)
+Nodes (31): FileChange, PRInfo, BaseModel, Diff information for a single changed file. Attributes: filePath: Relative path…, Pull request metadata and file changes. Attributes: title: PR title. pr_number:…, Repository owner and name. Attributes: owner: GitHub repository owner (user or…, RepositoryInfo, Aggregated output of the parallel review stage. This is the hand-off to the… (+23 more)
 
-### Community 10 - "models.py"
-Cohesion: 0.10
-Nodes (35): A2AMessage, A2ASendTaskRequest, A2ASendTaskResponse, A2ATask, A2ATextPart, AgentCapability, AgentCard, AgentSkill (+27 more)
+### Community 10 - "A2ADataPart"
+Cohesion: 0.09
+Nodes (50): A2ADataPart, A2AMessage, A2ASendTaskRequest, A2ASendTaskResponse, A2ATask, A2ATextPart, AgentCapability, AgentCard (+42 more)
 
 ### Community 11 - "api_get"
 Cohesion: 0.07
@@ -481,7 +478,7 @@ Nodes (21): api_get(), fetch_pr_files(), _is_allowed_url(), _is_rate_limited(), 
 
 ### Community 12 - "_make_mcp"
 Cohesion: 0.05
-Nodes (29): _make_mcp(), PRInfoResult, Only the first _MAX_WORKSPACE_PACKAGES (20) resolved workspace directories have…, Yarn-style `{"workspaces": {"packages": [...]}}` is also read., A workspace directory whose package.json 404s is skipped, not fatal., Build a mock MCP client whose call_tool_sync dispatches by arguments. Returns:…, dependency_files reflect the repo's manifests at the PR head ref, not only the…, The root listing is pinned to the PR head SHA. (+21 more)
+Nodes (30): _make_mcp(), PRInfoResult, Only the first _MAX_WORKSPACE_PACKAGES (20) resolved workspace directories have…, Yarn-style `{"workspaces": {"packages": [...]}}` is also read., A workspace directory whose package.json 404s is skipped, not fatal., Build a mock MCP client whose call_tool_sync dispatches by arguments. Returns:…, dependency_files reflect the repo's manifests at the PR head ref, not only the…, The root listing is pinned to the PR head SHA. (+22 more)
 
 ### Community 13 - "required"
 Cohesion: 0.05
@@ -512,28 +509,24 @@ Cohesion: 0.09
 Nodes (12): collect_direct_package_names(), extract_direct_dependencies_from_package_json(), extract_direct_dependencies_from_package_lock(), extract_direct_dependencies_from_pnpm_lock(), Aggregate direct dependency names across all collected manifests.…, Extract direct dependency names from a ``package.json`` body. Args: content:…, Extract the root project's direct dependency names from ``package-lock.json``.…, Extract the root project's direct dependency names from ``pnpm-lock.yaml``.… (+4 more)
 
 ### Community 20 - "TestPRInfoCollectorCollect"
-Cohesion: 0.12
-Nodes (11): PRInfoCollector, Collects PR information from GitHub deterministically. Retrieves PR details and…, patch=None for all files when target-file count exceeds the limit., Tests for the deterministic collect() method., If the summary LLM raises, facts are kept and summary is empty., An infra exception from the summary LLM must not be swallowed into an empty…, If start() fails, stop() must still run (start() is inside try)., _summarize_readme passes limits={"turns": 30} by default. (+3 more)
+Cohesion: 0.11
+Nodes (12): PRInfoCollector, Collects PR information from GitHub deterministically. Retrieves PR details and…, patch=None for all files when target-file count exceeds the limit., Tests for the deterministic collect() method., If the summary LLM raises, facts are kept and summary is empty., An infra exception from the summary LLM must not be swallowed into an empty…, If start() fails, stop() must still run (start() is inside try)., get_files is paged until a short page ends the loop. (+4 more)
 
-### Community 21 - "discover_candidate_prs.py"
+### Community 21 - "has_production_code_change"
 Cohesion: 0.11
 Nodes (18): has_inline_review_comments(), has_production_code_change(), is_doc_file(), is_production_code_file(), is_qualifying_inline_comment(), is_test_file(), _normalized_path(), Any (+10 more)
 
-### Community 22 - "Settings"
-Cohesion: 0.15
-Nodes (16): BaseSettings, pr_info_collector_router(), APIRouter, A2A router exposing the PR Info Collector agent as an independently callable…, Build the A2A-compatible router for the PR Info Collector agent. Exposes the…, _run(), Environment-backed runtime configuration for the API and its agents. Values are…, Resolve the public URL an agent card should advertise for itself. Args: prefix:… (+8 more)
-
-### Community 23 - "setup_logging"
-Cohesion: 0.06
-Nodes (57): a2a_poll(), a2a_send(), Any, Client, Shared A2A HTTP client helpers for evaluation scripts. Both…, POST a task to an A2A endpoint and return the task_id. Returns: The ``task.id``…, Poll until the task completes. Return the data part or raise on…, Shared logging configuration for evaluation/tools scripts. (+49 more)
+### Community 23 - "run_agent_evaluation.py"
+Cohesion: 0.10
+Nodes (38): a2a_poll(), a2a_send(), Any, Client, Shared A2A HTTP client helpers for evaluation scripts. Both…, POST a task to an A2A endpoint and return the task_id. Returns: The ``task.id``…, Poll until the task completes. Return the data part or raise on…, _format_report() (+30 more)
 
 ### Community 24 - "OllamaUnsupportedContentSanitizer"
-Cohesion: 0.14
-Nodes (13): HookProvider, HookRegistry, OllamaUnsupportedContentSanitizer, AfterToolCallEvent, Sanitizes tool results the active model backend cannot serialize.…, Strips ``ToolResultContent`` blocks the active Ollama backend cannot serialize.…, Subscribe to ``AfterToolCallEvent`` on ``registry``., _make_event() (+5 more)
-
-### Community 25 - "test_discover_candidate_prs.py"
 Cohesion: 0.18
-Nodes (13): datetime, has_recent_release(), _parse_iso(), Parse an ISO 8601 timestamp. Parameters: value (str): The timestamp string to…, Determine whether a repository has released within the specified time window.…, Validate a repository's availability, archive status, star count, and recent…, validate_repo(), _fake_client() (+5 more)
+Nodes (11): HookProvider, HookRegistry, OllamaUnsupportedContentSanitizer, Strips ``ToolResultContent`` blocks the active Ollama backend cannot serialize.…, Subscribe to ``AfterToolCallEvent`` on ``registry``., _make_event(), AfterToolCallEvent, Tests for the Ollama-unsupported tool result content sanitizer. (+3 more)
+
+### Community 25 - "discover_candidate_prs.py"
+Cohesion: 0.13
+Nodes (20): datetime, has_recent_release(), load_skipped_targets(), load_stack_outputs(), main(), _parse_iso(), Parse an ISO 8601 timestamp. Parameters: value (str): The timestamp string to…, Determine whether a repository has released within the specified time window.… (+12 more)
 
 ### Community 26 - "detect_project_types"
 Cohesion: 0.07
@@ -551,9 +544,9 @@ Nodes (38): allocate_quota(), check_coverage_thresholds(), dedupe_rows(), filter
 Cohesion: 0.05
 Nodes (35): build_seeded_item(), count_new_lines_before(), Defect, detect_intentional_markers(), load_targets(), main(), MarkerHit, parse_hunk_new_start() (+27 more)
 
-### Community 30 - "make_llm_assessor"
-Cohesion: 0.13
-Nodes (9): make_llm_assessor(), BaseModel, Structured 3-axis assessment of a PR's review findings. The three axes are…, Build an assessor that classifies pull requests across severity, impact, and…, ReviewAssessment, ReviewAssessor, TestMain, TestMakeLlmAssessor (+1 more)
+### Community 30 - "test_discover_candidate_prs.py"
+Cohesion: 0.10
+Nodes (13): collect_review_texts(), make_llm_assessor(), BaseModel, Structured 3-axis assessment of a PR's review findings. The three axes are…, Build an assessor that classifies pull requests across severity, impact, and…, Aggregate non-blank inline comment and review bodies (any author). Returns: The…, ReviewAssessment, ReviewAssessor (+5 more)
 
 ### Community 31 - "generate_evaluation_report.py"
 Cohesion: 0.16
@@ -564,8 +557,8 @@ Cohesion: 0.17
 Nodes (12): properties, minimum, type, type, type, line, patch, path (+4 more)
 
 ### Community 33 - "create_model_provider"
-Cohesion: 0.09
-Nodes (14): ProjectType, ReviewContext, ReviewResult, Review the change described by ``context``. Args: context: Input boundary…, Run this reviewer's Strands ``Agent`` against ``context`` and collect its…, Serialize the review-relevant PR information into a prompt. Shared by every LLM…, create_model_provider(), Model (+6 more)
+Cohesion: 0.22
+Nodes (5): create_model_provider(), Model, Build the Strands ``Model`` for ``provider_type``. Args: provider_type: Which…, TestCreateModelProviderOllama, TestCreateModelProviderOpenAI
 
 ### Community 34 - "Next.js checks"
 Cohesion: 0.05
@@ -583,9 +576,9 @@ Nodes (19): 1.1 発生した事象, 1.2 根本原因, 1.3 「特定PRでだけ�
 Cohesion: 0.06
 Nodes (34): Accessing State, Async Validation, Big Form Example, Binding, Common Pitfalls (DO NOT DO THESE), Conditional Validation, Context, Creating a Form (+26 more)
 
-### Community 38 - "Any"
-Cohesion: 0.13
-Nodes (13): Any, Extract the text payloads from an MCP tool result. Args: result: The dict…, Fetch PR metadata (title, body, labels, number) deterministically. Returns: The…, Fetch the full changed-file list, paging until exhausted. Returns: The raw…, List the raw ``get_file_contents`` directory entries at ``path``. Shared by…, List dependency manifest files at the repo root for the given ref. Returns the…, Fetch a repository file's text content at ``ref``, or None. Shared by README,…, Resolve a root ``package.json``'s ``workspaces`` field to paths. Supports the… (+5 more)
+### Community 38 - ".collect"
+Cohesion: 0.12
+Nodes (15): Any, PRInfoResult, Extract the text payloads from an MCP tool result. Args: result: The dict…, Collect PR information from GitHub and return structured data. Connects to the…, Fetch PR metadata (title, body, labels, number) deterministically. Returns: The…, Fetch the full changed-file list, paging until exhausted. Returns: The raw…, List the raw ``get_file_contents`` directory entries at ``path``. Shared by…, List dependency manifest files at the repo root for the given ref. Returns the… (+7 more)
 
 ### Community 39 - "properties"
 Cohesion: 0.12
@@ -620,12 +613,12 @@ Cohesion: 0.09
 Nodes (8): Tests for the shard-execution support added to run_agent_evaluation.py. Covers…, Invalid --shard-index/--shard-count must be reported as one of the script's…, TestFailedIdsPath, TestIsSharded, TestMainShardValidation, TestMaybeGenerateReport, TestSelectShard, TestWritePredictionsAndSidecar
 
 ### Community 47 - "create_app"
-Cohesion: 0.09
-Nodes (27): angular_reviewer_router(), APIRouter, Build the A2A-compatible router for the Angular Reviewer agent. Exposes the…, lead_engineer_router(), APIRouter, Build the A2A-compatible router for the Lead Engineer agent. Exposes the…, APIRouter, Build the A2A-compatible router for the React Reviewer agent. Exposes the… (+19 more)
+Cohesion: 0.08
+Nodes (32): orchestrator_router(), APIRouter, Build the A2A-compatible router that drives the end-to-end review pipeline.…, APIRouter, Build the A2A-compatible router for the React Reviewer agent. Exposes the…, react_reviewer_router(), APIRouter, Build the A2A-compatible router for the Security Reviewer agent. Exposes the… (+24 more)
 
 ### Community 48 - "load_eval_tool_module"
-Cohesion: 0.14
-Nodes (9): ModuleType, load_eval_tool_module(), Shared helpers for testing standalone scripts under evaluation/tools/.…, Load a module from evaluation/tools/<filename> under the given name.…, Tests for evaluation/tools/build_gold_set.py., Tests for evaluation/tools/run_agent_evaluation.py. These tests exercise the…, TestEvaluateConcurrentlyBoundedParallelism, TestEvaluateConcurrentlyOrdering (+1 more)
+Cohesion: 0.13
+Nodes (11): ModuleType, load_eval_tool_module(), Shared helpers for testing standalone scripts under evaluation/tools/.…, Load a module from evaluation/tools/<filename> under the given name.…, fixture, Tests for evaluation/tools/eval_logging.py., _restore_root_logger(), Tests for evaluation/tools/run_agent_evaluation.py. These tests exercise the… (+3 more)
 
 ### Community 49 - "_build_report"
 Cohesion: 0.38
@@ -660,8 +653,8 @@ Cohesion: 0.42
 Nodes (4): object, evaluate_item is the single function used to evaluate both Gold and Seeded…, Regression guard for Issue #237: stack-label fail-closed validation was removed…, TestEvaluateItem
 
 ### Community 58 - "create_agent_skills"
-Cohesion: 0.14
-Nodes (5): AgentSkills, create_agent_skills(), Create an AgentSkills plugin for a reviewer skill bundle. Args: skill_type:…, TestErrorPropagation, TestSvelteReview
+Cohesion: 0.16
+Nodes (5): AgentSkills, create_agent_skills(), Create an AgentSkills plugin for a reviewer skill bundle. Args: skill_type:…, TestVueReview, TestWebSecurityReview
 
 ### Community 59 - "required"
 Cohesion: 0.17
@@ -696,8 +689,8 @@ Cohesion: 0.25
 Nodes (4): compose_system_prompt(), Combine a reviewer's role prompt with the shared structured-output directive.…, The shared directive that steers small models to emit the structured output…, TestStructuredOutputDirective
 
 ### Community 67 - "review-orchestrator.ts"
-Cohesion: 0.07
-Nodes (14): ReviewAgent, ReviewerClass, ReviewerConfig, PlainFakeReviewer, FakeReviewer, makePrInfo(), withFiles(), ReviewOutcome (+6 more)
+Cohesion: 0.15
+Nodes (7): getReviewerClasses(), METAFRAMEWORK_BASE, ReviewOrchestrator, ReviewOutcome, loadModules(), ReviewError, SharedMcpClient
 
 ### Community 68 - "required"
 Cohesion: 0.15
@@ -707,13 +700,13 @@ Nodes (14): items, type, items, type, required, type, category, line (+6 more)
 Cohesion: 0.33
 Nodes (3): has_review_comments(), Return whether the PR has a qualifying inline review comment. Review bodies are…, TestHasReviewComments
 
-### Community 70 - "ReviewPerspective"
-Cohesion: 0.09
-Nodes (37): ABC, Interface for a reviewer in the parallel review stage. Subclasses declare their…, Store the shared runtime configuration for this reviewer instance. Args:…, ReviewAgent, ReviewerConfig, Runs applicable reviewers concurrently and aggregates their results. Args:…, Store the shared configuration injected into every selected reviewer. Args:…, ReviewOrchestrator (+29 more)
+### Community 70 - "PRInfoResult"
+Cohesion: 0.07
+Nodes (47): ABC, Interface for a reviewer in the parallel review stage. Subclasses declare their…, Store the shared runtime configuration for this reviewer instance. Args:…, ReviewAgent, ReviewerConfig, Runs applicable reviewers concurrently and aggregates their results. Args:…, Store the shared configuration injected into every selected reviewer. Args:…, ReviewOrchestrator (+39 more)
 
-### Community 71 - "test_lead_engineer_router.py"
-Cohesion: 0.29
-Nodes (7): _make_app(), asyncio, FastAPI, _send_payload(), TestAgentCard, TestGetTask, TestSendTask
+### Community 71 - "lead_engineer_router"
+Cohesion: 0.21
+Nodes (10): lead_engineer_router(), APIRouter, Build the A2A-compatible router for the Lead Engineer agent. Exposes the…, _make_app(), asyncio, FastAPI, _send_payload(), TestAgentCard (+2 more)
 
 ### Community 72 - "Code Review Agent"
 Cohesion: 0.08
@@ -723,12 +716,12 @@ Nodes (24): 0. Requirements, 1. Clone and enter workspace, 2. Create virtual env
 Cohesion: 0.22
 Nodes (5): parametrize, Guards against #143: a skill's declared name and its parent directory name…, TestCreateAgentSkills, TestNone, TestSkillNameMatchesDirectory
 
-### Community 75 - "wait_for_task_completed"
-Cohesion: 0.11
-Nodes (19): Shared async test helpers for the A2A reviewer router test suites., Poll ``store`` until ``task_id`` leaves the WORKING/SUBMITTED state. The…, wait_for_task_completed(), _make_app(), _pr_info_payload(), asyncio, FastAPI, _send_payload() (+11 more)
+### Community 75 - "ReviewResult"
+Cohesion: 0.07
+Nodes (38): A reviewer's output annotated with its identity and scope. Attributes:…, The free-form review payload an LLM reviewer produces. This is the schema…, ReviewOutput, ReviewResult, Shared async test helpers for the A2A reviewer router test suites., Poll ``store`` until ``task_id`` leaves the WORKING/SUBMITTED state. The…, wait_for_task_completed(), _make_app() (+30 more)
 
 ### Community 76 - "2. 設計方針"
-Cohesion: 0.18
+Cohesion: 0.20
 Nodes (10): 1. 背景と問題, 2.1 コンテナ起動への切り替え, 2.2 環境変数の転送方式: `--env-file` を使わない理由, 2.3 `GITHUB_TOKEN` はコンテナに渡さない, 2.4 `--network=host` が必須である理由, 2.5 停止機構をSKILL.md側に一本化する, 2.6 スクリプトの配置, 2. 設計方針 (+2 more)
 
 ### Community 77 - "SkillSource"
@@ -743,13 +736,13 @@ Nodes (11): 1. 背景, 2. 決定, 3.1 `evaluation/tools/run_agent_evaluation.py`
 Cohesion: 0.40
 Nodes (4): Background, Requirements, Verification, Worktree Plugin Progress Notification Specification
 
-### Community 81 - "test_vue_reviewer.py"
-Cohesion: 0.19
-Nodes (11): APIRouter, Build the A2A-compatible router for the Vue Reviewer agent. Exposes the…, vue_reviewer_router(), _make_app(), _pr_info_payload(), asyncio, FastAPI, _send_payload() (+3 more)
+### Community 81 - "ReviewAgent"
+Cohesion: 0.20
+Nodes (5): ReviewAgent, PlainFakeReviewer, FakeReviewer, makePrInfo(), withFiles()
 
 ### Community 82 - "2. 要検討事項（比較表 + 採用/却下理由）"
-Cohesion: 0.06
-Nodes (32): 0. スライス分割方針, 1. 決定済み事項（本Issue着手前に確定していたもの）, 2.1 共有GitHub MCPクライアントの参照カウント管理, 2.2 GitHub MCPクライアントの接続ライフサイクルの所有権, 2.3 GitHub MCP接続のretry実装, 2.4 `OllamaUnsupportedContentSanitizer`のフック登録方式, 2.5 GitHub MCPクライアントのtransport構築方法, 2.6 `skills/`ディレクトリの配置 (+24 more)
+Cohesion: 0.05
+Nodes (39): 0. スライス分割方針, 1. 決定済み事項（本Issue着手前に確定していたもの）, 2.1 共有GitHub MCPクライアントの参照カウント管理, 2.2 GitHub MCPクライアントの接続ライフサイクルの所有権, 2.3 GitHub MCP接続のretry実装, 2.4 `OllamaUnsupportedContentSanitizer`のフック登録方式, 2.5 GitHub MCPクライアントのtransport構築方法, 2.6 `skills/`ディレクトリの配置 (+31 more)
 
 ### Community 83 - "renovate.json"
 Cohesion: 0.25
@@ -808,7 +801,7 @@ Cohesion: 0.10
 Nodes (20): 01 Injection (Confusing Data with Instructions), Command Injection: Injecting Instructions into a Shell, Contents, Line of reasoning in code, Line of reasoning in code, Line of reasoning in code, Line of reasoning in code, Line of reasoning in code (+12 more)
 
 ### Community 118 - "ADR-0001: 大規模PRのレビュー除外方針"
-Cohesion: 0.20
+Cohesion: 0.17
 Nodes (10): ADR-0001: 大規模PRのレビュー除外方針, Consequences, Context, Decision, Decision Drivers, Option 0 — 現状維持(binary fallback), Option 1 — Issue #54原案: パッチ本文の段階的トリミング, Option 2 — ユーザー提案A: ファイル単位のレビュー除外 (+2 more)
 
 ### Community 119 - "3. 比較対象アプローチ"
@@ -824,8 +817,8 @@ Cohesion: 0.11
 Nodes (18): 1. 背景と問題, 2.1 呼び出し経路（案A: ツールループと構造化出力の分離）, 2.2 file 一覧対処（SYSTEM_PROMPT 強化）, 2.3 本タスクの範囲外, 2.5.1 案A の実測で残った2課題, 2.5.2 着眼: ファクトを LLM に生成させない, 2.5.3 採用する設計（案E: 完全決定論化）, 2.5.4 受け入れ基準の更新（案E） (+10 more)
 
 ### Community 122 - "build_gold_set.py"
-Cohesion: 0.17
-Nodes (12): _api_get(), build_gold_item(), _extract_line(), _is_target_file(), load_targets(), main(), _normalize_axis(), _normalize_category() (+4 more)
+Cohesion: 0.14
+Nodes (13): _api_get(), build_gold_item(), _extract_line(), _is_target_file(), load_targets(), main(), _normalize_axis(), _normalize_category() (+5 more)
 
 ### Community 124 - "Seeded評価のスタック別レビュアールーティング仕様"
 Cohesion: 0.22
@@ -840,8 +833,8 @@ Cohesion: 0.11
 Nodes (17): 02 Authentication & Authorization (Confusing Identity with Permission), Contents, Cryptographic Failures: When "Fast" Is a Vulnerability, JWT Misuse: Confusing "Verified" with "Trustworthy", Line of reasoning in code, Line of reasoning in code, Line of reasoning in code, Line of reasoning in code (+9 more)
 
 ### Community 127 - "開発環境の初期セットアップ"
-Cohesion: 0.17
-Nodes (12): betterleaksのインストール, GitHub CLIのインストール, Graphifyのセットアップ, Homebrewのインストール, pre-commitのインストール, pyenvのインストール, Python環境のセットアップ, shellcheckのインストール (+4 more)
+Cohesion: 0.12
+Nodes (17): AIエージェント上でのシェルスクリプト実施時, betterleaksのインストール, Development environment setup, GitHub CLIのインストール, Graphifyのセットアップ, Homebrewのインストール, pre-commitのインストール, pyenvのインストール (+9 more)
 
 ### Community 128 - "09 Insecure Design (When Correct Code Implements a Flawed Design)"
 Cohesion: 0.12
@@ -892,7 +885,7 @@ Cohesion: 0.13
 Nodes (14): 1. Eliminating Waterfalls (CRITICAL), 2. Bundle Size Optimization (CRITICAL), 3. Server-Side Performance (HIGH), 4. Client-Side Data Fetching (MEDIUM-HIGH), 5. Re-render Optimization (MEDIUM), 6. Rendering Performance (MEDIUM), 7. JavaScript Performance (LOW-MEDIUM), 8. Advanced Patterns (LOW) (+6 more)
 
 ### Community 140 - "React/Angular Agent Skills Review Accuracy Spec"
-Cohesion: 0.12
+Cohesion: 0.15
 Nodes (13): 1. Purpose, 2. Operating Constraints, 3. Current State, 4.1 React Skill Enhancement, 4.2 Angular Skill Separation, 4.3 Angular-First Detection, 4.4 Security Reviewer Coverage, 4. Target Behavior (+5 more)
 
 ### Community 141 - "並列レビュー段 拡張アーキテクチャ設計"
@@ -968,16 +961,16 @@ Cohesion: 0.17
 Nodes (12): 6.10 Use React DOM Resource Hints, 6.11 Use useTransition Over Manual Loading States, 6.1 Animate SVG Wrapper Instead of SVG Element, 6.2 CSS content-visibility for Long Lists, 6.3 Hoist Static JSX Elements, 6.4 Optimize SVG Precision, 6.5 Prevent Hydration Mismatch Without Flickering, 6.6 Suppress Expected Hydration Mismatches (+4 more)
 
 ### Community 159 - "Contributing Guide"
-Cohesion: 0.10
-Nodes (16): AIエージェント上でのシェルスクリプト実施時, Development environment setup, Worktree作成後のセットアップ, Worktree作業終了後のクリーンアップ, 環境, 1. Principles, 2. Development Flow (Spec-Driven + TDD), 3. Local Development Commands (+8 more)
+Cohesion: 0.18
+Nodes (11): 1. Principles, 2. Development Flow (Spec-Driven + TDD), 3. Local Development Commands, 4. Implementation and Design Rules, 5. PR Description Rules, 6. References, Build, Contributing Guide (+3 more)
 
 ### Community 160 - "ADR-0004: MCPクライアントのセッション共有(レビュアー間)"
 Cohesion: 0.18
 Nodes (11): ADR-0004: MCPクライアントのセッション共有(レビュアー間), Consequences, Context, Decision, 検討事項, 検討事項1: 共有範囲 → A(並列レビュー実行の内部でのみ共有)を採用, 検討事項1: 共有範囲(共有単位), 検討事項2: 共有セッションのライフサイクル管理 (+3 more)
 
-### Community 161 - "ADR-0006: 指摘単位の severity / impact / priority 評価方式"
-Cohesion: 0.10
-Nodes (20): ADR-0006: 指摘単位の severity / impact / priority 評価方式, Consequences, Context, Decision, 案A: Lead Engineerが3軸を校正する, 案A: PR単位ラベルを各findingへ継承する, 案A: 完全一致と±1一致の併記, 案B: LLMで各コメントを個別分類する (+12 more)
+### Community 161 - "指摘単位3軸評価仕様 (Issue #168)"
+Cohesion: 0.06
+Nodes (29): ADR-0006: 指摘単位の severity / impact / priority 評価方式, Consequences, Context, Decision, 案A: Lead Engineerが3軸を校正する, 案A: PR単位ラベルを各findingへ継承する, 案A: 完全一致と±1一致の併記, 案B: LLMで各コメントを個別分類する (+21 more)
 
 ### Community 162 - "評価パイプライン設計: データ生成から実行まで"
 Cohesion: 0.18
@@ -1091,9 +1084,9 @@ Nodes (9): 7.1 事象と非開発者向け要約, 7.2 原因分析: 構造的原
 Cohesion: 0.22
 Nodes (8): 1. 背景と問題, 2. 修正方針, 3. テスト, 4. 検証手順, Seeded set生成: (ファイル, ルール)組み合わせ重複 修正 設計ドキュメント, 対象外, 根本原因, 追加で発見した根本原因: `id` が (ファイル, ルール) の組を一意に識別できない
 
-### Community 190 - "指摘単位3軸評価仕様 (Issue #168)"
-Cohesion: 0.22
-Nodes (9): 1. 目的, 2. 全体データフロー, 3. 軸の定義, 4. Goldラベルの生成, 5. Lead Engineer出力, 6. 照合と採点, 7. 受入条件, 8. テスト方針 (+1 more)
+### Community 190 - "TestSvelteReviewer"
+Cohesion: 0.20
+Nodes (7): LLMReviewAgent, Technical reviewer for Svelte projects., SvelteReviewer, _context(), ReviewContext, Svelte technical reviewer metadata, prompt, and non-Svelte guard., TestSvelteReviewer
 
 ### Community 191 - "スタック別 Gold-set ターゲット選定仕様"
 Cohesion: 0.22
@@ -1172,8 +1165,8 @@ Cohesion: 0.25
 Nodes (7): Change Details, Documentation Updates, Impact Scope, Related Issue, Risk and Rollback, Summary, Test
 
 ### Community 210 - "TestLeadEngineerReport"
-Cohesion: 0.18
-Nodes (5): _make_decision(), ReviewPerspective, Tests for LeadEngineerReport output, sorting, and serialisation., An accepted finding missing location is dropped from both outputs, so it should…, TestLeadEngineerReport
+Cohesion: 0.14
+Nodes (9): _make_decision(), _make_finding(), ReviewFinding, ReviewPerspective, ReviewPriority, Tests for Lead Engineer stage models., Tests for LeadEngineerReport output, sorting, and serialisation., An accepted finding missing location is dropped from both outputs, so it should… (+1 more)
 
 ### Community 211 - "Suggested Commands"
 Cohesion: 0.25
@@ -1251,9 +1244,9 @@ Nodes (6): Build-time configuration, Choosing a strategy, Configuration strategi
 Cohesion: 0.29
 Nodes (6): Declarative Navigation (`RouterLink`), Navigate to Routes, Programmatic Navigation (`Router`), `router.navigate()`, `router.navigateByUrl()`, URL Parameters
 
-### Community 230 - "base-reviewer.ts"
-Cohesion: 0.13
-Nodes (19): annotatePatch(), buildPrompt(), composeSystemPrompt(), splitPatchLines(), context(), DefaultLLMFakeReviewer, makePrInfo(), NoMcpLLMFakeReviewer (+11 more)
+### Community 230 - "pr-info-collector.ts"
+Cohesion: 0.09
+Nodes (25): ADR-0004, ReviewerConfig, createModelProvider(), CreateModelProviderOptions, ProviderType, mockedCreateOllama, mockedOpenAIModel, mockedVercelModel (+17 more)
 
 ### Community 231 - "Route Transition Animations"
 Cohesion: 0.29
@@ -1283,9 +1276,9 @@ Nodes (7): 2.1 Avoid Barrel File Imports, 2.2 Conditional Module Loading, 2.3 De
 Cohesion: 0.33
 Nodes (6): 8.1 事象と非開発者向け要約, 8.2 原因分析, 8.3 対応方針: プロンプトへ事後検証制約を明示 (自己完結性の原則の継続), 8.4 検証観点, 8.5 残る限界, 8. Phase 2生成プロンプトの改善
 
-### Community 238 - "TestLeadEngineerAgentEvaluate"
-Cohesion: 0.18
-Nodes (13): ReviewError, LeadEngineerAgent, Evaluates parallel reviewer outputs and produces final decisions. Consumes a…, LeadEngineerOutput, Top-level LLM output schema passed to ``Agent.structured_output``. Attributes:…, _make_report(), ReviewerConfig, ReviewReport (+5 more)
+### Community 238 - ".review"
+Cohesion: 0.31
+Nodes (6): ProjectType, ReviewContext, ReviewResult, Review the change described by ``context``. Args: context: Input boundary…, Run this reviewer's Strands ``Agent`` against ``context`` and collect its…, Serialize the review-relevant PR information into a prompt. Shared by every LLM…
 
 ### Community 239 - "graphify reference: query, path, explain"
 Cohesion: 0.33
@@ -1383,21 +1376,21 @@ Nodes (3): File-System Paths, Import Paths, Prefer Statically Analyzable Paths
 Cohesion: 0.29
 Nodes (7): angular, react, svelte, vue, stack, enum, type
 
-### Community 273 - "ProjectType"
-Cohesion: 0.31
-Nodes (11): LLMReviewAgent, registerReviewer(), AngularReviewer, ReactReviewer, reviewers, SecurityReviewer, SvelteReviewer, VueReviewer (+3 more)
+### Community 273 - "base-reviewer.ts"
+Cohesion: 0.15
+Nodes (28): annotatePatch(), buildPrompt(), composeSystemPrompt(), LLMReviewAgent, ReviewerClass, splitPatchLines(), context(), DefaultLLMFakeReviewer (+20 more)
 
 ### Community 351 - "within_change_limits"
 Cohesion: 0.43
 Nodes (3): Determine whether a pull request fits within file and line-change limits.…, within_change_limits(), TestWithinChangeLimits
 
-### Community 352 - "registry.ts"
-Cohesion: 0.19
-Nodes (19): collectDirectPackageNames(), collectFields(), detectProjectTypeFromPackages(), extractDirectDependenciesFromPackageJson(), extractDirectDependenciesFromPackageLock(), extractDirectDependenciesFromPnpmLock(), isPlainRecord(), PACKAGE_PROJECT_TYPE_PRIORITY (+11 more)
+### Community 352 - "manifest-detection.ts"
+Cohesion: 0.32
+Nodes (12): collectDirectPackageNames(), collectFields(), detectProjectTypeFromPackages(), extractDirectDependenciesFromPackageJson(), extractDirectDependenciesFromPackageLock(), extractDirectDependenciesFromPnpmLock(), isPlainRecord(), PACKAGE_PROJECT_TYPE_PRIORITY (+4 more)
 
-### Community 353 - "main"
-Cohesion: 0.17
-Nodes (11): load_skipped_targets(), load_stack_outputs(), main(), Load existing targets only for repositories explicitly being skipped. Returns:…, Write targets grouped by stack to pr_targets_{stack}.json. Every stack in…, Load all existing stack target files for atomic revalidation. Returns:…, Discover and write per-stack Gold-set pull request targets. Returns: int: 1 if…, RepoCandidate (+3 more)
+### Community 353 - "write_stack_outputs"
+Cohesion: 0.43
+Nodes (3): Write targets grouped by stack to pr_targets_{stack}.json. Every stack in…, write_stack_outputs(), TestWriteStackOutputs
 
 ### Community 354 - "opencode.json"
 Cohesion: 0.50
@@ -1427,9 +1420,13 @@ Nodes (20): files, includes, formatter, enabled, indentStyle, indentWidth, lineW
 Cohesion: 0.33
 Nodes (3): common.sh script, start_a2a_container.sh script, stop_a2a_container.sh script
 
-### Community 373 - "test_eval_logging.py"
-Cohesion: 0.27
-Nodes (6): _clear_handlers(), fixture, Tests for evaluation/tools/eval_logging.py., Remove pytest's own root handler(s) for this test. pytest re-attaches its…, _restore_root_logger(), TestSetupLogging
+### Community 373 - "_clear_handlers"
+Cohesion: 0.47
+Nodes (3): _clear_handlers(), Remove pytest's own root handler(s) for this test. pytest re-attaches its…, TestSetupLogging
+
+### Community 374 - "test_model_provider_factory.py"
+Cohesion: 0.25
+Nodes (3): Tests for model_provider_factory., TestCreateModelProviderUnknown, TestProviderType
 
 ### Community 375 - "TypeScript開発環境・ツールチェーン整備 設計ドキュメント (Issue #250)"
 Cohesion: 0.11
@@ -1443,17 +1440,13 @@ Nodes (3): Model, Build the model for README summarisation. Returns: Model: Conf
 Cohesion: 0.25
 Nodes (7): A2A API 実装プラン, Context, アーキテクチャ上の重要な選択, 停止条件, 実装フロー, 検証対象 PR, 環境変数・.env ファイル
 
-### Community 378 - "github-mcp.ts"
-Cohesion: 0.18
-Nodes (8): isInfraError(), StructuredOutputMissingError, ReviewOrchestrator, createGithubMcpClient(), CreateGithubMcpClientOptions, GithubMcpConnectionError, RetryOptions, withRetry()
+### Community 378 - "review-orchestrator.test.ts"
+Cohesion: 0.09
+Nodes (16): isInfraError(), StructuredOutputMissingError, BASE_CONFIG, createDispatch(), DispatchConfig, mcpErrorResult(), mcpJsonResult(), mcpTextResult() (+8 more)
 
-### Community 379 - "collect_review_texts"
-Cohesion: 0.50
-Nodes (3): collect_review_texts(), Aggregate non-blank inline comment and review bodies (any author). Returns: The…, TestCollectReviewTexts
-
-### Community 380 - "models/test_lead_engineer.py"
-Cohesion: 0.13
-Nodes (10): _make_finding(), ReviewFinding, ReviewPriority, Tests for Lead Engineer stage models., Tests for the top-level LLM output schema., Tests for the resolved FindingDecision object., Tests for DecisionVerdict enum., TestDecisionVerdict (+2 more)
+### Community 379 - "test_angular_reviewer.py"
+Cohesion: 0.19
+Nodes (11): angular_reviewer_router(), APIRouter, Build the A2A-compatible router for the Angular Reviewer agent. Exposes the…, _make_app(), _pr_info_payload(), asyncio, FastAPI, _send_payload() (+3 more)
 
 ### Community 382 - "agent-core/package.json"
 Cohesion: 0.12
@@ -1468,16 +1461,12 @@ Cohesion: 0.14
 Nodes (13): 1. 決定済み事項（本Issue着手前に確定していたもの）, 2.1 Zodのバージョン, 2.2 Enum表現, 2.3 フィールド命名（camelCase化）, 2.4 Nullable値の表現, 2.5 `ReviewContext.shared_mcp_client`の扱い, 2.6 `LeadEngineerReport`の振る舞い(accepted/rejected/to_markdown/to_evaluation_format), 2.7 ファイル配置とプレースホルダの扱い (+5 more)
 
 ### Community 385 - "agent-skills-factory.ts"
-Cohesion: 0.32
-Nodes (11): buildAngularReviewSkills(), buildReactReviewSkills(), buildSvelteReviewSkills(), buildVueReviewSkills(), buildWebSecurityReviewSkills(), createAgentSkills(), skillPath(), SKILLS_DIR (+3 more)
+Cohesion: 0.23
+Nodes (13): buildAngularReviewSkills(), buildReactReviewSkills(), buildSvelteReviewSkills(), buildVueReviewSkills(), buildWebSecurityReviewSkills(), createAgentSkills(), skillPath(), SKILLS_DIR (+5 more)
 
 ### Community 386 - "._resolve_decisions"
 Cohesion: 0.21
 Nodes (9): FindingDecision, FindingDecisionOutput, LeadEngineerReport, ReviewFinding, ReviewPerspective, ReviewReport, Build the evaluation prompt and a finding-index map simultaneously. Each…, Resolve LLM output indexes to original findings. Normalises the LLM output to… (+1 more)
-
-### Community 387 - "test_react_reviewer.py"
-Cohesion: 0.32
-Nodes (7): _make_app(), _pr_info_payload(), asyncio, FastAPI, _send_payload(), TestAgentCard, TestGetTask
 
 ### Community 388 - "base-reviewer.review.test.ts"
 Cohesion: 0.20
@@ -1495,10 +1484,6 @@ Nodes (8): compilerOptions, composite, outDir, rootDir, extends, include, src, .
 Cohesion: 0.39
 Nodes (3): isUnsupported(), OllamaUnsupportedContentSanitizer, UNSUPPORTED_CONTENT_CLASSES
 
-### Community 393 - "TestFindingDecisionOutput"
-Cohesion: 0.36
-Nodes (3): parametrize, Tests for the LLM output schema (finding_index reference style)., TestFindingDecisionOutput
-
 ### Community 394 - "evaluation/package.json"
 Cohesion: 0.29
 Nodes (6): main, name, private, type, types, version
@@ -1512,19 +1497,19 @@ Cohesion: 0.50
 Nodes (3): ollamaModel, ollamaProvider, openaiCompatModel
 
 ## Knowledge Gaps
-- **1737 isolated node(s):** `common.sh script`, `start_a2a_container.sh script`, `stop_a2a_container.sh script`, `uvx`, `start-mcp-server` (+1732 more)
+- **1750 isolated node(s):** `common.sh script`, `start_a2a_container.sh script`, `stop_a2a_container.sh script`, `uvx`, `start-mcp-server` (+1745 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **116 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `setup_logging()` connect `setup_logging` to `make_finding`, `main`, `discover_candidate_prs.py`, `build_gold_set.py`, `select_stack_targets.py`, `build_seeded_set.py`, `generate_evaluation_report.py`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
-- **Why does `ReviewerConfig` connect `ReviewerConfig` to `_context`, `ProjectType`, `A2ADataPart`, `ReviewFinding`, `._agent`, `ReviewPerspective`, `TestStructuredOutputDirective`, `PRInfoResult`, `models.py`, `TestAnnotatePatch`, `TestLeadEngineerAgentEvaluate`, `get_reviewer_classes`?**
+- **Why does `PRInfoResult` connect `PRInfoResult` to `ReviewerConfig`, `base_reviewer.py`, `Settings`, `ReviewError`, `TaskStore`, `PRInfo`, `A2ADataPart`, `get_reviewer_classes`, `TestPRInfoCollectorCollect`, `detect_project_types`, `.collect`, `tests/agents/test_pr_info_collector.py`, `TestAnnotatePatch`, `TestSvelteReviewer`, `_context`, `TestStructuredOutputDirective`, `ReviewResult`, `TestExtractHeadRef`, `TestExtractLabelNames`?**
+  _High betweenness centrality (0.023) - this node is a cross-community bridge._
+- **Why does `setup_logging()` connect `setup_logging` to `make_finding`, `run_agent_evaluation.py`, `discover_candidate_prs.py`, `build_gold_set.py`, `select_stack_targets.py`, `build_seeded_set.py`, `generate_evaluation_report.py`?**
   _High betweenness centrality (0.021) - this node is a cross-community bridge._
-- **Why does `TaskStore` connect `TaskStore` to `A2ADataPart`, `test_react_reviewer.py`, `ReviewPerspective`, `test_lead_engineer_router.py`, `PRInfoResult`, `models.py`, `wait_for_task_completed`, `create_app`, `test_vue_reviewer.py`, `Settings`?**
-  _High betweenness centrality (0.019) - this node is a cross-community bridge._
+- **Why does `ProviderType` connect `ReviewerConfig` to `make_finding`, `create_model_provider`, `base_reviewer.py`, `ReviewError`, `_make_report`, `PRInfoResult`, `.collect`, `A2ADataPart`, `tests/agents/test_pr_info_collector.py`, `TestAnnotatePatch`, `_IsolatedSettings`, `TestPRInfoCollectorCollect`, `test_model_provider_factory.py`, `TestExtractHeadRef`, `TestExtractLabelNames`?**
+  _High betweenness centrality (0.018) - this node is a cross-community bridge._
 - **Are the 39 inferred relationships involving `ReviewerConfig` (e.g. with `StructuredOutputMissingError` and `ProviderType`) actually correct?**
   _`ReviewerConfig` has 39 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 33 inferred relationships involving `TaskStore` (e.g. with `A2AMessage` and `A2ATask`) actually correct?**
