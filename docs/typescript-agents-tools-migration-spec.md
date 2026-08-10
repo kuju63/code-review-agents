@@ -154,6 +154,129 @@ Sub-Issue [#261](https://github.com/kuju63/code-review-agents/issues/261)側で�
 - `renovate.json`: `packageRules`に`ai-sdk-ollama`の`allowedVersions`(3.8.x固定)を追加。既存の
   `serena-agent`エントリと同じ形。#256のリスク欄で「#252が実依存として追加する時に守れ」と申し送られていた対応。
 
-## 4. 計画からの逸脱
+## 4. スライスB: `base-reviewer` / `registry` / `reviewers/*`
+
+Sub-Issue [#260](https://github.com/kuju63/code-review-agents/issues/260)。スライスA
+(`feat/ts-migration/252-agents-tools-foundation`、PR #263、本ドキュメント執筆時点で未マージ)の
+上にStacked PRとして積む。`base_reviewer.py`(416行)・`registry.py`(255行)・
+`reviewers/{react,angular,vue,security,svelte}.py`(5ファイル)を移植する。
+
+### 4.1 `review()`の同期→非同期化
+
+Python版`ReviewAgent.review()`/`LLMReviewAgent.review()`は同期メソッドで、`strands.Agent.__call__`も
+同期APIだった。`@strands-agents/sdk@1.12.0`の`Agent`(`agent/agent.d.ts:539`)を確認したところ、
+`invoke(args: InvokeArgs, options?: InvokeOptions): Promise<AgentResult>`のみが提供され、同期呼び出しの
+経路は存在しない。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `review()`を`Promise<ReviewResult>`を返す非同期メソッドに変更する | `ReviewAgent`/`LLMReviewAgent`の`review()`シグネチャを`async`化し、呼び出し側(スライスC)も`await`する | **採用** | SDKが同期呼び出しAPIを提供していない以上、他に選択肢がない |
+
+**採用**: `abstract review(context: ReviewContext, projectType?: ProjectType): Promise<ReviewResult>`。
+
+### 4.2 GitHub MCPクライアントのcleanup所有権(`review()`自身が負う)
+
+§2.2で「接続の所有権は常に呼び出し側」と決定済みだが、スライスBの`review()`はこの決定の実際の適用箇所となる。
+Python版は`agent.cleanup()`が「共有クライアントなら参照カウント減算、専有クライアントなら`stop()`」を
+自動判定していたが、TSの`Agent`にはcleanup/disposeメソッド自体が存在しない(§2.2で確認済み)。加えて
+`models/review.ts:82`の`ReviewContext.sharedMcpClient`は型が`McpClient`であり、`SharedMcpClient`(参照カウント
+ラッパー、スライスA `tools/shared-mcp-client.ts`)そのものではない — つまり`review()`は共有クライアントの
+参照カウントを直接操作する手段を持たない。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `context.sharedMcpClient`が渡された場合は`review()`側で一切disconnectせず、専有クライアント(`createGithubMcpClient`で自前生成した場合)のみ`finally`で`mcpClient.disconnect()`を直接呼ぶ | 参照カウント減算は`ReviewContext.sharedMcpClient`を渡す側(スライスCのorchestrator)の責務とし、`review()`は「共有か専有か」で分岐するだけの単純なtry/finallyにする | **採用** | `review()`のシグネチャ上、共有クライアントを参照カウント付きラッパー越しに受け取る手段がない(受け取るのは生の`McpClient`)以上、参照カウントの減算をこの層で行うことはできない。Python版の「Agent構築失敗時のみ`stop()`にフォールバックする」という条件分岐も、TS版はcleanup経路が最初から1本(`finally`)しかないため不要になる |
+| ② `ReviewContext.sharedMcpClient`の型を`SharedMcpClient`に変更し、`review()`が`removeConsumer()`を呼べるようにする | `models/review.ts`のスキーマ自体を変更する | 却下 | `models/review.ts`はスライス完了済み(#251)の資産であり、本スライス(#260)の範囲外。また`ReviewContext`はスライスDの`pr-info-collector`等、レビュアー以外からも参照されうる汎用モデルであり、レビュアー固有の参照カウント管理の都合でモデル層の型を変えるべきではない |
+
+**採用**: `review()`は「`context.sharedMcpClient`があれば触らない、無ければ自前生成し`finally`で`disconnect()`する」の2分岐のみ。参照カウント管理はスライスC側の責務として明確に切り分ける。
+
+### 4.3 レビュアークラスのメタデータ表現(static/instance分割)
+
+Python版は`ClassVar`で選択用メタデータ(`reviewer_id`/`perspective`/`project_types`)と挙動フラグ
+(`uses_github_mcp`/`uses_url_fetch`/`skill_type`/`system_prompt`)を区別なく扱い、`registry.get_reviewer_classes`は
+インスタンス化せずクラス属性(`cls.project_types`等)で選別する。TSでは`abstract static`メンバーの型付けが
+言語機能として煩雑(TS 4.9時点でも構文糖衣が薄く、抽象クラスの静的側を強制する型はユーティリティ型で
+回避する必要がある)。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① 選択用メタデータのみ`static readonly`にし、挙動フラグはインスタンスの`readonly`フィールドにする | `registry.ts`は`ReviewerClass`インターフェース(`{ new (config): T; readonly reviewerId; readonly perspective; readonly projectTypes }`)でクラスを型付けし、インスタンス化前に`cls.reviewerId`等を直接読む。`usesGithubMcp`等は`review()`内でのみ`this.usesGithubMcp`として参照する | **採用** | `abstract static`を要求する型を`ReviewAgent`基底クラスに持たせずに済み、`registry.ts`が必要とする「インスタンス化前にクラスから選別できる」という制約と、`review()`が必要とする「`this.`でアクセスできる」という制約を両立できる |
+| ② 全メタデータをstaticにし、`review()`内では`(this.constructor as typeof LLMReviewAgent)`でキャストして読む | Pythonの`ClassVar`を可能な限り忠実に再現する | 却下 | `review()`内で毎回`this.constructor`キャストを書くことになり、TSの型安全性の恩恵を失う割に、Pythonとの一致にどれほどの価値があるか不明。挙動フラグは選択ロジックに一切関与しない(=staticである必要がない)ため、素直にインスタンスフィールドにする方が可読性が高い |
+
+**採用**: `ReviewerClass`インターフェース(選択用static) + インスタンス`readonly`フィールド(挙動フラグ)の分割。
+
+### 4.4 `registerReviewer`の実装形式(デコレータではなく関数呼び出し)
+
+Python版は`@register_reviewer`をクラスデコレータとして各reviewerクラスに付与する。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① 各reviewerファイル末尾で`registerReviewer(ReactReviewer);`と素の関数呼び出しにする | クラス定義後、モジュールのトップレベルで登録関数を呼ぶだけ | **採用** | `verbatimModuleSyntax`/`isolatedModules`(`tsconfig.base.json`)が有効な状態でTS 5ネイティブデコレータを抽象基底クラスの具象サブクラスに対して正しく型付けするのは煩雑で、モジュールimport時に登録するという副作用の本質(Pythonの`@register_reviewer`と同じ)は関数呼び出しでも変わらない |
+| ② TS 5ネイティブデコレータ構文(`@registerReviewer`)を使う | `(target: Class, context: ClassDecoratorContext) => Class`の形にして`@registerReviewer`と書く | 却下 | Pythonの見た目には近づくが、型定義の複雑さに見合うメリットがない(登録のタイミング・効果は関数呼び出しと完全に同一) |
+
+**採用**: `registerReviewer(cls)`を関数として実装し、各reviewerファイル末尾で呼び出す。
+
+### 4.5 `STRUCTURED_OUTPUT_DIRECTIVE`のフィールド名(`file_path`→`filePath`)
+
+Python版の指示文は`file_path`/`line`という蛇形フィールド名を明示的に言及する。TS版の
+`ReviewFindingSchema`(`models/review.ts`)は既に`filePath`(camelCase)で定義済み(#251で確定済み)。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① 指示文中の`file_path`を`filePath`に置き換えて移植する | 文言以外は逐語移植、フィールド名のみモデル層の命名規則に追従させる | **採用** | LLMへの指示文がモデルの実際のフィールド名と食い違うと、モデルが誤った出力形状を生成するリスクがある。`ReviewFindingSchema`側を変更する理由がない以上、指示文側を合わせるのが妥当 |
+
+**採用**: 指示文中の`file_path`/`line`のうち`file_path`を`filePath`に変更。`line`はcamelCase/snake_caseで同一表記のため変更不要。
+
+### 4.6 `annotatePatch`の改行分割(`splitlines()`とのギャップを埋める)
+
+Python版`_annotate_patch`は`patch.splitlines()`で分割・`"\n".join()`で再結合する。`str.splitlines()`は
+(a)空文字列→`[]`、(b)末尾改行の有無を区別しない、(c)`\r\n`/`\r`も改行として扱う、という3つの性質を持つ。
+JSの`"".split("\n")`は空文字列に対して`[""]`を返し、CRLFも1文字ずつ`\r`が残ってしまうなど、素朴な移植では
+Python版の`TestAnnotatePatch`が期待する挙動(特に空パッチ→空文字列)と食い違う。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① 専用の`splitPatchLines`ヘルパーを実装する | 空文字列は即`[]`を返し、`/\r\n\|\r\|\n/`で分割した上で末尾の空要素(末尾改行由来)を1つだけ除去する | **採用** | Python版の`TestAnnotatePatch`が網羅する空文字列・末尾改行あり/なし・複数hunk等のケースを全て同じ結果にするために必要な最小限の差分吸収 |
+| ② `"\n"`のみで分割し、CRLFやトレーリング改行の差異を無視する | 素朴な`split("\n")` | 却下 | 空文字列入力で`[""]`が返り、hunkヘッダーにマッチしない1行分の余計な出力(空行1つ)が生成されてしまい、Python版と出力が一致しない |
+
+**採用**: `splitPatchLines`ヘルパーを`annotatePatch`内部に実装し、Python版`splitlines()`相当の挙動に揃える。
+
+### 4.7 URLフェッチツール(SDK標準の`httpRequest`をそのまま使用、独自実装しない)
+
+Python版`SecurityReviewer`は`uses_url_fetch = True`により`strands_tools.http_request`をツールとして
+追加する。検討序盤では「TS SDKに相当ツールが存在しない」という誤った仮説のもとで独自実装を計画したが、
+`@strands-agents/sdk`の`node_modules`配下`dist/src/vended-tools/http-request/`を直接確認したところ、
+`httpRequest: InvokableTool<HttpRequestInput, HttpRequestOutput>`
+(`@strands-agents/sdk/vended-tools/http-request`からexport)がGET/POST/PUT/DELETE/PATCH/HEAD/OPTIONSの
+全メソッド・ヘッダー・ボディ・タイムアウト(デフォルト30秒)に対応する形で最初から提供されていることを
+確認した。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `@strands-agents/sdk/vended-tools/http-request`の`httpRequest`をそのまま`tools`配列に積む | 独自ツールを作らず、SDK標準ツールをimportして使うだけ | **採用** | Python版`strands_tools.http_request`と同等以上の機能(全HTTPメソッド・タイムアウト対応)を持つ既製品が存在する以上、車輪の再発明をする理由がない。追加の依存やコードは不要 |
+| ② 独自の`tools/http-request-tool.ts`を新規実装する(GET/HEAD限定・https限定など制限を加えた最小版) | fetch APIベースの小さなラッパーを自作 | 却下 | SDK標準ツールの存在を見落として一度この方針を検討したが、独自実装はPython版より機能を絞ることになり(Python版はauth設定やドメイン許可リスト等を持つ)、かつSDK標準ツールと同じ土俵の車輪の再発明でしかない。既製品を使う①が明確に優位 |
+
+**採用**: `SecurityReviewer`の`usesUrlFetch`実装は`@strands-agents/sdk/vended-tools/http-request`の`httpRequest`を`tools`配列にそのまま追加する。新規ファイルは作らない。
+
+### 4.8 ファイル読み取りツール(`SKILLS_DIR`限定の最小自作、`fileEditor`+`Sandbox`は不採用)
+
+5つのreviewer全てが`skillType`を`NONE`以外に設定しており、Python版は`strands_tools.file_read`を
+`tools`に追加してAgentSkillsが提示する参照ファイルの中身を実際に取得させている。`@strands-agents/sdk`の
+`vended-plugins/skills`(`AgentSkills`)を確認したところ、スキル資産のファイル一覧を提示する
+アクティベーションツールのみを登録し、ファイル内容そのものは読まない設計であることを確認した。SDKの
+`vended-tools`(`bash`/`fileEditor`/`httpRequest`/`notebook`/`sleep`の5つ、`vended-tools/index.d.ts`で全量確認済み)
+には単純な読み取り専用ツールが無く、最も近い`fileEditor`は`view`/`create`/`str_replace`/`insert`の
+読み書き両対応ツールで、`Sandbox`抽象クラス(`readFile`/`writeFile`/`removeFile`/`listFiles`/`execute`を
+実装する必要がある)への依存を要求する(`sandbox/base.d.ts`で確認済み)。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `tools/file-read-tool.ts`として`SKILLS_DIR`配下に読み取りを限定した最小の読み取り専用ツールを自作する | `path.resolve(SKILLS_DIR, input.path)`で解決したパスが`SKILLS_DIR`外に出ないことを検証し、UTF-8でサイズ上限付きで読む。エラーは例外ではなく文字列で返す(Python版`file_read`の慣習を踏襲) | **採用** | reviewerが必要とするのは「`SKILLS_DIR`配下の参照ファイルを読む」というごく限定された読み取り専用の操作のみで、`fileEditor`が提供する書き込み・編集能力は不要かつレビュアーという役割にそぐわない権限(意図せずファイルを作成・編集できてしまう)を持ち込む。`Sandbox`のセットアップコストに見合う価値もない |
+| ② `fileEditor` + カスタム`Sandbox`実装(`SKILLS_DIR`をルートとするローカルファイルシステムSandbox)を採用する | `Sandbox`を自作し`fileEditor`をそのまま使う | 却下 | `fileEditor`は`view`/`create`/`str_replace`/`insert`の4コマンドを持ち、`MakeFileEditorOptions`はname/descriptionのみでコマンド制限の設定項目がない(`file-editor/file-editor.d.ts`で確認済み)ため、読み取り専用に絞ることができない。read-onlyであるべきreviewerに書き込み系ツールを持たせるのは不要なリスクであり、`Sandbox`という重量級抽象(6つの抽象メソッド)を実装するコストにも見合わない |
+| ③ ファイル読み取りツール自体を用意せず、`AgentSkills`のアクティベーションツールのみに頼る | `file_read`相当を持たせない | 却下 | `AgentSkills`はスキル資産のファイル一覧を提示するのみで内容を読まないため、これではreviewerがスキル参照資料(`references/`配下のガイドライン等)の実際の内容を一切参照できず、AgentSkills機能自体が実質的に無意味化する |
+
+**採用**: `tools/file-read-tool.ts`に`SKILLS_DIR`限定の最小読み取り専用ツールを新規実装する。前提として`skills/agent-skills-factory.ts`から`SKILLS_DIR`をexportする(1行追加)。
+
+## 5. 計画からの逸脱
 
 実装中に本ドキュメントの決定から逸脱した場合は、#258の運用に倣い同一コミットで本ドキュメントも更新する。
