@@ -1,16 +1,16 @@
 # Graph Report - fix-267-merge-to-main  (2026-08-10)
 
 ## Corpus Check
-- 471 files · ~318,749 words
+- 471 files · ~319,141 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 4923 nodes · 8888 edges · 404 communities (289 shown, 115 thin omitted)
+- 4923 nodes · 8888 edges · 403 communities (287 shown, 116 thin omitted)
 - Extraction: 86% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 1255 edges (avg confidence: 0.58)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `afea2548`
+- Built from commit: `625e8362`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -85,7 +85,7 @@
 - required
 - has_review_comments
 - PRInfoResult
-- test_lead_engineer_router.py
+- lead_engineer_router
 - Code Review Agent
 - TestEvaluateConcurrentlyFailureIsolation
 - TestCreateAgentSkills
@@ -260,7 +260,7 @@
 - Testing Fundamentals
 - Passing snippets to components
 - 8. Advanced Patterns
-- verify_github_token
+- TestVerifyGithubToken
 - 7.4 対応方針
 - graphify reference: add a URL and watch a folder
 - graphify reference: commit hook and native CLAUDE.md integration
@@ -376,7 +376,7 @@
 - ._build_model
 - A2A API 実装プラン
 - review-orchestrator.test.ts
-- test_orchestrator.py
+- test_angular_reviewer.py
 - TestErrorPropagation
 - TestSvelteReview
 - agent-core/package.json
@@ -384,7 +384,6 @@
 - 2. 要検討事項（比較表 + 採用/却下理由）
 - agent-skills-factory.ts
 - ._resolve_decisions
-- test_react_reviewer.py
 - base-reviewer.review.test.ts
 - agent-core/tsconfig.json
 - evaluation/tsconfig.json
@@ -427,7 +426,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (404 total, 115 thin omitted)
+## Communities (403 total, 116 thin omitted)
 
 ### Community 0 - "make_finding"
 Cohesion: 0.06
@@ -442,8 +441,8 @@ Cohesion: 0.05
 Nodes (52): _ReviewerT, LLMReviewAgent, Base classes for review agents in the parallel review stage. Defines the…, LLM-backed reviewer using a Strands ``Agent`` and GitHub MCP. Concrete…, Shared exception types for the review-stage and lead-engineer agents., Agents for code review workflow., Content-based project-type detection from JS/TS dependency manifests.…, PR Info Collector agent. Collects pull request information from GitHub and… (+44 more)
 
 ### Community 3 - "Settings"
-Cohesion: 0.08
-Nodes (28): BaseException, BaseSettings, Remove token-like strings from exception messages to prevent credential…, sanitize_error(), _run(), _run(), _run(), pr_info_collector_router() (+20 more)
+Cohesion: 0.09
+Nodes (26): BaseException, BaseSettings, Remove token-like strings from exception messages to prevent credential…, sanitize_error(), _run(), _run(), _run(), pr_info_collector_router() (+18 more)
 
 ### Community 4 - "ReviewError"
 Cohesion: 0.06
@@ -458,8 +457,8 @@ Cohesion: 0.15
 Nodes (19): Shared logging configuration for evaluation/tools scripts., Configure the root logger for evaluation/tools scripts. Deliberately omits…, setup_logging(), _failed_ids_path(), main(), merge(), Any, Path (+11 more)
 
 ### Community 7 - "TaskStore"
-Cohesion: 0.10
-Nodes (19): LogCaptureFixture, A2ATaskStatus, StrEnum, Lifecycle state of an :class:`A2ATask`., Tracks :class:`A2ATask` lifecycle in memory, guarded by a single asyncio lock.…, Initialize an empty task store., Create and store a new task in the ``SUBMITTED`` state. Returns: The newly…, Look up a task by id. Returns: The stored task, or ``None`` if ``task_id`` is… (+11 more)
+Cohesion: 0.08
+Nodes (22): LogCaptureFixture, A2ATaskStatus, StrEnum, Lifecycle state of an :class:`A2ATask`., Tracks :class:`A2ATask` lifecycle in memory, guarded by a single asyncio lock.…, Initialize an empty task store., Create and store a new task in the ``SUBMITTED`` state. Returns: The newly…, Look up a task by id. Returns: The stored task, or ``None`` if ``task_id`` is… (+14 more)
 
 ### Community 8 - "models/index.ts"
 Cohesion: 0.11
@@ -470,8 +469,8 @@ Cohesion: 0.06
 Nodes (31): FileChange, PRInfo, BaseModel, Diff information for a single changed file. Attributes: filePath: Relative path…, Pull request metadata and file changes. Attributes: title: PR title. pr_number:…, Repository owner and name. Attributes: owner: GitHub repository owner (user or…, RepositoryInfo, Aggregated output of the parallel review stage. This is the hand-off to the… (+23 more)
 
 ### Community 10 - "A2ADataPart"
-Cohesion: 0.08
-Nodes (57): A2ADataPart, A2AMessage, A2ASendTaskRequest, A2ASendTaskResponse, A2ATask, A2ATextPart, AgentCapability, AgentCard (+49 more)
+Cohesion: 0.09
+Nodes (50): A2ADataPart, A2AMessage, A2ASendTaskRequest, A2ASendTaskResponse, A2ATask, A2ATextPart, AgentCapability, AgentCard (+42 more)
 
 ### Community 11 - "api_get"
 Cohesion: 0.07
@@ -614,8 +613,8 @@ Cohesion: 0.09
 Nodes (8): Tests for the shard-execution support added to run_agent_evaluation.py. Covers…, Invalid --shard-index/--shard-count must be reported as one of the script's…, TestFailedIdsPath, TestIsSharded, TestMainShardValidation, TestMaybeGenerateReport, TestSelectShard, TestWritePredictionsAndSidecar
 
 ### Community 47 - "create_app"
-Cohesion: 0.09
-Nodes (26): orchestrator_router(), APIRouter, Build the A2A-compatible router that drives the end-to-end review pipeline.…, APIRouter, Build the A2A-compatible router for the React Reviewer agent. Exposes the…, react_reviewer_router(), APIRouter, Build the A2A-compatible router for the Vue Reviewer agent. Exposes the… (+18 more)
+Cohesion: 0.08
+Nodes (32): orchestrator_router(), APIRouter, Build the A2A-compatible router that drives the end-to-end review pipeline.…, APIRouter, Build the A2A-compatible router for the React Reviewer agent. Exposes the…, react_reviewer_router(), APIRouter, Build the A2A-compatible router for the Security Reviewer agent. Exposes the… (+24 more)
 
 ### Community 48 - "load_eval_tool_module"
 Cohesion: 0.13
@@ -705,9 +704,9 @@ Nodes (3): has_review_comments(), Return whether the PR has a qualifying inline 
 Cohesion: 0.07
 Nodes (47): ABC, Interface for a reviewer in the parallel review stage. Subclasses declare their…, Store the shared runtime configuration for this reviewer instance. Args:…, ReviewAgent, ReviewerConfig, Runs applicable reviewers concurrently and aggregates their results. Args:…, Store the shared configuration injected into every selected reviewer. Args:…, ReviewOrchestrator (+39 more)
 
-### Community 71 - "test_lead_engineer_router.py"
-Cohesion: 0.29
-Nodes (7): _make_app(), asyncio, FastAPI, _send_payload(), TestAgentCard, TestGetTask, TestSendTask
+### Community 71 - "lead_engineer_router"
+Cohesion: 0.21
+Nodes (10): lead_engineer_router(), APIRouter, Build the A2A-compatible router for the Lead Engineer agent. Exposes the…, _make_app(), asyncio, FastAPI, _send_payload(), TestAgentCard (+2 more)
 
 ### Community 72 - "Code Review Agent"
 Cohesion: 0.08
@@ -719,7 +718,7 @@ Nodes (5): parametrize, Guards against #143: a skill's declared name and its par
 
 ### Community 75 - "ReviewResult"
 Cohesion: 0.07
-Nodes (39): In-memory storage for A2A tasks, with lock-guarded mutation and TTL expiry., A reviewer's output annotated with its identity and scope. Attributes:…, The free-form review payload an LLM reviewer produces. This is the schema…, ReviewOutput, ReviewResult, Shared async test helpers for the A2A reviewer router test suites., Poll ``store`` until ``task_id`` leaves the WORKING/SUBMITTED state. The…, wait_for_task_completed() (+31 more)
+Nodes (38): A reviewer's output annotated with its identity and scope. Attributes:…, The free-form review payload an LLM reviewer produces. This is the schema…, ReviewOutput, ReviewResult, Shared async test helpers for the A2A reviewer router test suites., Poll ``store`` until ``task_id`` leaves the WORKING/SUBMITTED state. The…, wait_for_task_completed(), _make_app() (+30 more)
 
 ### Community 76 - "2. 設計方針"
 Cohesion: 0.20
@@ -1349,10 +1348,6 @@ Nodes (5): Explicit props, Implicit `children` snippet, Implicit props, Optional
 Cohesion: 0.40
 Nodes (5): 8.1 Do Not Put Effect Events in Dependency Arrays, 8.2 Initialize App Once, Not Per Mount, 8.3 Store Event Handlers in Refs, 8.4 useEffectEvent for Stable Callback Refs, 8. Advanced Patterns
 
-### Community 256 - "verify_github_token"
-Cohesion: 0.46
-Nodes (4): FastAPI dependency that authenticates a request against the GitHub API. Args:…, verify_github_token(), asyncio, TestVerifyGithubToken
-
 ### Community 257 - "7.4 対応方針"
 Cohesion: 0.50
 Nodes (4): 7.4.1 V2 (`verify_only_additions_changed`) への対応: 構造的原因には手を入れない, 7.4.2 カタログ改訂: `frontend_n_plus_one_api` / `b2b2c_idor_hint`を自己完結化, 7.4.3 カタログバリデーションの追加 (再発防止), 7.4 対応方針
@@ -1449,9 +1444,9 @@ Nodes (7): A2A API 実装プラン, Context, アーキテクチャ上の重要�
 Cohesion: 0.09
 Nodes (16): isInfraError(), StructuredOutputMissingError, BASE_CONFIG, createDispatch(), DispatchConfig, mcpErrorResult(), mcpJsonResult(), mcpTextResult() (+8 more)
 
-### Community 379 - "test_orchestrator.py"
-Cohesion: 0.47
-Nodes (3): _make_app(), FastAPI, TestAgentCard
+### Community 379 - "test_angular_reviewer.py"
+Cohesion: 0.19
+Nodes (11): angular_reviewer_router(), APIRouter, Build the A2A-compatible router for the Angular Reviewer agent. Exposes the…, _make_app(), _pr_info_payload(), asyncio, FastAPI, _send_payload() (+3 more)
 
 ### Community 382 - "agent-core/package.json"
 Cohesion: 0.12
@@ -1472,10 +1467,6 @@ Nodes (13): buildAngularReviewSkills(), buildReactReviewSkills(), buildSvelteRev
 ### Community 386 - "._resolve_decisions"
 Cohesion: 0.21
 Nodes (9): FindingDecision, FindingDecisionOutput, LeadEngineerReport, ReviewFinding, ReviewPerspective, ReviewReport, Build the evaluation prompt and a finding-index map simultaneously. Each…, Resolve LLM output indexes to original findings. Normalises the LLM output to… (+1 more)
-
-### Community 387 - "test_react_reviewer.py"
-Cohesion: 0.27
-Nodes (8): _make_app(), _pr_info_payload(), asyncio, FastAPI, _send_payload(), TestAgentCard, TestGetTask, TestSendTask
 
 ### Community 388 - "base-reviewer.review.test.ts"
 Cohesion: 0.20
@@ -1508,16 +1499,16 @@ Nodes (3): ollamaModel, ollamaProvider, openaiCompatModel
 ## Knowledge Gaps
 - **1750 isolated node(s):** `common.sh script`, `start_a2a_container.sh script`, `stop_a2a_container.sh script`, `uvx`, `start-mcp-server` (+1745 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **115 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **116 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `PRInfoResult` connect `PRInfoResult` to `ReviewerConfig`, `base_reviewer.py`, `Settings`, `ReviewError`, `PRInfo`, `A2ADataPart`, `get_reviewer_classes`, `TestPRInfoCollectorCollect`, `detect_project_types`, `.collect`, `tests/agents/test_pr_info_collector.py`, `TestAnnotatePatch`, `TestSvelteReviewer`, `_context`, `TestStructuredOutputDirective`, `ReviewResult`, `TestExtractHeadRef`, `TestExtractLabelNames`, `test_orchestrator.py`?**
+- **Why does `PRInfoResult` connect `PRInfoResult` to `ReviewerConfig`, `base_reviewer.py`, `Settings`, `ReviewError`, `TaskStore`, `PRInfo`, `A2ADataPart`, `get_reviewer_classes`, `TestPRInfoCollectorCollect`, `detect_project_types`, `.collect`, `tests/agents/test_pr_info_collector.py`, `TestAnnotatePatch`, `TestSvelteReviewer`, `_context`, `TestStructuredOutputDirective`, `ReviewResult`, `TestExtractHeadRef`, `TestExtractLabelNames`?**
   _High betweenness centrality (0.023) - this node is a cross-community bridge._
 - **Why does `setup_logging()` connect `setup_logging` to `make_finding`, `run_agent_evaluation.py`, `discover_candidate_prs.py`, `build_gold_set.py`, `select_stack_targets.py`, `build_seeded_set.py`, `generate_evaluation_report.py`?**
   _High betweenness centrality (0.021) - this node is a cross-community bridge._
-- **Why does `ProviderType` connect `ReviewerConfig` to `make_finding`, `create_model_provider`, `base_reviewer.py`, `Settings`, `ReviewError`, `_make_report`, `PRInfoResult`, `.collect`, `tests/agents/test_pr_info_collector.py`, `TestAnnotatePatch`, `_IsolatedSettings`, `TestPRInfoCollectorCollect`, `test_model_provider_factory.py`, `TestExtractHeadRef`, `TestExtractLabelNames`?**
+- **Why does `ProviderType` connect `ReviewerConfig` to `make_finding`, `create_model_provider`, `base_reviewer.py`, `ReviewError`, `_make_report`, `PRInfoResult`, `.collect`, `A2ADataPart`, `tests/agents/test_pr_info_collector.py`, `TestAnnotatePatch`, `_IsolatedSettings`, `TestPRInfoCollectorCollect`, `test_model_provider_factory.py`, `TestExtractHeadRef`, `TestExtractLabelNames`?**
   _High betweenness centrality (0.018) - this node is a cross-community bridge._
 - **Are the 39 inferred relationships involving `ReviewerConfig` (e.g. with `StructuredOutputMissingError` and `ProviderType`) actually correct?**
   _`ReviewerConfig` has 39 INFERRED edges - model-reasoned connections that need verification._

@@ -7733,7 +7733,7 @@
       "label": ".writeDebugResponseFile()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L352",
+      "source_location": "L379",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_writedebugresponsefile",
       "community": 230,
@@ -7744,7 +7744,7 @@
       "label": ".readPrDetails()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L374",
+      "source_location": "L401",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readprdetails",
       "community": 230,
@@ -7755,7 +7755,7 @@
       "label": ".readChangedFiles()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L400",
+      "source_location": "L431",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readchangedfiles",
       "community": 230,
@@ -7766,7 +7766,7 @@
       "label": ".listDirectoryEntries()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L443",
+      "source_location": "L481",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_listdirectoryentries",
       "community": 230,
@@ -7777,7 +7777,7 @@
       "label": ".readDependencyFiles()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L485",
+      "source_location": "L523",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readdependencyfiles",
       "community": 230,
@@ -7788,7 +7788,7 @@
       "label": ".readFileText()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L513",
+      "source_location": "L551",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readfiletext",
       "community": 230,
@@ -7799,7 +7799,7 @@
       "label": ".resolveWorkspacePackageJsonPaths()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L550",
+      "source_location": "L588",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_resolveworkspacepackagejsonpaths",
       "community": 230,
@@ -7810,7 +7810,7 @@
       "label": ".readManifestContents()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L622",
+      "source_location": "L660",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readmanifestcontents",
       "community": 230,
@@ -7821,7 +7821,7 @@
       "label": ".readReadme()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L686",
+      "source_location": "L724",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readreadme",
       "community": 230,
@@ -7832,7 +7832,7 @@
       "label": ".buildModel()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L696",
+      "source_location": "L734",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_buildmodel",
       "community": 230,
@@ -7843,7 +7843,7 @@
       "label": ".summarizeReadme()",
       "file_type": "code",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L705",
+      "source_location": "L743",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_summarizereadme",
       "community": 230,
@@ -10421,8 +10421,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_task_store",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "task_store.py"
     },
     {
@@ -10520,8 +10520,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_a2a_task_store_rationale_1",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "in-memory storage for a2a tasks, with lock-guarded mutation and ttl expiry."
     },
     {
@@ -12764,8 +12764,8 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_angular_reviewer_angular_reviewer_router",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "angular_reviewer_router()"
     },
     {
@@ -12775,8 +12775,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_angular_reviewer_py_apirouter",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "apirouter"
     },
     {
@@ -12797,8 +12797,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_angular_reviewer_rationale_54",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "build the a2a-compatible router for the angular reviewer agent. exposes the..."
     },
     {
@@ -12874,8 +12874,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_verify_github_token",
-      "community": 256,
-      "community_name": "verify_github_token",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "verify_github_token()"
     },
     {
@@ -12918,8 +12918,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_common_rationale_45",
-      "community": 256,
-      "community_name": "verify_github_token",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "fastapi dependency that authenticates a request against the github api. args:..."
     },
     {
@@ -12951,8 +12951,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_lead_engineer_lead_engineer_router",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 71,
+      "community_name": "lead_engineer_router",
       "norm_label": "lead_engineer_router()"
     },
     {
@@ -12962,8 +12962,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_lead_engineer_py_apirouter",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 71,
+      "community_name": "lead_engineer_router",
       "norm_label": "apirouter"
     },
     {
@@ -12984,8 +12984,8 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_lead_engineer_rationale_50",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 71,
+      "community_name": "lead_engineer_router",
       "norm_label": "build the a2a-compatible router for the lead engineer agent. exposes the..."
     },
     {
@@ -13061,8 +13061,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector",
-      "community": 3,
-      "community_name": "Settings",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "api/agents/pr_info_collector.py"
     },
     {
@@ -13105,8 +13105,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_pr_info_collector_rationale_1",
-      "community": 3,
-      "community_name": "Settings",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "a2a router exposing the pr info collector agent as an independently callable..."
     },
     {
@@ -13215,8 +13215,8 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_security_reviewer_security_reviewer_router",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "create_app",
       "norm_label": "security_reviewer_router()"
     },
     {
@@ -13226,8 +13226,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_security_reviewer_py_apirouter",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "create_app",
       "norm_label": "apirouter"
     },
     {
@@ -13248,8 +13248,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_security_reviewer_rationale_54",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "create_app",
       "norm_label": "build the a2a-compatible router for the security reviewer agent. exposes the..."
     },
     {
@@ -13281,8 +13281,8 @@
       "source_location": "L53",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_svelte_reviewer_svelte_reviewer_router",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "create_app",
       "norm_label": "svelte_reviewer_router()"
     },
     {
@@ -13292,8 +13292,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_svelte_reviewer_py_apirouter",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "create_app",
       "norm_label": "apirouter"
     },
     {
@@ -13314,8 +13314,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "src_code_review_agent_api_agents_svelte_reviewer_rationale_54",
-      "community": 10,
-      "community_name": "A2ADataPart",
+      "community": 47,
+      "community_name": "create_app",
       "norm_label": "build the a2a-compatible router for the svelte reviewer agent. exposes the..."
     },
     {
@@ -13446,8 +13446,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_config",
-      "community": 3,
-      "community_name": "Settings",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "config.py"
     },
     {
@@ -13490,8 +13490,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "src_code_review_agent_api_config_rationale_1",
-      "community": 3,
-      "community_name": "Settings",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "runtime configuration for the fastapi service, sourced from the environment."
     },
     {
@@ -21157,8 +21157,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "test_angular_reviewer.py"
     },
     {
@@ -21168,8 +21168,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_make_app",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "_make_app()"
     },
     {
@@ -21179,8 +21179,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_py_fastapi",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "fastapi"
     },
     {
@@ -21190,8 +21190,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_pr_info_payload",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "_pr_info_payload()"
     },
     {
@@ -21201,8 +21201,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_send_payload",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "_send_payload()"
     },
     {
@@ -21212,8 +21212,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_testagentcard",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "testagentcard"
     },
     {
@@ -21223,8 +21223,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_testagentcard_test_returns_agent_card",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": ".test_returns_agent_card()"
     },
     {
@@ -21234,8 +21234,8 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_testsendtask",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "testsendtask"
     },
     {
@@ -21245,8 +21245,8 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_testsendtask_test_returns_202_with_task_id",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": ".test_returns_202_with_task_id()"
     },
     {
@@ -21256,8 +21256,8 @@
       "source_location": "L77",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_testgettask",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "testgettask"
     },
     {
@@ -21267,8 +21267,8 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_testgettask_test_returns_404_for_unknown_task_id",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": ".test_returns_404_for_unknown_task_id()"
     },
     {
@@ -21278,8 +21278,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_py_asyncio",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": "asyncio"
     },
     {
@@ -21289,8 +21289,8 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "tests_api_agents_test_angular_reviewer_testgettask_test_background_task_completes",
-      "community": 75,
-      "community_name": "ReviewResult",
+      "community": 379,
+      "community_name": "test_angular_reviewer.py",
       "norm_label": ".test_background_task_completes()"
     },
     {
@@ -21367,7 +21367,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken",
       "community": 256,
-      "community_name": "verify_github_token",
+      "community_name": "TestVerifyGithubToken",
       "norm_label": "testverifygithubtoken"
     },
     {
@@ -21378,7 +21378,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_common_py_asyncio",
       "community": 256,
-      "community_name": "verify_github_token",
+      "community_name": "TestVerifyGithubToken",
       "norm_label": "asyncio"
     },
     {
@@ -21389,7 +21389,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_returns_token_on_valid_response",
       "community": 256,
-      "community_name": "verify_github_token",
+      "community_name": "TestVerifyGithubToken",
       "norm_label": ".test_returns_token_on_valid_response()"
     },
     {
@@ -21400,7 +21400,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_raises_401_on_invalid_token",
       "community": 256,
-      "community_name": "verify_github_token",
+      "community_name": "TestVerifyGithubToken",
       "norm_label": ".test_raises_401_on_invalid_token()"
     },
     {
@@ -21411,7 +21411,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_raises_401_on_missing_bearer_prefix",
       "community": 256,
-      "community_name": "verify_github_token",
+      "community_name": "TestVerifyGithubToken",
       "norm_label": ".test_raises_401_on_missing_bearer_prefix()"
     },
     {
@@ -21422,7 +21422,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_common_testverifygithubtoken_test_raises_503_when_github_unreachable",
       "community": 256,
-      "community_name": "verify_github_token",
+      "community_name": "TestVerifyGithubToken",
       "norm_label": ".test_raises_503_when_github_unreachable()"
     },
     {
@@ -21433,7 +21433,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": "test_lead_engineer_router.py"
     },
     {
@@ -21444,7 +21444,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_make_app",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": "_make_app()"
     },
     {
@@ -21455,7 +21455,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_py_fastapi",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": "fastapi"
     },
     {
@@ -21466,7 +21466,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_send_payload",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": "_send_payload()"
     },
     {
@@ -21477,7 +21477,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_testagentcard",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": "testagentcard"
     },
     {
@@ -21488,7 +21488,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_testagentcard_test_returns_agent_card",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": ".test_returns_agent_card()"
     },
     {
@@ -21499,7 +21499,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_testsendtask",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": "testsendtask"
     },
     {
@@ -21510,7 +21510,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_testsendtask_test_returns_202_with_task_id",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": ".test_returns_202_with_task_id()"
     },
     {
@@ -21521,7 +21521,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_testgettask",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": "testgettask"
     },
     {
@@ -21532,7 +21532,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_testgettask_test_returns_404_for_unknown_task_id",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": ".test_returns_404_for_unknown_task_id()"
     },
     {
@@ -21543,7 +21543,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_py_asyncio",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": "asyncio"
     },
     {
@@ -21554,7 +21554,7 @@
       "_origin": "ast",
       "id": "tests_api_agents_test_lead_engineer_router_testgettask_test_background_task_completes",
       "community": 71,
-      "community_name": "test_lead_engineer_router.py",
+      "community_name": "lead_engineer_router",
       "norm_label": ".test_background_task_completes()"
     },
     {
@@ -21564,8 +21564,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator",
-      "community": 379,
-      "community_name": "test_orchestrator.py",
+      "community": 10,
+      "community_name": "A2ADataPart",
       "norm_label": "test_orchestrator.py"
     },
     {
@@ -21575,8 +21575,8 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_make_app",
-      "community": 379,
-      "community_name": "test_orchestrator.py",
+      "community": 7,
+      "community_name": "TaskStore",
       "norm_label": "_make_app()"
     },
     {
@@ -21586,8 +21586,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_py_fastapi",
-      "community": 379,
-      "community_name": "test_orchestrator.py",
+      "community": 7,
+      "community_name": "TaskStore",
       "norm_label": "fastapi"
     },
     {
@@ -21608,8 +21608,8 @@
       "source_location": "L44",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testagentcard",
-      "community": 379,
-      "community_name": "test_orchestrator.py",
+      "community": 7,
+      "community_name": "TaskStore",
       "norm_label": "testagentcard"
     },
     {
@@ -21619,8 +21619,8 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testagentcard_test_returns_agent_card",
-      "community": 379,
-      "community_name": "test_orchestrator.py",
+      "community": 7,
+      "community_name": "TaskStore",
       "norm_label": ".test_returns_agent_card()"
     },
     {
@@ -21663,8 +21663,8 @@
       "source_location": "L108",
       "_origin": "ast",
       "id": "tests_api_agents_test_orchestrator_testgettask_test_returns_404_for_unknown_task_id",
-      "community": 379,
-      "community_name": "test_orchestrator.py",
+      "community": 7,
+      "community_name": "TaskStore",
       "norm_label": ".test_returns_404_for_unknown_task_id()"
     },
     {
@@ -21861,8 +21861,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": "test_react_reviewer.py"
     },
     {
@@ -21872,8 +21872,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_make_app",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": "_make_app()"
     },
     {
@@ -21883,8 +21883,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_py_fastapi",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": "fastapi"
     },
     {
@@ -21894,8 +21894,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_pr_info_payload",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": "_pr_info_payload()"
     },
     {
@@ -21905,8 +21905,8 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_send_payload",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": "_send_payload()"
     },
     {
@@ -21916,8 +21916,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_testagentcard",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": "testagentcard"
     },
     {
@@ -21927,8 +21927,8 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_testagentcard_test_returns_agent_card",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": ".test_returns_agent_card()"
     },
     {
@@ -21938,8 +21938,8 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_testsendtask",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": "testsendtask"
     },
     {
@@ -21949,8 +21949,8 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_testsendtask_test_returns_202_with_task_id",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": ".test_returns_202_with_task_id()"
     },
     {
@@ -21960,8 +21960,8 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_testgettask",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": "testgettask"
     },
     {
@@ -21971,8 +21971,8 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_testgettask_test_returns_404_for_unknown_task_id",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": ".test_returns_404_for_unknown_task_id()"
     },
     {
@@ -21982,8 +21982,8 @@
       "source_location": "",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_py_asyncio",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": "asyncio"
     },
     {
@@ -21993,8 +21993,8 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_testgettask_test_background_task_completes",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": ".test_background_task_completes()"
     },
     {
@@ -22004,8 +22004,8 @@
       "source_location": "L137",
       "_origin": "ast",
       "id": "tests_api_agents_test_react_reviewer_testgettask_test_forwards_mcp_retry_settings_to_reviewer_config",
-      "community": 387,
-      "community_name": "test_react_reviewer.py",
+      "community": 75,
+      "community_name": "ReviewResult",
       "norm_label": ".test_forwards_mcp_retry_settings_to_reviewer_config()"
     },
     {
@@ -69318,7 +69318,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L295",
+      "source_location": "L322",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -69330,7 +69330,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L458",
+      "source_location": "L496",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_listdirectoryentries",
@@ -69342,7 +69342,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L528",
+      "source_location": "L566",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readfiletext",
@@ -70329,7 +70329,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L643",
+      "source_location": "L681",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readmanifestcontents",
@@ -70551,7 +70551,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L697",
+      "source_location": "L735",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_buildmodel",
@@ -71029,7 +71029,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L307",
+      "source_location": "L334",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71041,7 +71041,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L496",
+      "source_location": "L534",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readdependencyfiles",
@@ -71089,7 +71089,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L469",
+      "source_location": "L507",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_listdirectoryentries",
@@ -71101,7 +71101,7 @@
       "context": "argument",
       "confidence": "INFERRED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L423",
+      "source_location": "L461",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readchangedfiles",
@@ -71113,7 +71113,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L391",
+      "source_location": "L419",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readprdetails",
@@ -71125,7 +71125,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L563",
+      "source_location": "L601",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_resolveworkspacepackagejsonpaths",
@@ -71137,7 +71137,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L336",
+      "source_location": "L363",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71149,7 +71149,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L261",
+      "source_location": "L263",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71173,7 +71173,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L255",
+      "source_location": "L257",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71184,7 +71184,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L696",
+      "source_location": "L734",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71217,7 +71217,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L443",
+      "source_location": "L481",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71228,7 +71228,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L400",
+      "source_location": "L431",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71239,7 +71239,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L485",
+      "source_location": "L523",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71250,7 +71250,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L513",
+      "source_location": "L551",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71261,7 +71261,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L622",
+      "source_location": "L660",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71272,7 +71272,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L374",
+      "source_location": "L401",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71283,7 +71283,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L686",
+      "source_location": "L724",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71294,7 +71294,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L550",
+      "source_location": "L588",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71305,7 +71305,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L705",
+      "source_location": "L743",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71316,7 +71316,7 @@
       "relation": "method",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L352",
+      "source_location": "L379",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
@@ -71328,7 +71328,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L262",
+      "source_location": "L264",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71340,7 +71340,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L269",
+      "source_location": "L271",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71352,7 +71352,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L272",
+      "source_location": "L274",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71364,7 +71364,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L257",
+      "source_location": "L259",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71376,7 +71376,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L263",
+      "source_location": "L265",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71388,7 +71388,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L293",
+      "source_location": "L320",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71400,7 +71400,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L343",
+      "source_location": "L370",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
@@ -71436,7 +71436,7 @@
       "context": "parameter_type",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L352",
+      "source_location": "L379",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_writedebugresponsefile",
@@ -71448,7 +71448,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L491",
+      "source_location": "L529",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readdependencyfiles",
@@ -71460,7 +71460,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L584",
+      "source_location": "L622",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_resolveworkspacepackagejsonpaths",
@@ -71472,7 +71472,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L634",
+      "source_location": "L672",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readmanifestcontents",
@@ -71484,7 +71484,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L692",
+      "source_location": "L730",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readreadme",
@@ -71496,7 +71496,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L646",
+      "source_location": "L684",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readmanifestcontents",
@@ -71508,7 +71508,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/agent-core/src/agents/pr-info-collector.ts",
-      "source_location": "L706",
+      "source_location": "L744",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_summarizereadme",
@@ -155522,5 +155522,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "afea2548975678bf0f919629644af369e7decf95"
+  "built_at_commit": "625e8362095278f0d9bc33a2dff82ba440a2da97"
 }
