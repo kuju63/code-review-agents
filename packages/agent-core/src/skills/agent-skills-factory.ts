@@ -8,7 +8,7 @@ import { AgentSkills } from "@strands-agents/sdk/vended-plugins/skills";
  * responsibility, once every language stops referencing it. See
  * typescript-agents-tools-migration-spec.md section 2.6.
  */
-const SKILLS_DIR = resolve(import.meta.dirname, "../../../../src/code_review_agent/skills");
+export const SKILLS_DIR = resolve(import.meta.dirname, "../../../../src/code_review_agent/skills");
 
 function skillPath(name: string): string {
   return resolve(SKILLS_DIR, name);
