@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { basename } from "node:path";
 import { AgentSkills } from "@strands-agents/sdk/vended-plugins/skills";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { AgentSkillType, createAgentSkills } from "./agent-skills-factory.js";
+import { AgentSkillType, createAgentSkills, SKILLS_DIR } from "./agent-skills-factory.js";
 
 vi.mock("@strands-agents/sdk/vended-plugins/skills", () => ({
   AgentSkills: vi.fn().mockImplementation((config: unknown) => ({ __config: config })),
@@ -17,6 +17,12 @@ function skillsOf(call: unknown[] | undefined): string[] {
 function basenamesOf(call: unknown[] | undefined): string[] {
   return skillsOf(call).map((path) => basename(path));
 }
+
+describe("SKILLS_DIR", () => {
+  it("resolves to an existing directory", () => {
+    expect(existsSync(SKILLS_DIR)).toBe(true);
+  });
+});
 
 describe("createAgentSkills", () => {
   beforeEach(() => {
