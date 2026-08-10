@@ -377,6 +377,32 @@ Issue #261本文は「実装量次第でスライスDを本スライスに統合
 
 **採用**: スライスDは統合せず、本スライス完了後に独立したPRとして着手する。
 
+### 5.8 `selectReviewers`の単純化(複数project type dedupは実装しない)
+
+Python版`_select_reviewers`は`detect_project_types`が複数のprojectTypeを返しうる前提で、ソート済み順に走査し
+`dict.setdefault`で「同じレビュアークラスが複数typeにマッチしたら最初(最小)のtypeを採用」というdedupeを行う
+(`test_multi_type_annotation_is_deterministic`で検証)。一方TS版`detectProjectTypes`(スライスB、`registry.ts`)
+は仕様上**常に0件または1件のSetしか返さない**(§149の関数docコメントで確認済み: 「Detecting more than one
+project type for a single PR is not supported: exactly one type is returned whenever any tier matches,
+otherwise an empty set」)。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① Python版のソート順走査+`Map`によるdedupeをそのまま移植する | 複数typeを想定したロジックを書く | 却下 | `detectProjectTypes`の契約上、この分岐に実際に到達するケースが存在しない。到達不能コードはカバレッジ100%を維持できず(スライスA/Bの新規ファイルは全て100%)、テストで到達させることも仕様上不可能 |
+| ② `selectReviewers`は単一の`ProjectType`(明示的に渡されたもの、または`detectProjectTypes`が返すSetの唯一の要素)を解決し、`getReviewerClasses`を1回だけ呼ぶ | dedupeロジック自体を削除する | **採用** | TS版`detectProjectTypes`の契約と整合する最小の実装。`getReviewerClasses`自体が単一projectTypeに対して重複のない`ReviewerClass[]`を返す設計のため、追加のdedupeは元々不要 |
+
+**採用**: `selectReviewers`は単一`ProjectType`のみを扱う。Python版`test_multi_type_annotation_is_deterministic`相当のテストは、対応する前提条件がTS版に存在しないため移植しない。
+
 ## 6. 計画からの逸脱
 
 実装中に本ドキュメントの決定から逸脱した場合は、#258の運用に倣い同一コミットで本ドキュメントも更新する。
+
+- **5.8の追加**: 当初計画(`/Users/kuriharajun/.claude/plans/issue-261-issue-pr-265-stacked-prs-indexed-cook.md`)は
+  Python版に倣った複数type dedupeを想定していたが、`detectProjectTypes`の実際の契約(0/1件のみ)を実装時に
+  確認し、単純化した。
+- **`needsGithubMcp`公開ゲッターの追加(スライスBファイルへの変更)**: `usesGithubMcp`が`protected`インスタンス
+  フィールド(§4.3で決定済み)であるため、オーケストレーター(本スライス)から`reviewer.usesGithubMcp`を
+  直接読めないことが実装時に判明した。`base-reviewer.ts`(スライスB所有)に`ReviewAgent.needsGithubMcp`
+  (`public`、デフォルト`false`)と`LLMReviewAgent`でのオーバーライド(`this.usesGithubMcp`を返す)を追加した。
+  既存の`usesGithubMcp`を`public`に変更しなかったのは、サブクラス側で`protected`のまま再宣言している箇所
+  (例: `base-reviewer.review.test.ts`の`NoMcpReviewer`)がTSの可視性の絞り込み禁止規則により壊れるため。
