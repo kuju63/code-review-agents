@@ -277,6 +277,106 @@ Python版`SecurityReviewer`は`uses_url_fetch = True`により`strands_tools.htt
 
 **採用**: `tools/file-read-tool.ts`に`SKILLS_DIR`限定の最小読み取り専用ツールを新規実装する。前提として`skills/agent-skills-factory.ts`から`SKILLS_DIR`をexportする(1行追加)。
 
-## 5. 計画からの逸脱
+## 5. スライスC: `review-orchestrator` / `lead-engineer`
+
+Sub-Issue [#261](https://github.com/kuju63/code-review-agents/issues/261)。スライスB
+(`feat/ts-migration/260-reviewer-chain`、PR #265、本ドキュメント執筆時点で未マージ)の
+上にStacked PRとして積む。`review_orchestrator.py`(281行)・`lead_engineer.py`(292行)を移植する。
+`models/lead-engineer.ts`(スキーマ・`toMarkdown`・`toEvaluationFormat`)は#251で移植済みのため、本スライスの
+対象は両ファイルの**実行ロジック**(`ReviewOrchestrator`クラス・`LeadEngineerAgent`クラス)のみ。
+
+### 5.1 タイムアウト制御(`AbortController`は不採用、stragglerを維持する)
+
+Issue #261本文は`Promise.allSettled`/`AbortController`によるタイムアウト制御を候補に挙げているが、
+Python版`_run_reviewer`のdocstringおよび`tests/agents/test_review_orchestrator.py`の
+`test_shared_client_not_released_until_pending_reviewer_finishes`・
+`test_task_cancellation_does_not_release_placeholder_early`が検証しているのは「タイムアウトに負けた
+レビュアー(straggler)はキャンセルされず、共有MCPクライアントの参照カウントを実際に完走するまで
+保持し続ける」という契約である。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `AbortController`でタイムアウト時に`Agent.invoke()`を中断する | タイムアウトに`AbortSignal`を紐付け、期限切れで対象レビュアーのPromiseを実際に中断する | 却下 | straggler契約(タイムアウトはPromiseを止めず、参照カウントはPromise完了時にのみ減る)と直接矛盾する。中断してしまうと、共有クライアントを使用中の他レビュアーとの接続を巻き込んで破壊しかねない |
+| ② タイマーは「待つのをやめる」判断にのみ使い、対象Promiseは中断しない | 各レビュアーの`review()`呼び出しを`.catch()`付きでラップして`Map`に結果を格納する非同期関数として起動し、`Promise.race([Promise.all(wrapped), sleep(timeoutMs)])`で「全完了 or タイムアウト」を待つ。ラップ済みPromise自体は中断せず走らせ続け、`Map`に結果が届いた時点で参照カウントの`finally`が発火する | **採用** | Python版の`asyncio.wait(tasks, timeout=...)`(`pending`のタスクを単に待つのをやめるだけでキャンセルしない)と同じ意味論をPromiseベースで再現できる。straggler契約を壊さない |
+
+**採用**: タイムアウトは「待つのをやめる」ためのタイマーとしてのみ実装し、`AbortController`は使わない。タイマーは完了時に必ず`clearTimeout`する(未クリアのタイマーがvitest/Nodeプロセスをハングさせるため)。
+
+### 5.2 `INFRA_EXCEPTIONS`相当の分類(`isInfraError`、`ModelError`は内容起因のサブクラスを除外)
+
+スライスA(§2.8)で「`INFRA_EXCEPTIONS`相当の組み立てはスライスC側で行う」と申し送り済み。Python版
+`INFRA_EXCEPTIONS = (EventLoopException, MCPClientInitializationError, ToolProviderException, TransportError)`
+に対応するSDK型は存在しない(PR #263本文で確認済み)。`@strands-agents/sdk`の`errors.d.ts`を読んだ結果、
+`ModelError`(基底、モデルとの疎通失敗相当)のサブクラスに`ContextWindowOverflowError`・`MaxTokensError`・
+`ModelThrottledError`があり、これらは1レビュアーのプロンプト/出力サイズやレート制限に起因する
+コンテンツレベルの問題であって、システム全体の疎通異常ではない。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `instanceof ModelError`を無条件にinfra扱いする | `ModelError`及び全サブクラスをinfra判定に含める | 却下 | `ContextWindowOverflowError`/`MaxTokensError`/`ModelThrottledError`は1レビュアー単位の問題であり、Python版でもこれらに相当する例外は`INFRA_EXCEPTIONS`に含まれず`ReviewError`として分離される。無条件に含めるとバッチ全体を無用に中断させてしまう |
+| ② `ModelError`から上記3サブクラスを除外し、`GithubMcpConnectionError`(スライスAの`tools/github-mcp.ts`)を追加してinfra判定する | `agents/exceptions.ts`に`isInfraError(error: unknown): boolean`を追加し、`error instanceof GithubMcpConnectionError \|\| (error instanceof ModelError && !(contentレベル3種のいずれか))`と判定する | **採用** | `GithubMcpConnectionError`は`.connect()`のリトライ枯渇時に投げられる、まさにPython版`TransportError`/`MCPClientInitializationError`相当のもの。`ModelError`から内容起因の3種を除外することで、Python版の「システム疎通異常のみを中断対象にする」という分類方針を維持できる |
+
+**採用**: `agents/exceptions.ts`に`isInfraError(error: unknown): boolean`を追加。`GithubMcpConnectionError`、および`ContextWindowOverflowError`/`MaxTokensError`/`ModelThrottledError`を除く`ModelError`をinfra判定する。`StructuredOutputError`(SDK)・`StructuredOutputMissingError`(スライスA)は`Error`直系で`ModelError`を継承しないため、この判定から自動的に除外される(テストで明示的に確認する)。
+
+### 5.3 共有MCPクライアントの接続責務(オーケストレーターが事前に`connect()`する)
+
+`base-reviewer.ts`の`review()`(4.2で確定済み)は`context.sharedMcpClient`を素通しで`Agent`の`tools`に渡す
+だけで、自分では`connect()`を呼ばない。SDK`mcp/client.d.ts`の`connect(reconnect?: boolean): Promise<void>`
+のdoc comment: 「Called lazily before any operation that requires a connection」「`reconnect`が`true`
+でない限り、既に接続済み/失敗済みなら実質no-op」。
+
+Python版が`shared_client.load_tools()`を全レビュアー起動前に明示的に一度だけ呼ぶのは、複数レビュアーが
+同時に同じクライアントへ`start()`しようとするレースを避けるため(`docs/mcp-connection-stabilization-spec.md`
+§3.1)。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① オーケストレーターがレビュアー起動前に`sharedClient.mcpClient.connect()`を1回呼ぶ | Python版の`load_tools()`事前呼び出しと同じ位置づけで、`ReviewOrchestrator.run()`内で共有クライアント構築直後に`connect()`する。失敗時は`removeConsumer(this)`してrethrow | **採用** | 複数の`Agent.invoke()`が同時に同じ未接続`McpClient`を初期化しようとするレースを、Python版と同じ理由で避けられる。`connect()`が冪等(lazy/no-op)なドキュメント記載のため、各レビュアーの`Agent`が後から同じクライアントに触れても二重接続エラーにならない |
+| ② 各レビュアーの`Agent`に接続を任せ、オーケストレーターは何もしない | 最初に呼ばれた`Agent.invoke()`が`connect()`を暗黙的にトリガーする | 却下 | 複数レビュアーがほぼ同時に起動されるため、どの`Agent`が最初に`connect()`をトリガーするか不定になり、Python版が明示的に避けているレースを再導入してしまう |
+
+**採用**: `ReviewOrchestrator.run()`が共有クライアント構築直後に`await sharedClient.mcpClient.connect()`を1回呼ぶ。
+
+### 5.4 `run`/`run_async`の統合(単一の非同期`run()`のみ)
+
+Python版は同期呼び出し元向けの`run()`(`asyncio.run`ラッパー)と非同期の`run_async()`を分けているが、
+JSに同期/非同期の二重APIを持つ意味はない(呼び出し元は常にawaitできる)。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `run(context, projectType?, perspectives?): Promise<ReviewReport>`単一のasyncメソッドに統合する | Python版`run_async`相当の1メソッドのみを公開する | **採用** | JSに「イベントループの外から呼ぶための同期ラッパー」という概念自体が存在しない。呼び出し元(将来のAPI層、スライス#253)は常に非同期コンテキストにいる |
+
+**採用**: `run()`単一メソッド。副作用として、Python版の`asyncio.run()`が持っていた「プロセス終了前にstragglerの完走を待つ暗黙のdrain」がTS版には無く、`run()`はstragglerが residual で走っている状態のままresolveする(長命なAPIサーバーでは問題にならない。テストでは`deferred` Promiseの完了を`await`でポーリングして参照カウント解放を確認する)。
+
+### 5.5 `reviewers/index.ts`の登録副作用インポート
+
+`agents/`配下には現状バレル(`index.ts`)が無く、`agents/reviewers/index.ts`のみが登録副作用用バレルとして
+存在する。Pythonの`agents/__init__.py`が担っていた「レビュアー登録の保証」をTS側で代替する必要がある。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① `review-orchestrator.ts`のモジュール先頭で`import "./reviewers/index.js"`する | オーケストレーターを構築(import)すれば登録が保証される | **採用** | 呼び出し順序への依存を避けられる最も近い代替パターン。`ReviewOrchestrator`はレビュアー登録が必須の唯一の実利用者である |
+| ② 呼び出し元(将来のAPI層)にインポート責務を委ねる | `review-orchestrator.ts`自体は登録を仮定しない | 却下 | 呼び出し順序を呼び出し元の規律に頼ることになり、登録忘れによる「レビュアーが1つも選択されない」という静かな不具合を生みやすい |
+
+**採用**: `review-orchestrator.ts`が`import "./reviewers/index.js"`を行う。
+
+### 5.6 共有クライアントのconsumer集合の形(Python版より単純化)
+
+Python版はconsumer集合が`{orchestrator, per-reviewer-placeholder, per-reviewer-Agent自身}`の3種類になりうる
+(`agent.cleanup()`が自分自身をconsumerとして登録・解除するため)。TSの`Agent`にはcleanupメソッドが無く、
+`ReviewContext.sharedMcpClient`は生の`McpClient`(§4.2で確認済み)なので、Agent自身がconsumer登録することは
+構造上あり得ない。TS版のconsumer集合は`{orchestrator, per-reviewer-placeholder}`の2種類のみとなり、
+1レビュアーの実行につき`removeConsumer`は正確に2回、という不変条件がPython版よりシンプルになる。この点は
+コード変更を要する決定ではないが、テスト設計(呼び出し回数のアサーション)に直接影響するため記録する。
+
+### 5.7 スライスD(`pr-info-collector`)は統合しない
+
+Issue #261本文は「実装量次第でスライスDを本スライスに統合する可能性」に言及している。
+
+| 選択肢 | 概要 | 採用/却下 | 理由 |
+|---|---|---|---|
+| ① スライスDを統合しない | `pr-info-collector.ts`は別スライスとして独立させる | **採用** | `pr_info_collector.py`は450行超で、既知のツール未使用バグ(structured_output単独呼び出しでMCPツールを使わず幻覚する問題、未修正)を抱えている。スタックは本スライスの時点で既に5段(250→251→252→260→261)に達しており、これ以上スタックを深くすると個々のPRのレビュー容易性が損なわれる |
+
+**採用**: スライスDは統合せず、本スライス完了後に独立したPRとして着手する。
+
+## 6. 計画からの逸脱
 
 実装中に本ドキュメントの決定から逸脱した場合は、#258の運用に倣い同一コミットで本ドキュメントも更新する。
