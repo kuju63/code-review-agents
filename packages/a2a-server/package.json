@@ -3,7 +3,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "pnpm --filter @code-review-agent/agent-core run build && tsc --noEmit false",
     "start": "node dist/index.js"
   },
   "dependencies": {
