@@ -1200,3 +1200,56 @@ def sanitize_error(exc: BaseException) -> str:
 
 **現在の方針**: モノリス構成（§ 1.3）では許容範囲。
 マイクロサービス分割時は内部 URL を AgentCard に含めず外部公開 URL のみにすること。
+
+---
+
+## 13. TypeScript/Zod モデル移行仕様
+
+### 13.1 対象と配置
+
+Issue #253 のうち、本変更は A2A HTTP 契約を表す Zod スキーマと TypeScript 型を対象とする。実際の Hono ルーティング、AgentCard 生成、タスク実行、認証および TaskStore は後続実装とし、各機能の `*.route.ts` には空の Hono ルーターと TODO を置く。
+
+モデルは `packages/a2a-server/src/modules/` 配下へ機能単位で配置する。
+
+- `a2a/`: 全 Agent 共通の message、task、AgentCard、HTTP error
+- `pr-info/`: PR Info Collector 固有の入力と出力
+- `reviewers/`: React、Vue、Angular、Svelte、Security Reviewer 共通の入力と出力
+- `lead-engineer/`: Lead Engineer 固有の入力と出力
+- `orchestrator/`: Orchestrator 固有の入力と出力
+- `health/`: health check のレスポンス
+
+各機能は `request.model.ts` と `response.model.ts` に分割する。存在していた `reviiewers/` は誤記のため `reviewers/` に改める。
+
+### 13.2 命名と互換性
+
+URL パスは既存と同じ kebab-case を維持する。TypeScript API の JSON キーは TypeScript の慣習に合わせて camelCase とし、`pr_number`、`model_id`、`pr_info`、`review_report` はそれぞれ `prNumber`、`modelId`、`prInfo`、`reviewReport` とする。ドメイン出力は `@code-review-agent/agent-core` の既存 camelCase Zod スキーマを再利用し、同一モデルの二重定義を避ける。
+
+共通 A2A envelope の `kind`、`role`、`parts`、`inputSchema`、`outputSchema`、`pushNotifications`、`stateTransitionHistory` は既存契約とTypeScript慣習が一致するため維持する。
+
+### 13.3 検証境界
+
+`POST /tasks/send` の HTTP request model は Python 実装と同様に共通 A2A envelope のみを検証する。各 Agent 固有の data payload schema は AgentCard の skill schema とバックグラウンド処理境界で利用する。したがって、固有 data が欠落していても envelope が妥当なら送信時点では受理できる設計を維持する。
+
+HTTP 契約全体を表すため、成功レスポンスに加えて 401、404、422、503 のエラー body を Zod で定義する。FastAPI の validation error location は文字列または整数の配列として表現する。
+
+### 13.4 Zod 規約
+
+`docs/typescript-models-migration-spec.md` の規約を継承する。
+
+- schema は `XxxSchema`、型は `z.infer<typeof XxxSchema>` とする
+- enum は object 形式の `z.enum` とする
+- Python の nullable default は `.nullable().default(null)` とする
+- array/object default は `.default([])` / `.default({})` とする
+- A2A part は `kind` を discriminator とする `z.discriminatedUnion` で表現する
+- NodeNext import は `.js` 拡張子を使用する
+
+### 13.5 テスト
+
+Vitest で以下を検証する。
+
+- task status と message part の discriminated union
+- nullable/default を含む task、AgentCapability、AgentCard
+- send task request/response の JSON 往復
+- camelCase の各 Agent 固有 input と既存 agent-core output schema の再利用
+- health と 401/404/422/503 error response
+- 各 `*.route.ts` が未実装の空 Hono router を返すこと
