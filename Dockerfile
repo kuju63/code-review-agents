@@ -70,6 +70,7 @@ WORKDIR /app
 # 依存マニフェストを先にコピーしてレイヤーキャッシュを最大化
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/agent-core/package.json packages/agent-core/
+COPY packages/a2a-server/package.json packages/a2a-server/
 COPY packages/evaluation/package.json packages/evaluation/
 
 RUN pnpm install --frozen-lockfile
