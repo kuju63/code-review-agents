@@ -111,7 +111,7 @@ CMD ["node", "-e", "console.log('code-review-agent TypeScript toolchain image (I
 # - デフォルトターゲット（ファイル末尾）: `docker build .` / `podman build .`
 #   は --target 未指定時にこのステージを使う。Epic完了(#255)まで維持する。
 ###############################################################################
-FROM registry.access.redhat.com/hi/python:3.14@sha256:48888b0a21a53b60051a9910f5a90e77ef9d309602d4f8579478492a42327902 AS runtime
+FROM registry.access.redhat.com/hi/python:3.14@sha256:9a51694f25148eb501dc1d6dc3e913b8db4f72b113f3a60607303b8935048d96 AS runtime
 
 WORKDIR /app
 
