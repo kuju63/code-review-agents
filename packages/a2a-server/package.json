@@ -7,9 +7,10 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@code-review-agent/agent-core": "workspace:^",
     "@hono/node-server": "^2.1.0",
-    "hono": "^4.13.1",
-    "@code-review-agent/agent-core": "workspace:^"
+    "@hono/zod-validator": "^0.9.0",
+    "hono": "^4.13.1"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
