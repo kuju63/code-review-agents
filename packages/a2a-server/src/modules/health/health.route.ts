@@ -1,6 +1,18 @@
 import { Hono } from "hono";
+import { createHealthService, type HealthService } from "./health.service.js";
 
-export function createHealthRoute(): Hono {
-  // TODO(#253): Implement the health endpoint route.
-  return new Hono();
+type CreateHealthRouteOptions = {
+  service?: HealthService;
+};
+
+export function createHealthRoute({
+  service = createHealthService(),
+}: CreateHealthRouteOptions = {}): Hono {
+  const app = new Hono();
+
+  app.get("/", (c) => c.json(service.getStatus(), 200));
+
+  return app;
 }
+
+export default createHealthRoute;

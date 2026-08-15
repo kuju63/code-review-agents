@@ -1211,7 +1211,7 @@ def sanitize_error(exc: BaseException) -> str:
 
 ### 13.1 対象と配置
 
-Issue #253 のうち、本変更は A2A HTTP 契約を表す Zod スキーマと TypeScript 型を対象とする。実際の Hono ルーティング、AgentCard 生成、タスク実行、認証および TaskStore は後続実装とし、各機能の `*.route.ts` には空の Hono ルーターと TODO を置く。
+Issue #253 の A2A HTTP 契約を表す Zod スキーマと TypeScript 型を基盤とし、各機能の Hono routing、service、認証および TaskStore を段階的に実装する。未実装の `*.route.ts` は空の Hono router と TODO を維持し、実装済み route は service 呼び出しの制御と HTTP response の整形に責務を限定する。
 
 モデルは `packages/a2a-server/src/modules/` 配下へ機能単位で配置する。
 
@@ -1256,4 +1256,10 @@ Vitest で以下を検証する。
 - send task request/response の JSON 往復
 - camelCase の各 Agent 固有 input と既存 agent-core output schema の再利用
 - health と 401/404/422/503 error response
-- 各 `*.route.ts` が未実装の空 Hono router を返すこと
+- 各 `*.route.ts` の実装段階に対応するルーティング契約
+
+### 13.6 Health service と route の責務
+
+health モジュールは、`HealthResponseSchema` で検証済みの `{ status: "ok" }` を返す service と、service 呼び出しおよび HTTP response の整形のみを担う route に分離する。route は依存注入可能な service を受け取り、`GET /` に対して service の返却値を status 200 で返す。
+
+テストは service が既存 response model に適合すること、および route が service を呼び出して status 200 と同一 body を返すことを個別に検証する。ルートアプリケーションへの `/health` マウントは別スライスで扱う。
