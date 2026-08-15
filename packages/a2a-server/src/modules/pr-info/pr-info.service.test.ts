@@ -85,6 +85,39 @@ describe("InMemoryTaskStore", () => {
     await expect(store.get(task.id, "owner-2")).resolves.toBeNull();
   });
 
+  it("deletes submitted or working tasks after the TTL", async () => {
+    vi.useFakeTimers();
+    try {
+      const store = new InMemoryTaskStore({ ttlSeconds: 1 });
+      const task = await store.create("owner-1");
+      await store.setWorking(task.id);
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      await expect(store.get(task.id, "owner-1")).resolves.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("resets the TTL after a terminal transition", async () => {
+    vi.useFakeTimers();
+    try {
+      const store = new InMemoryTaskStore({ ttlSeconds: 1 });
+      const task = await store.create("owner-1");
+      await vi.advanceTimersByTimeAsync(500);
+      await store.setCompleted(task.id, []);
+      await vi.advanceTimersByTimeAsync(500);
+
+      await expect(store.get(task.id, "owner-1")).resolves.not.toBeNull();
+
+      await vi.advanceTimersByTimeAsync(500);
+      await expect(store.get(task.id, "owner-1")).resolves.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("updates known tasks and ignores unknown ids", async () => {
     const store = new InMemoryTaskStore();
     const task = await store.create("owner-1");
@@ -135,6 +168,24 @@ describe("PR Info service", () => {
     expect(response.task.status).toBe("submitted");
     expect(task?.status).toBe("completed");
     expect(task?.message?.parts).toEqual([{ kind: "data", data: prInfoResult }]);
+  });
+
+  it("does not retain settled default-scheduled tasks", async () => {
+    const store = new InMemoryTaskStore();
+    const service = createPrInfoService({ store });
+
+    const first = await service.sendTask(request, "ghp_testtoken", "owner-1");
+    const second = await service.sendTask(request, "ghp_testtoken", "owner-1");
+    await vi.waitFor(async () => {
+      expect((await store.get(first.task.id, "owner-1"))?.status).toBe("completed");
+      expect((await store.get(second.task.id, "owner-1"))?.status).toBe("completed");
+    });
+    const promiseAll = vi.spyOn(Promise, "all");
+
+    await service.runPendingTasks();
+
+    expect(promiseAll).toHaveBeenCalledWith([]);
+    promiseAll.mockRestore();
   });
 
   it("passes runtime settings to the collector", async () => {

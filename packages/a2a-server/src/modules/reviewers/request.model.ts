@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const ReviewerSkillInputSchema = z.object({
   prInfo: PRInfoResultSchema,
-  modelId: z.string().optional(),
+  modelId: z.string().trim().min(1).optional(),
 });
 export type ReviewerSkillInput = z.infer<typeof ReviewerSkillInputSchema>;
 

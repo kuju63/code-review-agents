@@ -37,6 +37,7 @@ export class InMemoryTaskStore implements TaskStore {
   readonly ttlSeconds: number;
   private readonly store = new Map<string, A2ATask>();
   private readonly owners = new Map<string, string>();
+  private readonly deleteTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly idFactory: TaskIdFactory;
 
   constructor({
@@ -51,6 +52,7 @@ export class InMemoryTaskStore implements TaskStore {
     const task = A2ATaskSchema.parse({ id: this.idFactory(), status: "submitted" });
     this.store.set(task.id, task);
     this.owners.set(task.id, ownerPrincipalId);
+    this.scheduleDelete(task.id);
     return task;
   }
 
@@ -92,10 +94,17 @@ export class InMemoryTaskStore implements TaskStore {
   }
 
   private scheduleDelete(taskId: string): void {
-    setTimeout(() => {
+    const existingTimer = this.deleteTimers.get(taskId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    const timer = setTimeout(() => {
       this.store.delete(taskId);
       this.owners.delete(taskId);
-    }, this.ttlSeconds * 1000).unref?.();
+      this.deleteTimers.delete(taskId);
+    }, this.ttlSeconds * 1000);
+    timer.unref?.();
+    this.deleteTimers.set(taskId, timer);
   }
 }
 
@@ -140,7 +149,15 @@ export function createPrInfoService({
   const enqueue: ScheduleTask =
     scheduleTask ??
     ((task) => {
-      pendingTasks.push(task());
+      const pendingTask = task();
+      pendingTasks.push(pendingTask);
+      const removePendingTask = () => {
+        const index = pendingTasks.indexOf(pendingTask);
+        if (index >= 0) {
+          pendingTasks.splice(index, 1);
+        }
+      };
+      void pendingTask.then(removePendingTask, removePendingTask);
     });
 
   const runTask = async (taskId: string, data: Record<string, unknown>, githubToken: string) => {

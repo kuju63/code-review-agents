@@ -18,7 +18,11 @@ const A2APartDiscriminatedSchema = z.discriminatedUnion("kind", [
 ]);
 
 export const A2APartSchema = z.preprocess((value) => {
-  if (typeof value !== "object" || value === null || "kind" in value) {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    ("kind" in value && value.kind !== undefined)
+  ) {
     return value;
   }
   if ("text" in value && typeof value.text === "string") {

@@ -16,6 +16,14 @@ describe("reviewer models", () => {
     expect(ReviewerSkillInputSchema.parse({ prInfo })).not.toHaveProperty("modelId");
   });
 
+  it.each(["", "   "])("rejects invalid modelId %j", (modelId) => {
+    expect(ReviewerSkillInputSchema.safeParse({ prInfo, modelId }).success).toBe(false);
+  });
+
+  it("trims a provided modelId", () => {
+    expect(ReviewerSkillInputSchema.parse({ prInfo, modelId: " model " }).modelId).toBe("model");
+  });
+
   it("exposes shared endpoint contracts for all reviewers", () => {
     expect(
       ReviewerSendTaskRequestSchema.parse({

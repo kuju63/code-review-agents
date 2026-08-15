@@ -168,7 +168,7 @@ type CreateReviewerServiceOptions<T extends ReviewerClass> = ReviewerServiceOpti
 
 export function sanitizeError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  return message.replace(/(Bearer\s+|ghp_|github_pat_)[^\s"']+/giu, "[REDACTED]");
+  return message.replace(/(Bearer\s+|gh[oprsu]_|github_pat_)[^\s"']+/giu, "[REDACTED]");
 }
 
 export function extractData(message: A2AMessage): Record<string, unknown> {

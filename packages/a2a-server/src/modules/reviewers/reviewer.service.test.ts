@@ -115,6 +115,16 @@ describe("reviewer service helpers", () => {
     expect(extractData({ role: "user", parts: [{ kind: "text", text: "hello" }] })).toEqual({});
   });
 
+  it.each(["gho_secret", "ghu_secret", "ghs_secret", "ghr_secret"])(
+    "redacts standalone GitHub token %s",
+    (token) => {
+      const sanitized = sanitizeError(new Error(`request failed: ${token}`));
+
+      expect(sanitized).toContain("[REDACTED]");
+      expect(sanitized).not.toContain(token);
+    },
+  );
+
   it("redacts credential-like strings in errors", () => {
     expect(sanitizeError(new Error("request failed: Bearer ghp_abc123xyz"))).toBe(
       "request failed: [REDACTED]",

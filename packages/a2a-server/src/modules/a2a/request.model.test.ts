@@ -30,6 +30,24 @@ describe("A2A request models", () => {
     ]);
   });
 
+  it("infers part kinds when kind is undefined", () => {
+    expect(
+      A2AMessageSchema.parse({ role: "user", parts: [{ kind: undefined, text: "review" }] }),
+    ).toEqual({
+      role: "user",
+      parts: [{ kind: "text", text: "review" }],
+    });
+    expect(
+      A2AMessageSchema.parse({
+        role: "user",
+        parts: [{ kind: undefined, data: { owner: "octo" } }],
+      }),
+    ).toEqual({
+      role: "user",
+      parts: [{ kind: "data", data: { owner: "octo" } }],
+    });
+  });
+
   it("discriminates message parts by kind", () => {
     const message = A2AMessageSchema.parse({
       role: "user",
