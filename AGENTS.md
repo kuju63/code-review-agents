@@ -142,15 +142,25 @@ The Mermaid diagram below is a visual summary. For implementation tasks, the Cod
 4. Execute TDD cycle.
 
    - Write tests first (Red).
+     Red is not `Error`, expect `Failure`
    - Implement minimal changes to pass tests (Green).
    - Refactor while preserving behavior (Refactor).
+    - Using `coderabbit review --include-untracked` command.
+      Review comment need to judge between fix or not fix.
+   - Need to run validation commands after refactoring.
+   - Should commit per tasks.
 
 5. Run mandatory validation commands.
 
     ```bash
+    # when python file changed
     uv run pytest
     uv run ruff check
     uv run ruff format --check
+
+    # when typescript file changed
+    pnpm exec tsc --noEmit
+    pnpm exec biome check --write --no-errors-on-unmatched
     ```
 
 6. Gate decision after validation.
