@@ -86,6 +86,10 @@ GET {baseUrl}/orchestrator/tasks/{id}
 
 `status === "completed"` の `message.parts` から `kind === "data"` のpartを取り、その `data` を
 `LeadEngineerReportSchema.parse()` に渡す。`status === "failed"` は `task.error` を含めて例外化する。
+`status === "completed"` だが `message`/`parts`/`kind === "data"` のpartが欠落している場合も
+`LeadEngineerReportSchema.parse()` の失敗と同様に例外化する。この例外は `evaluateConcurrently`
+のワーカーがitem単位で捕捉するため、1件のスキーマ不整合が実行全体を止めることはなく、当該idは
+`failed_ids` sidecarに記録され他のitemの処理は継続する。
 
 ### 4.1 タイムアウト契約
 
@@ -99,7 +103,9 @@ GET {baseUrl}/orchestrator/tasks/{id}
 共有する設計とした。個別の定数を追加で持つより、CLIの`--timeout`一つで全体の上限を説明できる方が
 単純だと判断したため)。`pollTask` のループ本体は各呼び出し前後で `now() >= deadline` を確認し、
 超過していれば(タイムアウトしたリクエストが例外なく応答を返した場合でも)明示的にタイムアウト
-エラーとして例外化する。
+エラーとして例外化する。HTTP呼び出しだけでなく、次のポーリングまでの待機(`sleep`)も
+`Math.min(pollIntervalMs, deadline - now())` で残り予算にクランプする — `--poll-interval` が
+`--timeout` より大きい場合でも、待機自体が全体予算を超えて1itemを居座らせることはない。
 
 ## 5. CLI
 
@@ -123,16 +129,46 @@ exit 2とする(ネットワーク呼び出しを一切行わずに即座に失�
 | オプション | 許容範囲 | 無効値の例 |
 |---|---|---|
 | `--concurrency` | 1以上の整数 | `0`, `-1`, `1.5`, `abc` |
-| `--poll-interval` | 0以上の有限数(秒) | `-1`, `abc` |
-| `--timeout` | 0より大きい有限数(秒) | `0`, `-1`, `abc` |
+| `--poll-interval` | 0より大きい有限数(秒) | `0`, `-1`, `abc` |
+| `--timeout` | 0より大きい有限数(秒)、かつ ×1000 後もNode/AbortSignalのタイマー上限(2^31-1ms)以内 | `0`, `-1`, `abc`, `1e308`, `999999999999` |
 
-`--concurrency` が未検証のままだと `NaN`/`Infinity` が `evaluateConcurrently` の並列度計算
-(`Math.max(1, Math.min(concurrency, items.length))`)に渡り、`Array.from({ length: NaN })` が
-0要素の配列になって全item が未評価のまま `status 0` を返す、という無症状の欠陥になる
-(coderabbit reviewで指摘、2026-08-16)。`evaluateConcurrently` 自身にはこの検証を入れず
-CLI境界(`main()`)でのみ検証する — 内部関数は呼び出し元がCLIパース値ではなくテストからの
-直接呼び出しであることもあり、境界でない箇所への検証追加は「起こり得ないケースへの防御」に
-あたるため(CLAUDE.md 実装ルール)。
+`--poll-interval` に0を許すと、`completed`/`failed`になるまでGETを連続送信し続け、
+`--concurrency`件を並列実行している間はその倍数でA2Aサーバーへの負荷が増える。CLI境界では
+0を無効値として拒否する(単体テストが `pollTask`/`evaluateItem` を直接呼ぶ際に
+`pollIntervalMs: 0`相当を使うのは許容する — CLIを経由しないため上記の負荷増大は起きない)。
+
+`--concurrency` が未検証のままだと、`NaN`は `Number.isInteger(NaN)` が `false`
+を返すため`parsePositiveInteger`で弾かれるが、仮に弾かずに`evaluateConcurrently`の並列度計算
+(`Math.max(1, Math.min(concurrency, items.length))`)へ渡ると、`NaN`は
+`Array.from({ length: NaN })` を0要素の配列にし全item未評価のまま`status 0`を返す一方、
+`Infinity`は`Math.min(Infinity, items.length)`が`items.length`になるため全itemを
+無制限に同時実行する — 無症状さの種類がNaNとInfinityで異なる(coderabbitレビューで指摘)。
+`evaluateConcurrently` 自身にはこの検証を入れずCLI境界(`main()`)でのみ検証する —
+内部関数は呼び出し元がCLIパース値ではなくテストからの直接呼び出しであることもあり、
+境界でない箇所への検証追加は「起こり得ないケースへの防御」にあたるため(CLAUDE.md 実装ルール)。
+
+### 5.1 検証コマンド
+
+実装完了後は必ず以下を実行し、失敗した場合は完了報告前に修正する(CLAUDE.md 必須チェックリスト §5-6)。
+
+```bash
+pnpm exec vitest run packages/evaluation/src/run-agent-evaluation.test.ts
+pnpm exec tsc --noEmit
+pnpm exec biome check --no-errors-on-unmatched packages/evaluation/src/run-agent-evaluation.ts packages/evaluation/src/run-agent-evaluation.test.ts
+```
+
+### 5.2 出力ファイルの整合性
+
+`writePredictionsAndSidecar` は `predictions.jsonl` を`writeJsonlAtomic`(一時ファイル→
+atomic rename)で書き込んだ後、`{output}.failed_ids.json` sidecarを別の書き込みとして
+書く。predictions.jsonl自体は途中終了しても壊れた内容にはならないが、2ファイル間の
+アトミック性(両方同時に更新される保証)はない — 書き込み順の途中でプロセスが終了すると、
+新しいpredictions.jsonlに対して前回実行時の古いsidecar(または初回実行なら存在しない
+sidecar)が残る可能性がある。これはPython版 `_write_predictions_and_sidecar`
+(こちらは predictions.jsonl 自体も atomic rename を使わない、単純な `open(..., "w")`)と
+同じく、この実行単位では解消していない既知の制約として明記する
+(`generate_evaluation_report.py` はsidecar欠落を検出し `--allow-missing-failed-ids`
+なしではexit 5にするため、無音の不整合にはならない)。
 
 ## 6. 並行実行と出力順序
 
@@ -143,6 +179,9 @@ Python版 `_evaluate_concurrently` と同じ方針: `Promise` ベースで最大
 ## 7. 検証
 
 - 単体テスト(vitest): リクエスト構築、ポーリング状態遷移(working→completed/failed/timeout)、
-  `toEvaluationFormat`結果へのcategory正規化、predictions.jsonl + sidecar書き込みをモックfetchで検証。
+  デッドライン共有によるハングした接続のabort、`toEvaluationFormat`結果へのcategory正規化、
+  predictions.jsonl + sidecar書き込みをモックfetchで検証。
 - 統合確認: TS版A2Aサーバー(`packages/a2a-server`, port 3000)を起動し、Seeded setの1件を
   実際に処理して `agent_predictions.jsonl` が生成されることを手動確認する(自動テストの範囲外)。
+- 受け入れ条件: §5.1の検証コマンド(vitest / tsc --noEmit / biome check)がすべて成功すること。
+  いずれかが失敗した場合は完了報告前に修正する(CLAUDE.md 必須チェックリスト §5-6)。

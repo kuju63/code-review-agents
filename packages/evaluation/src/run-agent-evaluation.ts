@@ -297,11 +297,6 @@ function parsePositiveInteger(raw: string): number | undefined {
   return Number.isInteger(value) && value >= 1 ? value : undefined;
 }
 
-function parseNonNegativeFiniteNumber(raw: string): number | undefined {
-  const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 ? value : undefined;
-}
-
 function parsePositiveFiniteNumber(raw: string): number | undefined {
   const value = Number(raw);
   return Number.isFinite(value) && value > 0 ? value : undefined;
@@ -328,14 +323,16 @@ export async function main(
   const baseUrl = options.baseUrl.replace(/\/$/, "");
 
   const concurrency = parsePositiveInteger(options.concurrency);
-  const pollIntervalSeconds = parseNonNegativeFiniteNumber(options.pollInterval);
+  const pollIntervalSeconds = parsePositiveFiniteNumber(options.pollInterval);
   const timeoutSeconds = parsePositiveFiniteNumber(options.timeout);
   if (concurrency === undefined) {
     logger.error(`--concurrency must be a positive integer, got "${options.concurrency}"`);
     return 2;
   }
   if (pollIntervalSeconds === undefined) {
-    logger.error(`--poll-interval must be a non-negative number, got "${options.pollInterval}"`);
+    // A zero interval would poll the A2A server continuously (per running item, amplified by
+    // --concurrency) until every task completes or fails -- reject it rather than allow that load.
+    logger.error(`--poll-interval must be a positive number, got "${options.pollInterval}"`);
     return 2;
   }
   if (timeoutSeconds === undefined) {

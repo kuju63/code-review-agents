@@ -403,7 +403,7 @@ describe("main", () => {
         "--base-url",
         "http://localhost:3000",
         "--poll-interval",
-        "0",
+        "0.001",
       ],
       {
         env: { GITHUB_TOKEN: "gh-token" },
@@ -423,6 +423,7 @@ describe("main", () => {
     ["--concurrency", "-1"],
     ["--concurrency", "abc"],
     ["--concurrency", "1.5"],
+    ["--poll-interval", "0"],
     ["--poll-interval", "-1"],
     ["--poll-interval", "abc"],
     ["--timeout", "0"],
