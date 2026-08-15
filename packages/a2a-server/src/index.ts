@@ -1,5 +1,6 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { createLeadEngineerRoute } from "./modules/lead-engineer/index.js";
 import createPrInfoRoute from "./modules/pr-info/pr-info.route.js";
 import {
   createAngularReviewerRoute,
@@ -16,6 +17,7 @@ app.route("/vue-reviewer", createVueReviewerRoute());
 app.route("/angular-reviewer", createAngularReviewerRoute());
 app.route("/svelte-reviewer", createSvelteReviewerRoute());
 app.route("/security-reviewer", createSecurityReviewerRoute());
+app.route("/lead-engineer", createLeadEngineerRoute());
 
 serve(
   {

@@ -19,6 +19,11 @@
       "development": "./src/agents/pr-info-collector.ts",
       "default": "./dist/agents/pr-info-collector.js"
     },
+    "./agents/lead-engineer.js": {
+      "types": "./src/agents/lead-engineer.ts",
+      "development": "./src/agents/lead-engineer.ts",
+      "default": "./dist/agents/lead-engineer.js"
+    },
     "./agents/reviewers/*.js": {
       "types": "./src/agents/reviewers/*.ts",
       "development": "./src/agents/reviewers/*.ts",
