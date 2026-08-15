@@ -8,7 +8,7 @@ import type { LeadEngineerSendTaskResponse } from "./response.model.js";
 
 export function createLeadEngineerRoute(): Hono {
   const app = new Hono();
-  app.get(".well-known/agent.json", async (req) => {
+  app.get(".well-known/agent.json", async () => {
     // TODO(#253): Implement AgentCard generation, task submission, and task polling routes.
     throw Error("Not Found");
   });
@@ -18,7 +18,7 @@ export function createLeadEngineerRoute(): Hono {
     throw Error("Not Implemented");
   });
 
-  app.get("/tasks/:taskId", zValidator("param", LeadEngineerGetTaskRequestSchema), async (c) => {
+  app.get("/tasks/:taskId", zValidator("param", LeadEngineerGetTaskRequestSchema), async () => {
     throw Error("Not Implemented");
   });
 

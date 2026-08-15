@@ -5,7 +5,7 @@ import type { ReviewerSendTaskResponse } from "./response.model.js";
 
 export function createReviewersRoute(): Hono {
   const app = new Hono();
-  app.get(".well-known/agent.json", async (req) => {
+  app.get(".well-known/agent.json", async () => {
     // TODO(#253): Implement AgentCard generation, task submission, and task polling routes.
     throw Error("Not Found");
   });
@@ -15,7 +15,7 @@ export function createReviewersRoute(): Hono {
     throw Error("Not Implemented");
   });
 
-  app.get("/tasks/:taskId", zValidator("param", ReviewerGetTaskRequestSchema), async (c) => {
+  app.get("/tasks/:taskId", zValidator("param", ReviewerGetTaskRequestSchema), async () => {
     throw Error("Not Implemented");
   });
 

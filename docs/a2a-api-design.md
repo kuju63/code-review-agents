@@ -294,14 +294,16 @@ src/code_review_agent/
         },
         "required": ["owner", "repo", "pr_number"]
       },
-      "_securityNote": "github_token はリクエストボディから除外。Authorization: Bearer ヘッダーで受け取り、FastAPI Dependency が各 Agent に注入する（§ 12.1 / § 12.3 参照）。llm_base_url はサーバー環境変数のみ（§ 12.2 参照）。",
-      "outputSchema": {
-        "$ref": "#/components/schemas/PRInfoResult"
+        "_securityNote": "github_token はリクエストボディから除外。Authorization: Bearer ヘッダーで受け取り、FastAPI Dependency が各 Agent に注入する（§ 12.1 / § 12.3 参照）。llm_base_url はサーバー環境変数のみ（§ 12.2 参照）。",
+        "outputSchema": {
+          "$ref": "#/components/schemas/PRInfoResult"
+        }
       }
-    }
-  ]
-}
-```
+    ]
+  }
+  ```
+
+TypeScript移行版では、HTTP route は validation・middleware適用・service結果のHTTPレスポンス整形だけを担当し、AgentCard生成・task生成/更新・背景実行・poll判定はserviceへ切り出す。Authorizationヘッダー検証とGitHub token注入は全Agent共通のmiddlewareとして実装し、serviceには検証済みtokenだけを渡す。
 
 **タスク処理**:
 

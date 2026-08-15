@@ -30,9 +30,9 @@
     "semantic_hash": "deb73de2947805f4318d5f5a14f4fe20"
   },
   ".vscode/settings.json": {
-    "mtime": 1780963740.0070322,
-    "ast_hash": "dc2a889dfa20d2972cee397991d20d0a",
-    "semantic_hash": "dc2a889dfa20d2972cee397991d20d0a"
+    "mtime": 1786738054.3878698,
+    "ast_hash": "ca425750093223dc19030b203a6949f5",
+    "semantic_hash": ""
   },
   "Review-Agent.json": {
     "mtime": 1779975713.3634024,
@@ -750,8 +750,8 @@
     "semantic_hash": ""
   },
   "docs/a2a-api-design.md": {
-    "mtime": 1786417868.2246926,
-    "ast_hash": "305125d6c89569bc3d6176592d609e4e",
+    "mtime": 1786753164.239423,
+    "ast_hash": "d22df91b01275b33ffcaa4ce0a71d806",
     "semantic_hash": ""
   },
   "docs/adr/0001-large-diff-review-scope-policy.md": {
@@ -2095,8 +2095,8 @@
     "semantic_hash": ""
   },
   "packages/agent-core/package.json": {
-    "mtime": 1786419906.8400905,
-    "ast_hash": "e7a2dd217f6c68c446d99ed5992db835",
+    "mtime": 1786753164.2399688,
+    "ast_hash": "57e7e6f76ce0d59e91423d893c8f5540",
     "semantic_hash": ""
   },
   "packages/agent-core/src/agents/base-reviewer.review.test.ts": {
@@ -2360,13 +2360,13 @@
     "semantic_hash": ""
   },
   "tsconfig.base.json": {
-    "mtime": 1786352515.7439518,
-    "ast_hash": "13da3d019a811955743878c99cec88d5",
+    "mtime": 1786430082.927,
+    "ast_hash": "e16ac833c2a18ed775bfd6567d718f0e",
     "semantic_hash": ""
   },
   "tsconfig.json": {
-    "mtime": 1786418195.1899588,
-    "ast_hash": "69c032c284b7945ec74eafc5b74dd59d",
+    "mtime": 1786430082.923,
+    "ast_hash": "184a71c8e685811eca1cd47d218f6e16",
     "semantic_hash": ""
   },
   "vitest.config.ts": {
@@ -2405,13 +2405,13 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/package.json": {
-    "mtime": 1786419906.84055,
-    "ast_hash": "f32fee5c3d47f40a1df340763fe085d9",
+    "mtime": 1786431349.4092584,
+    "ast_hash": "ebe25c6824c3a8bcf5e3e2e756920dae",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/index.ts": {
-    "mtime": 1786399443.3049107,
-    "ast_hash": "1372f8898e0569402bba8177e72d7341",
+    "mtime": 1786752273.837815,
+    "ast_hash": "589193f509a64ea8125d604e4d59ee8e",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/a2a/index.ts": {
@@ -2470,7 +2470,7 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/index.ts": {
-    "mtime": 1786418167.5153308,
+    "mtime": 1786430400.568,
     "ast_hash": "970c8f3a319085fc948e5cfdccc0d5fd",
     "semantic_hash": ""
   },
@@ -2480,13 +2480,13 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/lead-engineer/lead-engineer.route.test.ts": {
-    "mtime": 1786418107.996673,
-    "ast_hash": "2bf6366b53ba0a16379384f731a5de40",
+    "mtime": 1786753356.4330087,
+    "ast_hash": "fba381186f8037fd0169a0f0e37d026e",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/lead-engineer/lead-engineer.route.ts": {
-    "mtime": 1786418167.171809,
-    "ast_hash": "4c7e6b6f166a0bc057ffcdea4cf32194",
+    "mtime": 1786753334.742262,
+    "ast_hash": "ae7b14ae52e169193e4015a6749318bc",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/lead-engineer/models.test.ts": {
@@ -2515,13 +2515,13 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/orchestrator/orchestrator.route.test.ts": {
-    "mtime": 1786418107.9971752,
-    "ast_hash": "2e21118a278ecc85ba76e3f0fb4b4003",
+    "mtime": 1786753324.38469,
+    "ast_hash": "e96fd48887b5b0fd988ddde2a0203b4f",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/orchestrator/orchestrator.route.ts": {
-    "mtime": 1786418167.190365,
-    "ast_hash": "a9b86530af82d40e720ae0abc3b4e140",
+    "mtime": 1786753334.947708,
+    "ast_hash": "816a873ff5e49fdadf878e9911ec38f6",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/orchestrator/request.model.ts": {
@@ -2535,8 +2535,8 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/pr-info/index.ts": {
-    "mtime": 1786419906.840284,
-    "ast_hash": "737d6c862d745c964e1fd7bca01c5cef",
+    "mtime": 1786753164.239605,
+    "ast_hash": "ae65f02559cedb84fe4f57c9483ef83f",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/pr-info/models.test.ts": {
@@ -2545,13 +2545,13 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/pr-info/pr-info.route.test.ts": {
-    "mtime": 1786418107.9966652,
-    "ast_hash": "3ab9eef9422bfbfdd70f5e5ba646ebdc",
+    "mtime": 1786753164.239731,
+    "ast_hash": "1472ca1117593e93b2d8d1879d08922e",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/pr-info/pr-info.route.ts": {
-    "mtime": 1786418167.1717238,
-    "ast_hash": "540bcba780a97f12fdbb1eb64f5dae70",
+    "mtime": 1786753164.2398505,
+    "ast_hash": "273a9d3953cfeaafc3231e708c4252cd",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/pr-info/request.model.ts": {
@@ -2585,23 +2585,43 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/reviewers/reviewers.route.test.ts": {
-    "mtime": 1786418107.996661,
-    "ast_hash": "c4408c24ce53f894849ace26cedd0201",
+    "mtime": 1786753356.4331398,
+    "ast_hash": "4ab55683379a6c56a92d0323e1dbc673",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/reviewers/reviewers.route.ts": {
-    "mtime": 1786418167.1717567,
-    "ast_hash": "2a418f1735c62c4dd230e1387bbed3c2",
+    "mtime": 1786753334.843653,
+    "ast_hash": "9e41dac932d8b29f3d2458f08b4df17d",
     "semantic_hash": ""
   },
   "packages/a2a-server/tsconfig.json": {
-    "mtime": 1786418195.1902533,
+    "mtime": 1786753200.409939,
     "ast_hash": "4437098f558ee92a2ca0ea21e050bc56",
     "semantic_hash": ""
   },
   "packages/a2a-server/README.md": {
     "mtime": 1786399443.3042579,
     "ast_hash": "d898d7069d89a34bfd1d606335a78732",
+    "semantic_hash": ""
+  },
+  "packages/a2a-server/src/modules/a2a/auth.middleware.test.ts": {
+    "mtime": 1786753164.2580795,
+    "ast_hash": "cf761983bb8c031b931bc7a14e5d0eba",
+    "semantic_hash": ""
+  },
+  "packages/a2a-server/src/modules/a2a/auth.middleware.ts": {
+    "mtime": 1786753164.2581954,
+    "ast_hash": "2f319e9e267503396fc648e4c6bfa9a9",
+    "semantic_hash": ""
+  },
+  "packages/a2a-server/src/modules/pr-info/pr-info.service.test.ts": {
+    "mtime": 1786753164.2583473,
+    "ast_hash": "06d75b378a5ae99286485cfff2ad2c43",
+    "semantic_hash": ""
+  },
+  "packages/a2a-server/src/modules/pr-info/pr-info.service.ts": {
+    "mtime": 1786753164.2585006,
+    "ast_hash": "ccba49deb2d537f30ab96d53d07f47eb",
     "semantic_hash": ""
   }
 }
