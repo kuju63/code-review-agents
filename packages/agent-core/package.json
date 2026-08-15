@@ -18,6 +18,11 @@
       "types": "./src/agents/pr-info-collector.ts",
       "development": "./src/agents/pr-info-collector.ts",
       "default": "./dist/agents/pr-info-collector.js"
+    },
+    "./agents/reviewers/*.js": {
+      "types": "./src/agents/reviewers/*.ts",
+      "development": "./src/agents/reviewers/*.ts",
+      "default": "./dist/agents/reviewers/*.js"
     }
   },
   "dependencies": {

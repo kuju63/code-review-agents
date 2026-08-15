@@ -1,23 +1,45 @@
 import { zValidator } from "@hono/zod-validator";
-import { Hono } from "hono";
-import { ReviewerGetTaskRequestSchema, ReviewerSendTaskRequestSchema } from "./request.model.js";
-import type { ReviewerSendTaskResponse } from "./response.model.js";
+import { Hono, type MiddlewareHandler } from "hono";
+import { createGithubAuthMiddleware, type GithubAuthEnv } from "../a2a/auth.middleware.js";
+import { A2ASendTaskRequestSchema } from "../a2a/request.model.js";
+import { createReactReviewerService } from "./react.service.js";
+import { ReviewerGetTaskRequestSchema } from "./request.model.js";
+import type { ReviewerService } from "./reviewer-runtime.js";
 
-export function createReviewersRoute(): Hono {
-  const app = new Hono();
-  app.get(".well-known/agent.json", async () => {
-    // TODO(#253): Implement AgentCard generation, task submission, and task polling routes.
-    throw Error("Not Found");
-  });
+type CreateReviewersRouteOptions = {
+  service?: ReviewerService;
+  authMiddleware?: MiddlewareHandler<GithubAuthEnv>;
+};
 
-  app.post("/tasks/send", zValidator("json", ReviewerSendTaskRequestSchema), async (c) => {
-    c.json({} as ReviewerSendTaskResponse, 201);
-    throw Error("Not Implemented");
-  });
+export function createReviewersRoute({
+  service = createReactReviewerService(),
+  authMiddleware = createGithubAuthMiddleware(),
+}: CreateReviewersRouteOptions = {}): Hono<GithubAuthEnv> {
+  const app = new Hono<GithubAuthEnv>();
 
-  app.get("/tasks/:taskId", zValidator("param", ReviewerGetTaskRequestSchema), async () => {
-    throw Error("Not Implemented");
-  });
+  app.get("/.well-known/agent.json", (c) => c.json(service.getAgentCard(), 200));
+
+  app.post(
+    "/tasks/send",
+    authMiddleware,
+    zValidator("json", A2ASendTaskRequestSchema),
+    async (c) => {
+      const response = await service.sendTask(c.req.valid("json"), c.get("githubToken"));
+      return c.json(response, 202);
+    },
+  );
+
+  app.get(
+    "/tasks/:taskId",
+    zValidator("param", ReviewerGetTaskRequestSchema.shape.params),
+    async (c) => {
+      const task = await service.getTask(c.req.valid("param").taskId);
+      if (!task) {
+        return c.json({ detail: "Task not found" }, 404);
+      }
+      return c.json(task, 200);
+    },
+  );
 
   return app;
 }
