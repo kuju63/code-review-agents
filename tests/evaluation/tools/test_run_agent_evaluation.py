@@ -14,15 +14,21 @@ lightweight fakes.
 
 from __future__ import annotations
 
+import json
 import logging
 import threading
 import time
+import urllib.request
 
 from tests.evaluation.conftest import load_eval_tool_module
 
 run_agent_evaluation = load_eval_tool_module(
     "run_agent_evaluation", "run_agent_evaluation.py"
 )
+measure_pr_info_response = load_eval_tool_module(
+    "measure_pr_info_response", "measure_pr_info_response.py"
+)
+verify_a2a_api = load_eval_tool_module("verify_a2a_api", "verify_a2a_api.py")
 
 
 class TestEvaluateConcurrentlyOrdering:
@@ -188,8 +194,8 @@ class TestEvaluateItem:
         assert data == {
             "owner": "owner",
             "repo": "repo",
-            "pr_number": 1,
-            "model_id": "m",
+            "prNumber": 1,
+            "modelId": "m",
         }
 
     def test_passes_item_id_through_to_to_predictions(self, monkeypatch):
@@ -259,7 +265,7 @@ class TestEvaluateItem:
 
         assert result_gold["id"] == "owner/repo#1"
         assert result_seeded["id"] == "seeded::kuju63/react-seeded#5"
-        # Both payloads must be endpoint + {owner, repo, pr_number, model_id}
+        # Both payloads must be endpoint + {owner, repo, prNumber, modelId}
         # only -- asserting full equality (not just the endpoint) guards
         # against `stack`/`file_changes` leaking back into the request if
         # someone reintroduces per-item branching later.
@@ -269,8 +275,8 @@ class TestEvaluateItem:
                 {
                     "owner": "owner",
                     "repo": "repo",
-                    "pr_number": 1,
-                    "model_id": "m",
+                    "prNumber": 1,
+                    "modelId": "m",
                 },
             ),
             (
@@ -278,8 +284,8 @@ class TestEvaluateItem:
                 {
                     "owner": "kuju63",
                     "repo": "react-seeded",
-                    "pr_number": 5,
-                    "model_id": "m",
+                    "prNumber": 5,
+                    "modelId": "m",
                 },
             ),
         ]
@@ -331,3 +337,102 @@ class TestEvaluateItem:
         )
 
         assert len(calls) == 2
+
+
+class TestCamelCaseA2AContract:
+    def test_converts_camel_case_orchestrator_response_to_predictions(self):
+        lead_report = {
+            "overallSummary": "One accepted finding",
+            "decisions": [
+                {
+                    "reviewerId": "security-reviewer",
+                    "perspective": "security",
+                    "finding": {
+                        "filePath": "src/auth.ts",
+                        "line": 42,
+                        "comment": "Validate the redirect target",
+                        "context": "Open redirects enable phishing",
+                        "proposedFix": "Allow only local paths",
+                        "priority": "high",
+                    },
+                    "verdict": "accept",
+                    "reason": "The redirect is attacker-controlled",
+                    "impact": "Account compromise",
+                    "severity": "high",
+                    "impactCategory": "security",
+                    "finalPriority": "high",
+                }
+            ],
+            "reviewerErrors": [],
+        }
+
+        assert run_agent_evaluation._to_predictions(lead_report, "owner/repo#1") == {
+            "id": "owner/repo#1",
+            "agent_findings": [
+                {
+                    "path": "src/auth.ts",
+                    "line": 42,
+                    "category": "security",
+                    "severity": "high",
+                    "impact": "security",
+                    "priority": "high",
+                    "summary": "Validate the redirect target",
+                }
+            ],
+            "lead_decisions": [
+                {"path": "src/auth.ts", "line": 42, "decision": "accept"}
+            ],
+        }
+
+    def test_measures_camel_case_pr_info_response(self):
+        result = {
+            "repositoryInfo": {"owner": "owner", "repository": "repo"},
+            "projectSummary": "TypeScript project",
+            "prInfo": {
+                "title": "Example",
+                "prNumber": 1,
+                "body": "Pull request body",
+                "labels": [],
+                "fileChanges": [{"filePath": "src/index.ts", "patch": None}],
+            },
+            "dependencyFiles": ["package.json"],
+            "manifestContents": {},
+        }
+
+        metrics = measure_pr_info_response._measure(result, None)
+
+        assert metrics["file_changes_count"] == 1
+        assert metrics["project_summary_bytes"] == len("TypeScript project")
+        assert metrics["body_bytes"] == len("Pull request body")
+        assert metrics["dependency_files"] == ["package.json"]
+        assert metrics["file_details"] == [("src/index.ts", 0)]
+
+    def test_verify_script_sends_camel_case_pr_number(self, monkeypatch):
+        captured = {}
+
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                return False
+
+            def read(self):
+                return b'{"task":{"id":"task-1"}}'
+
+        def fake_urlopen(request, timeout):
+            captured["request"] = request
+            captured["timeout"] = timeout
+            return FakeResponse()
+
+        monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+
+        task_id = verify_a2a_api._send_task("http://x", "orchestrator", "token")
+        payload = json.loads(captured["request"].data)
+
+        assert task_id == "task-1"
+        assert payload["message"]["parts"][0]["data"] == {
+            "owner": verify_a2a_api._OWNER,
+            "repo": verify_a2a_api._REPO,
+            "prNumber": verify_a2a_api._PR_NUMBER,
+        }

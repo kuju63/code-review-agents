@@ -33,6 +33,16 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+_TS_FIELD_NAMES = {
+    "overallSummary": "overall_summary",
+    "reviewerErrors": "reviewer_errors",
+    "reviewerId": "reviewer_id",
+    "impactCategory": "impact_category",
+    "finalPriority": "final_priority",
+    "filePath": "file_path",
+    "proposedFix": "proposed_fix",
+}
+
 _DEFAULT_BASE_URL = "http://localhost:8000"
 _DEFAULT_POLL_INTERVAL = 3
 _DEFAULT_TIMEOUT = 1800
@@ -50,6 +60,17 @@ def _run_a2a(
     return a2a_poll(client, endpoint, task_id, poll_interval, timeout)
 
 
+def _convert_ts_field_names(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            _TS_FIELD_NAMES.get(key, key): _convert_ts_field_names(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_convert_ts_field_names(item) for item in value]
+    return value
+
+
 def _to_predictions(lead_report_data: dict[str, Any], pr_id: str) -> dict[str, Any]:
     """Convert LeadEngineerReport dict to agent_predictions.jsonl format.
 
@@ -63,7 +84,9 @@ def _to_predictions(lead_report_data: dict[str, Any], pr_id: str) -> dict[str, A
     """
     from code_review_agent.models.lead_engineer import LeadEngineerReport
 
-    report = LeadEngineerReport.model_validate(lead_report_data)
+    report = LeadEngineerReport.model_validate(
+        _convert_ts_field_names(lead_report_data)
+    )
     pred = report.to_evaluation_format(pr_id)
     for finding in pred.get("agent_findings", []):
         if finding.get("category") != "security":
@@ -96,8 +119,8 @@ def evaluate_item(
     data = {
         "owner": owner,
         "repo": repo,
-        "pr_number": item["pr_number"],
-        "model_id": model_id,
+        "prNumber": item["pr_number"],
+        "modelId": model_id,
     }
     lead_data = _run_a2a(
         client, f"{base_url}/orchestrator", data, poll_interval, timeout

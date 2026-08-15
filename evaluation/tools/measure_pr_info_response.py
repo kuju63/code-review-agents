@@ -46,12 +46,12 @@ def _measure(result: dict[str, Any], response_file: str | None) -> dict[str, Any
     result_json = json.dumps(result, ensure_ascii=False)
     total_bytes = len(result_json.encode("utf-8"))
 
-    file_changes = result.get("pr_info", {}).get("file_changes", [])
+    file_changes = result.get("prInfo", {}).get("fileChanges", [])
     patch_bytes = sum(
         len((fc.get("patch") or "").encode("utf-8")) for fc in file_changes
     )
-    project_summary = result.get("project_summary") or ""
-    body = result.get("pr_info", {}).get("body") or ""
+    project_summary = result.get("projectSummary") or ""
+    body = result.get("prInfo", {}).get("body") or ""
 
     file_details = []
     for fc in file_changes:
@@ -71,7 +71,7 @@ def _measure(result: dict[str, Any], response_file: str | None) -> dict[str, Any
         "file_changes_count": len(file_changes),
         "project_summary_bytes": len(project_summary.encode("utf-8")),
         "body_bytes": len(body.encode("utf-8")),
-        "dependency_files": result.get("dependency_files", []),
+        "dependency_files": result.get("dependencyFiles", []),
         "file_details": file_details,
         "file_written_bytes": file_size,
     }
@@ -141,8 +141,8 @@ def main() -> None:
                 data = {
                     "owner": owner,
                     "repo": repo,
-                    "pr_number": pr_number,
-                    "model_id": model_id,
+                    "prNumber": pr_number,
+                    "modelId": model_id,
                 }
                 task_id = a2a_send(client, f"{args.base_url}/pr-info-collector", data)
                 logger.info("  task_id: %s", task_id)
