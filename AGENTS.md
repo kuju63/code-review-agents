@@ -142,7 +142,9 @@ The Mermaid diagram below is a visual summary. For implementation tasks, the Cod
 4. Execute TDD cycle.
 
    - Write tests first (Red).
-     Red is not `Error`, expect `Failure`
+     Red means the test body actually executes and an expected assertion fails.
+     An `Error` raised during test collection or fixture setup/teardown does not
+     count as completing Red; expect `Failure`, not `Error`.
    - Implement minimal changes to pass tests (Green).
    - Refactor while preserving behavior (Refactor).
     - Using `coderabbit review --include-untracked` command.
