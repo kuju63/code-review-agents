@@ -32,6 +32,19 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+/** A fetch mock that never resolves on its own, mirroring a hung connection; it only settles when the captured AbortSignal fires. */
+function hangingFetchMock() {
+  const fetch = vi.fn().mockImplementation(
+    (_url: string, init?: RequestInit) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => {
+          reject(new DOMException("The operation was aborted.", "AbortError"));
+        });
+      }),
+  );
+  return fetch;
+}
+
 const leadReport = {
   overallSummary: "looks fine",
   decisions: [
@@ -119,6 +132,26 @@ describe("sendTask", () => {
       ),
     ).rejects.toThrow(/400/);
   });
+
+  it("aborts a request that never responds once the deadline is reached", async () => {
+    const fetchMock = hangingFetchMock();
+    const controller = new AbortController();
+
+    const promise = sendTask(
+      "http://localhost:3000/orchestrator",
+      "gh-token",
+      { owner: "a", repo: "b", prNumber: 1 },
+      {
+        fetch: fetchMock as unknown as typeof fetch,
+        deadline: 0,
+        now: () => 0,
+        createTimeoutSignal: () => controller.signal,
+      },
+    );
+    controller.abort();
+
+    await expect(promise).rejects.toThrow(/abort/i);
+  });
 });
 
 describe("pollTask", () => {
@@ -142,7 +175,8 @@ describe("pollTask", () => {
       fetch: fetchMock as unknown as typeof fetch,
       sleep,
       pollIntervalMs: 10,
-      timeoutMs: 5000,
+      deadline: 5000,
+      now: () => 0,
     });
 
     expect(report.overallSummary).toBe("looks fine");
@@ -162,7 +196,8 @@ describe("pollTask", () => {
         fetch: fetchMock as unknown as typeof fetch,
         sleep: vi.fn().mockResolvedValue(undefined),
         pollIntervalMs: 10,
-        timeoutMs: 5000,
+        deadline: 5000,
+        now: () => 0,
       }),
     ).rejects.toThrow(/boom/);
   });
@@ -183,10 +218,27 @@ describe("pollTask", () => {
         fetch: fetchMock as unknown as typeof fetch,
         sleep,
         pollIntervalMs: 10,
-        timeoutMs: 15,
+        deadline: 15,
         now: () => now,
       }),
     ).rejects.toThrow(/timed out/i);
+  });
+
+  it("aborts an in-flight poll once the deadline is reached", async () => {
+    const fetchMock = hangingFetchMock();
+    const controller = new AbortController();
+
+    const promise = pollTask("http://localhost:3000/orchestrator", "gh-token", "task-1", {
+      fetch: fetchMock as unknown as typeof fetch,
+      sleep: vi.fn().mockResolvedValue(undefined),
+      pollIntervalMs: 10,
+      deadline: 5,
+      now: () => 0,
+      createTimeoutSignal: () => controller.signal,
+    });
+    controller.abort();
+
+    await expect(promise).rejects.toThrow(/abort/i);
   });
 });
 
@@ -213,6 +265,7 @@ describe("evaluateItem", () => {
         sleep: vi.fn().mockResolvedValue(undefined),
         pollIntervalMs: 10,
         timeoutMs: 5000,
+        now: () => 0,
       },
     );
 
@@ -347,5 +400,23 @@ describe("main", () => {
     const predLines = readFileSync(outputPath, "utf-8").trim().split("\n");
     expect(predLines).toHaveLength(1);
     expect(JSON.parse(predLines[0] as string).id).toBe("seeded::kuju63/react-seeded#8");
+  });
+
+  it.each([
+    ["--concurrency", "0"],
+    ["--concurrency", "-1"],
+    ["--concurrency", "abc"],
+    ["--concurrency", "1.5"],
+    ["--poll-interval", "-1"],
+    ["--poll-interval", "abc"],
+    ["--timeout", "0"],
+    ["--timeout", "-1"],
+    ["--timeout", "abc"],
+  ])("returns 2 when %s %s is invalid", async (flag, value) => {
+    const status = await main(
+      ["node", "run-agent-evaluation", "--seeded", "x.jsonl", "--pred", "y.jsonl", flag, value],
+      { env: { GITHUB_TOKEN: "gh-token" } },
+    );
+    expect(status).toBe(2);
   });
 });

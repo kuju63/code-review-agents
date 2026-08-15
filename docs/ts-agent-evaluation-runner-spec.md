@@ -86,7 +86,20 @@ GET {baseUrl}/orchestrator/tasks/{id}
 
 `status === "completed"` の `message.parts` から `kind === "data"` のpartを取り、その `data` を
 `LeadEngineerReportSchema.parse()` に渡す。`status === "failed"` は `task.error` を含めて例外化する。
-タイムアウトは `--timeout` 秒経過で例外化する(Python版と同じ方針)。
+
+### 4.1 タイムアウト契約
+
+`evaluateItem` は1アイテムにつき一度だけ `deadline = now() + (--timeout 秒 × 1000)` を計算し、
+その1アイテムが発行する**すべて**のHTTP呼び出し(`sendTask`の送信1回 + `pollTask`の各ポーリング)に
+同じ `deadline` を共有させる。各呼び出しは `AbortSignal.timeout(deadline - now())`
+相当のsignalを個別に持つため、サーバーが応答を返さず接続がハングした場合でも
+`await fetch(...)` がその1呼び出し分の残り予算を超えて無期限にブロックすることはない
+(Python版 `httpx.Client` の `timeout=` 引数と同等の目的だが、Python版は送信30秒/ポーリング10秒を
+個別の定数として持つのに対し、TS版は1アイテム全体の `--timeout` 予算を送信・ポーリング全体で
+共有する設計とした。個別の定数を追加で持つより、CLIの`--timeout`一つで全体の上限を説明できる方が
+単純だと判断したため)。`pollTask` のループ本体は各呼び出し前後で `now() >= deadline` を確認し、
+超過していれば(タイムアウトしたリクエストが例外なく応答を返した場合でも)明示的にタイムアウト
+エラーとして例外化する。
 
 ## 5. CLI
 
@@ -103,6 +116,23 @@ Seeded-onlyであり、このスクリプト自体は新規実装でありPython
 (`packages/a2a-server/src/index.ts` の `serve({ port: 3000 })`)。
 
 `GITHUB_TOKEN` は環境変数必須(未設定はexit 2、Python版runner.py の規約に合わせる)。
+
+数値オプションは `main()` がcommanderのパース直後に検証し、無効な場合はログにエラーを出して
+exit 2とする(ネットワーク呼び出しを一切行わずに即座に失敗させる)。
+
+| オプション | 許容範囲 | 無効値の例 |
+|---|---|---|
+| `--concurrency` | 1以上の整数 | `0`, `-1`, `1.5`, `abc` |
+| `--poll-interval` | 0以上の有限数(秒) | `-1`, `abc` |
+| `--timeout` | 0より大きい有限数(秒) | `0`, `-1`, `abc` |
+
+`--concurrency` が未検証のままだと `NaN`/`Infinity` が `evaluateConcurrently` の並列度計算
+(`Math.max(1, Math.min(concurrency, items.length))`)に渡り、`Array.from({ length: NaN })` が
+0要素の配列になって全item が未評価のまま `status 0` を返す、という無症状の欠陥になる
+(coderabbit reviewで指摘、2026-08-16)。`evaluateConcurrently` 自身にはこの検証を入れず
+CLI境界(`main()`)でのみ検証する — 内部関数は呼び出し元がCLIパース値ではなくテストからの
+直接呼び出しであることもあり、境界でない箇所への検証追加は「起こり得ないケースへの防御」に
+あたるため(CLAUDE.md 実装ルール)。
 
 ## 6. 並行実行と出力順序
 

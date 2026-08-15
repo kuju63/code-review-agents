@@ -25,11 +25,28 @@ export interface SeededOrGoldItem {
   pr_number: number;
 }
 
-export interface SendTaskOptions {
-  fetch?: typeof fetch;
+/** Default per-call abort timeout factory: aborts once `remainingMs` (clamped to >= 0) elapses. */
+function defaultCreateTimeoutSignal(remainingMs: number): AbortSignal {
+  return AbortSignal.timeout(Math.max(0, remainingMs));
 }
 
-/** POST a data-part task to an A2A endpoint (`{endpoint}/tasks/send`) and return the task id. */
+export interface HttpDeadlineOptions {
+  fetch?: typeof fetch;
+  now?: () => number;
+  /** Epoch ms after which in-flight HTTP calls are aborted. Omit to send the request with no per-call abort. */
+  deadline?: number;
+  createTimeoutSignal?: (remainingMs: number) => AbortSignal;
+}
+
+export type SendTaskOptions = HttpDeadlineOptions;
+
+/**
+ * POST a data-part task to an A2A endpoint (`{endpoint}/tasks/send`) and return the task id.
+ *
+ * `options.deadline`, when set, bounds this call with an AbortSignal so a connection that never
+ * responds doesn't block indefinitely -- the CLI's `--timeout` would otherwise never take effect for
+ * a hung `send`.
+ */
 export async function sendTask(
   endpoint: string,
   githubToken: string,
@@ -37,6 +54,10 @@ export async function sendTask(
   options: SendTaskOptions = {},
 ): Promise<string> {
   const fetchImpl = options.fetch ?? fetch;
+  const now = options.now ?? Date.now;
+  const createSignal = options.createTimeoutSignal ?? defaultCreateTimeoutSignal;
+  const signal =
+    options.deadline !== undefined ? createSignal(options.deadline - now()) : undefined;
   const response = await fetchImpl(`${endpoint}/tasks/send`, {
     method: "POST",
     headers: {
@@ -46,6 +67,7 @@ export async function sendTask(
     body: JSON.stringify({
       message: { role: "user", parts: [{ kind: "data", data }] },
     }),
+    ...(signal ? { signal } : {}),
   });
   if (!response.ok) {
     throw new Error(`A2A send failed: ${response.status} ${await response.text()}`);
@@ -54,15 +76,20 @@ export async function sendTask(
   return body.task.id;
 }
 
-export interface PollTaskOptions {
-  fetch?: typeof fetch;
+export interface PollTaskOptions extends HttpDeadlineOptions {
   sleep?: (milliseconds: number) => Promise<void>;
   pollIntervalMs?: number;
+  /** Overall poll budget in ms, used to derive `deadline` when `deadline` itself isn't given. */
   timeoutMs?: number;
-  now?: () => number;
 }
 
-/** Poll `{endpoint}/tasks/{taskId}` until completed and return the parsed LeadEngineerReport. */
+/**
+ * Poll `{endpoint}/tasks/{taskId}` until completed and return the parsed LeadEngineerReport.
+ *
+ * Every GET in the loop is bounded by the same `deadline` (epoch ms, derived from `timeoutMs` when
+ * not given explicitly) via an AbortSignal, so a single hung poll can't block past the overall
+ * budget the way an un-aborted `fetch()` awaited without a signal would.
+ */
 export async function pollTask(
   endpoint: string,
   githubToken: string,
@@ -72,13 +99,17 @@ export async function pollTask(
   const fetchImpl = options.fetch ?? fetch;
   const sleep = options.sleep ?? sleepImpl;
   const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const now = options.now ?? Date.now;
-  const deadline = now() + timeoutMs;
+  const createSignal = options.createTimeoutSignal ?? defaultCreateTimeoutSignal;
+  const deadline = options.deadline ?? now() + (options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
   for (;;) {
+    if (now() >= deadline) {
+      throw new Error(`Task ${taskId} timed out (deadline reached before poll)`);
+    }
     const response = await fetchImpl(`${endpoint}/tasks/${taskId}`, {
       headers: { Authorization: `Bearer ${githubToken}` },
+      signal: createSignal(deadline - now()),
     });
     if (!response.ok) {
       throw new Error(`A2A poll failed: ${response.status} ${await response.text()}`);
@@ -98,10 +129,10 @@ export async function pollTask(
     if (task.status === "failed") {
       throw new Error(`Task ${taskId} failed: ${task.error ?? "?"}`);
     }
-    if (now() > deadline) {
-      throw new Error(`Task ${taskId} timed out after ${timeoutMs}ms (status=${task.status})`);
+    if (now() >= deadline) {
+      throw new Error(`Task ${taskId} timed out after (status=${task.status})`);
     }
-    await sleep(pollIntervalMs);
+    await sleep(Math.min(pollIntervalMs, Math.max(0, deadline - now())));
   }
 }
 
@@ -149,14 +180,18 @@ export async function evaluateItem(
   item: SeededOrGoldItem,
   options: EvaluateItemOptions,
 ): Promise<PredictionRow> {
+  const now = options.now ?? Date.now;
+  // One deadline shared by every HTTP call this item makes (send + every poll), so a single hung
+  // request can't outlive the item's overall --timeout budget.
+  const deadline = options.deadline ?? now() + (options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
   const [owner, repo] = item.repository.split("/");
   const endpoint = `${options.baseUrl}/orchestrator`;
   const data: Record<string, unknown> = { owner, repo, prNumber: item.pr_number };
   if (options.modelId) {
     data.modelId = options.modelId;
   }
-  const taskId = await sendTask(endpoint, options.githubToken, data, options);
-  const report = await pollTask(endpoint, options.githubToken, taskId, options);
+  const taskId = await sendTask(endpoint, options.githubToken, data, { ...options, deadline });
+  const report = await pollTask(endpoint, options.githubToken, taskId, { ...options, deadline });
   return normalizeCategoriesForEvaluation(
     toEvaluationFormat(report, item.id) as unknown as PredictionRow,
   );
@@ -248,6 +283,21 @@ function createCli(): Command {
     .option("--model-id <id>", "Model id forwarded to the orchestrator");
 }
 
+function parsePositiveInteger(raw: string): number | undefined {
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= 1 ? value : undefined;
+}
+
+function parseNonNegativeFiniteNumber(raw: string): number | undefined {
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
+function parsePositiveFiniteNumber(raw: string): number | undefined {
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
 export interface MainDependencies {
   env?: NodeJS.ProcessEnv;
   fetch?: typeof fetch;
@@ -267,8 +317,24 @@ export async function main(
 
   const options = createCli().parse(argv).opts<CliOptions>();
   const baseUrl = options.baseUrl.replace(/\/$/, "");
-  const pollIntervalMs = Number(options.pollInterval) * 1000;
-  const timeoutMs = Number(options.timeout) * 1000;
+
+  const concurrency = parsePositiveInteger(options.concurrency);
+  const pollIntervalSeconds = parseNonNegativeFiniteNumber(options.pollInterval);
+  const timeoutSeconds = parsePositiveFiniteNumber(options.timeout);
+  if (concurrency === undefined) {
+    logger.error(`--concurrency must be a positive integer, got "${options.concurrency}"`);
+    return 2;
+  }
+  if (pollIntervalSeconds === undefined) {
+    logger.error(`--poll-interval must be a non-negative number, got "${options.pollInterval}"`);
+    return 2;
+  }
+  if (timeoutSeconds === undefined) {
+    logger.error(`--timeout must be a positive number, got "${options.timeout}"`);
+    return 2;
+  }
+  const pollIntervalMs = pollIntervalSeconds * 1000;
+  const timeoutMs = timeoutSeconds * 1000;
 
   const items: SeededOrGoldItem[] = [];
   if (options.gold) {
@@ -289,7 +355,7 @@ export async function main(
         pollIntervalMs,
         timeoutMs,
       }),
-    Number(options.concurrency),
+    concurrency,
   );
 
   await writePredictionsAndSidecar(options.pred, predictions, failedIds);
