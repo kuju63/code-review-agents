@@ -22,7 +22,9 @@ Google A2A（Agent-to-Agent）プロトコルを採用します。
 |---|---|---|
 | `/{agent}/.well-known/agent.json` | GET | AgentCard — Agent の能力・スキーマ・URL を公開 |
 | `/{agent}/tasks/send` | POST | タスク投入（202 Accepted + task_id を即時返却） |
-| `/{agent}/tasks/{task_id}` | GET | タスク状態確認（ポーリング） |
+| `/{agent}/tasks/{task_id}` | GET | 認証済み作成者によるタスク状態確認（ポーリング） |
+
+タスク投入と取得には同じ GitHub アカウントの `Authorization: Bearer <token>` が必要です。取得時はタスク作成時に保存した GitHub user ID と照合し、別アカウントのタスクは `404` として扱います。
 
 **タスク状態遷移**: `submitted → working → completed / failed`
 
@@ -294,14 +296,16 @@ src/code_review_agent/
         },
         "required": ["owner", "repo", "pr_number"]
       },
-      "_securityNote": "github_token はリクエストボディから除外。Authorization: Bearer ヘッダーで受け取り、FastAPI Dependency が各 Agent に注入する（§ 12.1 / § 12.3 参照）。llm_base_url はサーバー環境変数のみ（§ 12.2 参照）。",
-      "outputSchema": {
-        "$ref": "#/components/schemas/PRInfoResult"
+        "_securityNote": "github_token はリクエストボディから除外。Authorization: Bearer ヘッダーで受け取り、FastAPI Dependency が各 Agent に注入する（§ 12.1 / § 12.3 参照）。llm_base_url はサーバー環境変数のみ（§ 12.2 参照）。",
+        "outputSchema": {
+          "$ref": "#/components/schemas/PRInfoResult"
+        }
       }
-    }
-  ]
-}
-```
+    ]
+  }
+  ```
+
+TypeScript移行版では、HTTP route は validation・middleware適用・service結果のHTTPレスポンス整形だけを担当し、AgentCard生成・task生成/更新・背景実行・poll判定はserviceへ切り出す。Authorizationヘッダー検証とGitHub token注入は全Agent共通のmiddlewareとして実装し、serviceには検証済みtokenだけを渡す。
 
 **タスク処理**:
 
@@ -552,6 +556,8 @@ async def _run_full_workflow(task_id: str, data: dict, store: TaskStore) -> None
         await store.set_failed(task_id, sanitize_error(exc))  # § 12.4 参照
 ```
 
+TypeScript移行版では、§4.1 と同じく HTTP route（`orchestrator.route.ts`）は validation・middleware適用・service結果のHTTPレスポンス整形だけを担当し、AgentCard生成・task生成/更新・3段パイプラインの背景実行（PRInfoCollector → ReviewOrchestrator → LeadEngineerAgent）・poll判定は `orchestrator.service.ts` へ切り出す。3段が共有する `ReviewerConfig` は service が1つだけ生成し、`ReviewOrchestrator` と `LeadEngineerAgent` の双方に同一インスタンスを渡す（`PRInfoCollector` には MCP 起動リトライ等の該当設定のみを引き渡す）。エージェント3クラスはテスト時に差し替えられるよう service のオプションとして注入可能にする。
+
 ---
 
 ## 5. FastAPI アプリケーション構成
@@ -630,8 +636,8 @@ from ..config import Settings
 
 async def verify_github_token(
     authorization: str = Header(..., description="Bearer <github_oauth_token>"),
-) -> str:
-    """GitHub OAuth トークンを /user API で検証し、検証済みトークンを返す。"""
+) -> tuple[str, str]:
+    """GitHub OAuth トークンを /user API で検証し、トークンと user ID を返す。"""
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authorization header must be 'Bearer <token>'")
     token = authorization.removeprefix("Bearer ")
@@ -641,9 +647,11 @@ async def verify_github_token(
             headers={"Authorization": f"Bearer {token}"},
             timeout=10.0,
         )
-    if resp.status_code != 200:
+    if resp.status_code == 401:
         raise HTTPException(status_code=401, detail="Invalid GitHub token")
-    return token
+    if resp.status_code != 200:
+        raise HTTPException(status_code=503, detail="GitHub authentication endpoint is temporarily unavailable")
+    return token, str(resp.json()["id"])
 
 
 def create_router(settings: Settings, store: TaskStore) -> APIRouter:
@@ -659,17 +667,22 @@ def create_router(settings: Settings, store: TaskStore) -> APIRouter:
     async def send_task(
         req: A2ASendTaskRequest,
         background_tasks: BackgroundTasks,
-        github_token: str = Depends(verify_github_token),  # 認証 + トークン注入
+        auth: tuple[str, str] = Depends(verify_github_token),
     ) -> A2ASendTaskResponse:
-        task = await store.create()
+        github_token, owner_principal_id = auth
+        task = await store.create(owner_principal_id)
         data = _extract_data(req.message)
         data["github_token"] = github_token  # ヘッダーから取得したトークンを注入
         background_tasks.add_task(_run, task.id, data, store)
         return A2ASendTaskResponse(task=task)
 
     @router.get("/tasks/{task_id}", response_model=A2ATask)
-    async def get_task(task_id: str) -> A2ATask:
-        task = await store.get(task_id)
+    async def get_task(
+        task_id: str,
+        auth: tuple[str, str] = Depends(verify_github_token),
+    ) -> A2ATask:
+        _, owner_principal_id = auth
+        task = await store.get(task_id, owner_principal_id)
         if task is None:
             raise HTTPException(status_code=404, detail="Task not found")
         return task
@@ -989,14 +1002,18 @@ echo "Task ID: $TASK_ID"
 
 # ポーリングで状態確認（completed になるまで待つ）
 while true; do
-  STATUS=$(curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" | jq -r '.status')
+  STATUS=$(curl -s \
+    -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+    "http://localhost:8000/orchestrator/tasks/$TASK_ID" | jq -r '.status')
   echo "Status: $STATUS"
   [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ] && break
   sleep 10
 done
 
 # 結果取得（Markdown テキスト）
-curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
+curl -s \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
   | jq -r '.message.parts[] | select(.kind == "text") | .text'
 ```
 
@@ -1053,7 +1070,9 @@ echo "Task ID: $TASK_ID"
 
 # ポーリングで状態確認（completed になるまで待つ。Ollama 実推論のため数分かかりうる）
 while true; do
-  STATUS=$(curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" | jq -r '.status')
+  STATUS=$(curl -s \
+    -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+    "http://localhost:8000/orchestrator/tasks/$TASK_ID" | jq -r '.status')
   echo "Status: $STATUS"
   [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ] && break
   sleep 10
@@ -1061,7 +1080,9 @@ done
 
 # status が completed であること、Ollama 経由の実推論結果（レビュー本文）が
 # 返っていることの両方を確認する
-curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
+curl -s \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
   | jq -r '.message.parts[] | select(.kind == "text") | .text'
 ```
 
@@ -1200,3 +1221,64 @@ def sanitize_error(exc: BaseException) -> str:
 
 **現在の方針**: モノリス構成（§ 1.3）では許容範囲。
 マイクロサービス分割時は内部 URL を AgentCard に含めず外部公開 URL のみにすること。
+
+---
+
+## 13. TypeScript/Zod モデル移行仕様
+
+### 13.1 対象と配置
+
+Issue #253 の A2A HTTP 契約を表す Zod スキーマと TypeScript 型を基盤とし、各機能の Hono routing、service、認証および TaskStore を段階的に実装する。未実装の `*.route.ts` は空の Hono router と TODO を維持し、実装済み route は service 呼び出しの制御と HTTP response の整形に責務を限定する。
+
+モデルは `packages/a2a-server/src/modules/` 配下へ機能単位で配置する。
+
+- `a2a/`: 全 Agent 共通の message、task、AgentCard、HTTP error
+- `pr-info/`: PR Info Collector 固有の入力と出力
+- `reviewers/`: React、Vue、Angular、Svelte、Security Reviewer 共通の入力と出力
+- `lead-engineer/`: Lead Engineer 固有の入力と出力
+- `orchestrator/`: Orchestrator 固有の入力と出力
+- `health/`: health check のレスポンス
+
+各機能は `request.model.ts` と `response.model.ts` に分割する。存在していた `reviiewers/` は誤記のため `reviewers/` に改める。
+
+### 13.2 命名と互換性
+
+URL パスは既存と同じ kebab-case を維持する。TypeScript API の JSON キーは TypeScript の慣習に合わせて camelCase とし、`pr_number`、`model_id`、`pr_info`、`review_report` はそれぞれ `prNumber`、`modelId`、`prInfo`、`reviewReport` とする。ドメイン出力は `@code-review-agent/agent-core` の既存 camelCase Zod スキーマを再利用し、同一モデルの二重定義を避ける。
+
+共通 A2A envelope の `kind`、`role`、`parts`、`inputSchema`、`outputSchema`、`pushNotifications`、`stateTransitionHistory` は既存契約とTypeScript慣習が一致するため維持する。
+
+### 13.3 検証境界
+
+`POST /tasks/send` の HTTP request model は、原則として Python 実装と同様に共通 A2A envelope を検証し、各 Agent 固有の data payload schema は AgentCard の skill schema とバックグラウンド処理境界で利用する。PR Info Collector は GitHub API 呼び出しに必要な `owner`、`repo`、`prNumber` を HTTP 境界でも検証し、不正な入力を `400` で拒否する。
+
+`POST /tasks/send` と `GET /tasks/{task_id}` は GitHub `/user` API で認証する。タスク作成時にはレスポンスへ露出しない内部所有者情報として GitHub の数値 user ID を保存し、取得時には同じ user ID の呼び出しだけを許可する。存在しないタスクと所有者が異なるタスクはいずれも `404` とし、タスクの存在を第三者へ開示しない。
+
+HTTP 契約全体を表すため、成功レスポンスに加えて 400、401、404、422、503 のエラー body を Zod で定義する。FastAPI の validation error location は文字列または整数の配列として表現する。
+
+### 13.4 Zod 規約
+
+`docs/typescript-models-migration-spec.md` の規約を継承する。
+
+- schema は `XxxSchema`、型は `z.infer<typeof XxxSchema>` とする
+- enum は object 形式の `z.enum` とする
+- Python の nullable default は `.nullable().default(null)` とする
+- array/object default は `.default([])` / `.default({})` とする
+- A2A part は `kind` を discriminator とする `z.discriminatedUnion` で表現する
+- NodeNext import は `.js` 拡張子を使用する
+
+### 13.5 テスト
+
+Vitest で以下を検証する。
+
+- task status と message part の discriminated union
+- nullable/default を含む task、AgentCapability、AgentCard
+- send task request/response の JSON 往復
+- camelCase の各 Agent 固有 input と既存 agent-core output schema の再利用
+- health と 401/404/422/503 error response
+- 各 `*.route.ts` の実装段階に対応するルーティング契約
+
+### 13.6 Health service と route の責務
+
+health モジュールは、`HealthResponseSchema` で検証済みの `{ status: "ok" }` を返す service と、service 呼び出しおよび HTTP response の整形のみを担う route に分離する。route は依存注入可能な service を受け取り、`GET /` に対して service の返却値を status 200 で返す。
+
+テストは service が既存 response model に適合すること、および route が service を呼び出して status 200 と同一 body を返すことを個別に検証する。ルートアプリケーションへの `/health` マウントは別スライスで扱う。

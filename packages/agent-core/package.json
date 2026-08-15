@@ -3,12 +3,46 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit false"
+  },
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./agents/pr-info-collector.js": {
+      "types": "./src/agents/pr-info-collector.ts",
+      "development": "./src/agents/pr-info-collector.ts",
+      "default": "./dist/agents/pr-info-collector.js"
+    },
+    "./agents/lead-engineer.js": {
+      "types": "./src/agents/lead-engineer.ts",
+      "development": "./src/agents/lead-engineer.ts",
+      "default": "./dist/agents/lead-engineer.js"
+    },
+    "./agents/review-orchestrator.js": {
+      "types": "./src/agents/review-orchestrator.ts",
+      "development": "./src/agents/review-orchestrator.ts",
+      "default": "./dist/agents/review-orchestrator.js"
+    },
+    "./agents/base-reviewer.js": {
+      "types": "./src/agents/base-reviewer.ts",
+      "development": "./src/agents/base-reviewer.ts",
+      "default": "./dist/agents/base-reviewer.js"
+    },
+    "./agents/reviewers/*.js": {
+      "types": "./src/agents/reviewers/*.ts",
+      "development": "./src/agents/reviewers/*.ts",
+      "default": "./dist/agents/reviewers/*.js"
+    }
+  },
   "dependencies": {
     "@strands-agents/sdk": "^1.12.0",
     "ai-sdk-ollama": "^3.8.8",
-    "yaml": "^2.9.0",
-    "zod": "^4.1.12"
+    "yaml": "^2.9.0"
   }
 }

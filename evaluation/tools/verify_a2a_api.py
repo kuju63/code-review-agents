@@ -62,12 +62,10 @@ def _require_env(key: str) -> str:
 def _send_task(base_url: str, agent: str, github_token: str) -> str:
     import urllib.request
 
-    # Both verified agents (pr-info-collector, orchestrator) take the same
-    # owner/repo/pr_number payload, so no per-agent branching is needed.
     payload_data = {
         "owner": _OWNER,
         "repo": _REPO,
-        "pr_number": _PR_NUMBER,
+        "prNumber": _PR_NUMBER,
     }
 
     payload = json.dumps(

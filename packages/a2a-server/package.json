@@ -1,0 +1,19 @@
+{
+  "name": "a2a-server",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "pnpm --filter @code-review-agent/agent-core run build && tsc --noEmit false",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@code-review-agent/agent-core": "workspace:^",
+    "@hono/node-server": "^2.1.0",
+    "@hono/zod-validator": "^0.9.0",
+    "hono": "^4.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.0"
+  }
+}
