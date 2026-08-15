@@ -1282,3 +1282,27 @@ Vitest で以下を検証する。
 health モジュールは、`HealthResponseSchema` で検証済みの `{ status: "ok" }` を返す service と、service 呼び出しおよび HTTP response の整形のみを担う route に分離する。route は依存注入可能な service を受け取り、`GET /` に対して service の返却値を status 200 で返す。
 
 テストは service が既存 response model に適合すること、および route が service を呼び出して status 200 と同一 body を返すことを個別に検証する。ルートアプリケーションへの `/health` マウントは別スライスで扱う。
+
+### 13.7 環境変数駆動の Provider 設定（Issue #297）
+
+`index.ts` が各 `create*Route()` をオプションなしで呼び出していたため、`providerType` / `llmBaseUrl` / `maxTokens` / `frequencyPenalty` を外部から注入する経路が存在せず、各 service の `DEFAULT_*_SETTINGS`（`modelId: "gpt-4o"` のみ）に固定されていた。Python版 `src/code_review_agent/api/config.py` の `Settings`（`CODE_REVIEW_` プレフィックス付き環境変数）と同一の切り替えを可能にするため、`packages/a2a-server/src/config.ts` に環境変数読み込みを追加する。
+
+**読み込む環境変数と対応（Python版 `Settings` フィールドとの対応）**:
+
+| 環境変数 | 型 | 既定値 | Python版フィールド |
+|---|---|---|---|
+| `CODE_REVIEW_PROVIDER_TYPE` | `"openai" \| "ollama"` | `"openai"` | `provider_type` |
+| `CODE_REVIEW_LLM_BASE_URL` | `string \| undefined` | `undefined` | `llm_base_url` |
+| `CODE_REVIEW_MODEL_ID` | `string` | `"gpt-4o"` | `model_id` |
+| `CODE_REVIEW_MAX_TOKENS` | `number \| undefined` | `undefined` | `max_tokens` |
+| `CODE_REVIEW_FREQUENCY_PENALTY` | `number \| undefined` | `undefined` | `frequency_penalty` |
+
+`CODE_REVIEW_PROVIDER_TYPE` に `"openai"`/`"ollama"` 以外の値が渡された場合、`CODE_REVIEW_MAX_TOKENS`/`CODE_REVIEW_FREQUENCY_PENALTY` が数値へパースできない場合は、Python版の pydantic バリデーションと同様に起動時（`loadServerSettingsFromEnv` 呼び出し時）に例外を送出しフェイルファストする。空文字列は未設定として扱う（`undefined` にフォールバック）。
+
+**適用範囲**: `index.ts` が `loadServerSettingsFromEnv()` を1回呼び出し、その結果を `settings` として `createOrchestratorRoute` / `createLeadEngineerRoute` / 各 `create*ReviewerRoute` に渡す。`createPrInfoRoute` は Python版の `PRInfoCollector` 設定と同様 `maxTokens`/`frequencyPenalty` を持たないため、`providerType`/`llmBaseUrl`/`modelId` のみを渡す（渡すオブジェクトの型は各モジュールの設定型に対して構造的に広いスーパーセットであり、余剰フィールドは無視される）。
+
+**Non-goals**（この変更のスコープ外。個別に Issue 化する）:
+
+- Issue #296（未処理 `error` イベントによるプロセスクラッシュ）の修正
+- `max_agent_turns` / `reviewer_timeout_seconds` / `patch_total_char_limit` / `patch_max_files` / `mcp_startup_retry_*` / `agent_base_url` 系の環境変数化（既存のハードコード値を維持する）
+- `.env` ファイル自体の読み込み（dotenv 等）の追加。プロセス起動時の `process.env` のみを対象とし、`.env` の読み込みは呼び出し元（起動スクリプト等）の責務とする
