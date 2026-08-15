@@ -554,6 +554,8 @@ async def _run_full_workflow(task_id: str, data: dict, store: TaskStore) -> None
         await store.set_failed(task_id, sanitize_error(exc))  # § 12.4 参照
 ```
 
+TypeScript移行版では、§4.1 と同じく HTTP route（`orchestrator.route.ts`）は validation・middleware適用・service結果のHTTPレスポンス整形だけを担当し、AgentCard生成・task生成/更新・3段パイプラインの背景実行（PRInfoCollector → ReviewOrchestrator → LeadEngineerAgent）・poll判定は `orchestrator.service.ts` へ切り出す。3段が共有する `ReviewerConfig` は service が1つだけ生成し、`ReviewOrchestrator` と `LeadEngineerAgent` の双方に同一インスタンスを渡す（`PRInfoCollector` には MCP 起動リトライ等の該当設定のみを引き渡す）。エージェント3クラスはテスト時に差し替えられるよう service のオプションとして注入可能にする。
+
 ---
 
 ## 5. FastAPI アプリケーション構成

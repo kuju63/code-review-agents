@@ -1,29 +1,44 @@
-import { Hono } from "hono";
-import { logger } from "hono/logger";
+import { zValidator } from "@hono/zod-validator";
+import { Hono, type MiddlewareHandler } from "hono";
+import { createGithubAuthMiddleware, type GithubAuthEnv } from "../a2a/auth.middleware.js";
+import { A2ASendTaskRequestSchema } from "../a2a/request.model.js";
+import { createOrchestratorService, type OrchestratorService } from "./orchestrator.service.js";
+import { OrchestratorGetTaskRequestSchema } from "./request.model.js";
 
-/**
- * Create routes for orchestrator
- */
-export const createOrchestratorRoute = (): Hono => {
-  const app = new Hono();
+type CreateOrchestratorRouteOptions = {
+  service?: OrchestratorService;
+  authMiddleware?: MiddlewareHandler<GithubAuthEnv>;
+};
 
-  // AgentCard
-  app.get("/.well-known/agent.json", logger(), () => {
-    // TODO(#253): Implement AgentCard generation, task submission, and task polling routes.
-    throw Error("Not Implemented");
-  });
+export const createOrchestratorRoute = ({
+  service = createOrchestratorService(),
+  authMiddleware = createGithubAuthMiddleware(),
+}: CreateOrchestratorRouteOptions = {}): Hono<GithubAuthEnv> => {
+  const app = new Hono<GithubAuthEnv>();
 
-  // Register Task
-  app.post("/tasks/send", logger(), () => {
-    //     TODO: Implement task registration
-    throw Error("Not Implemented");
-  });
+  app.get("/.well-known/agent.json", (c) => c.json(service.getAgentCard(), 200));
 
-  // Get task status
-  app.get("/tasks/:taskId", logger(), () => {
-    //     TODO: Implement to get task status
-    throw Error("Not Implemented");
-  });
+  app.post(
+    "/tasks/send",
+    authMiddleware,
+    zValidator("json", A2ASendTaskRequestSchema),
+    async (c) => {
+      const response = await service.sendTask(c.req.valid("json"), c.get("githubToken"));
+      return c.json(response, 202);
+    },
+  );
+
+  app.get(
+    "/tasks/:taskId",
+    zValidator("param", OrchestratorGetTaskRequestSchema.shape.params),
+    async (c) => {
+      const task = await service.getTask(c.req.valid("param").taskId);
+      if (!task) {
+        return c.json({ detail: "Task not found" }, 404);
+      }
+      return c.json(task, 200);
+    },
+  );
 
   return app;
 };

@@ -24,6 +24,16 @@
       "development": "./src/agents/lead-engineer.ts",
       "default": "./dist/agents/lead-engineer.js"
     },
+    "./agents/review-orchestrator.js": {
+      "types": "./src/agents/review-orchestrator.ts",
+      "development": "./src/agents/review-orchestrator.ts",
+      "default": "./dist/agents/review-orchestrator.js"
+    },
+    "./agents/base-reviewer.js": {
+      "types": "./src/agents/base-reviewer.ts",
+      "development": "./src/agents/base-reviewer.ts",
+      "default": "./dist/agents/base-reviewer.js"
+    },
     "./agents/reviewers/*.js": {
       "types": "./src/agents/reviewers/*.ts",
       "development": "./src/agents/reviewers/*.ts",

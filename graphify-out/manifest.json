@@ -750,8 +750,8 @@
     "semantic_hash": ""
   },
   "docs/a2a-api-design.md": {
-    "mtime": 1786753164.239423,
-    "ast_hash": "d22df91b01275b33ffcaa4ce0a71d806",
+    "mtime": 1786755666.4074292,
+    "ast_hash": "7d2f2590d47f066cdb1ca9c3f08aef48",
     "semantic_hash": ""
   },
   "docs/adr/0001-large-diff-review-scope-policy.md": {
@@ -2095,8 +2095,8 @@
     "semantic_hash": ""
   },
   "packages/agent-core/package.json": {
-    "mtime": 1786754984.3732274,
-    "ast_hash": "553ab6b0f0055373e3cbbd54dae67565",
+    "mtime": 1786755752.4923098,
+    "ast_hash": "4abe03991f669a90363885bfef5b4ba5",
     "semantic_hash": ""
   },
   "packages/agent-core/src/agents/base-reviewer.review.test.ts": {
@@ -2410,8 +2410,8 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/src/index.ts": {
-    "mtime": 1786754992.0443156,
-    "ast_hash": "405eed2b71cc778c274f691ff4145e3c",
+    "mtime": 1786755769.591961,
+    "ast_hash": "4cafcad4dac2e85b90ae153776ba3984",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/a2a/index.ts": {
@@ -2505,8 +2505,8 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/orchestrator/index.ts": {
-    "mtime": 1786419906.8651643,
-    "ast_hash": "01e6039ffe97e856b614f3ba56da2867",
+    "mtime": 1786755821.9345515,
+    "ast_hash": "45c91c89eebb9bac9ded06bd8225f02f",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/orchestrator/models.test.ts": {
@@ -2515,13 +2515,13 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/orchestrator/orchestrator.route.test.ts": {
-    "mtime": 1786753324.38469,
-    "ast_hash": "e96fd48887b5b0fd988ddde2a0203b4f",
+    "mtime": 1786755836.9462435,
+    "ast_hash": "16e98921aa90251d756b3bf23e3d954d",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/orchestrator/orchestrator.route.ts": {
-    "mtime": 1786753334.947708,
-    "ast_hash": "816a873ff5e49fdadf878e9911ec38f6",
+    "mtime": 1786755738.8952708,
+    "ast_hash": "a17f6af859f39da0c01a54433ac07bf6",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/orchestrator/request.model.ts": {
@@ -2692,6 +2692,16 @@
   "packages/a2a-server/src/modules/lead-engineer/lead-engineer.service.ts": {
     "mtime": 1786755083.32346,
     "ast_hash": "bbc8e1966928ef33cd8ff8342de2ae0e",
+    "semantic_hash": ""
+  },
+  "packages/a2a-server/src/modules/orchestrator/orchestrator.service.test.ts": {
+    "mtime": 1786755870.1816256,
+    "ast_hash": "5298072a5fd83524ce96fb1db16c76c1",
+    "semantic_hash": ""
+  },
+  "packages/a2a-server/src/modules/orchestrator/orchestrator.service.ts": {
+    "mtime": 1786755836.9480188,
+    "ast_hash": "3811352b1ce973ef6cd094ad9c8eda0b",
     "semantic_hash": ""
   }
 }
