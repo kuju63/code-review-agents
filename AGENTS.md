@@ -160,7 +160,7 @@ The Mermaid diagram below is a visual summary. For implementation tasks, the Cod
 
     # when typescript file changed
     pnpm exec tsc --noEmit
-    pnpm exec biome check --write --no-errors-on-unmatched
+    pnpm exec biome check --no-errors-on-unmatched
     ```
 
 6. Gate decision after validation.
