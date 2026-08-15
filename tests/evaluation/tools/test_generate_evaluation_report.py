@@ -34,6 +34,61 @@ _gold_heading = generate_evaluation_report._gold_heading
 _seeded_heading = generate_evaluation_report._seeded_heading
 
 
+class TestScoreCli:
+    def test_invokes_typescript_workspace_cli(self, monkeypatch):
+        captured = {}
+
+        def fake_run(command, **kwargs):
+            captured["command"] = command
+            captured["kwargs"] = kwargs
+            return generate_evaluation_report.subprocess.CompletedProcess(
+                command, 0, stdout='{"gold": {}, "seeded": {}}'
+            )
+
+        monkeypatch.setattr(generate_evaluation_report.subprocess, "run", fake_run)
+
+        result = generate_evaluation_report._score(
+            "gold.jsonl", "seeded.jsonl", "pred.jsonl"
+        )
+
+        assert result == {"gold": {}, "seeded": {}}
+        assert captured["command"] == [
+            "pnpm",
+            "--filter",
+            "@code-review-agent/evaluation",
+            "run",
+            "score-evaluation",
+            "--gold",
+            "gold.jsonl",
+            "--seeded",
+            "seeded.jsonl",
+            "--pred",
+            "pred.jsonl",
+        ]
+        assert (
+            captured["kwargs"]["stdout"] is generate_evaluation_report.subprocess.PIPE
+        )
+        assert captured["kwargs"]["text"] is True
+
+    def test_raises_when_typescript_scorer_fails(self, monkeypatch):
+        monkeypatch.setattr(
+            generate_evaluation_report.subprocess,
+            "run",
+            lambda command, **kwargs: (
+                generate_evaluation_report.subprocess.CompletedProcess(
+                    command, 3, stdout=""
+                )
+            ),
+        )
+
+        with pytest.raises(
+            RuntimeError, match=r"score-evaluation failed \(exit code 3\)"
+        ):
+            generate_evaluation_report._score(
+                "gold.jsonl", "seeded.jsonl", "pred.jsonl"
+            )
+
+
 def make_scores(
     gold_items=None, seeded_items=None, gold_counts=None, seeded_counts=None
 ):

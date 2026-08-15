@@ -11,7 +11,7 @@ React / Vue / Angular / Svelte の評価対象 PR を、リポジトリ候補の
 
 ```text
 evaluation/input/repo_candidates.json
-    ↓ discover_candidate_prs.py
+    ↓ discover-candidate-prs
     │  repository検証 + PRフィルタ + LLM 3軸分類
     ↓
 evaluation/input/pr_targets_{react,vue,angular,svelte}.json
@@ -49,8 +49,8 @@ evaluation/data/gold_pr_set.jsonl
 4. frontend の production file に対する、本文が空でない inline review comment が
    1 件以上存在する。
 
-production file と inline comment の判定は `evaluation/tools/target_criteria.py` を
-`discover_candidate_prs.py` と `build_gold_set.py` が共有する。対象拡張子は
+production file と inline comment の判定は TypeScript evaluation package の共通criteriaを
+`discover-candidate-prs` が使い、`build_gold_set.py`も同じ判定契約を維持する。対象拡張子は
 `.js`, `.jsx`, `.ts`, `.tsx`, `.vue`, `.svelte`, `.css`, `.scss`, `.html`、
 特別対象は `package.json`/`angular.json`/`svelte.config.js`/`svelte.config.ts`/
 `vue.config.js`/`vue.config.ts`（`pr_info_collector.py` の `_TARGET_FILENAMES` と
@@ -124,7 +124,7 @@ repository ごとの処理完了時に逐次書き込むため、長時間実行
 全候補を再探索・再分類する実行例:
 
 ```bash
-uv run python evaluation/tools/discover_candidate_prs.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run discover-candidate-prs \
   --model-id "$SEEDED_GEN_MODEL_ID" \
   --llm-base-url "$SEEDED_GEN_LLM_BASE_URL"
 ```
@@ -132,7 +132,7 @@ uv run python evaluation/tools/discover_candidate_prs.py \
 既存ターゲットの3軸分類を保持し、共通criteriaだけをGitHub APIで再検証する場合:
 
 ```bash
-uv run python evaluation/tools/discover_candidate_prs.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run discover-candidate-prs \
   --revalidate-existing
 ```
 

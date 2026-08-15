@@ -196,7 +196,7 @@ uv run ruff format --check
 bash evaluation/tools/run_evaluation_pipeline.sh
 
 # Score (after generating agent predictions)
-python evaluation/tools/score_evaluation.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run score-evaluation \
  --gold evaluation/data/gold_pr_set.jsonl \
  --seeded evaluation/data/seeded_set.jsonl \
  --pred evaluation/data/agent_predictions.jsonl

@@ -22,7 +22,6 @@ import json
 import logging
 import os
 import subprocess
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -113,25 +112,27 @@ def _load_failed_ids(
 
 
 def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
-    """Run score_evaluation.py and return the parsed JSON result.
+    """Run the TypeScript scorer CLI and return the parsed JSON result.
 
-    Only stdout is piped (score_evaluation.py's machine-readable JSON
-    contract); stderr is left to inherit so score_evaluation.py's own log
-    records stream straight to this process's console instead of being
-    captured and discarded.
+    The scorer was migrated to TypeScript (Issue #254). Only stdout is
+    piped (the scorer's machine-readable JSON contract); stderr is left to
+    inherit so the scorer's own log records stream straight to this
+    process's console instead of being captured and discarded.
 
     Returns:
-        The parsed JSON object printed by ``score_evaluation.py`` on stdout.
+        The parsed JSON object printed by the scorer on stdout.
 
     Raises:
-        RuntimeError: If ``score_evaluation.py`` exits with a non-zero
-            status.
+        RuntimeError: If the scorer exits with a non-zero status.
     """
-    score_script = Path(__file__).parent / "score_evaluation.py"
+    repo_root = Path(__file__).resolve().parents[2]
     result = subprocess.run(
         [
-            sys.executable,
-            str(score_script),
+            "pnpm",
+            "--filter",
+            "@code-review-agent/evaluation",
+            "run",
+            "score-evaluation",
             "--gold",
             gold_path,
             "--seeded",
@@ -141,10 +142,11 @@ def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
         ],
         stdout=subprocess.PIPE,
         text=True,
+        cwd=repo_root,
     )
     if result.returncode != 0:
         raise RuntimeError(
-            f"score_evaluation.py failed (exit code {result.returncode}); "
+            f"score-evaluation failed (exit code {result.returncode}); "
             "see its stderr output above"
         )
     return json.loads(result.stdout)

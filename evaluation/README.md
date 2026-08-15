@@ -21,8 +21,8 @@ Main business domain:
 - Gold schema: `evaluation/schema/gold_pr_item.schema.json`
 - Seeded schema: `evaluation/schema/seeded_item.schema.json`
 - Gold builder: `evaluation/tools/build_gold_set.py`
-- Seeded builder: `evaluation/tools/build_seeded_set.py`
-- Scorer: `evaluation/tools/score_evaluation.py`
+- Seeded builder: `build-seeded-set` in `@code-review-agent/evaluation`
+- Scorer: `score-evaluation` in `@code-review-agent/evaluation`
 - Target selector: `evaluation/tools/select_stack_targets.py`
 - Pipeline runner: `evaluation/tools/run_evaluation_pipeline.sh`
 - Seeded PR targets & must_find metadata: `evaluation/input/seeded_pr_targets_{stack}.json`
@@ -104,7 +104,7 @@ uv run python evaluation/tools/select_stack_targets.py \
   --print-summary
 ```
 
-To refresh the source pools, run `discover_candidate_prs.py` as documented in
+To refresh the source pools, run the `discover-candidate-prs` workspace script as documented in
 [docs/goldset-per-stack-spec.md](../docs/goldset-per-stack-spec.md).
 
 ## 2) Build Gold set automatically
@@ -127,7 +127,7 @@ Expected output:
 
 ```bash
 export GITHUB_TOKEN=your_token
-uv run python evaluation/tools/build_seeded_set.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run build-seeded-set \
   --targets evaluation/input/seeded_pr_targets_react.json \
             evaluation/input/seeded_pr_targets_vue.json \
             evaluation/input/seeded_pr_targets_angular.json \
@@ -179,7 +179,7 @@ Use `evaluation/EVALUATION_PLAN.md` thresholds as release gates.
 Example scoring run:
 
 ```bash
-uv run python evaluation/tools/score_evaluation.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run score-evaluation \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --pred evaluation/data/agent_predictions.jsonl

@@ -37,6 +37,8 @@ downloads/
 eggs/
 .eggs/
 lib/
+!packages/evaluation/src/lib/
+!packages/evaluation/src/lib/**
 lib64/
 parts/
 sdist/

@@ -23,9 +23,6 @@
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-// GitHub repository paths are always POSIX-style regardless of the host OS
-// this process runs on, so path parsing here must not depend on it.
-import { basename, extname } from "node:path/posix";
 import { Agent, type JSONValue, type McpClient, type Model } from "@strands-agents/sdk";
 import type { FileChange, PRInfoResult } from "../models/pr-info.js";
 import { createGithubMcpClient, GITHUB_MCP_URL } from "../tools/github-mcp.js";
@@ -33,48 +30,20 @@ import type { ReviewerConfig } from "./base-reviewer.js";
 import { isInfraError } from "./exceptions.js";
 import { extractDirectDependenciesFromPackageJson } from "./manifest-detection.js";
 import { createModelProvider, ProviderType } from "./model-provider-factory.js";
+import { isDependencyFile, isTargetFile } from "./target-file.js";
+
+export {
+  isDependencyFile,
+  isTargetFile,
+  TARGET_EXTENSIONS,
+  TARGET_FILENAMES,
+} from "./target-file.js";
 
 const SUMMARY_SYSTEM_PROMPT = `\
 You are given the README of a software project. Summarise what the project is \
 and what it does in 2-4 concise sentences of plain prose. Base the summary only \
 on the provided README text; do not invent facts. Output the summary text only, \
 with no preamble, headings, or markdown.`;
-
-const TARGET_EXTENSIONS = new Set([
-  ".ts",
-  ".tsx",
-  ".js",
-  ".jsx",
-  ".css",
-  ".scss",
-  ".html",
-  ".svelte",
-  ".vue",
-]);
-const TARGET_FILENAMES = new Set([
-  "package.json",
-  "angular.json",
-  "svelte.config.js",
-  "svelte.config.ts",
-  "vue.config.js",
-  "vue.config.ts",
-]);
-const DEPENDENCY_FILENAMES = new Set([
-  "package.json",
-  "angular.json",
-  "svelte.config.js",
-  "svelte.config.ts",
-  "vue.config.js",
-  "vue.config.ts",
-  "package-lock.json",
-  "yarn.lock",
-  "pnpm-lock.yaml",
-  "pyproject.toml",
-  "requirements.txt",
-  "poetry.lock",
-  "Pipfile",
-  "Pipfile.lock",
-]);
 
 // Manifest content fetched for stack detection (Issue #230). yarn.lock is
 // deliberately excluded: its v1 format mixes direct and transitive
@@ -108,23 +77,6 @@ export interface PRInfoCollectorConfig extends ReviewerConfig {
    * `patch: null`. Defaults to `30`.
    */
   patchMaxFiles?: number;
-}
-
-/**
- * Return true if the file should be included in the review.
- *
- * Includes TypeScript/JavaScript, CSS/SCSS, HTML, Svelte, Vue, and
- * package.json-family files.
- */
-export function isTargetFile(filePath: string): boolean {
-  const ext = extname(filePath).toLowerCase();
-  const filename = basename(filePath);
-  return TARGET_EXTENSIONS.has(ext) || TARGET_FILENAMES.has(filename);
-}
-
-/** Return true if the file is a dependency manifest or lock file. */
-export function isDependencyFile(filePath: string): boolean {
-  return DEPENDENCY_FILENAMES.has(basename(filePath));
 }
 
 function isPlainRecord(value: unknown): value is Record<string, JSONValue> {

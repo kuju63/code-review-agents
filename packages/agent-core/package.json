@@ -14,6 +14,16 @@
       "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./agents/target-file.js": {
+      "types": "./src/agents/target-file.ts",
+      "development": "./src/agents/target-file.ts",
+      "default": "./dist/agents/target-file.js"
+    },
+    "./agents/model-provider-factory.js": {
+      "types": "./src/agents/model-provider-factory.ts",
+      "development": "./src/agents/model-provider-factory.ts",
+      "default": "./dist/agents/model-provider-factory.js"
+    },
     "./agents/pr-info-collector.js": {
       "types": "./src/agents/pr-info-collector.ts",
       "development": "./src/agents/pr-info-collector.ts",
