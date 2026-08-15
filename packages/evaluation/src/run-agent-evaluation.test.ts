@@ -317,6 +317,22 @@ describe("evaluateConcurrently", () => {
     expect(results.predictions.map((p) => p.id)).toEqual(["b"]);
     expect(results.failedIds).toEqual(["a"]);
   });
+
+  it("does not crash the whole run when an item's id is not a string", async () => {
+    // Malformed JSONL rows are read with a type assertion (readJsonl returns unknown[]),
+    // so a row missing/mistyping "id" reaches here as-is; the pre-fix logger calls
+    // (`item.id.slice(...)`) threw a TypeError outside the per-item try/catch, which
+    // rejected Promise.all and lost every already-computed prediction.
+    const items = [{ id: 123 as unknown as string }, { id: "b" }];
+    const results = await evaluateConcurrently(
+      items,
+      async (item) => ({ id: String(item.id), agent_findings: [], lead_decisions: [] }),
+      2,
+    );
+
+    expect(results.predictions.map((p) => p.id)).toEqual(["123", "b"]);
+    expect(results.failedIds).toEqual([]);
+  });
 });
 
 describe("writePredictionsAndSidecar", () => {
@@ -412,6 +428,11 @@ describe("main", () => {
     ["--timeout", "0"],
     ["--timeout", "-1"],
     ["--timeout", "abc"],
+    // Finite in seconds but overflows to Infinity once converted to ms (seconds * 1000),
+    // which AbortSignal.timeout() rejects with a RangeError.
+    ["--timeout", "1e308"],
+    // Finite and within double range, but past Node's ~24.8-day (2^31-1 ms) timer bound.
+    ["--timeout", "999999999999"],
   ])("returns 2 when %s %s is invalid", async (flag, value) => {
     const status = await main(
       ["node", "run-agent-evaluation", "--seeded", "x.jsonl", "--pred", "y.jsonl", flag, value],

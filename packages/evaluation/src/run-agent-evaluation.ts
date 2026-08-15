@@ -15,6 +15,10 @@ const DEFAULT_BASE_URL = "http://localhost:3000";
 const DEFAULT_CONCURRENCY = 2;
 const DEFAULT_POLL_INTERVAL_MS = 3000;
 const DEFAULT_TIMEOUT_MS = 1_800_000;
+// Node/browser timers store the delay in a 32-bit signed int; a larger value doesn't error but
+// silently fires almost immediately, and AbortSignal.timeout() throws RangeError outright for
+// Infinity. ~24.8 days.
+const MAX_TIMER_MS = 2_147_483_647;
 
 const sleepImpl = (milliseconds: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -220,13 +224,18 @@ export async function evaluateConcurrently<T extends { id: string }>(
       if (item === undefined) {
         return;
       }
-      logger.info(`[${item.id.slice(0, 60)}] ... started`);
+      // Items come from readJsonl()'s untyped rows, so `id` is not guaranteed to be a
+      // string; String(...) never throws, unlike a bare `.slice()` on a non-string value
+      // (which previously crashed the whole Promise.all and lost every prediction already
+      // computed by other workers).
+      const label = String(item.id).slice(0, 60);
+      logger.info(`[${label}] ... started`);
       try {
         results[index] = await evaluateFn(item);
-        logger.info(`[${item.id.slice(0, 60)}] ... done`);
+        logger.info(`[${label}] ... done`);
       } catch (error) {
         failed[index] = true;
-        logger.warn(`[${item.id.slice(0, 60)}] ... failed: ${String(error)}`);
+        logger.warn(`[${label}] ... failed: ${String(error)}`);
       }
     }
   }
@@ -335,6 +344,16 @@ export async function main(
   }
   const pollIntervalMs = pollIntervalSeconds * 1000;
   const timeoutMs = timeoutSeconds * 1000;
+  // A --timeout that's finite in seconds can still overflow to Infinity once converted to ms
+  // (e.g. 1e308), which AbortSignal.timeout() rejects with a RangeError; and a merely huge
+  // finite ms value exceeds Node's ~24.8-day (2^31-1 ms) timer bound. Re-validate post-conversion
+  // rather than trusting the pre-conversion seconds check alone.
+  if (!Number.isFinite(timeoutMs) || timeoutMs > MAX_TIMER_MS) {
+    logger.error(
+      `--timeout converts to ${timeoutMs}ms, which exceeds the timer bound (${MAX_TIMER_MS}ms)`,
+    );
+    return 2;
+  }
 
   const items: SeededOrGoldItem[] = [];
   if (options.gold) {
