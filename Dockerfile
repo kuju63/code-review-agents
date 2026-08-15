@@ -91,7 +91,7 @@ RUN pnpm run lint && pnpm run typecheck
 # registryへのpushはEpic完了(#255)までPython版(`runtime`)に固定する
 # (docs/typescript-toolchain-spec.md §4.1、.github/workflows/build-image.yml参照)。
 ###############################################################################
-FROM registry.access.redhat.com/hi/nodejs:26@sha256:b9ada2fd160a7b32d582abef29b46f6bb0880a7d18f734f1b77ab56ed1f871f4 AS node-runtime
+FROM registry.access.redhat.com/hi/nodejs:26@sha256:410701fb1ee01c897134734259770f94529921c9ef4a26af43d9f37bf52b0c76 AS node-runtime
 
 WORKDIR /app
 
