@@ -750,8 +750,8 @@
     "semantic_hash": ""
   },
   "docs/a2a-api-design.md": {
-    "mtime": 1786755666.4074292,
-    "ast_hash": "7d2f2590d47f066cdb1ca9c3f08aef48",
+    "mtime": 1786764413.0271788,
+    "ast_hash": "a0aa0ebc7318eb376439f36a5916e8f7",
     "semantic_hash": ""
   },
   "docs/adr/0001-large-diff-review-scope-policy.md": {
@@ -2440,18 +2440,18 @@
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/health/health.route.test.ts": {
-    "mtime": 1786418107.9971638,
-    "ast_hash": "654c176f389dd3c9e1f04beb5fcd5afd",
+    "mtime": 1786764365.3532655,
+    "ast_hash": "638d738fb7b783170e271c57981bbfbb",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/health/health.route.ts": {
-    "mtime": 1786418167.2563114,
-    "ast_hash": "4fea4109cf9af6808e893395fdf379e5",
+    "mtime": 1786764297.6305664,
+    "ast_hash": "dcd0c2e55097f9b32427b609bf114337",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/health/index.ts": {
-    "mtime": 1786418259.377908,
-    "ast_hash": "864bd44938f1a7a453cdf93ad5f57c29",
+    "mtime": 1786764313.7339735,
+    "ast_hash": "ed4cd970ce285043403bfb9f5ba53a0a",
     "semantic_hash": ""
   },
   "packages/a2a-server/src/modules/health/request.model.ts": {
@@ -2702,6 +2702,16 @@
   "packages/a2a-server/src/modules/orchestrator/orchestrator.service.ts": {
     "mtime": 1786755836.9480188,
     "ast_hash": "3811352b1ce973ef6cd094ad9c8eda0b",
+    "semantic_hash": ""
+  },
+  "packages/a2a-server/src/modules/health/health.service.test.ts": {
+    "mtime": 1786764365.3535433,
+    "ast_hash": "419953d5b113721a7b810cd934d598cf",
+    "semantic_hash": ""
+  },
+  "packages/a2a-server/src/modules/health/health.service.ts": {
+    "mtime": 1786764283.7686462,
+    "ast_hash": "6ec4ebf8919cc02812169ebe0d4a067c",
     "semantic_hash": ""
   }
 }
