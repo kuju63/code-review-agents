@@ -54,8 +54,8 @@ export const DEFAULT_REVIEWER_SETTINGS: A2AReviewerSettings = {
 };
 
 export interface ReviewerTaskStore {
-  create(): Promise<A2ATask>;
-  get(taskId: string): Promise<A2ATask | null>;
+  create(ownerPrincipalId: string): Promise<A2ATask>;
+  get(taskId: string, ownerPrincipalId: string): Promise<A2ATask | null>;
   setWorking(taskId: string): Promise<void>;
   setCompleted(taskId: string, parts: A2APart[]): Promise<void>;
   setFailed(taskId: string, error: string): Promise<void>;
@@ -64,6 +64,8 @@ export interface ReviewerTaskStore {
 export class InMemoryReviewerTaskStore implements ReviewerTaskStore {
   readonly ttlSeconds: number;
   private readonly store = new Map<string, A2ATask>();
+  private readonly owners = new Map<string, string>();
+  private readonly deleteTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly idFactory: TaskIdFactory;
 
   constructor({
@@ -74,13 +76,18 @@ export class InMemoryReviewerTaskStore implements ReviewerTaskStore {
     this.idFactory = idFactory;
   }
 
-  async create(): Promise<A2ATask> {
+  async create(ownerPrincipalId: string): Promise<A2ATask> {
     const task = A2ATaskSchema.parse({ id: this.idFactory(), status: "submitted" });
     this.store.set(task.id, task);
+    this.owners.set(task.id, ownerPrincipalId);
+    this.scheduleDelete(task.id);
     return task;
   }
 
-  async get(taskId: string): Promise<A2ATask | null> {
+  async get(taskId: string, ownerPrincipalId: string): Promise<A2ATask | null> {
+    if (this.owners.get(taskId) !== ownerPrincipalId) {
+      return null;
+    }
     return this.store.get(taskId) ?? null;
   }
 
@@ -115,16 +122,28 @@ export class InMemoryReviewerTaskStore implements ReviewerTaskStore {
   }
 
   private scheduleDelete(taskId: string): void {
-    setTimeout(() => {
+    const existingTimer = this.deleteTimers.get(taskId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    const timer = setTimeout(() => {
       this.store.delete(taskId);
-    }, this.ttlSeconds * 1000).unref?.();
+      this.owners.delete(taskId);
+      this.deleteTimers.delete(taskId);
+    }, this.ttlSeconds * 1000);
+    timer.unref?.();
+    this.deleteTimers.set(taskId, timer);
   }
 }
 
 export interface ReviewerService {
   getAgentCard(): AgentCard;
-  sendTask(request: A2ASendTaskRequest, githubToken: string): Promise<A2ASendTaskResponse>;
-  getTask(taskId: string): Promise<A2ATask | null>;
+  sendTask(
+    request: A2ASendTaskRequest,
+    githubToken: string,
+    ownerPrincipalId: string,
+  ): Promise<A2ASendTaskResponse>;
+  getTask(taskId: string, ownerPrincipalId: string): Promise<A2ATask | null>;
   runPendingTasks(): Promise<void>;
 }
 
@@ -193,14 +212,22 @@ export function createReviewerService<T extends ReviewerClass>({
   const enqueue: ScheduleTask =
     scheduleTask ??
     ((task) => {
-      pendingTasks.push(task());
+      const pendingTask = task();
+      pendingTasks.push(pendingTask);
+      const removePendingTask = () => {
+        const index = pendingTasks.indexOf(pendingTask);
+        if (index >= 0) {
+          pendingTasks.splice(index, 1);
+        }
+      };
+      void pendingTask.then(removePendingTask, removePendingTask);
     });
 
   const runTask = async (taskId: string, data: Record<string, unknown>, githubToken: string) => {
     await store.setWorking(taskId);
     try {
       const input = ReviewerSkillInputSchema.parse(data);
-      const modelId = typeof data.modelId === "string" ? data.modelId : effectiveSettings.modelId;
+      const modelId = input.modelId ?? effectiveSettings.modelId;
       const reviewer = new reviewerClass({
         githubToken,
         modelId,
@@ -243,12 +270,12 @@ export function createReviewerService<T extends ReviewerClass>({
         },
       ],
     }),
-    sendTask: async (request, githubToken) => {
-      const task = await store.create();
+    sendTask: async (request, githubToken, ownerPrincipalId) => {
+      const task = await store.create(ownerPrincipalId);
       enqueue(() => runTask(task.id, extractData(request.message), githubToken));
       return { task };
     },
-    getTask: (taskId) => store.get(taskId),
+    getTask: (taskId, ownerPrincipalId) => store.get(taskId, ownerPrincipalId),
     runPendingTasks: async () => {
       await Promise.all(pendingTasks.splice(0));
     },

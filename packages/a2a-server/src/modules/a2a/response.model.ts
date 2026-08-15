@@ -64,6 +64,9 @@ export type HttpErrorResponse = z.infer<typeof HttpErrorResponseSchema>;
 export const UnauthorizedResponseSchema = HttpErrorResponseSchema;
 export type UnauthorizedResponse = z.infer<typeof UnauthorizedResponseSchema>;
 
+export const BadRequestResponseSchema = HttpErrorResponseSchema;
+export type BadRequestResponse = z.infer<typeof BadRequestResponseSchema>;
+
 export const NotFoundResponseSchema = HttpErrorResponseSchema;
 export type NotFoundResponse = z.infer<typeof NotFoundResponseSchema>;
 
@@ -92,6 +95,7 @@ export type AgentCardHttpResponse = z.infer<typeof AgentCardHttpResponseSchema>;
 
 export const SendTaskHttpResponseSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal(202), body: A2ASendTaskResponseSchema }),
+  z.object({ status: z.literal(400), body: BadRequestResponseSchema }),
   z.object({ status: z.literal(401), body: UnauthorizedResponseSchema }),
   z.object({ status: z.literal(422), body: HttpValidationErrorResponseSchema }),
   z.object({ status: z.literal(503), body: ServiceUnavailableResponseSchema }),
@@ -100,6 +104,8 @@ export type SendTaskHttpResponse = z.infer<typeof SendTaskHttpResponseSchema>;
 
 export const GetTaskHttpResponseSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal(200), body: A2ATaskSchema }),
+  z.object({ status: z.literal(401), body: UnauthorizedResponseSchema }),
   z.object({ status: z.literal(404), body: NotFoundResponseSchema }),
+  z.object({ status: z.literal(503), body: ServiceUnavailableResponseSchema }),
 ]);
 export type GetTaskHttpResponse = z.infer<typeof GetTaskHttpResponseSchema>;

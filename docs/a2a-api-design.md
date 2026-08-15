@@ -22,7 +22,9 @@ Google A2A（Agent-to-Agent）プロトコルを採用します。
 |---|---|---|
 | `/{agent}/.well-known/agent.json` | GET | AgentCard — Agent の能力・スキーマ・URL を公開 |
 | `/{agent}/tasks/send` | POST | タスク投入（202 Accepted + task_id を即時返却） |
-| `/{agent}/tasks/{task_id}` | GET | タスク状態確認（ポーリング） |
+| `/{agent}/tasks/{task_id}` | GET | 認証済み作成者によるタスク状態確認（ポーリング） |
+
+タスク投入と取得には同じ GitHub アカウントの `Authorization: Bearer <token>` が必要です。取得時はタスク作成時に保存した GitHub user ID と照合し、別アカウントのタスクは `404` として扱います。
 
 **タスク状態遷移**: `submitted → working → completed / failed`
 
@@ -634,8 +636,8 @@ from ..config import Settings
 
 async def verify_github_token(
     authorization: str = Header(..., description="Bearer <github_oauth_token>"),
-) -> str:
-    """GitHub OAuth トークンを /user API で検証し、検証済みトークンを返す。"""
+) -> tuple[str, str]:
+    """GitHub OAuth トークンを /user API で検証し、トークンと user ID を返す。"""
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authorization header must be 'Bearer <token>'")
     token = authorization.removeprefix("Bearer ")
@@ -645,9 +647,11 @@ async def verify_github_token(
             headers={"Authorization": f"Bearer {token}"},
             timeout=10.0,
         )
-    if resp.status_code != 200:
+    if resp.status_code == 401:
         raise HTTPException(status_code=401, detail="Invalid GitHub token")
-    return token
+    if resp.status_code != 200:
+        raise HTTPException(status_code=503, detail="GitHub authentication endpoint is temporarily unavailable")
+    return token, str(resp.json()["id"])
 
 
 def create_router(settings: Settings, store: TaskStore) -> APIRouter:
@@ -663,17 +667,22 @@ def create_router(settings: Settings, store: TaskStore) -> APIRouter:
     async def send_task(
         req: A2ASendTaskRequest,
         background_tasks: BackgroundTasks,
-        github_token: str = Depends(verify_github_token),  # 認証 + トークン注入
+        auth: tuple[str, str] = Depends(verify_github_token),
     ) -> A2ASendTaskResponse:
-        task = await store.create()
+        github_token, owner_principal_id = auth
+        task = await store.create(owner_principal_id)
         data = _extract_data(req.message)
         data["github_token"] = github_token  # ヘッダーから取得したトークンを注入
         background_tasks.add_task(_run, task.id, data, store)
         return A2ASendTaskResponse(task=task)
 
     @router.get("/tasks/{task_id}", response_model=A2ATask)
-    async def get_task(task_id: str) -> A2ATask:
-        task = await store.get(task_id)
+    async def get_task(
+        task_id: str,
+        auth: tuple[str, str] = Depends(verify_github_token),
+    ) -> A2ATask:
+        _, owner_principal_id = auth
+        task = await store.get(task_id, owner_principal_id)
         if task is None:
             raise HTTPException(status_code=404, detail="Task not found")
         return task
@@ -993,14 +1002,18 @@ echo "Task ID: $TASK_ID"
 
 # ポーリングで状態確認（completed になるまで待つ）
 while true; do
-  STATUS=$(curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" | jq -r '.status')
+  STATUS=$(curl -s \
+    -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+    "http://localhost:8000/orchestrator/tasks/$TASK_ID" | jq -r '.status')
   echo "Status: $STATUS"
   [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ] && break
   sleep 10
 done
 
 # 結果取得（Markdown テキスト）
-curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
+curl -s \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
   | jq -r '.message.parts[] | select(.kind == "text") | .text'
 ```
 
@@ -1057,7 +1070,9 @@ echo "Task ID: $TASK_ID"
 
 # ポーリングで状態確認（completed になるまで待つ。Ollama 実推論のため数分かかりうる）
 while true; do
-  STATUS=$(curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" | jq -r '.status')
+  STATUS=$(curl -s \
+    -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+    "http://localhost:8000/orchestrator/tasks/$TASK_ID" | jq -r '.status')
   echo "Status: $STATUS"
   [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ] && break
   sleep 10
@@ -1065,7 +1080,9 @@ done
 
 # status が completed であること、Ollama 経由の実推論結果（レビュー本文）が
 # 返っていることの両方を確認する
-curl -s "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
+curl -s \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  "http://localhost:8000/orchestrator/tasks/$TASK_ID" \
   | jq -r '.message.parts[] | select(.kind == "text") | .text'
 ```
 
@@ -1232,9 +1249,11 @@ URL パスは既存と同じ kebab-case を維持する。TypeScript API の JSO
 
 ### 13.3 検証境界
 
-`POST /tasks/send` の HTTP request model は Python 実装と同様に共通 A2A envelope のみを検証する。各 Agent 固有の data payload schema は AgentCard の skill schema とバックグラウンド処理境界で利用する。したがって、固有 data が欠落していても envelope が妥当なら送信時点では受理できる設計を維持する。
+`POST /tasks/send` の HTTP request model は、原則として Python 実装と同様に共通 A2A envelope を検証し、各 Agent 固有の data payload schema は AgentCard の skill schema とバックグラウンド処理境界で利用する。PR Info Collector は GitHub API 呼び出しに必要な `owner`、`repo`、`prNumber` を HTTP 境界でも検証し、不正な入力を `400` で拒否する。
 
-HTTP 契約全体を表すため、成功レスポンスに加えて 401、404、422、503 のエラー body を Zod で定義する。FastAPI の validation error location は文字列または整数の配列として表現する。
+`POST /tasks/send` と `GET /tasks/{task_id}` は GitHub `/user` API で認証する。タスク作成時にはレスポンスへ露出しない内部所有者情報として GitHub の数値 user ID を保存し、取得時には同じ user ID の呼び出しだけを許可する。存在しないタスクと所有者が異なるタスクはいずれも `404` とし、タスクの存在を第三者へ開示しない。
+
+HTTP 契約全体を表すため、成功レスポンスに加えて 400、401、404、422、503 のエラー body を Zod で定義する。FastAPI の validation error location は文字列または整数の配列として表現する。
 
 ### 13.4 Zod 規約
 

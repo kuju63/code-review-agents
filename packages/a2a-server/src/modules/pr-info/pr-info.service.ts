@@ -2,6 +2,7 @@ import { PRInfoCollector } from "@code-review-agent/agent-core/agents/pr-info-co
 import type { A2AMessage, A2APart, A2ASendTaskRequest } from "../a2a/request.model.js";
 import type { A2ASendTaskResponse, A2ATask, AgentCard } from "../a2a/response.model.js";
 import { A2ATaskSchema } from "../a2a/response.model.js";
+import { CollectPrInfoInputSchema } from "./request.model.js";
 
 export const TASK_TTL_SECONDS = 1800;
 
@@ -25,8 +26,8 @@ export const DEFAULT_A2A_SERVER_SETTINGS: A2AServerSettings = {
 };
 
 export interface TaskStore {
-  create(): Promise<A2ATask>;
-  get(taskId: string): Promise<A2ATask | null>;
+  create(ownerPrincipalId: string): Promise<A2ATask>;
+  get(taskId: string, ownerPrincipalId: string): Promise<A2ATask | null>;
   setWorking(taskId: string): Promise<void>;
   setCompleted(taskId: string, parts: A2APart[]): Promise<void>;
   setFailed(taskId: string, error: string): Promise<void>;
@@ -35,6 +36,7 @@ export interface TaskStore {
 export class InMemoryTaskStore implements TaskStore {
   readonly ttlSeconds: number;
   private readonly store = new Map<string, A2ATask>();
+  private readonly owners = new Map<string, string>();
   private readonly idFactory: TaskIdFactory;
 
   constructor({
@@ -45,13 +47,17 @@ export class InMemoryTaskStore implements TaskStore {
     this.idFactory = idFactory;
   }
 
-  async create(): Promise<A2ATask> {
+  async create(ownerPrincipalId: string): Promise<A2ATask> {
     const task = A2ATaskSchema.parse({ id: this.idFactory(), status: "submitted" });
     this.store.set(task.id, task);
+    this.owners.set(task.id, ownerPrincipalId);
     return task;
   }
 
-  async get(taskId: string): Promise<A2ATask | null> {
+  async get(taskId: string, ownerPrincipalId: string): Promise<A2ATask | null> {
+    if (this.owners.get(taskId) !== ownerPrincipalId) {
+      return null;
+    }
     return this.store.get(taskId) ?? null;
   }
 
@@ -88,14 +94,19 @@ export class InMemoryTaskStore implements TaskStore {
   private scheduleDelete(taskId: string): void {
     setTimeout(() => {
       this.store.delete(taskId);
+      this.owners.delete(taskId);
     }, this.ttlSeconds * 1000).unref?.();
   }
 }
 
 export interface PrInfoService {
   getAgentCard(): AgentCard;
-  sendTask(request: A2ASendTaskRequest, githubToken: string): Promise<A2ASendTaskResponse>;
-  getTask(taskId: string): Promise<A2ATask | null>;
+  sendTask(
+    request: A2ASendTaskRequest,
+    githubToken: string,
+    ownerPrincipalId: string,
+  ): Promise<A2ASendTaskResponse>;
+  getTask(taskId: string, ownerPrincipalId: string): Promise<A2ATask | null>;
   runPendingTasks(): Promise<void>;
 }
 
@@ -107,7 +118,7 @@ type PrInfoServiceOptions = {
 
 export function sanitizeError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
-  return message.replace(/(Bearer\s+|ghp_|github_pat_)[^\s"']+/giu, "[REDACTED]");
+  return message.replace(/(Bearer\s+|gh[oprsu]_|github_pat_)[^\s"']+/giu, "[REDACTED]");
 }
 
 export function extractData(message: A2AMessage): Record<string, unknown> {
@@ -135,9 +146,10 @@ export function createPrInfoService({
   const runTask = async (taskId: string, data: Record<string, unknown>, githubToken: string) => {
     await store.setWorking(taskId);
     try {
+      const input = CollectPrInfoInputSchema.parse(data);
       const collector = new PRInfoCollector({
         githubToken,
-        modelId: typeof data.modelId === "string" ? data.modelId : effectiveSettings.modelId,
+        modelId: input.modelId ?? effectiveSettings.modelId,
         llmBaseUrl: effectiveSettings.llmBaseUrl,
         providerType: effectiveSettings.providerType,
         maxAgentTurns: effectiveSettings.maxAgentTurns,
@@ -146,11 +158,7 @@ export function createPrInfoService({
         mcpStartupRetryAttempts: effectiveSettings.mcpStartupRetryAttempts,
         mcpStartupRetryBackoffSeconds: effectiveSettings.mcpStartupRetryBackoffSeconds,
       });
-      const result = await collector.collect(
-        String(data.owner),
-        String(data.repo),
-        Number(data.prNumber),
-      );
+      const result = await collector.collect(input.owner, input.repo, input.prNumber);
       await store.setCompleted(taskId, [{ kind: "data", data: result as Record<string, unknown> }]);
     } catch (error) {
       await store.setFailed(taskId, sanitizeError(error));
@@ -191,12 +199,12 @@ export function createPrInfoService({
         },
       ],
     }),
-    sendTask: async (request, githubToken) => {
-      const task = await store.create();
+    sendTask: async (request, githubToken, ownerPrincipalId) => {
+      const task = await store.create(ownerPrincipalId);
       enqueue(() => runTask(task.id, extractData(request.message), githubToken));
       return { task };
     },
-    getTask: (taskId) => store.get(taskId),
+    getTask: (taskId, ownerPrincipalId) => store.get(taskId, ownerPrincipalId),
     runPendingTasks: async () => {
       await Promise.all(pendingTasks.splice(0));
     },

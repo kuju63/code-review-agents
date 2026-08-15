@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const ReviewerSkillInputSchema = z.object({
   prInfo: PRInfoResultSchema,
-  modelId: z.string().default("gpt-4o"),
+  modelId: z.string().optional(),
 });
 export type ReviewerSkillInput = z.infer<typeof ReviewerSkillInputSchema>;
 

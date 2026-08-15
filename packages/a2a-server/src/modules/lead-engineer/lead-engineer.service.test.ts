@@ -7,6 +7,7 @@ import {
   type LeadEngineerAgentClass,
   sanitizeError,
 } from "./lead-engineer.service.js";
+import { LeadEngineerSkillInputSchema } from "./request.model.js";
 
 const reviewReport: ReviewReport = {
   results: [],
@@ -53,7 +54,17 @@ describe("Lead Engineer service helpers", () => {
     expect(extractData({ role: "user", parts: [{ kind: "text", text: "hello" }] })).toEqual({});
   });
 
-  it("redacts credential-like strings in errors", () => {
+  it.each(["gho_secret", "ghu_secret", "ghs_secret", "ghr_secret"])(
+    "redacts standalone GitHub token %s",
+    (token) => {
+      const sanitized = sanitizeError(new Error(`request failed: ${token}`));
+
+      expect(sanitized).toContain("[REDACTED]");
+      expect(sanitized).not.toContain(token);
+    },
+  );
+
+  it("preserves existing credential redaction", () => {
     expect(sanitizeError(new Error("request failed: Bearer ghp_abc123xyz"))).toBe(
       "request failed: [REDACTED]",
     );
@@ -67,23 +78,31 @@ describe("InMemoryLeadEngineerTaskStore", () => {
   it("creates submitted tasks with unique ids", async () => {
     const store = new InMemoryLeadEngineerTaskStore();
 
-    const first = await store.create();
-    const second = await store.create();
+    const first = await store.create("owner-1");
+    const second = await store.create("owner-1");
 
     expect(first.status).toBe("submitted");
     expect(first.id).not.toBe("");
     expect(first.id).not.toBe(second.id);
   });
 
+  it("returns tasks only to their owner", async () => {
+    const store = new InMemoryLeadEngineerTaskStore();
+    const task = await store.create("owner-1");
+
+    await expect(store.get(task.id, "owner-1")).resolves.toEqual(task);
+    await expect(store.get(task.id, "owner-2")).resolves.toBeNull();
+  });
+
   it("updates known tasks and ignores unknown ids", async () => {
     const store = new InMemoryLeadEngineerTaskStore();
-    const task = await store.create();
+    const task = await store.create("owner-1");
 
     await store.setWorking(task.id);
-    expect((await store.get(task.id))?.status).toBe("working");
+    expect((await store.get(task.id, "owner-1"))?.status).toBe("working");
 
     await store.setCompleted(task.id, [{ kind: "data", data: { result: "ok" } }]);
-    const completed = await store.get(task.id);
+    const completed = await store.get(task.id, "owner-1");
     expect(completed?.status).toBe("completed");
     expect(completed?.message).toEqual({
       role: "agent",
@@ -91,7 +110,7 @@ describe("InMemoryLeadEngineerTaskStore", () => {
     });
 
     await store.setFailed("missing", "error");
-    expect(await store.get("missing")).toBeNull();
+    expect(await store.get("missing", "owner-1")).toBeNull();
   });
 });
 
@@ -123,13 +142,34 @@ describe("Lead Engineer service", () => {
       agentClass: createFakeAgentClass(result),
     });
 
-    const response = await service.sendTask(request, "ghp_testtoken");
+    const response = await service.sendTask(request, "ghp_testtoken", "owner-1");
     await service.runPendingTasks();
 
-    const task = await store.get(response.task.id);
+    const task = await store.get(response.task.id, "owner-1");
     expect(response.task.status).toBe("submitted");
     expect(task?.status).toBe("completed");
     expect(task?.message?.parts).toEqual([{ kind: "data", data: result }]);
+  });
+
+  it("does not retain settled default-scheduled tasks", async () => {
+    const store = new InMemoryLeadEngineerTaskStore();
+    const service = createLeadEngineerService({
+      store,
+      agentClass: createFakeAgentClass(result),
+    });
+
+    const first = await service.sendTask(request, "ghp_testtoken", "owner-1");
+    const second = await service.sendTask(request, "ghp_testtoken", "owner-1");
+    await vi.waitFor(async () => {
+      expect((await store.get(first.task.id, "owner-1"))?.status).toBe("completed");
+      expect((await store.get(second.task.id, "owner-1"))?.status).toBe("completed");
+    });
+    const promiseAll = vi.spyOn(Promise, "all");
+
+    await service.runPendingTasks();
+
+    expect(promiseAll).toHaveBeenCalledWith([]);
+    promiseAll.mockRestore();
   });
 
   it("passes runtime settings to the lead engineer config", async () => {
@@ -146,7 +186,7 @@ describe("Lead Engineer service", () => {
       },
     });
 
-    await service.sendTask(request, "ghp_testtoken");
+    await service.sendTask(request, "ghp_testtoken", "owner-1");
     await service.runPendingTasks();
 
     expect(onConstruct).toHaveBeenCalledWith(
@@ -159,6 +199,29 @@ describe("Lead Engineer service", () => {
         maxTokens: 4096,
         frequencyPenalty: 0.2,
       }),
+    );
+  });
+
+  it("uses the configured modelId for schema-normalized input without modelId", async () => {
+    const onConstruct = vi.fn();
+    const input = LeadEngineerSkillInputSchema.parse({ reviewReport });
+    const service = createLeadEngineerService({
+      agentClass: createFakeAgentClass(result, onConstruct),
+      settings: { modelId: "configured-model" },
+    });
+
+    await service.sendTask(
+      {
+        message: { role: "user", parts: [{ kind: "data", data: input }] },
+      },
+      "ghp_testtoken",
+      "owner-1",
+    );
+    await service.runPendingTasks();
+
+    expect(input).not.toHaveProperty("modelId");
+    expect(onConstruct).toHaveBeenCalledWith(
+      expect.objectContaining({ modelId: "configured-model" }),
     );
   });
 
@@ -177,6 +240,7 @@ describe("Lead Engineer service", () => {
         },
       },
       "ghp_testtoken",
+      "owner-1",
     );
     await service.runPendingTasks();
 
@@ -186,23 +250,30 @@ describe("Lead Engineer service", () => {
   it("returns null for unknown task ids", async () => {
     const service = createLeadEngineerService({ agentClass: createFakeAgentClass(result) });
 
-    await expect(service.getTask("nonexistent-id")).resolves.toBeNull();
+    await expect(service.getTask("nonexistent-id", "owner-1")).resolves.toBeNull();
   });
 
-  it("stores sanitized failures on the task", async () => {
-    const agentClass: LeadEngineerAgentClass = class FailingLeadEngineerAgent {
-      async evaluate(): Promise<LeadEngineerReport> {
-        throw new Error("request failed: Bearer ghp_secret");
-      }
-    };
-    const store = new InMemoryLeadEngineerTaskStore();
-    const service = createLeadEngineerService({ store, agentClass });
+  it.each(["gho_secret", "ghu_secret", "ghs_secret", "ghr_secret"])(
+    "removes %s from stored failures and logs",
+    async (token) => {
+      const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+      const agentClass: LeadEngineerAgentClass = class FailingLeadEngineerAgent {
+        async evaluate(): Promise<LeadEngineerReport> {
+          throw new Error(`request failed: ${token}`);
+        }
+      };
+      const store = new InMemoryLeadEngineerTaskStore();
+      const service = createLeadEngineerService({ store, agentClass });
 
-    const response = await service.sendTask(request, "ghp_testtoken");
-    await service.runPendingTasks();
+      const response = await service.sendTask(request, "ghp_testtoken", "owner-1");
+      await service.runPendingTasks();
 
-    const task = await store.get(response.task.id);
-    expect(task?.status).toBe("failed");
-    expect(task?.error).toBe("request failed: [REDACTED]");
-  });
+      const task = await store.get(response.task.id, "owner-1");
+      expect(task?.status).toBe("failed");
+      expect(task?.error).toBe("request failed: [REDACTED]");
+      expect(task?.error).not.toContain(token);
+      expect(warn).toHaveBeenCalledWith(expect.not.stringContaining(token));
+      warn.mockRestore();
+    },
+  );
 });

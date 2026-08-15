@@ -2,6 +2,7 @@ import type { MiddlewareHandler } from "hono";
 
 type GithubAuthVariables = {
   githubToken: string;
+  githubPrincipalId: string;
 };
 
 export type GithubAuthEnv = {
@@ -34,11 +35,27 @@ export function createGithubAuthMiddleware({
       return c.json({ detail: "GitHub authentication endpoint is temporarily unreachable" }, 503);
     }
 
-    if (response.status !== 200) {
+    if (response.status === 401) {
       return c.json({ detail: "Invalid GitHub token" }, 401);
     }
 
+    if (response.status !== 200) {
+      return c.json({ detail: "GitHub authentication endpoint is temporarily unavailable" }, 503);
+    }
+
+    let principalId: string;
+    try {
+      const user = (await response.json()) as { id?: unknown };
+      if (typeof user.id !== "number" || !Number.isSafeInteger(user.id) || user.id <= 0) {
+        throw new Error("missing user id");
+      }
+      principalId = String(user.id);
+    } catch {
+      return c.json({ detail: "GitHub authentication endpoint is temporarily unavailable" }, 503);
+    }
+
     c.set("githubToken", token);
+    c.set("githubPrincipalId", principalId);
     await next();
   };
 }

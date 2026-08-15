@@ -72,23 +72,31 @@ describe("InMemoryOrchestratorTaskStore", () => {
   it("creates submitted tasks with unique ids", async () => {
     const store = new InMemoryOrchestratorTaskStore();
 
-    const first = await store.create();
-    const second = await store.create();
+    const first = await store.create("owner-1");
+    const second = await store.create("owner-1");
 
     expect(first.status).toBe("submitted");
     expect(first.id).not.toBe("");
     expect(first.id).not.toBe(second.id);
   });
 
+  it("returns tasks only to their owner", async () => {
+    const store = new InMemoryOrchestratorTaskStore();
+    const task = await store.create("owner-1");
+
+    await expect(store.get(task.id, "owner-1")).resolves.toEqual(task);
+    await expect(store.get(task.id, "owner-2")).resolves.toBeNull();
+  });
+
   it("updates known tasks and ignores unknown ids", async () => {
     const store = new InMemoryOrchestratorTaskStore();
-    const task = await store.create();
+    const task = await store.create("owner-1");
 
     await store.setWorking(task.id);
-    expect((await store.get(task.id))?.status).toBe("working");
+    expect((await store.get(task.id, "owner-1"))?.status).toBe("working");
 
     await store.setCompleted(task.id, [{ kind: "data", data: { result: "ok" } }]);
-    const completed = await store.get(task.id);
+    const completed = await store.get(task.id, "owner-1");
     expect(completed?.status).toBe("completed");
     expect(completed?.message).toEqual({
       role: "agent",
@@ -96,7 +104,7 @@ describe("InMemoryOrchestratorTaskStore", () => {
     });
 
     await store.setFailed("missing", "error");
-    expect(await store.get("missing")).toBeNull();
+    expect(await store.get("missing", "owner-1")).toBeNull();
   });
 });
 
@@ -197,10 +205,10 @@ describe("Orchestrator service", () => {
       leadEngineerClass: fakes.leadEngineerClass,
     });
 
-    const response = await service.sendTask(request, "ghp_testtoken");
+    const response = await service.sendTask(request, "ghp_testtoken", "owner-1");
     await service.runPendingTasks();
 
-    const task = await store.get(response.task.id);
+    const task = await store.get(response.task.id, "owner-1");
     expect(response.task.status).toBe("submitted");
     expect(task?.status).toBe("completed");
     expect(task?.message?.parts).toEqual([{ kind: "data", data: leadReport }]);
@@ -228,7 +236,7 @@ describe("Orchestrator service", () => {
       },
     });
 
-    await service.sendTask(request, "ghp_testtoken");
+    await service.sendTask(request, "ghp_testtoken", "owner-1");
     await service.runPendingTasks();
 
     expect(fakes.onCollectorConstruct).toHaveBeenCalledWith(
@@ -276,12 +284,13 @@ describe("Orchestrator service", () => {
           parts: [
             {
               kind: "data",
-              data: { owner: "octocat", repo: "hello", prNumber: 1, modelId: "request-model" },
+              data: { owner: "octocat", repo: "hello", prNumber: 1, modelId: " request-model " },
             },
           ],
         },
       },
       "ghp_testtoken",
+      "owner-1",
     );
     await service.runPendingTasks();
 
@@ -293,7 +302,7 @@ describe("Orchestrator service", () => {
   it("returns null for unknown task ids", async () => {
     const service = createOrchestratorService();
 
-    await expect(service.getTask("nonexistent-id")).resolves.toBeNull();
+    await expect(service.getTask("nonexistent-id", "owner-1")).resolves.toBeNull();
   });
 
   it("stores sanitized failures on the task", async () => {
@@ -311,10 +320,10 @@ describe("Orchestrator service", () => {
       leadEngineerClass: fakes.leadEngineerClass,
     });
 
-    const response = await service.sendTask(request, "ghp_testtoken");
+    const response = await service.sendTask(request, "ghp_testtoken", "owner-1");
     await service.runPendingTasks();
 
-    const task = await store.get(response.task.id);
+    const task = await store.get(response.task.id, "owner-1");
     expect(task?.status).toBe("failed");
     expect(task?.error).toBe("request failed: [REDACTED]");
     expect(fakes.run).not.toHaveBeenCalled();

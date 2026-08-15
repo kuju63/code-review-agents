@@ -6,7 +6,6 @@ describe("Lead Engineer models", () => {
   it("parses camelCase input and applies defaults", () => {
     expect(LeadEngineerSkillInputSchema.parse({ reviewReport: {} })).toEqual({
       reviewReport: { results: [], errors: [] },
-      modelId: "gpt-4o",
     });
   });
 

@@ -11,6 +11,12 @@ const requestBody = {
   },
 };
 
+const authMiddleware: MiddlewareHandler<GithubAuthEnv> = async (c, next) => {
+  c.set("githubToken", "ghp_testtoken");
+  c.set("githubPrincipalId", "12345");
+  await next();
+};
+
 const createService = (overrides: Partial<PrInfoService> = {}): PrInfoService =>
   ({
     getAgentCard: vi.fn(() => ({
@@ -46,10 +52,6 @@ describe("PR Info route", () => {
 
   it("returns 202 and delegates task submission to the service", async () => {
     const service = createService();
-    const authMiddleware: MiddlewareHandler<GithubAuthEnv> = async (c, next) => {
-      c.set("githubToken", "ghp_testtoken");
-      await next();
-    };
     const app = createPrInfoRoute({
       service,
       authMiddleware,
@@ -65,17 +67,49 @@ describe("PR Info route", () => {
     expect(await response.json()).toEqual({
       task: { id: "task-1", status: "submitted", message: null, error: null },
     });
-    expect(service.sendTask).toHaveBeenCalledWith(requestBody, "ghp_testtoken");
+    expect(service.sendTask).toHaveBeenCalledWith(requestBody, "ghp_testtoken", "12345");
+  });
+
+  it("returns 400 before task creation for invalid PR Info input", async () => {
+    const service = createService();
+    const app = createPrInfoRoute({ service, authMiddleware });
+
+    const response = await app.request("/tasks/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer ghp_testtoken" },
+      body: JSON.stringify({
+        message: {
+          role: "user",
+          parts: [{ kind: "data", data: { owner: " ", repo: "hello", prNumber: 0 } }],
+        },
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ detail: "Invalid PR Info input" });
+    expect(service.sendTask).not.toHaveBeenCalled();
+  });
+
+  it("requires authentication to retrieve tasks", async () => {
+    const service = createService();
+    const app = createPrInfoRoute({ service });
+
+    const response = await app.request("/tasks/task-1");
+
+    expect(response.status).toBe(401);
+    expect(service.getTask).not.toHaveBeenCalled();
   });
 
   it("returns 404 when the service has no task", async () => {
     const service = createService({ getTask: vi.fn(async () => null) });
-    const app = createPrInfoRoute({ service });
+    const app = createPrInfoRoute({ service, authMiddleware });
 
-    const response = await app.request("/tasks/nonexistent-id");
+    const response = await app.request("/tasks/nonexistent-id", {
+      headers: { Authorization: "Bearer ghp_testtoken" },
+    });
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ detail: "Task not found" });
-    expect(service.getTask).toHaveBeenCalledWith("nonexistent-id");
+    expect(service.getTask).toHaveBeenCalledWith("nonexistent-id", "12345");
   });
 });

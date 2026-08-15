@@ -62,6 +62,7 @@ export const SendTaskHttpRequestSchema = z.object({
 export type SendTaskHttpRequest = z.infer<typeof SendTaskHttpRequestSchema>;
 
 export const GetTaskHttpRequestSchema = z.object({
+  headers: AuthorizationHeaderSchema,
   params: TaskParamsSchema,
 });
 export type GetTaskHttpRequest = z.infer<typeof GetTaskHttpRequestSchema>;

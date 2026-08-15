@@ -11,13 +11,25 @@ import {
 } from "./response.model.js";
 
 describe("PR Info models", () => {
-  it("parses camelCase input and applies the model default", () => {
-    expect(CollectPrInfoInputSchema.parse({ owner: "octo", repo: "repo", prNumber: 42 })).toEqual({
+  it("parses and trims camelCase input", () => {
+    expect(
+      CollectPrInfoInputSchema.parse({ owner: " octo ", repo: " repo ", prNumber: 42 }),
+    ).toEqual({
       owner: "octo",
       repo: "repo",
       prNumber: 42,
-      modelId: "gpt-4o",
     });
+  });
+
+  it.each([
+    { owner: "", repo: "repo", prNumber: 1 },
+    { owner: "   ", repo: "repo", prNumber: 1 },
+    { owner: "octo", repo: "", prNumber: 1 },
+    { owner: "octo", repo: "   ", prNumber: 1 },
+    { owner: "octo", repo: "repo", prNumber: 0 },
+    { owner: "octo", repo: "repo", prNumber: -1 },
+  ])("rejects invalid PR identifiers %#", (input) => {
+    expect(CollectPrInfoInputSchema.safeParse(input).success).toBe(false);
   });
 
   it("exposes the three endpoint contracts", () => {
@@ -27,7 +39,13 @@ describe("PR Info models", () => {
         body: { message: { role: "user", parts: [] } },
       }),
     ).toMatchObject({ headers: { authorization: "Bearer token" } });
-    expect(PrInfoGetTaskRequestSchema.parse({ params: { taskId: "task-1" } })).toEqual({
+    expect(
+      PrInfoGetTaskRequestSchema.parse({
+        headers: { authorization: "Bearer token" },
+        params: { taskId: "task-1" },
+      }),
+    ).toEqual({
+      headers: { authorization: "Bearer token" },
       params: { taskId: "task-1" },
     });
     expect(

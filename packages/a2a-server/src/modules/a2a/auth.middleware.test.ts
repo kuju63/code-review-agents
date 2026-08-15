@@ -16,14 +16,15 @@ const callMiddleware = async (authorization: string | null, fetchImpl: typeof fe
 };
 
 describe("GitHub auth middleware", () => {
-  it("stores the verified bearer token and continues", async () => {
+  it("stores the verified bearer token and GitHub principal ID, then continues", async () => {
     const fetchImpl = vi.fn(
-      async () => new Response("{}", { status: 200 }),
+      async () => new Response('{"id":12345}', { status: 200 }),
     ) as unknown as typeof fetch;
 
     const { context, next } = await callMiddleware("Bearer ghp_validtoken", fetchImpl);
 
     expect(context.set).toHaveBeenCalledWith("githubToken", "ghp_validtoken");
+    expect(context.set).toHaveBeenCalledWith("githubPrincipalId", "12345");
     expect(fetchImpl).toHaveBeenCalledWith("https://api.github.com/user", {
       headers: { Authorization: "Bearer ghp_validtoken" },
       signal: expect.any(AbortSignal),
@@ -49,6 +50,32 @@ describe("GitHub auth middleware", () => {
     const { result, next } = await callMiddleware("Bearer ghp_invalidtoken", fetchImpl);
 
     expect(result).toEqual({ status: 401, body: { detail: "Invalid GitHub token" } });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it.each([403, 429])("returns 503 when GitHub responds with %i", async (status) => {
+    const fetchImpl = vi.fn(async () => new Response("{}", { status })) as unknown as typeof fetch;
+
+    const { result, next } = await callMiddleware("Bearer ghp_validtoken", fetchImpl);
+
+    expect(result).toEqual({
+      status: 503,
+      body: { detail: "GitHub authentication endpoint is temporarily unavailable" },
+    });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("returns 503 when GitHub returns an unusable user response", async () => {
+    const fetchImpl = vi.fn(
+      async () => new Response("{}", { status: 200 }),
+    ) as unknown as typeof fetch;
+
+    const { result, next } = await callMiddleware("Bearer ghp_validtoken", fetchImpl);
+
+    expect(result).toEqual({
+      status: 503,
+      body: { detail: "GitHub authentication endpoint is temporarily unavailable" },
+    });
     expect(next).not.toHaveBeenCalled();
   });
 

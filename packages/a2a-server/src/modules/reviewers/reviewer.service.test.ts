@@ -81,14 +81,18 @@ const reviewers: readonly {
   },
 ] as const;
 
-function createFakeReviewerClass(result: ReviewResult, onConstruct = vi.fn()): ReviewerClass {
+function createFakeReviewerClass(
+  result: ReviewResult,
+  onConstruct = vi.fn(),
+  onReview = vi.fn(),
+): ReviewerClass {
   return class FakeReviewer {
     constructor(config: ConstructorParameters<ReviewerClass>[0]) {
       onConstruct(config);
     }
 
     async review(context: ReviewContext): Promise<ReviewResult> {
-      expect(context.prInfo.repositoryInfo.owner).toBe("octocat");
+      onReview(context);
       return result;
     }
   };
@@ -125,23 +129,64 @@ describe("InMemoryReviewerTaskStore", () => {
   it("creates submitted tasks with unique ids", async () => {
     const store = new InMemoryReviewerTaskStore();
 
-    const first = await store.create();
-    const second = await store.create();
+    const first = await store.create("owner-1");
+    const second = await store.create("owner-1");
 
     expect(first.status).toBe("submitted");
     expect(first.id).not.toBe("");
     expect(first.id).not.toBe(second.id);
   });
 
+  it("returns tasks only to their owner", async () => {
+    const store = new InMemoryReviewerTaskStore();
+    const task = await store.create("owner-1");
+
+    await expect(store.get(task.id, "owner-1")).resolves.toEqual(task);
+    await expect(store.get(task.id, "owner-2")).resolves.toBeNull();
+  });
+
+  it("deletes submitted or working tasks after the TTL", async () => {
+    vi.useFakeTimers();
+    try {
+      const store = new InMemoryReviewerTaskStore({ ttlSeconds: 1 });
+      const task = await store.create("owner-1");
+      await store.setWorking(task.id);
+
+      await vi.advanceTimersByTimeAsync(1000);
+
+      await expect(store.get(task.id, "owner-1")).resolves.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("resets the TTL after a terminal transition", async () => {
+    vi.useFakeTimers();
+    try {
+      const store = new InMemoryReviewerTaskStore({ ttlSeconds: 1 });
+      const task = await store.create("owner-1");
+      await vi.advanceTimersByTimeAsync(500);
+      await store.setCompleted(task.id, []);
+      await vi.advanceTimersByTimeAsync(500);
+
+      await expect(store.get(task.id, "owner-1")).resolves.not.toBeNull();
+
+      await vi.advanceTimersByTimeAsync(500);
+      await expect(store.get(task.id, "owner-1")).resolves.toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("updates known tasks and ignores unknown ids", async () => {
     const store = new InMemoryReviewerTaskStore();
-    const task = await store.create();
+    const task = await store.create("owner-1");
 
     await store.setWorking(task.id);
-    expect((await store.get(task.id))?.status).toBe("working");
+    expect((await store.get(task.id, "owner-1"))?.status).toBe("working");
 
     await store.setCompleted(task.id, [{ kind: "data", data: { result: "ok" } }]);
-    const completed = await store.get(task.id);
+    const completed = await store.get(task.id, "owner-1");
     expect(completed?.status).toBe("completed");
     expect(completed?.message).toEqual({
       role: "agent",
@@ -149,7 +194,7 @@ describe("InMemoryReviewerTaskStore", () => {
     });
 
     await store.setFailed("missing", "error");
-    expect(await store.get("missing")).toBeNull();
+    expect(await store.get("missing", "owner-1")).toBeNull();
   });
 });
 
@@ -179,15 +224,47 @@ describe.each(reviewers)(
 
     it("creates a submitted task and completes it in the background", async () => {
       const store = new InMemoryReviewerTaskStore();
-      const service = createService({ store, reviewerClass: createFakeReviewerClass(result) });
+      const onReview = vi.fn();
+      const service = createService({
+        store,
+        reviewerClass: createFakeReviewerClass(result, vi.fn(), onReview),
+      });
 
-      const response = await service.sendTask(request, "ghp_testtoken");
+      const response = await service.sendTask(request, "ghp_testtoken", "owner-1");
       await service.runPendingTasks();
 
-      const task = await store.get(response.task.id);
+      const task = await store.get(response.task.id, "owner-1");
       expect(response.task.status).toBe("submitted");
       expect(task?.status).toBe("completed");
       expect(task?.message?.parts).toEqual([{ kind: "data", data: result }]);
+      expect(onReview).toHaveBeenCalledWith(
+        expect.objectContaining({
+          prInfo: expect.objectContaining({
+            repositoryInfo: expect.objectContaining({ owner: "octocat" }),
+          }),
+        }),
+      );
+    });
+
+    it("does not retain settled default-scheduled tasks", async () => {
+      const store = new InMemoryReviewerTaskStore();
+      const service = createService({
+        store,
+        reviewerClass: createFakeReviewerClass(result),
+      });
+
+      const first = await service.sendTask(request, "ghp_testtoken", "owner-1");
+      const second = await service.sendTask(request, "ghp_testtoken", "owner-1");
+      await vi.waitFor(async () => {
+        expect((await store.get(first.task.id, "owner-1"))?.status).toBe("completed");
+        expect((await store.get(second.task.id, "owner-1"))?.status).toBe("completed");
+      });
+      const promiseAll = vi.spyOn(Promise, "all");
+
+      await service.runPendingTasks();
+
+      expect(promiseAll).toHaveBeenCalledWith([]);
+      promiseAll.mockRestore();
     });
 
     it("passes runtime settings to the reviewer config", async () => {
@@ -202,7 +279,7 @@ describe.each(reviewers)(
         },
       });
 
-      await service.sendTask(request, "ghp_testtoken");
+      await service.sendTask(request, "ghp_testtoken", "owner-1");
       await service.runPendingTasks();
 
       expect(onConstruct).toHaveBeenCalledWith(
@@ -213,6 +290,21 @@ describe.each(reviewers)(
           mcpStartupRetryAttempts: 7,
           mcpStartupRetryBackoffSeconds: 4.2,
         }),
+      );
+    });
+
+    it("uses the configured modelId when the request omits it", async () => {
+      const onConstruct = vi.fn();
+      const service = createService({
+        reviewerClass: createFakeReviewerClass(result, onConstruct),
+        settings: { modelId: "configured-model" },
+      });
+
+      await service.sendTask(request, "ghp_testtoken", "owner-1");
+      await service.runPendingTasks();
+
+      expect(onConstruct).toHaveBeenCalledWith(
+        expect.objectContaining({ modelId: "configured-model" }),
       );
     });
 
@@ -231,6 +323,7 @@ describe.each(reviewers)(
           },
         },
         "ghp_testtoken",
+        "owner-1",
       );
       await service.runPendingTasks();
 
@@ -242,7 +335,7 @@ describe.each(reviewers)(
     it("returns null for unknown task ids", async () => {
       const service = createService({ reviewerClass: createFakeReviewerClass(result) });
 
-      await expect(service.getTask("nonexistent-id")).resolves.toBeNull();
+      await expect(service.getTask("nonexistent-id", "owner-1")).resolves.toBeNull();
     });
 
     it("stores sanitized failures on the task", async () => {
@@ -254,10 +347,10 @@ describe.each(reviewers)(
       const store = new InMemoryReviewerTaskStore();
       const service = createService({ store, reviewerClass });
 
-      const response = await service.sendTask(request, "ghp_testtoken");
+      const response = await service.sendTask(request, "ghp_testtoken", "owner-1");
       await service.runPendingTasks();
 
-      const task = await store.get(response.task.id);
+      const task = await store.get(response.task.id, "owner-1");
       expect(task?.status).toBe("failed");
       expect(task?.error).toBe("request failed: [REDACTED]");
     });

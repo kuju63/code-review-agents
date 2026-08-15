@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const LeadEngineerSkillInputSchema = z.object({
   reviewReport: ReviewReportSchema,
-  modelId: z.string().default("gpt-4o"),
+  modelId: z.string().optional(),
 });
 export type LeadEngineerSkillInput = z.infer<typeof LeadEngineerSkillInputSchema>;
 

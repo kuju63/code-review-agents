@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 export const CollectPrInfoInputSchema = z.object({
-  owner: z.string(),
-  repo: z.string(),
-  prNumber: z.number().int(),
-  modelId: z.string().default("gpt-4o"),
+  owner: z.string().trim().min(1),
+  repo: z.string().trim().min(1),
+  prNumber: z.number().int().positive(),
+  modelId: z.string().trim().min(1).optional(),
 });
 export type CollectPrInfoInput = z.infer<typeof CollectPrInfoInputSchema>;
 

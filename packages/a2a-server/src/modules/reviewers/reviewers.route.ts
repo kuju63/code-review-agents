@@ -24,16 +24,21 @@ export function createReviewersRoute({
     authMiddleware,
     zValidator("json", A2ASendTaskRequestSchema),
     async (c) => {
-      const response = await service.sendTask(c.req.valid("json"), c.get("githubToken"));
+      const response = await service.sendTask(
+        c.req.valid("json"),
+        c.get("githubToken"),
+        c.get("githubPrincipalId"),
+      );
       return c.json(response, 202);
     },
   );
 
   app.get(
     "/tasks/:taskId",
+    authMiddleware,
     zValidator("param", ReviewerGetTaskRequestSchema.shape.params),
     async (c) => {
-      const task = await service.getTask(c.req.valid("param").taskId);
+      const task = await service.getTask(c.req.valid("param").taskId, c.get("githubPrincipalId"));
       if (!task) {
         return c.json({ detail: "Task not found" }, 404);
       }

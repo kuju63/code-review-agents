@@ -12,8 +12,8 @@ describe("reviewer models", () => {
   it("parses the shared camelCase reviewer input", () => {
     expect(ReviewerSkillInputSchema.parse({ prInfo })).toMatchObject({
       prInfo: { prInfo: { prNumber: 42 } },
-      modelId: "gpt-4o",
     });
+    expect(ReviewerSkillInputSchema.parse({ prInfo })).not.toHaveProperty("modelId");
   });
 
   it("exposes shared endpoint contracts for all reviewers", () => {
