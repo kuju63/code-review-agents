@@ -467,18 +467,20 @@ describe("run (CLI)", () => {
 
   it("treats --limit 0 as unlimited", async () => {
     const path = join(dir, "input.json");
-    await writeFile(path, "[]");
-
-    const exitCode = await run([
-      "--inputs",
+    const output = join(dir, "out.json");
+    await writeFile(
       path,
-      "--output",
-      join(dir, "out.json"),
-      "--limit",
-      "0",
-    ]);
+      JSON.stringify([
+        makeRow({ pr_number: 1, severity: "high", priority: "high" }),
+        makeRow({ pr_number: 2, severity: "low", priority: "low" }),
+      ]),
+    );
+
+    const exitCode = await run(["--inputs", path, "--output", output, "--limit", "0"]);
 
     expect(exitCode).toBe(0);
+    const written = JSON.parse(await readFile(output, "utf-8"));
+    expect(written.map((r: { pr_number: number }) => r.pr_number).sort()).toEqual([1, 2]);
   });
 
   it("accepts a whitespace-padded --seed value", async () => {
