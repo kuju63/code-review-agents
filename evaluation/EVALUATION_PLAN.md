@@ -42,7 +42,11 @@ For development quality gates, treat a feature as acceptable only if all of the 
 
 - User feature requirements are satisfied.
 - All tests pass.
-- Coverage is 75% or higher.
+- Coverage is 75% or higher. Since Issue #255 removed the last Python
+  production/test code, this is now a single integrated TypeScript source of
+  truth: the `lines`/`functions`/`branches`/`statements` thresholds configured
+  in `vitest.config.ts`, measured by `pnpm run test`, and uploaded once from
+  the `ts-ci-check` CI job.
 
 Requirement verification policy:
 
@@ -329,7 +333,7 @@ Domain hard gates:
 - Angular samples carrying `angular.json` or Angular source naming conventions must route to `AngularReviewer`, not `ReactReviewer`
 - React technical reviews must expose both Vercel skill indexes; Angular technical reviews must expose the official Angular skill index
 - Seeded items must route to the technical reviewer matching their `stack` label (`react`→`ReactReviewer`, `vue`→`VueReviewer`, `angular`→`AngularReviewer`, `svelte`→`SvelteReviewer`; a metaframework detection such as `nuxt` routes via `get_reviewer_classes`' base-framework fallback to the same reviewer, e.g. `vue`→`VueReviewer`) plus `SecurityReviewer`.
-  **Verification method (updated, supersedes the "must fail the item explicitly" wording this bullet previously carried)**: Issue #237 removed client-side `stack`-based routing/validation in favor of `detect_project_types`'s automatic detection; `evaluate_item()` does not read `item["stack"]` and therefore cannot fail-closed on an unsupported/missing value at evaluation run time. This gate is instead verified as a **code-level regression suite**, not a `score-evaluation` Release Gate metric: `tests/agents/test_registry.py`'s `TestDetectProjectTypesFromManifestContent`/`TestMetaframeworkReviewerFallback` (including fixtures built from the real Seeded-repository `package.json` files) must pass as part of `uv run pytest` before any release. See §5 for the full history of this gate's evolution (Issue #237 → #238 → #230).
+  **Verification method (updated, supersedes the "must fail the item explicitly" wording this bullet previously carried)**: Issue #237 removed client-side `stack`-based routing/validation in favor of `detect_project_types`'s automatic detection; `evaluate_item()` does not read `item["stack"]` and therefore cannot fail-closed on an unsupported/missing value at evaluation run time. This gate is instead verified as a **code-level regression suite**, not a `score-evaluation` Release Gate metric: `packages/agent-core/src/agents/registry.test.ts`'s `describe("detectProjectTypes", ...)`/`describe("metaframework fallback", ...)` (including fixtures built from the real Seeded-repository `package.json` files) must pass as part of `pnpm run test` before any release. See §5 for the full history of this gate's evolution (Issue #237 → #238 → #230).
 
 Seeded set size note: the seed-repository migration (Issue #224) fixed the
 Seeded set at 59 items (PRs) across the four seed repositories, carrying
@@ -377,7 +381,7 @@ PR の diff が閾値（`CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` chars・`CODE_REVIE
 閾値超過の PR は引き続き `patch=None` にフォールバックし、レビュアーが MCP フェッチを行う。
 
 **ルーティング不一致の解消（Issue #238、旧・既知の逸脱）**: `detect_project_types`
-（`src/code_review_agent/agents/registry.py`）は、file_changesの拡張子/manifestファイル名に加えて
+（`packages/agent-core/src/agents/registry.ts`）は、file_changesの拡張子/manifestファイル名に加えて
 `package.json`/`package-lock.json`/`pnpm-lock.yaml`の中身（直接依存のパッケージ名）から判定する
 content-basedの層を持つ（Issue #230）。Seeded set 59件中誤ルーティングしていた4件
 （`svelte-seeded#8`・`#9`、`vue-seeded#16`・`#20`）はいずれも変更ファイルがフレームワーク固有拡張子
@@ -386,8 +390,8 @@ content-basedの層を持つ（Issue #230）。Seeded set 59件中誤ルーテ�
 content-basedの層が読むことで、`svelte-technical`/`vue-technical`（+`security`）へ正しくルーティング
 されることを確認した（`vue-seeded`は実体はNuxtアプリのため検出結果は`ProjectType.NUXT`になるが、
 `get_reviewer_classes`のメタフレームワークフォールバックにより`vue-technical`が選択される）。
-恒久的な検証は `tests/agents/test_registry.py` の `TestDetectProjectTypesFromManifestContent` /
-`TestMetaframeworkReviewerFallback`（実リポジトリの`package.json`を使った回帰フィクスチャを含む）で
+恒久的な検証は `packages/agent-core/src/agents/registry.test.ts` の `describe("detectProjectTypes", ...)` /
+`describe("metaframework fallback", ...)`（実リポジトリの`package.json`を使った回帰フィクスチャを含む）で
 行う。`evaluate_item()`が`item["stack"]`を参照しない設計（Issue #237）自体は変更していないため、
 評価実行時（`score-evaluation`のRelease Gate）にunsupported/missing `stack`を明示的に失敗させる
 fail-closedチェックは依然として存在しない。§4のルーティングhard gateは、この事実を踏まえて
