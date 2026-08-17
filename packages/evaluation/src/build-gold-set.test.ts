@@ -364,6 +364,32 @@ describe("buildGoldItem", () => {
     expect(item.human_findings).toHaveLength(1);
     expect(item.human_findings[0]?.summary).toBe("valid comment");
   });
+
+  it("skips malformed (non-record) review comment entries without crashing", async () => {
+    const prUrl = "https://api.github.com/repos/owner/repo/pulls/1";
+    const t = target();
+    const fetchPrFiles = vi.fn().mockResolvedValue([{ path: "src/App.tsx", patch: "@@ -1 +1 @@" }]);
+    const apiGet = async (url: string, _token: string): Promise<unknown> => {
+      if (url.includes("/pulls/1/comments")) {
+        return [
+          null,
+          "not-a-record",
+          {
+            body: "valid comment",
+            path: "src/App.tsx",
+            line: 5,
+            html_url: "https://github.com/owner/repo/pull/1#discussion_r1",
+          },
+        ];
+      }
+      return { title: "PR", body: "", labels: [], html_url: prUrl };
+    };
+
+    const item = await buildGoldItem(t, "token", { apiGet, fetchPrFiles });
+
+    expect(item.human_findings).toHaveLength(1);
+    expect(item.human_findings[0]?.summary).toBe("valid comment");
+  });
 });
 
 describe("run (CLI)", () => {
