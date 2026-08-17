@@ -5,8 +5,10 @@ This runbook is the operational guide for running evaluation end-to-end.
 ## 0. Preconditions
 
 - Working directory: repository root
-- Python 3.11+ recommended for the remaining Python tools
 - Nix available for the TypeScript evaluation workspace commands
+  (`evaluation/tools/` is fully TypeScript as of Issue #255; only the review
+  agent itself, run separately via the A2A server container, remains Python
+  for now)
 - GitHub token is available
 
 Set token:
@@ -56,7 +58,7 @@ The canonical inputs are:
 Fast sampling (recommended for local iteration; n=15, stratified by repo_type):
 
 ```bash
-uv run python evaluation/tools/select_stack_targets.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run select-stack-targets \
   --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
   --output evaluation/data/pr_targets.json \
   --limit 15 \
@@ -70,7 +72,7 @@ uv run python evaluation/tools/select_stack_targets.py \
 Full/deterministic selection (weekly refresh / release-gate evaluation):
 
 ```bash
-uv run python evaluation/tools/select_stack_targets.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run select-stack-targets \
   --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
   --output evaluation/data/pr_targets.json \
   --limit 30 \
@@ -91,7 +93,7 @@ Checkpoint:
 
 ## 2. Build Gold set
 
-uv run python evaluation/tools/build_gold_set.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run build-gold-set \
   --input evaluation/data/pr_targets.json \
   --output evaluation/data/gold_pr_set.jsonl
 
@@ -138,20 +140,44 @@ Checkpoint:
 
 Run the review agent on both Gold and Seeded inputs via the A2A server
 (see [.claude/skills/run-evaluation/SKILL.md](../.claude/skills/run-evaluation/SKILL.md)
-for the full start/stop sequence):
+for the full start/stop sequence). `run-agent-evaluation` has no
+`packages/evaluation/package.json` script entry yet (a pre-existing gap
+predating this Issue #255 cleanup — it shipped without one in Issue #306/#307
+on `main`), so invoke it via `tsx` directly:
 
-nix develop --command uv run python evaluation/tools/run_agent_evaluation.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation exec tsx \
+  src/run-agent-evaluation.ts \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
-  --output evaluation/data/agent_predictions.jsonl \
+  --pred evaluation/data/agent_predictions.jsonl \
+  --base-url http://localhost:8000 \
   --concurrency 2
+
+`--base-url` must be passed explicitly: the command's own default
+(`http://localhost:3000`, matching `packages/a2a-server`'s hardcoded port) does
+not match the port the evaluation A2A container actually publishes
+(`localhost:8000`, the default the retired Python runner used — see
+[.claude/skills/run-evaluation/scripts/start_a2a_container.sh](../.claude/skills/run-evaluation/scripts/start_a2a_container.sh)).
 
 `--concurrency` (default 2) evaluates that many Gold/Seeded items at once
 instead of one at a time. A realistic ceiling is hardware- and rate-limit-
 dependent; raising it increases the risk of hitting `--timeout` (default
-1800s) on individual items. This produces:
+1800s) on individual items.
+
+**Seeded items' timeout budget** (Issue #237): Seeded items execute all
+three pipeline stages (pr-info-collector, parallel technical+security review,
+lead engineer synthesis) inside a single polled `/orchestrator` task, the same
+as Gold items. Before Issue #237, Seeded items had a separate `--timeout`
+budget per stage across three individually polled A2A calls; that per-stage
+margin is gone. If Seeded items start hitting `--timeout` more often, raise
+`--timeout` rather than `--concurrency` first — each item's per-run safety
+margin is smaller than it used to be.
+
+This produces:
 
 - `evaluation/data/agent_predictions.jsonl`
+- `evaluation/data/agent_predictions.jsonl.failed_ids.json` (sidecar; always
+  written, even when empty)
 
 Minimum record format:
 
@@ -172,98 +198,76 @@ Minimum record format:
 
 Axis agreement uses only matched pairs where both sides contain canonical values. Missing, `unknown`, or invalid axis values are excluded independently, and a reported `0.0` with `n=0` means no eligible labels rather than complete disagreement.
 
-After writing `agent_predictions.jsonl`, `run_agent_evaluation.py` invokes
-`evaluation/tools/generate_evaluation_report.py` as a subprocess; that report
-generator invokes the migrated `score-evaluation` workspace script to score, write the
-Markdown report, and send the Discord notification. This is unchanged from
-before the sharded-execution support below was added — see
-[docs/eval-sharded-execution-spec.md](../docs/eval-sharded-execution-spec.md).
-
-### 4a. Sharded execution (time-constrained environments)
-
-Some execution environments (for example OpenCode, whose invocations reset
-every 2 hours) cap wall-clock time per invocation below what a full
-Gold+Seeded run can take. When `--concurrency 2` and `--timeout 1800`
-(defaults) do not fit in the available window, split the run into shards:
+Unlike the retired Python runner, `run-agent-evaluation` does **not**
+automatically invoke report generation afterward
+(`docs/ts-agent-evaluation-runner-spec.md` §2.2 scoped that out deliberately —
+predictions.jsonl + the failed_ids sidecar are its only contract). Score,
+write the Markdown report, and send the Discord notification as an explicit
+follow-up step:
 
 ```bash
-nix develop --command uv run python evaluation/tools/run_agent_evaluation.py \
-  --gold evaluation/data/gold_pr_set.jsonl \
-  --seeded evaluation/data/seeded_set.jsonl \
-  --output evaluation/data/shard0.jsonl \
-  --shard-index 0 --shard-count 4
-
-# repeat for --shard-index 1, 2, 3 with matching --output paths
-```
-
-Each shard evaluates only every `--shard-count`-th Gold/Seeded item
-(0-based `--shard-index`) and skips report generation. `run_agent_evaluation.py`
-never stops the A2A server itself (sharded or not) — the server must stay up
-across all shard invocations, and shutdown is the sole responsibility of
-[.claude/skills/run-evaluation/SKILL.md](../.claude/skills/run-evaluation/SKILL.md)
-Step 5 (`scripts/stop_a2a_container.sh`), run once every shard has finished.
-
-**Seeded items' timeout budget** (Issue #237): Seeded items now execute all
-three pipeline stages (pr-info-collector, parallel technical+security review,
-lead engineer synthesis) inside a single polled `/orchestrator` task, the same
-as Gold items. Before Issue #237, Seeded items had a separate `--timeout`
-budget per stage across three individually polled A2A calls; that per-stage
-margin is gone. If Seeded items start hitting `--timeout` more often after
-this change, raise `--timeout` rather than `--concurrency` first — the shard
-formula below is unaffected, but each item's per-run safety margin is
-smaller than it used to be.
-
-**Choosing `--shard-count`**: pick the smallest value satisfying
-
-```text
-(ceil(gold_count / shard_count / concurrency)
- + ceil(seeded_count / shard_count / concurrency)) * timeout <= available_window
-```
-
-With today's dataset (Gold 8 / Seeded 16, `--concurrency 2`, `--timeout 1800`)
-and a 2-hour window, `shard-count = 3` gives `(ceil(3/2) + ceil(6/2)) * 1800
-= 9000s ≈ 2.5h` — too slow — while `shard-count = 4` gives `(1 + 2) * 1800 =
-5400s = 1.5h`, which fits. Recompute this whenever the dataset grows.
-
-All shards must run against the same (byte-identical) `--gold`/`--seeded`
-files, since the split is positional (`items[shard_index::shard_count]`);
-each shard needs a distinct `--output` path.
-
-Once every shard has finished, merge them:
-
-```bash
-nix develop --command uv run python evaluation/tools/merge_predictions.py \
-  --gold evaluation/data/gold_pr_set.jsonl \
-  --seeded evaluation/data/seeded_set.jsonl \
-  --output evaluation/data/agent_predictions.jsonl \
-  evaluation/data/shard0.jsonl evaluation/data/shard1.jsonl \
-  evaluation/data/shard2.jsonl evaluation/data/shard3.jsonl
-```
-
-By default, an id missing from both the merged predictions and every
-shard's `failed_ids.json` sidecar is treated as **unaccounted** and fails
-the merge (exit code 2). This is deliberately stricter than the
-non-sharded run's "partial results are fine" tolerance: with no sidecar
-evidence, an unaccounted id can't be told apart from a shard invocation
-that was killed mid-run by the same execution-time limit this workflow
-exists to work around, before it wrote anything. Do not reach for
-`--allow-missing` as a routine flag — check the shard's logs first — and
-use it only once you have confirmed the gap is an accepted per-item
-failure, not a shard that silently never ran.
-
-Then generate the score, Markdown report, and Discord notification from the
-merged predictions:
-
-```bash
-nix develop --command uv run python evaluation/tools/generate_evaluation_report.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run generate-evaluation-report \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --pred evaluation/data/agent_predictions.jsonl
 ```
 
-This is the same script the non-sharded path in §4 calls automatically, so
-the output (`report_YYYYMMDD-HHMMSS-<hash>.md`, Discord notification) is
-identical either way.
+### 4a. Time-constrained environments (sharded execution retired)
+
+The Python runner's `--shard-index`/`--shard-count` convenience flags — for
+environments that cap wall-clock time per invocation below what a full
+Gold+Seeded run takes (for example OpenCode, whose invocations reset every 2
+hours) — were an explicit non-goal of the TypeScript port
+(`docs/ts-agent-evaluation-runner-spec.md` §2.2: "shard実行...Python版に残す")
+and were removed along with `run_agent_evaluation.py` in Issue #255. There is
+currently no TypeScript equivalent that auto-splits a run.
+
+If a single invocation cannot fit its window, the only available workaround is
+manual: split `gold_pr_set.jsonl`/`seeded_set.jsonl` into disjoint subset
+files yourself, run `run-agent-evaluation` once per subset with a distinct
+`--pred` path each time (each run still writes its own `<pred>.failed_ids.json`
+sidecar, using the same naming contract as before —
+[docs/eval-sharded-execution-spec.md](../docs/eval-sharded-execution-spec.md)
+§2.4), then merge the results with the still-available `merge-predictions`
+tool, passing the **original, full** `--gold`/`--seeded` files so it can
+verify every id is accounted for:
+
+```bash
+nix develop --command pnpm --filter @code-review-agent/evaluation run merge-predictions \
+  --gold evaluation/data/gold_pr_set.jsonl \
+  --seeded evaluation/data/seeded_set.jsonl \
+  --output evaluation/data/agent_predictions.jsonl \
+  evaluation/data/part0.jsonl evaluation/data/part1.jsonl
+```
+
+By default, an id missing from both the merged predictions and every part's
+`failed_ids.json` sidecar is treated as **unaccounted** and fails the merge
+(exit code 2) — this is deliberate: with no sidecar evidence, an unaccounted
+id can't be told apart from a run that was killed mid-way through by the same
+execution-time limit this workaround exists for, before it wrote anything.
+Do not reach for `--allow-missing` as a routine flag — check the run's logs
+first — and use it only once you have confirmed the gap is an accepted
+per-item failure, not a part that silently never ran.
+
+`run-agent-evaluation` never stops the A2A server itself — the server must
+stay up across every manual invocation, and shutdown is the sole
+responsibility of
+[.claude/skills/run-evaluation/SKILL.md](../.claude/skills/run-evaluation/SKILL.md)
+Step 5 (`scripts/stop_a2a_container.sh`), run once every part has finished.
+
+Once merged, generate the score, Markdown report, and Discord notification
+exactly as in §4:
+
+```bash
+nix develop --command pnpm --filter @code-review-agent/evaluation run generate-evaluation-report \
+  --gold evaluation/data/gold_pr_set.jsonl \
+  --seeded evaluation/data/seeded_set.jsonl \
+  --pred evaluation/data/agent_predictions.jsonl
+```
+
+A single part's partial predictions/score must never be used as the basis for
+a gate decision (§6) — only the merged output covering the full Gold+Seeded
+population qualifies.
 
 ## 5. Score evaluation
 
@@ -329,7 +333,7 @@ predicate excludes):
 
 If stack balance is broken:
 
-- Use `--balanced` in `select_stack_targets.py`
+- Use `--balanced` in `select-stack-targets`
 - Add repositories for the underrepresented stack and regenerate its target file
 
 If `[COVERAGE-WARN]` keeps appearing:
@@ -345,9 +349,9 @@ If evaluation runs are slow:
 
 - Reduce dataset size with `--sample-n` (fewer items reach the agent
   execution step, which dominates wall-clock time)
-- Increase `--concurrency` on `run_agent_evaluation.py` cautiously (default 2);
+- Increase `--concurrency` on `run-agent-evaluation` cautiously (default 2);
   watch for `--timeout` failures in the run's `[WARN]` output before raising it
   further
 - If a single invocation cannot fit the full run in its execution window at
-  all (rather than merely being slow), split it with `--shard-index`/
-  `--shard-count` — see §4a above.
+  all (rather than merely being slow), there is no automatic split anymore —
+  see §4a above for the manual workaround.

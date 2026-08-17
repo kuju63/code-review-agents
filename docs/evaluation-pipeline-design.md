@@ -12,7 +12,7 @@
 
 スタック別ターゲットプール(`pr_targets_{stack}.json`)から全件を対象に評価を実行すると、
 Gold-set/Seeded-setの生成そのものよりも、生成後にレビューエージェントを実際に走らせる**評価実行フェーズ
-(`run_agent_evaluation.py`)**の所要時間が支配的になる。この実行フェーズは各項目についてPR収集→並列レビュー
+(`run-agent-evaluation`)**の所要時間が支配的になる。この実行フェーズは各項目についてPR収集→並列レビュー
 →Lead Engineer評価という多段のLLM呼び出しを伴うため、項目数に対してほぼ線形に時間がかかる。
 
 これに対して次の2つの対策を取る。
@@ -32,7 +32,7 @@ Gold-set/Seeded-setの生成そのものよりも、生成後にレビューエ�
 | `evaluation/data/` | パイプラインが**生成する導出データ**。実行のたびに再生成されうる | `pr_targets.json`, `gold_pr_set.jsonl`, `seeded_set.jsonl`, `agent_predictions.jsonl`, `report_*.md` |
 
 `pr_targets_{stack}.json`は`discover-candidate-prs`がGitHubとLLMを使って生成する元データであり、
-`evaluation/input/`に置く。`pr_targets.json`(実行対象PRのリスト)は`select_stack_targets.py`が
+`evaluation/input/`に置く。`pr_targets.json`(実行対象PRのリスト)は`select-stack-targets`が
 その元データから抽出する導出データであり、`evaluation/data/`に置く。
 
 ---
@@ -51,7 +51,7 @@ flowchart TD
         DISCOVER["repository検証 + PRフィルタ<br/>+ LLM 3軸分類 (severity/impact/priority)"]
     end
 
-    subgraph STEP1["Step 1: select_stack_targets.py"]
+    subgraph STEP1["Step 1: select-stack-targets"]
         FILTER["フィルタ<br/>--min-severity / --impact / --priority"]
         SAMPLE["サンプリング<br/>--sample-n(既定15) + --stratify-repo-type<br/>(repo_type層化 + stack round-robin + seed固定)"]
         WARN["構成比率チェック<br/>(警告のみ・非ブロッキング)"]
@@ -65,16 +65,16 @@ flowchart TD
         REPORT["report_*.md"]
     end
 
-    subgraph STEP23["Step 2-3: build_gold_set.py / build-seeded-set"]
+    subgraph STEP23["Step 2-3: build-gold-set / build-seeded-set"]
         GHAPI[("GitHub API<br/>(PR詳細/files/review comments)")]
         MARKERS["INTENTIONAL marker解決 + metadata検証<br/>不正・欠落時はfail-closed<br/>検証完了後にatomic write"]
     end
 
-    subgraph STEP4["Step 4: run_agent_evaluation.py<br/>--concurrency 2(既定)"]
+    subgraph STEP4["Step 4: run-agent-evaluation<br/>--concurrency 2(既定)"]
         A2A["A2Aサーバー<br/>/orchestrator, /pr-info-collector,<br/>/react-reviewer, /vue-reviewer, /angular-reviewer,<br/>/svelte-reviewer, /security-reviewer, /lead-engineer, /health"]
     end
 
-    subgraph STEP5["Step 5: score-evaluation"]
+    subgraph STEP5["Step 4.5: generate-evaluation-report<br/>(内部でscore-evaluation相当のスコアリングを実行)"]
         SCORE["Issue Recall/Precision,<br/>Must-Find Recall, Critical Miss Rate 等"]
     end
 
@@ -96,15 +96,17 @@ flowchart TD
 | Step | スクリプト | 入力 | 出力 | 備考 |
 |---|---|---|---|---|
 | 0 | `discover-candidate-prs` | `repo_candidates.json` | `input/pr_targets_{stack}.json` | GitHubとLLMで随時生成。`GITHUB_TOKEN`と生成モデルが必要 |
-| 1 | `select_stack_targets.py` | `input/pr_targets_{stack}.json` | `data/pr_targets.json` | フィルタ・サンプリング・構成比率警告 |
-| 2 | `build_gold_set.py` | `data/pr_targets.json` | `data/gold_pr_set.jsonl` | GitHub APIでPR詳細・files・review commentsを取得 |
+| 1 | `select-stack-targets` | `input/pr_targets_{stack}.json` | `data/pr_targets.json` | フィルタ・サンプリング・構成比率警告 |
+| 2 | `build-gold-set` | `data/pr_targets.json` | `data/gold_pr_set.jsonl` | GitHub APIでPR詳細・files・review commentsを取得 |
 | 3 | `build-seeded-set` | `input/seeded_pr_targets_{stack}.json` | `data/seeded_set.jsonl` | GitHub上のSeed PRから`INTENTIONAL` markerを解決しmetadataを検証。不正・欠落時はfail-closed、全件成功後にatomic write |
-| 4 | `run_agent_evaluation.py` | `data/gold_pr_set.jsonl`, `data/seeded_set.jsonl` | `data/agent_predictions.jsonl`, `data/report_*.md` | A2Aサーバー経由でレビューエージェントを実行 |
-| 5 | `score-evaluation` | 上記3ファイル | スコアJSON | `run_agent_evaluation.py`内から呼び出される |
+| 4 | `run-agent-evaluation` | `data/gold_pr_set.jsonl`, `data/seeded_set.jsonl` | `data/agent_predictions.jsonl` (+ `failed_ids.json` sidecar) | A2Aサーバー経由でレビューエージェントを実行。Issue #255でPython版`run_agent_evaluation.py`から移行、レポート生成は自動実行しなくなった(次段で明示実行) |
+| 4.5 | `generate-evaluation-report` | 上記3ファイル | `data/report_*.md`、スコアJSON(標準出力/ログ) | 内部で`score-evaluation`相当のスコアリングを行い、Markdownレポート生成とDiscord通知までを担う |
 
 Step 1-3は`evaluation/tools/run_evaluation_pipeline.sh`が一括実行する。Step 0はターゲットプールの
-更新が必要なときにのみ個別実行する。Step 4-5は`run_agent_evaluation.py`が担う(A2Aサーバーの起動・停止を
-含む一連の流れは`.claude/skills/run-evaluation/SKILL.md`がオーケストレーションする)。
+更新が必要なときにのみ個別実行する。Step 4は`run-agent-evaluation`、Step 4.5は`generate-evaluation-report`
+が担う独立した2コマンドであり(旧Python版runnerはStep 4が完了後に4.5を自動的にsubprocess呼び出ししていたが、
+TypeScript版はこの自動連鎖をスコープ外としたため呼び出し側が明示的に両方実行する必要がある)、
+A2Aサーバーの起動・停止を含む一連の流れは`.claude/skills/run-evaluation/SKILL.md`がオーケストレーションする。
 
 `build-seeded-set`は生成モデルを使用せず、手書きmetadataをSeed PRのdiffにある
 `INTENTIONAL` markerへ解決する。markerの欠落、件数不一致、レビュー対象外ファイルなどは
@@ -118,11 +120,11 @@ fail-closedで停止し、全件の検証後に`seeded_set.jsonl`をatomic write
 
 `--sample-n <n>`は`run_evaluation_pipeline.sh`だけが受け付けるoptionで、既定値は15である。
 スクリプトはこの値を`--limit <n> --shuffle --stratify-repo-type`へ変換して
-`select_stack_targets.py`を呼び出す。これにより`repo_type`(ui-library/application)を
+`select-stack-targets`を呼び出す。これにより`repo_type`(ui-library/application)を
 ほぼ50/50に層化しつつ、層内はstack round-robin(`select_balanced`)と固定シード
 (`--seed`、既定42)によるランダム選択を組み合わせる。
 
-`select_stack_targets.py`自体が件数指定として受け付けるのは`--limit`だけである。
+`select-stack-targets`自体が件数指定として受け付けるのは`--limit`だけである。
 `run_evaluation_pipeline.sh`へ`--limit`を明示指定した場合はshuffleと層化を付けずに渡し、
 severity/priority降順の決定的選択パスを使う。
 
@@ -132,14 +134,14 @@ severity/priority降順の決定的選択パスを使う。
 **この警告は非ブロッキングであり、パイプラインは停止しない。** ターゲットプール自体の
 絶対数制約により、どのようにサンプリングしても構造的に警告が出続ける項目がありうる。
 
-N削減は生成フェーズの時間だけでなく、Step 4(`run_agent_evaluation.py`)が処理する項目数そのものを
+N削減は生成フェーズの時間だけでなく、Step 4(`run-agent-evaluation`)が処理する項目数そのものを
 減らすため、実行フェーズの所要時間短縮に直接効いてくる。
 
 ---
 
 ## 5. 実行フェーズの並行実行モデル
 
-`run_agent_evaluation.py`は`--concurrency <n>`(既定2)で、Gold項目・Seeded項目それぞれのフェーズ内で
+`run-agent-evaluation`は`--concurrency <n>`(既定2)で、Gold項目・Seeded項目それぞれのフェーズ内で
 複数項目を並行評価する。A2Aサーバー(`uv run code-review-agent`)はシングルプロセス・シングルワーカーの
 uvicornだが、各エンドポイントはリクエストを`BackgroundTasks`に登録して即座に応答し、実処理は
 `asyncio.to_thread`でワーカースレッドにオフロードされる設計になっている。そのため、複数のPR評価を
@@ -151,7 +153,7 @@ A2Aサーバーが公開するエンドポイントは
 
 ```mermaid
 sequenceDiagram
-    participant Runner as run_agent_evaluation.py
+    participant Runner as run-agent-evaluation
     participant W1 as Worker#1
     participant W2 as Worker#2
     participant A2A as A2Aサーバー
@@ -195,19 +197,20 @@ Gold・Seeded項目とも`/orchestrator`経由で評価され、`ReviewOrchestra
 技術レビュアー/security-reviewer呼び出しの並列化は`/orchestrator`内部(`ReviewOrchestrator`)で
 Gold・Seeded問わず常に行われる。両者は互いの結果に依存しない独立処理であり、並列化しても
 精度(検出内容)には影響しない。Issue #237以前はSeeded項目に限りこの並列化がクライアント側
-(`run_agent_evaluation.py`)の責務だったが、現在はGold同様サーバ側の責務である。
+(`run-agent-evaluation`)の責務だったが、現在はGold同様サーバ側の責務である。
 
 ---
 
 ## 6. 完了通知（Discord Webhook）
 
-評価対象PR数が多いほど`run_agent_evaluation.py`の実行時間は長くなるため、完了を能動的に知らせる
-仕組みとして Discord Webhook 通知（`evaluation/tools/discord_notify.py`）を用意している。
+評価対象PR数が多いほど`run-agent-evaluation`の実行時間は長くなるため、完了を能動的に知らせる
+仕組みとして Discord Webhook 通知（`discord-notify`、`generate-evaluation-report`が内部呼び出しする
+ライブラリでありスタンドアロンCLIではない）を用意している。
 
-- **発火タイミング**: `_run_evaluation()`内でレポート(`report_*.md`)を書き込んだ直後、関数の返り値
-  （exit code）確定前。Gold/Seededの全アイテム評価とスコアリングが完了し、Hard Gate判定
-  （Critical Miss Rate = 0 かつ Must-Find Recall ≥ 0.95）が確定したタイミングであり、成功・失敗
-  （Hard Gate PASS/FAIL）を問わず通知する。
+- **発火タイミング**: `generate-evaluation-report`の`generateReport()`内でレポート(`report_*.md`)を
+  書き込んだ直後、関数の返り値（exit code）確定前。Gold/Seededの全アイテム評価とスコアリングが完了し、
+  Hard Gate判定（Critical Miss Rate = 0 かつ Must-Find Recall ≥ 0.95）が確定したタイミングであり、
+  成功・失敗（Hard Gate PASS/FAIL）を問わず通知する。
 - **通知しないケース**: `GITHUB_TOKEN`未設定・A2Aサーバー無応答・スコアリング失敗など、評価そのもの
   が完了に至らない致命的エラーでは通知しない（これらは長時間実行の完了を意味しないため）。
 - **オプトイン**: `.env`の`DISCORD_WEBHOOK_URL`が未設定の場合は何もせず即returnする。設定必須では

@@ -20,10 +20,10 @@ Main business domain:
 - Matching rubric: `evaluation/RUBRIC.md`
 - Gold schema: `evaluation/schema/gold_pr_item.schema.json`
 - Seeded schema: `evaluation/schema/seeded_item.schema.json`
-- Gold builder: `evaluation/tools/build_gold_set.py`
+- Gold builder: `build-gold-set` in `@code-review-agent/evaluation`
 - Seeded builder: `build-seeded-set` in `@code-review-agent/evaluation`
 - Scorer: `score-evaluation` in `@code-review-agent/evaluation`
-- Target selector: `evaluation/tools/select_stack_targets.py`
+- Target selector: `select-stack-targets` in `@code-review-agent/evaluation`
 - Pipeline runner: `evaluation/tools/run_evaluation_pipeline.sh`
 - Seeded PR targets & must_find metadata: `evaluation/input/seeded_pr_targets_{stack}.json`
 
@@ -74,7 +74,7 @@ for the `input/` vs `data/` directory split). The canonical source data are
 Example 1: select all targets
 
 ```bash
-uv run python evaluation/tools/select_stack_targets.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run select-stack-targets \
   --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
   --output evaluation/data/pr_targets.json \
   --print-summary
@@ -83,7 +83,7 @@ uv run python evaluation/tools/select_stack_targets.py \
 Example 2: pick 30 targets, balanced by stack, medium severity or higher
 
 ```bash
-uv run python evaluation/tools/select_stack_targets.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run select-stack-targets \
   --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
   --output evaluation/data/pr_targets.json \
   --limit 30 \
@@ -95,7 +95,7 @@ uv run python evaluation/tools/select_stack_targets.py \
 Example 3: focus on security impact and high/medium priority
 
 ```bash
-uv run python evaluation/tools/select_stack_targets.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run select-stack-targets \
   --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
   --output evaluation/data/pr_targets_security.json \
   --impact security \
@@ -113,7 +113,7 @@ Set token and run:
 
 ```bash
 export GITHUB_TOKEN=your_token
-uv run python evaluation/tools/build_gold_set.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run build-gold-set \
   --input evaluation/data/pr_targets.json \
   --output evaluation/data/gold_pr_set.jsonl
 ```
@@ -142,7 +142,12 @@ Expected output:
 
 ## 4) Run your review agents against both sets
 
-Use `evaluation/tools/run_agent_evaluation.py` with the local A2A server to produce structured review output.
+Use `run-agent-evaluation` (`packages/evaluation/src/run-agent-evaluation.ts`,
+invoked via `pnpm --filter @code-review-agent/evaluation exec tsx
+src/run-agent-evaluation.ts` — it has no `package.json` script entry yet) with
+the local A2A server to produce structured review output. See
+[evaluation/RUNBOOK.md §4](RUNBOOK.md#4-run-review-agent-pipeline) for the
+full command including `--base-url`.
 
 Recommended output format per sample:
 

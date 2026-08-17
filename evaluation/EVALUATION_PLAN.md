@@ -85,7 +85,7 @@ The canonical target population consists of the four per-stack files under
 `priority` classifications. This replaces the former manually tagged 39-entry
 pool and its free-text theme proxies.
 
-`select_stack_targets.py` reports composition shortfalls against the ratios above
+`select-stack-targets` reports composition shortfalls against the ratios above
 as **warnings only** (`[COVERAGE-WARN]` on stderr, non-blocking); the pipeline
 never fails because of them. Small `--sample-n` selections can still miss a
 stack or impact category even when the full population contains it.
@@ -154,8 +154,8 @@ Definition:
 - Each sample has explicit must-find labels
 
 This replaces the earlier mutation-injection approach (splicing synthetic
-defects into Gold PR diffs after the fact via
-`evaluation/tools/build_seeded_set.py`), which could not guarantee the
+defects into Gold PR diffs after the fact via an earlier revision of
+`build-seeded-set`), which could not guarantee the
 injected code was reachable or contextually coherent -- see
 [docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
 (now superseded) for that approach's history, and
@@ -182,7 +182,7 @@ force-push/amendが起きた場合、週次再構築の結果が黙って変わ�
 手書きmetadata（rule_id/category/severity/summary）が実際のコードと無言で乖離する。
 恒久対応にはCompare API（`/compare/{base_sha}...{head_sha}`）ベースの取得方式への
 書き換えとPR単位の`head_sha`/`base_sha`記録が必要だが、これはfiles取得の実装そのものを
-作り直す規模の変更であり、かつGold set（`build_gold_set.py`）も同じ非固定の性質を
+作り直す規模の変更であり、かつGold set（`build-gold-set`）も同じ非固定の性質を
 共有しているため、Seededだけを先に固定すると両セットの再現性セマンティクスが割れる。
 両セットを対象にした専用対応は別Issueで扱う。
 
@@ -270,11 +270,11 @@ Matching rule:
 - Line tolerance: plus/minus 5 lines
 - Semantic match: when both findings carry a non-`unknown` `category`, the
   categories must be equal. In production this rarely gates anything —
-  `run_agent_evaluation.py::_to_predictions` normalizes the agent's
-  perspective-based categories (`technical`/`security`) to `unknown` (except
-  `security`) because they don't share a taxonomy with the Gold/Seeded
-  `category` values (`correctness`/`performance`/etc.), so most real pairs
-  skip this check entirely.
+  `run-agent-evaluation.ts`'s `normalizeCategoriesForEvaluation()` normalizes
+  the agent's perspective-based categories (`technical`/`security`) to
+  `unknown` (except `security`) because they don't share a taxonomy with the
+  Gold/Seeded `category` values (`correctness`/`performance`/etc.), so most
+  real pairs skip this check entirely.
 - Semantic match: LLM-as-judge on `summary` text. Implemented via the
   `score-evaluation` workspace script's `--semantic-judge` flag,
   which asks an OpenAI-compatible model whether two findings' `summary` text
@@ -297,8 +297,8 @@ approach has no generation phase to adopt or fall back from: every
 (see [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)).
 
 Category-matching asymmetry to keep in mind when reading Must-Find Recall:
-`run_agent_evaluation.py::_to_predictions` normalizes the agent's
-perspective-based `technical` category to `unknown`, keeping only
+`run-agent-evaluation.ts`'s `normalizeCategoriesForEvaluation()` normalizes
+the agent's perspective-based `technical` category to `unknown`, keeping only
 `security` as-is (§3.1.2's matching rule). A `must_find.category` of
 `maintainability`/`correctness`/`performance` therefore skips the category
 check (one side is `unknown`), while `security` must_find entries are
@@ -411,16 +411,18 @@ fail-closedチェックは依然として存在しない。§4のルーティン
 
 **Sharded execution assumption (added for #177)**: when step 3 cannot fit a
 single execution window (for example OpenCode's per-invocation 2-hour
-limit), it may be split into shards via `run_agent_evaluation.py
---shard-index`/`--shard-count` and recombined with `merge_predictions.py`
-— see [evaluation/RUNBOOK.md §4a](RUNBOOK.md#4a-sharded-execution-time-constrained-environments)
-and [docs/eval-sharded-execution-spec.md](../docs/eval-sharded-execution-spec.md).
-A single shard's partial predictions/score must never be used as the basis
-for a release-gate decision (same policy as the `--sample-n` restriction in
-§2.0.3, for the same reason: an incomplete population can pass or fail a
-gate by chance). Steps 4–5 of a release-gate run must always run against
-the `merge_predictions.py` output for the full Gold+Seeded population,
-scored via `generate_evaluation_report.py`.
+limit), the automatic `--shard-index`/`--shard-count` split was a Python-only
+runner feature, retired along with `run_agent_evaluation.py` in Issue #255
+(the TypeScript `run-agent-evaluation` was scoped to exclude it, see
+`docs/ts-agent-evaluation-runner-spec.md` §2.2). A manual split-and-merge
+workaround using `merge-predictions` (still available) remains — see
+[evaluation/RUNBOOK.md §4a](RUNBOOK.md#4a-time-constrained-environments-sharded-execution-retired).
+Regardless of mechanism, a single partial run's predictions/score must never
+be used as the basis for a release-gate decision (same policy as the
+`--sample-n` restriction in §2.0.3, for the same reason: an incomplete
+population can pass or fail a gate by chance). Steps 4–5 of a release-gate
+run must always run against the `merge-predictions` output for the full
+Gold+Seeded population, scored via `generate-evaluation-report`.
 
 ### 5.2 Online Monitoring (after deployment)
 

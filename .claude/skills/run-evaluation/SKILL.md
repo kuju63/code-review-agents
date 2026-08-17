@@ -80,7 +80,6 @@ echo "podman OK"
 
 ```bash
 if [ ! -s evaluation/data/pr_targets.json ]; then
-  source .venv/bin/activate
   bash evaluation/tools/run_evaluation_pipeline.sh \
     --sample-n 15 \
     --skip-gold \
@@ -97,8 +96,7 @@ fi
 
 ```bash
 if [ ! -s evaluation/data/gold_pr_set.jsonl ]; then
-  source .venv/bin/activate
-  uv run python -u evaluation/tools/build_gold_set.py \
+  nix develop --command pnpm --filter @code-review-agent/evaluation run build-gold-set \
     --input evaluation/data/pr_targets.json \
     --output evaluation/data/gold_pr_set.jsonl
 else
@@ -151,79 +149,101 @@ bash .claude/skills/run-evaluation/scripts/start_a2a_container.sh
 
 ## Step 4: 評価スクリプトの実行
 
-`run_agent_evaluation.py` はA2Aサーバーの起動・停止を一切行わない（起動はStep 3、停止は
-Step 5が担当する）。
+`run-agent-evaluation`（TypeScript版、Issue #255で`run_agent_evaluation.py`から移行）は
+A2Aサーバーの起動・停止を一切行わない（起動はStep 3、停止はStep 5が担当する）。
+`packages/evaluation/package.json`にはまだ`run-agent-evaluation`用のscriptエントリがない
+（`main`のIssue #306/#307時点からの既存ギャップで、この移行では未対応）ため、`tsx`を直接呼ぶ。
 
 ```bash
-uv run python -u evaluation/tools/run_agent_evaluation.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation exec tsx \
+  src/run-agent-evaluation.ts \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
-  --output evaluation/data/agent_predictions.jsonl \
+  --pred evaluation/data/agent_predictions.jsonl \
+  --base-url http://localhost:8000 \
   --concurrency 2
 EVAL_EXIT=$?
 ```
 
-`source .venv/bin/activate && python ...`ではなく`uv run python ...`を使うこと。venvを直接activateした場合、
-editable installが`uv sync`と同期されていないと`code_review_agent`パッケージ（`_to_predictions`が内部でimportする）
-が`ModuleNotFoundError`になり、全アイテムが空の結果（`agent_findings: []`）で失敗し続ける
-（2026-08-03の実行で発生・原因特定済み）。`uv run`は実行前に自動で環境を同期するため、この問題を回避できる。
+`--base-url`は必ず明示すること。コマンド自身の既定値（`http://localhost:3000`、
+`packages/a2a-server`固定ポートに合わせたもの）は、Step 3で起動するA2Aコンテナが実際に
+公開するポート（`localhost:8000`、旧Python版runnerの既定と同じ）とは異なる。
 
 `--concurrency`は既定で2（Gold/Seededの各項目を最大2件同時に評価）。ハードウェアや外部LLM API・
 GitHub MCPのレート制限次第では2が現実的な上限であり、上げる場合はタイムアウト（`--timeout`、既定1800秒）
 に達するリスクが増える点に注意する（詳細: [docs/evaluation-pipeline-design.md](../../../docs/evaluation-pipeline-design.md)）。
 
-スクリプトは `evaluation/data/` 配下に以下を生成する:
+コマンドは `evaluation/data/` 配下に以下を生成する:
 
 - `agent_predictions.jsonl` — Agentの予測結果
-- `report_YYYYMMDD-HHMMSS-<hash>.md` — 評価レポート（Markdown）
+- `agent_predictions.jsonl.failed_ids.json` — 失敗item idのsidecar（常に書き込まれる、0件でも）
 
+旧Python版runnerと異なり、`run-agent-evaluation`はレポート生成・Discord通知を自動実行しない
+（`docs/ts-agent-evaluation-runner-spec.md` §2.2で明示的にスコープ外）。続けて明示的に実行する:
+
+```bash
+nix develop --command pnpm --filter @code-review-agent/evaluation run generate-evaluation-report \
+  --gold evaluation/data/gold_pr_set.jsonl \
+  --seeded evaluation/data/seeded_set.jsonl \
+  --pred evaluation/data/agent_predictions.jsonl
+REPORT_EXIT=$?
+```
+
+これが `report_YYYYMMDD-HHMMSS-<hash>.md`（評価レポート、Markdown）を生成する。
 `.env` に `DISCORD_WEBHOOK_URL` が設定されていれば、レポート生成直後（Hard Gate の成否を問わず）に自動で Discord へ完了通知が送信される（任意設定。未設定なら何もしない）。
 
 ### 実行環境に時間制約がある場合（例: OpenCode の呼び出し単位2時間制約）
 
-上記コマンドを1回で完走できない場合は、`--shard-index`/`--shard-count` で評価フェーズを
-複数回の呼び出しに分割する。手順・shard数の目安・マージ方法は
-[evaluation/RUNBOOK.md §4a](../../../evaluation/RUNBOOK.md#4a-sharded-execution-time-constrained-environments)
-を参照。この場合、Step 4のコマンドをshard数だけ繰り返した後、
-`evaluation/tools/merge_predictions.py` でマージし、
-`evaluation/tools/generate_evaluation_report.py` を実行してから Step 5 に進む
-（レポート・Discord通知はこの独立実行で生成されるため、shard実行中の
-`run_agent_evaluation.py` はレポート生成をスキップする）。
+旧Python版runnerが持っていた`--shard-index`/`--shard-count`による自動分割は、TypeScript移植の
+対象外として明示的に見送られ（`docs/ts-agent-evaluation-runner-spec.md` §2.2）、Issue #255で
+`run_agent_evaluation.py`ごと削除された。現時点でTypeScript版に自動分割の代替機能はない。
+
+1回で完走できない場合の回避策（手動）: `gold_pr_set.jsonl`/`seeded_set.jsonl`を自分で複数の
+サブセットファイルに分割し、`--pred`を分けて`run-agent-evaluation`をサブセットの数だけ繰り返す
+（各回`<pred>.failed_ids.json`sidecarを同じ命名規則で書き込む）。詳細な手順・マージ方法は
+[evaluation/RUNBOOK.md §4a](../../../evaluation/RUNBOOK.md#4a-time-constrained-environments-sharded-execution-retired)
+を参照。この場合、`merge-predictions`（引き続き利用可能）でオリジナルの完全な`--gold`/`--seeded`
+ファイルを渡してマージ・検証し、`generate-evaluation-report`をマージ後の`agent_predictions.jsonl`
+に対して実行してからStep 5に進む。
 
 ---
 
 ## Step 5: A2A サーバーコンテナの停止
 
-`run_agent_evaluation.py` はサーバーを停止しないため、評価の成功・失敗によらず必ずこの
+`run-agent-evaluation` はサーバーを停止しないため、評価の成功・失敗によらず必ずこの
 Stepでコンテナを停止する。定型処理のため `scripts/stop_a2a_container.sh` を呼ぶだけでよい
 （`podman stop`。コンテナは`--rm`付きで起動しているため、停止と同時に削除される）。
 
-shard実行時（`--shard-index`/`--shard-count` 指定時）も含め、すべての実行パターンで
-このStep 5がサーバー停止の唯一の手段である。shard運用では全shard完了後に1回だけ実行する。
+手動分割実行時（§Step 4「実行環境に時間制約がある場合」）も含め、すべての実行パターンで
+このStep 5がサーバー停止の唯一の手段である。分割運用では全パート完了後に1回だけ実行する。
 
 ```bash
 bash .claude/skills/run-evaluation/scripts/stop_a2a_container.sh
 ```
 
-終了コードの確認:
-- `0`: 全評価成功
-- `1`: 一部アイテムの評価失敗（スコアは部分結果）
-- `2〜5`: 致命的エラー（ユーザーに報告する）
-  - `2`: 引数エラー（`GITHUB_TOKEN`未設定、または`--shard-index`/`--shard-count`の指定不正）
-  - `3`: A2Aサーバーに接続できない
-  - `4`: スコアリング失敗（`generate_evaluation_report.py`が`score-evaluation`の実行に失敗）
-  - `5`: `failed_ids` sidecarが見つからない（`generate_evaluation_report.py`を`--pred`単体で
-    実行した場合など。`--allow-missing-failed-ids`で許容可能）
+終了コードの確認（旧Python版runnerと異なり、`run-agent-evaluation`と
+`generate-evaluation-report`は別々のコマンドなので終了コードも別々に確認する。
+`EVAL_EXIT`/`REPORT_EXIT`はStep 4で保存したもの）:
 
-非shard実行では`run_agent_evaluation.py`が`generate_evaluation_report.py`をsubprocess呼び出しし、
-その終了コード（0/1/4/5のいずれか）をそのまま返す。
+`run-agent-evaluation`（`$EVAL_EXIT`）:
+- `0`: 全評価成功
+- `1`: 一部アイテムの評価失敗（`failed_ids`あり、予測は部分結果）
+- `2`: 引数・環境エラー（`GITHUB_TOKEN`未設定、または`--concurrency`/`--poll-interval`/`--timeout`の指定不正）
+
+`generate-evaluation-report`（`$REPORT_EXIT`）:
+- `0`: 全評価成功のレポート生成
+- `1`: `failed_ids`が存在するレポート生成（スコアは部分結果を含む）
+- `2`: 引数エラー
+- `4`: スコアリング失敗（`score-evaluation`相当の内部処理が失敗）
+- `5`: `failed_ids` sidecarが見つからない（`--pred`単体で実行した場合など。
+  `--allow-missing-failed-ids`で許容可能）
 
 ---
 
 ## Step 6: Obsidian へのレポート保存
 
-shard運用時は `evaluation/tools/generate_evaluation_report.py`(マージ後に独立実行したもの)が
-生成したレポートが対象になる。それ以外は生成物の形式・保存手順に差はない。
+手動分割運用時は `generate-evaluation-report`(マージ後に独立実行したもの)が生成した
+レポートが対象になる。それ以外は生成物の形式・保存手順に差はない。
 
 `evaluation/data/report_*.md` の最新ファイルを特定する:
 
@@ -243,14 +263,14 @@ echo "Report: $REPORT_PATH"
 - **保存先**: `プロジェクト/code-review-agent/evaluation-report/`
 - **ファイル名**: レポートファイル名をそのまま使用（`report_YYYYMMDD-HHMMSS-<hash>.md` → `YYYYMMDD-HHMMSS-<hash>.md` に変換してもよい）
 
-> Obsidian への保存は Python スクリプトからの subprocess 呼び出しではなく、
+> Obsidian への保存は評価スクリプトからの subprocess 呼び出しではなく、
 > 必ず Claude が obsidian-cli スキル経由で行うこと。
 
 ---
 
 ## 注意事項
 
-- `GITHUB_TOKEN` は `.env` から読み込む。`gh` コマンド等の実作業には使用しない（`.env` の `GITHUB_TOKEN` は評価パイプライン専用）。GitHub MCP呼び出し・build系スクリプトは引き続き `venv`（`source .venv/bin/activate`）を使う。
+- `GITHUB_TOKEN` は `.env` から読み込む。`gh` コマンド等の実作業には使用しない（`.env` の `GITHUB_TOKEN` は評価パイプライン専用）。評価パイプラインのbuild系スクリプト（`select-stack-targets`/`build-gold-set`/`build-seeded-set`等）はIssue #255で全てTypeScript化されており `venv` は不要（`nix develop`のみで完結する）。GitHub MCP呼び出し（レビューAgent自体の動作、`src/code_review_agent/`配下）は引き続き `venv`（`source .venv/bin/activate`）を使う。
 - A2A サーバーは `code-review-agent-eval` という固定名のpodmanコンテナとして起動する（デフォルトポートは`8000`、`--network=host`のためホストと同じ`localhost:8000`でアクセスできる）。`--replace`が置き換えるのは**停止済み**の同名コンテナ（前回異常終了時の残骸など）のみで、**稼働中**の同名コンテナがあれば`start_a2a_container.sh`は置き換えずに明示的に起動失敗する（他セッションの評価実行中を誤って停止しないため）。
 - `pr_targets.json` / Gold set / Seeded set が既に存在する場合はビルドをスキップして再利用する。
 - 既定は`--sample-n 15`によるランダムサンプリング(高速・日常イテレーション用)。全件に近いフル評価が
