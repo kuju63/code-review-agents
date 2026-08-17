@@ -2,7 +2,7 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { readJsonl, writeJsonlAtomic } from "./jsonl.js";
+import { readJsonl, writeJsonAtomic, writeJsonlAtomic } from "./jsonl.js";
 
 const directories: string[] = [];
 
@@ -66,6 +66,31 @@ describe("writeJsonlAtomic", () => {
     circular.self = circular;
 
     await expect(writeJsonlAtomic(path, [circular])).rejects.toThrow();
+    await expect(readFile(path, "utf-8")).resolves.toBe("previous\n");
+  });
+});
+
+describe("writeJsonAtomic", () => {
+  it("creates parent directories and writes pretty-printed JSON", async () => {
+    const directory = await tempDirectory();
+    const path = join(directory, "nested", "output.json");
+
+    await writeJsonAtomic(path, { id: 1, values: [1, 2] });
+
+    await expect(readFile(path, "utf-8")).resolves.toBe(
+      '{\n  "id": 1,\n  "values": [\n    1,\n    2\n  ]\n}\n',
+    );
+    expect(
+      (await readdir(join(directory, "nested"))).filter((name) => name.endsWith(".tmp")),
+    ).toEqual([]);
+  });
+
+  it("rejects a non-JSON-serializable top-level value instead of writing 'undefined'", async () => {
+    const directory = await tempDirectory();
+    const path = join(directory, "output.json");
+    await writeFile(path, "previous\n", "utf-8");
+
+    await expect(writeJsonAtomic(path, undefined)).rejects.toThrow();
     await expect(readFile(path, "utf-8")).resolves.toBe("previous\n");
   });
 });
