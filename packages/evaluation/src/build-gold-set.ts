@@ -245,7 +245,11 @@ export async function buildGoldItem(
   const [owner, repo] = splitRepository(target.repository);
 
   const prUrl = `https://api.github.com/repos/${owner}/${repo}/pulls/${target.pr_number}`;
-  const prData = (await apiGet(prUrl, token)) as Record<string, unknown>;
+  const rawPrData = await apiGet(prUrl, token);
+  if (!isRecord(rawPrData)) {
+    throw new Error(`GitHub pull request response for ${prUrl} was not a JSON object`);
+  }
+  const prData = rawPrData;
   const files = await fetchPrFiles(owner, repo, target.pr_number, token);
   const comments = await fetchReviewComments(owner, repo, target.pr_number, token, apiGet);
 
@@ -269,7 +273,12 @@ export async function buildGoldItem(
       path,
       line: extractLine(comment),
       summary,
-      source: (comment.html_url as string | undefined) ?? (prData.html_url as string | undefined),
+      source:
+        typeof comment.html_url === "string"
+          ? comment.html_url
+          : typeof prData.html_url === "string"
+            ? prData.html_url
+            : undefined,
     });
   }
 
@@ -327,7 +336,18 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
     .description("Build Gold PR dataset from GitHub")
     .requiredOption("--input <path>", "Path to input target JSON")
     .requiredOption("--output <path>", "Path to output JSONL")
-    .option("--sleep <seconds>", "Sleep between API calls", (v) => Number.parseFloat(v), 0.2)
+    .option(
+      "--sleep <seconds>",
+      "Sleep between API calls",
+      (v) => {
+        const parsed = Number.parseFloat(v);
+        if (Number.isNaN(parsed) || parsed < 0) {
+          throw new CommanderError(2, "commander.invalidArgument", `invalid --sleep: ${v}`);
+        }
+        return parsed;
+      },
+      0.2,
+    )
     .allowExcessArguments(false)
     .exitOverride();
 
@@ -348,29 +368,38 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
     return 2;
   }
 
-  const targets = loadTargets(options.input);
+  let targets: Target[];
+  try {
+    targets = loadTargets(options.input);
+  } catch (error) {
+    logger.error(`failed to load targets: ${errorMessage(error)}`);
+    return 2;
+  }
 
   const items: GoldItem[] = [];
   for (const target of targets) {
-    let item: GoldItem;
     try {
-      item = await buildGoldItem(target, token, deps);
-    } catch (error) {
-      logger.warn(`skip ${target.repository}#${target.pr_number}: ${errorMessage(error)}`);
-      continue;
-    }
+      let item: GoldItem;
+      try {
+        item = await buildGoldItem(target, token, deps);
+      } catch (error) {
+        logger.warn(`skip ${target.repository}#${target.pr_number}: ${errorMessage(error)}`);
+        continue;
+      }
 
-    if (item.file_changes.length === 0) {
-      logger.info(`no target file changes: ${target.repository}#${target.pr_number}`);
-      continue;
-    }
-    if (item.human_findings.length === 0) {
-      logger.info(`no review comments: ${target.repository}#${target.pr_number}`);
-      continue;
-    }
+      if (item.file_changes.length === 0) {
+        logger.info(`no target file changes: ${target.repository}#${target.pr_number}`);
+        continue;
+      }
+      if (item.human_findings.length === 0) {
+        logger.info(`no review comments: ${target.repository}#${target.pr_number}`);
+        continue;
+      }
 
-    items.push(item);
-    await sleep(options.sleep);
+      items.push(item);
+    } finally {
+      await sleep(options.sleep);
+    }
   }
 
   await writeJsonlAtomic(options.output, items);
