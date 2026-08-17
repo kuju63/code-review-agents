@@ -41,42 +41,43 @@ This document defines the contribution workflow for this repository.
 
 ## 3. Local Development Commands
 
+Local commands need the TypeScript toolchain (Node, pnpm, biome) provided by the
+repository-root Nix flake; prefix commands with `nix develop --command` when it
+is not already active in your shell. See `CLAUDE.md` for details.
+
 ### Initial setup
 
 ```bash
-uv venv
-source .venv/bin/activate
-uv sync
+nix develop --command pnpm install --frozen-lockfile
 pre-commit install
 ```
 
 ### Test
 
 ```bash
-uv run pytest
+nix develop --command pnpm run test
 ```
 
 ### Lint and format
 
 ```bash
-uv run ruff check
-uv run ruff check --fix
-uv run ruff format
-uv run ruff format --check
+nix develop --command pnpm run lint
+nix develop --command pnpm exec biome check --write .
+nix develop --command pnpm exec biome format --write .
 ```
 
-### Build
+### Type check
 
 ```bash
-uv build
+nix develop --command pnpm run typecheck
 ```
 
 ## 4. Implementation and Design Rules
 
-- Follow PEP 8.
-- Add type hints.
+- Follow the Biome-enforced style (`pnpm run lint`); do not hand-format around it.
+- Use explicit TypeScript types; avoid `any`.
 - Keep one module focused on one responsibility.
-- Use Google-style doc comments.
+- Use TSDoc-style doc comments.
 - Keep line comments focused on why/what, and avoid obvious comments.
 
 ## 5. PR Description Rules
