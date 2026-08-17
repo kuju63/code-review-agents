@@ -11,7 +11,7 @@ Gold set・Seeded setの準備 → A2Aサーバー起動 → 評価実行 → �
 ## ステップ概要
 
 ```text
-1. 前提チェック（.env, pr_targets_{stack}.json の存在, podman の存在）
+1. 前提チェック（.env, pr_targets_{stack}.json の存在, podman, nix の存在）
 2. Gold set / Seeded set の準備（なければビルド）
 3. A2A サーバーを podman コンテナとして起動
 4. 評価スクリプトを実行
@@ -59,6 +59,8 @@ echo "seeded PR target files OK"
 
 # A2Aサーバーをコンテナで起動するため podman が必要
 command -v podman > /dev/null 2>&1 || { echo "ERROR: podman not found."; exit 1; }
+# TypeScript evaluation workspace commands require the repository Nix toolchain
+command -v nix > /dev/null 2>&1 || { echo "ERROR: nix not found."; exit 1; }
 # バイナリの存在だけでなく、rootless実行環境やストレージが初期化済みで
 # 実際にコンテナを起動できる状態かをここで検知する（Step 2のデータセット生成に
 # 時間をかけた後、Step 3で初めて podman が使えないと判明するのを避けるため）。
@@ -110,7 +112,7 @@ fi
 
 ```bash
 if [ ! -s evaluation/data/seeded_set.jsonl ]; then
-  uv run python -u evaluation/tools/build_seeded_set.py \
+  nix develop --command pnpm --filter @code-review-agent/evaluation run build-seeded-set \
     --targets evaluation/input/seeded_pr_targets_react.json \
               evaluation/input/seeded_pr_targets_vue.json \
               evaluation/input/seeded_pr_targets_angular.json \
@@ -209,7 +211,7 @@ bash .claude/skills/run-evaluation/scripts/stop_a2a_container.sh
 - `2〜5`: 致命的エラー（ユーザーに報告する）
   - `2`: 引数エラー（`GITHUB_TOKEN`未設定、または`--shard-index`/`--shard-count`の指定不正）
   - `3`: A2Aサーバーに接続できない
-  - `4`: スコアリング失敗（`generate_evaluation_report.py`が`score_evaluation.py`の実行に失敗）
+  - `4`: スコアリング失敗（`generate_evaluation_report.py`が`score-evaluation`の実行に失敗）
   - `5`: `failed_ids` sidecarが見つからない（`generate_evaluation_report.py`を`--pred`単体で
     実行した場合など。`--allow-missing-failed-ids`で許容可能）
 

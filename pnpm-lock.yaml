@@ -77,7 +77,27 @@ importers:
         specifier: ^2.9.0
         version: 2.9.0
 
-  packages/evaluation: {}
+  packages/evaluation:
+    dependencies:
+      '@code-review-agent/agent-core':
+        specifier: workspace:^
+        version: link:../agent-core
+      '@strands-agents/sdk':
+        specifier: ^1.12.0
+        version: 1.12.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.4.3))(@opentelemetry/api@1.9.1)(@smithy/types@4.16.1)(express@5.2.1(supports-color@7.2.0))(openai@7.4.0(@aws-sdk/credential-provider-node@3.972.78)(@smithy/signature-v4@5.6.12)(zod@4.4.3))(zod@4.4.3)
+      commander:
+        specifier: ^14.0.3
+        version: 14.0.3
+      zod:
+        specifier: ^4.1.12
+        version: 4.4.3
+    devDependencies:
+      '@types/node':
+        specifier: ^26.2.0
+        version: 26.2.0
+      tsx:
+        specifier: ^4.23.0
+        version: 4.23.12
 
 packages:
 
@@ -986,6 +1006,10 @@ packages:
 
   color-name@1.1.4:
     resolution: {integrity: sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==}
+
+  commander@14.0.3:
+    resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
+    engines: {node: '>=20'}
 
   content-disposition@1.1.0:
     resolution: {integrity: sha512-5jRCH9Z/+DRP7rkvY83B+yGIGX96OYdJmzngqnw2SBSxqCFPd0w2km3s5iawpGX8krnwSGmF0FW5Nhr0Hfai3g==}
@@ -2472,6 +2496,8 @@ snapshots:
       color-name: 1.1.4
 
   color-name@1.1.4: {}
+
+  commander@14.0.3: {}
 
   content-disposition@1.1.0: {}
 

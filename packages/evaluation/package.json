@@ -3,6 +3,27 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "build": "pnpm --filter @code-review-agent/agent-core run build && tsc --noEmit false",
+    "build-seeded-set": "tsx src/build-seeded-set.ts",
+    "discover-candidate-prs": "tsx src/discover-candidate-prs.ts",
+    "score-evaluation": "tsx src/score-evaluation.ts"
+  },
+  "bin": {
+    "build-seeded-set": "./dist/build-seeded-set.js",
+    "discover-candidate-prs": "./dist/discover-candidate-prs.js",
+    "score-evaluation": "./dist/score-evaluation.js"
+  },
   "main": "./dist/index.js",
-  "types": "./dist/index.d.ts"
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "@code-review-agent/agent-core": "workspace:^",
+    "@strands-agents/sdk": "^1.12.0",
+    "commander": "^14.0.3",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "^4.23.0"
+  }
 }

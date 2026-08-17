@@ -21,8 +21,8 @@ import argparse
 import json
 import logging
 import os
+import shutil
 import subprocess
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -112,42 +112,69 @@ def _load_failed_ids(
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
-    """Run score_evaluation.py and return the parsed JSON result.
+_SCORE_TIMEOUT_SECONDS = 1800
 
-    Only stdout is piped (score_evaluation.py's machine-readable JSON
-    contract); stderr is left to inherit so score_evaluation.py's own log
-    records stream straight to this process's console instead of being
-    captured and discarded.
+
+def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
+    """Run the TypeScript scorer CLI and return the parsed JSON result.
+
+    The scorer was migrated to TypeScript (Issue #254). Only stdout is
+    piped (the scorer's machine-readable JSON contract); stderr is left to
+    inherit so the scorer's own log records stream straight to this
+    process's console instead of being captured and discarded.
 
     Returns:
-        The parsed JSON object printed by ``score_evaluation.py`` on stdout.
+        The parsed JSON object printed by the scorer on stdout.
 
     Raises:
-        RuntimeError: If ``score_evaluation.py`` exits with a non-zero
-            status.
+        RuntimeError: If the scorer exits with a non-zero status, is not
+            found on PATH, times out, or does not emit valid JSON.
     """
-    score_script = Path(__file__).parent / "score_evaluation.py"
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(score_script),
-            "--gold",
-            gold_path,
-            "--seeded",
-            seeded_path,
-            "--pred",
-            pred_path,
-        ],
-        stdout=subprocess.PIPE,
-        text=True,
-    )
+    repo_root = Path(__file__).resolve().parents[2]
+    pnpm = shutil.which("pnpm")
+    if pnpm is None:
+        raise RuntimeError(
+            "score-evaluation could not start: 'pnpm' was not found on PATH; "
+            "run this step inside the repository Nix toolchain "
+            "(nix develop --command ...)"
+        )
+    try:
+        result = subprocess.run(  # noqa: S603 - fixed argv list and no shell execution
+            [
+                pnpm,
+                "--silent",
+                "--filter",
+                "@code-review-agent/evaluation",
+                "run",
+                "score-evaluation",
+                "--gold",
+                gold_path,
+                "--seeded",
+                seeded_path,
+                "--pred",
+                pred_path,
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
+            cwd=repo_root,
+            timeout=_SCORE_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"score-evaluation timed out after {_SCORE_TIMEOUT_SECONDS}s"
+        ) from exc
     if result.returncode != 0:
         raise RuntimeError(
-            f"score_evaluation.py failed (exit code {result.returncode}); "
+            f"score-evaluation failed (exit code {result.returncode}); "
             "see its stderr output above"
         )
-    return json.loads(result.stdout)
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            "score-evaluation emitted invalid JSON; "
+            f"stdout starts with {result.stdout[:200]!r}"
+        ) from exc
 
 
 def _sanitize_cell(text: Any, max_len: int = 100) -> str:

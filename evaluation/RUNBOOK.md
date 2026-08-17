@@ -5,7 +5,8 @@ This runbook is the operational guide for running evaluation end-to-end.
 ## 0. Preconditions
 
 - Working directory: repository root
-- Python 3.11+ recommended
+- Python 3.11+ recommended for the remaining Python tools
+- Nix available for the TypeScript evaluation workspace commands
 - GitHub token is available
 
 Set token:
@@ -109,7 +110,7 @@ See [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-ba
 for the full design. Requires `GITHUB_TOKEN` (same token as step 2); there
 is no generation model to configure.
 
-uv run python evaluation/tools/build_seeded_set.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run build-seeded-set \
   --targets evaluation/input/seeded_pr_targets_react.json \
             evaluation/input/seeded_pr_targets_vue.json \
             evaluation/input/seeded_pr_targets_angular.json \
@@ -122,14 +123,14 @@ Checkpoint:
   Issue #224's initial migration) and every row's `must_find` has at least
   one entry
 - The build fails closed rather than producing a partial file: a missing
-  marker, a marker/metadata count mismatch, or a marker sitting on a file
-  `pr_info_collector.is_target_file()` would exclude from review all raise
+  marker, a marker/metadata count mismatch, or a marker sitting in a file the
+  shared target-file predicate would exclude from review all raise
   and stop the run. If the build fails, fix the failing PR's metadata entry
   (or the seed repository's PR) rather than working around the error.
 - To inspect one PR's markers before writing its metadata (or to debug a
   fail-closed error), use `--print-markers` with `--pr`:
 
-  uv run python evaluation/tools/build_seeded_set.py \
+  nix develop --command pnpm --filter @code-review-agent/evaluation run build-seeded-set \
     --targets evaluation/input/seeded_pr_targets_vue.json \
     --pr kuju63/vue-seeded#13 --print-markers
 
@@ -139,7 +140,7 @@ Run the review agent on both Gold and Seeded inputs via the A2A server
 (see [.claude/skills/run-evaluation/SKILL.md](../.claude/skills/run-evaluation/SKILL.md)
 for the full start/stop sequence):
 
-uv run python evaluation/tools/run_agent_evaluation.py \
+nix develop --command uv run python evaluation/tools/run_agent_evaluation.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --output evaluation/data/agent_predictions.jsonl \
@@ -172,8 +173,8 @@ Minimum record format:
 Axis agreement uses only matched pairs where both sides contain canonical values. Missing, `unknown`, or invalid axis values are excluded independently, and a reported `0.0` with `n=0` means no eligible labels rather than complete disagreement.
 
 After writing `agent_predictions.jsonl`, `run_agent_evaluation.py` invokes
-`evaluation/tools/generate_evaluation_report.py` as a subprocess (the same
-pattern it already uses for `score_evaluation.py`) to score, write the
+`evaluation/tools/generate_evaluation_report.py` as a subprocess; that report
+generator invokes the migrated `score-evaluation` workspace script to score, write the
 Markdown report, and send the Discord notification. This is unchanged from
 before the sharded-execution support below was added — see
 [docs/eval-sharded-execution-spec.md](../docs/eval-sharded-execution-spec.md).
@@ -186,7 +187,7 @@ Gold+Seeded run can take. When `--concurrency 2` and `--timeout 1800`
 (defaults) do not fit in the available window, split the run into shards:
 
 ```bash
-uv run python evaluation/tools/run_agent_evaluation.py \
+nix develop --command uv run python evaluation/tools/run_agent_evaluation.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --output evaluation/data/shard0.jsonl \
@@ -231,7 +232,7 @@ each shard needs a distinct `--output` path.
 Once every shard has finished, merge them:
 
 ```bash
-uv run python evaluation/tools/merge_predictions.py \
+nix develop --command uv run python evaluation/tools/merge_predictions.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --output evaluation/data/agent_predictions.jsonl \
@@ -254,7 +255,7 @@ Then generate the score, Markdown report, and Discord notification from the
 merged predictions:
 
 ```bash
-uv run python evaluation/tools/generate_evaluation_report.py \
+nix develop --command uv run python evaluation/tools/generate_evaluation_report.py \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --pred evaluation/data/agent_predictions.jsonl
@@ -266,7 +267,7 @@ identical either way.
 
 ## 5. Score evaluation
 
-uv run python evaluation/tools/score_evaluation.py \
+nix develop --command pnpm --filter @code-review-agent/evaluation run score-evaluation \
   --gold evaluation/data/gold_pr_set.jsonl \
   --seeded evaluation/data/seeded_set.jsonl \
   --pred evaluation/data/agent_predictions.jsonl
@@ -275,6 +276,11 @@ Add `--semantic-judge` (optionally with `--model-id` / `--llm-base-url` /
 `--provider-type`) to enable LLM-as-judge content matching on top of
 path/line/category — see EVALUATION_PLAN.md §3.1.1 Matching rule. Do not
 use it for Seeded-set hard gate runs (§6): it introduces non-determinism.
+
+The actual judge-parity run is performed on the designated evaluation machine
+using the same prediction file for the legacy and migrated judges. Migration
+acceptance requires Must-Find Recall to remain within -5 points of the
+Epic #249 Step 1 baseline and to be at least 0.60 in absolute terms.
 
 ## 6. Gate decision
 
@@ -308,9 +314,9 @@ If Seeded recall is unstable:
   hand-authored code, an unstable recall on a specific PR usually means
   the reviewer isn't covering that defect category, not a dataset defect
 
-If `build_seeded_set.py` exits with a fail-closed `ValueError`
-(marker/metadata mismatch, or a marker on a file `is_target_file()`
-excludes):
+If `build-seeded-set` exits with a fail-closed error
+(marker/metadata mismatch, or a marker on a file the shared target-file
+predicate excludes):
 
 - This is intentional (see
   [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)
