@@ -94,8 +94,16 @@ export function loadTargets(path: string): Target[] {
     if (!isRecord(item)) {
       throw new Error(`invalid target at [${index}]`);
     }
-    const repository = String(item.repository);
-    const prNumber = Number(item.pr_number);
+    const rawRepository = item.repository;
+    if (typeof rawRepository !== "string" || !rawRepository.includes("/")) {
+      throw new Error(`invalid target at [${index}]: repository=${JSON.stringify(rawRepository)}`);
+    }
+    const repository = rawRepository;
+    const rawPrNumber = item.pr_number;
+    if (typeof rawPrNumber !== "number" || !Number.isInteger(rawPrNumber) || rawPrNumber < 1) {
+      throw new Error(`invalid target at [${index}]: pr_number=${JSON.stringify(rawPrNumber)}`);
+    }
+    const prNumber = rawPrNumber;
     const stack = item.stack;
     if (typeof stack !== "string" || !STACKS.has(stack)) {
       const allowed = [...STACKS].sort().join(", ");
@@ -203,7 +211,7 @@ async function fetchReviewComments(
     if (!Array.isArray(pageData)) {
       throw new TypeError("GitHub PR review comments response must be an array");
     }
-    comments.push(...(pageData as Record<string, unknown>[]));
+    comments.push(...pageData.filter(isRecord));
     if (pageData.length < REVIEW_COMMENTS_PER_PAGE) {
       return comments;
     }

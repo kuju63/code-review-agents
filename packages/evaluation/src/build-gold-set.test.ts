@@ -135,6 +135,33 @@ describe("loadTargets", () => {
 
     expect(() => loadTargets(path)).toThrow(/stack/);
   });
+
+  it("fails closed for a missing/malformed repository", async () => {
+    const path = join(dir, "targets.json");
+    await writeFile(path, JSON.stringify([{ pr_number: 1, stack: "react" }]));
+
+    expect(() => loadTargets(path)).toThrow(/repository/);
+  });
+
+  it("fails closed for a non-integer pr_number", async () => {
+    const path = join(dir, "targets.json");
+    await writeFile(
+      path,
+      JSON.stringify([{ repository: "owner/repo", pr_number: "not-a-number", stack: "react" }]),
+    );
+
+    expect(() => loadTargets(path)).toThrow(/pr_number/);
+  });
+
+  it("fails closed for a pr_number below 1", async () => {
+    const path = join(dir, "targets.json");
+    await writeFile(
+      path,
+      JSON.stringify([{ repository: "owner/repo", pr_number: 0, stack: "react" }]),
+    );
+
+    expect(() => loadTargets(path)).toThrow(/pr_number/);
+  });
 });
 
 describe("normalizeCategory", () => {
@@ -187,6 +214,32 @@ describe("buildGoldItem", () => {
     const item = await buildGoldItem(t, "token", { apiGet: fakeApiGet(prUrl), fetchPrFiles });
 
     expect(item.file_changes).toEqual([]);
+  });
+
+  it("skips malformed (non-record) review comment entries without crashing", async () => {
+    const prUrl = "https://api.github.com/repos/owner/repo/pulls/1";
+    const t = target();
+    const fetchPrFiles = vi.fn().mockResolvedValue([{ path: "src/App.tsx", patch: "@@ -1 +1 @@" }]);
+    const apiGet = async (url: string, _token: string): Promise<unknown> => {
+      if (url.includes("/pulls/1/comments")) {
+        return [
+          null,
+          "not-a-record",
+          {
+            body: "valid comment",
+            path: "src/App.tsx",
+            line: 5,
+            html_url: "https://github.com/owner/repo/pull/1#discussion_r1",
+          },
+        ];
+      }
+      return { title: "PR", body: "", labels: [], html_url: prUrl };
+    };
+
+    const item = await buildGoldItem(t, "token", { apiGet, fetchPrFiles });
+
+    expect(item.human_findings).toHaveLength(1);
+    expect(item.human_findings[0]?.summary).toBe("valid comment");
   });
 });
 

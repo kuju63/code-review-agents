@@ -2,18 +2,33 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getLogger, setupLogging } from "./lib/logging.js";
 import { failedIdsPath, merge, run } from "./merge-predictions.js";
 
 let dir: string;
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), "merge-predictions-"));
+  vi.resetModules();
 });
 
 afterEach(async () => {
   await rm(dir, { recursive: true, force: true });
 });
+
+/**
+ * `setupLogging` is a first-call-wins singleton (packages/evaluation/src/lib/logging.ts),
+ * so a static import of `merge` shares logging state with every other test
+ * in this process. Reset the module registry and re-import both `merge`
+ * and `logging` so this test's `setupLogging` call is the first one that
+ * module instance sees.
+ */
+async function freshMerge() {
+  const write = vi.fn<(chunk: string) => boolean>(() => true);
+  const { setupLogging } = await import("./lib/logging.js");
+  setupLogging("info", { stream: { write } });
+  const { merge: freshMergeFn } = await import("./merge-predictions.js");
+  return { merge: freshMergeFn, write };
+}
 
 async function writeJsonl(path: string, rows: Record<string, unknown>[]): Promise<void> {
   await writeFile(
@@ -140,9 +155,7 @@ describe("merge unaccounted ids", () => {
   });
 
   it("downgrades an unaccounted id to a warning with --allow-missing", async () => {
-    const write = vi.fn<(chunk: string) => boolean>(() => true);
-    setupLogging("info", { stream: { write } });
-    getLogger("merge_predictions");
+    const { merge, write } = await freshMerge();
 
     const gold = join(dir, "gold.jsonl");
     await writeJsonl(gold, [{ id: "g1" }, { id: "g2" }]);
@@ -196,8 +209,7 @@ describe("merge unaccounted ids", () => {
   });
 
   it("does not mention --allow-missing in the summary when it was not provided", async () => {
-    const write = vi.fn<(chunk: string) => boolean>(() => true);
-    setupLogging("info", { stream: { write } });
+    const { merge, write } = await freshMerge();
 
     const gold = join(dir, "gold.jsonl");
     await writeJsonl(gold, [{ id: "g1" }, { id: "g2" }]);

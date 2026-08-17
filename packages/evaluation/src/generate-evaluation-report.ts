@@ -125,7 +125,11 @@ export async function loadFailedIds(
     );
     return [];
   }
-  return JSON.parse(await readFile(path, "utf-8"));
+  const parsed: unknown = JSON.parse(await readFile(path, "utf-8"));
+  if (!Array.isArray(parsed) || parsed.some((id) => typeof id !== "string")) {
+    throw new Error(`failed_ids sidecar at ${path} must be a JSON array of strings`);
+  }
+  return parsed;
 }
 
 /** Make `text` safe for one Markdown table cell: collapse whitespace, escape

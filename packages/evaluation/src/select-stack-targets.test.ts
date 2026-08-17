@@ -323,7 +323,7 @@ describe("run (CLI)", () => {
     expect(exitCode).toBe(2);
   });
 
-  it("rejects --limit and --stratify-repo-type without --shuffle even at limit<=0", async () => {
+  it("rejects --stratify-repo-type when --limit is not greater than 0", async () => {
     const path = join(dir, "input.json");
     await writeFile(path, "[]");
 
@@ -350,6 +350,54 @@ describe("run (CLI)", () => {
       join(dir, "out.json"),
       "--impact",
       "not-a-real-impact",
+    ]);
+
+    expect(exitCode).toBe(2);
+  });
+
+  it("rejects an invalid --stacks value", async () => {
+    const path = join(dir, "input.json");
+    await writeFile(path, "[]");
+
+    const exitCode = await run([
+      "--inputs",
+      path,
+      "--output",
+      join(dir, "out.json"),
+      "--stacks",
+      "solid",
+    ]);
+
+    expect(exitCode).toBe(2);
+  });
+
+  it("rejects a non-integer --limit", async () => {
+    const path = join(dir, "input.json");
+    await writeFile(path, "[]");
+
+    const exitCode = await run([
+      "--inputs",
+      path,
+      "--output",
+      join(dir, "out.json"),
+      "--limit",
+      "not-a-number",
+    ]);
+
+    expect(exitCode).toBe(2);
+  });
+
+  it("rejects a non-integer --seed", async () => {
+    const path = join(dir, "input.json");
+    await writeFile(path, "[]");
+
+    const exitCode = await run([
+      "--inputs",
+      path,
+      "--output",
+      join(dir, "out.json"),
+      "--seed",
+      "not-a-number",
     ]);
 
     expect(exitCode).toBe(2);

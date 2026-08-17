@@ -538,6 +538,14 @@ describe("loadFailedIds", () => {
 
     expect(await loadFailedIds(predPath, undefined, true)).toEqual([]);
   });
+
+  it("throws when the sidecar is not a JSON array of strings", async () => {
+    const predPath = join(dir, "agent_predictions.jsonl");
+    await writeFile(predPath, "", "utf-8");
+    await writeFile(join(dir, "agent_predictions.failed_ids.json"), "{}", "utf-8");
+
+    await expect(loadFailedIds(predPath, undefined)).rejects.toThrow(/must be a JSON array/);
+  });
 });
 
 describe("generateReport exit codes", () => {

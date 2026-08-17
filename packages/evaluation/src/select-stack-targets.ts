@@ -519,6 +519,16 @@ export interface RunDeps {
   stdout?: (line: string) => void;
 }
 
+function parseIntegerOption(name: string) {
+  return (value: string): number => {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isInteger(parsed)) {
+      throw new CommanderError(2, "commander.invalidArgument", `invalid ${name}: ${value}`);
+    }
+    return parsed;
+  };
+}
+
 export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
   const stdout = deps.stdout ?? ((line: string) => void process.stdout.write(`${line}\n`));
 
@@ -531,7 +541,7 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
     .option(
       "--limit <n>",
       "Deterministic severity-ranked selection size",
-      (v) => Number.parseInt(v, 10),
+      parseIntegerOption("--limit"),
       0,
     )
     .option("--stacks <stacks>", "Comma-separated stack filter", "")
@@ -544,7 +554,7 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
     .option("--priority <csv>", "Comma-separated priority filter", "")
     .option("--balanced", "Round-robin balance selection across stacks", false)
     .option("--shuffle", "Shuffle before selection", false)
-    .option("--seed <n>", "Random seed", (v) => Number.parseInt(v, 10), 42)
+    .option("--seed <n>", "Random seed", parseIntegerOption("--seed"), 42)
     .option("--stratify-repo-type", "Stratify sampling evenly by repo_type", false)
     .option("--print-summary", "Print the selection summary JSON to stdout", false)
     .allowExcessArguments(false)
@@ -572,8 +582,10 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
 
   const impacts = parseCsvArg(options.impact);
   const priorities = parseCsvArg(options.priority);
+  const stacks = parseCsvArg(options.stacks);
   const invalidImpacts = [...impacts].filter((v) => !IMPACTS.has(v));
   const invalidPriorities = [...priorities].filter((v) => !PRIORITIES.has(v));
+  const invalidStacks = [...stacks].filter((v) => !KNOWN_STACKS.has(v));
   if (invalidImpacts.length > 0) {
     logger.error(`invalid --impact: ${invalidImpacts.sort().join(", ")}`);
     return 2;
@@ -582,9 +594,13 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
     logger.error(`invalid --priority: ${invalidPriorities.sort().join(", ")}`);
     return 2;
   }
+  if (invalidStacks.length > 0) {
+    logger.error(`invalid --stacks: ${invalidStacks.sort().join(", ")}`);
+    return 2;
+  }
 
   let rows = dedupeRows(await loadTargets(options.inputs));
-  rows = filterRows(rows, parseCsvArg(options.stacks), options.minSeverity, impacts, priorities);
+  rows = filterRows(rows, stacks, options.minSeverity, impacts, priorities);
 
   if (options.stratifyRepoType) {
     rows = selectStratified(rows, options.limit, options.seed, options.balanced);
