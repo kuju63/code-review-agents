@@ -97,6 +97,8 @@ Nix flakeは**gitの管理下にないファイルを評価対象外として無
 
 ローカルでのDockerfile検証コマンドは`docker`ではなく`podman`を使用する（プロジェクト標準）。
 
+> **Update (Issue #313 / #255 Sub-Issue PR4, 2026-08-17):** 上記の「push対象をPython版に固定する」方針は本更新で終了した。`Dockerfile`から`builder`/`runtime`(Python)ステージを削除し、`node-builder`/`node-runtime`のみを残した結果、`node-runtime`がファイル末尾＝デフォルトターゲットになった。`.github/workflows/build-image.yml`の`target: runtime`指定は`target: node-runtime`に変更済みで、registry(quay.io)へpushされるのはTypeScript版になる。あわせて`.github/workflows/ci.yaml`の`ci-check`(Python)ジョブを削除し、`ts-ci-check`ジョブにCodecovアップロード(test_results / coverage、`use_oidc: true`)を統合した。Python資産自体(`src/code_review_agent/`, `pyproject.toml`等)の削除は引き続き#255最終Sub-IssueのPR5で行う。
+
 ### 4.2 Node hardened imageの調査結果（`podman`で検証済み）
 
 | 項目 | 値 |
