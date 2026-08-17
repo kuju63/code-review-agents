@@ -149,6 +149,7 @@ describe("send_discord_notification", () => {
     await send_discord_notification(webhookUrl, { embeds: [] } as never, { fetch });
 
     const messages = write.mock.calls.map((call) => String(call[0]));
+    expect(messages.some((m) => m.includes("Discord notification failed"))).toBe(true);
     expect(messages.some((m) => m.includes("super-secret-token"))).toBe(false);
     expect(messages.some((m) => m.includes("<redacted webhook url>"))).toBe(true);
   });

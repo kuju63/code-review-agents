@@ -45,5 +45,9 @@ export async function writeJsonlAtomic(
 }
 
 export async function writeJsonAtomic(outputPath: string, data: unknown): Promise<void> {
-  await writeFileAtomic(outputPath, `${JSON.stringify(data, null, 2)}\n`);
+  const serialized = JSON.stringify(data, null, 2);
+  if (serialized === undefined) {
+    throw new TypeError("writeJsonAtomic value must be a JSON-serializable value");
+  }
+  await writeFileAtomic(outputPath, `${serialized}\n`);
 }

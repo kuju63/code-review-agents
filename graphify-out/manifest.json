@@ -2780,13 +2780,13 @@
     "semantic_hash": ""
   },
   "packages/evaluation/src/lib/jsonl.test.ts": {
-    "mtime": 1786937156.2517066,
-    "ast_hash": "4a2ae08afef313d02d110c8bbf68df0f",
+    "mtime": 1786958426.5487008,
+    "ast_hash": "b1d3f134b462ad230448d06ea03cdc77",
     "semantic_hash": ""
   },
   "packages/evaluation/src/lib/jsonl.ts": {
-    "mtime": 1786957212.0985527,
-    "ast_hash": "5a3b28562bf11cc464f89cc951fe0602",
+    "mtime": 1786958438.5729222,
+    "ast_hash": "1ebf25a03178948185824828e7782070",
     "semantic_hash": ""
   },
   "packages/evaluation/src/lib/logging.test.ts": {
@@ -2810,27 +2810,27 @@
     "semantic_hash": ""
   },
   "packages/evaluation/src/build-gold-set.test.ts": {
-    "mtime": 1786957535.2497957,
+    "mtime": 1786957654.5132298,
     "ast_hash": "c33892aa9f6e69d84e4c17bcd94c726a",
     "semantic_hash": ""
   },
   "packages/evaluation/src/build-gold-set.ts": {
-    "mtime": 1786957395.0506744,
+    "mtime": 1786957654.5133138,
     "ast_hash": "bd30d81d5273e44fab75f98e7a73857c",
     "semantic_hash": ""
   },
   "packages/evaluation/src/discord-notify.test.ts": {
-    "mtime": 1786957417.8302274,
-    "ast_hash": "8ef5da9881bb58179912abf2880676e9",
+    "mtime": 1786958400.21903,
+    "ast_hash": "4dbf8301e53f3b57139eeb29613e9cdc",
     "semantic_hash": ""
   },
   "packages/evaluation/src/discord-notify.ts": {
-    "mtime": 1786957438.7239566,
+    "mtime": 1786957667.7816396,
     "ast_hash": "fa949f635e430ab4d5fdf3d808a53b5e",
     "semantic_hash": ""
   },
   "packages/evaluation/src/generate-evaluation-report.test.ts": {
-    "mtime": 1786957468.2300024,
+    "mtime": 1786957667.7817104,
     "ast_hash": "2efdce6da1643c0d50b0a620923bf8d0",
     "semantic_hash": ""
   },
@@ -2840,12 +2840,12 @@
     "semantic_hash": ""
   },
   "packages/evaluation/src/merge-predictions.test.ts": {
-    "mtime": 1786957274.2424526,
+    "mtime": 1786957642.295525,
     "ast_hash": "39957b476998bbb20401edff457344fa",
     "semantic_hash": ""
   },
   "packages/evaluation/src/merge-predictions.ts": {
-    "mtime": 1786957292.8923697,
+    "mtime": 1786957642.2955976,
     "ast_hash": "dce4b25f45f5550af79a2968603f406d",
     "semantic_hash": ""
   },
@@ -2860,13 +2860,13 @@
     "semantic_hash": ""
   },
   "packages/evaluation/src/select-stack-targets.test.ts": {
-    "mtime": 1786957163.676195,
-    "ast_hash": "44f6a75bf2e6820e82fa03f39874a285",
+    "mtime": 1786958454.9158986,
+    "ast_hash": "32f3a5d4cd1d123bfd0c3aa31b1e040f",
     "semantic_hash": ""
   },
   "packages/evaluation/src/select-stack-targets.ts": {
-    "mtime": 1786957535.2532773,
-    "ast_hash": "0236898bde590acfac5aa2b8bb5b8e82",
+    "mtime": 1786958472.340739,
+    "ast_hash": "8a2f5cc019a8e0ad5fc75d1580a375f2",
     "semantic_hash": ""
   },
   "docs/ts-agent-evaluation-runner-spec.md": {

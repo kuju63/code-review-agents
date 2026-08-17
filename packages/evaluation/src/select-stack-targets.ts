@@ -536,6 +536,18 @@ function parseIntegerOption(name: string) {
   };
 }
 
+/** Like `parseIntegerOption`, but also rejects negative values (0 stays "unlimited"). */
+function parseNonNegativeIntegerOption(name: string) {
+  const parseInteger = parseIntegerOption(name);
+  return (value: string): number => {
+    const parsed = parseInteger(value);
+    if (parsed < 0) {
+      throw new CommanderError(2, "commander.invalidArgument", `invalid ${name}: ${value}`);
+    }
+    return parsed;
+  };
+}
+
 export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
   const stdout = deps.stdout ?? ((line: string) => void process.stdout.write(`${line}\n`));
 
@@ -548,7 +560,7 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
     .option(
       "--limit <n>",
       "Deterministic severity-ranked selection size",
-      parseIntegerOption("--limit"),
+      parseNonNegativeIntegerOption("--limit"),
       0,
     )
     .option("--stacks <stacks>", "Comma-separated stack filter", "")

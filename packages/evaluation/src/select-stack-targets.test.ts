@@ -449,6 +449,38 @@ describe("run (CLI)", () => {
     expect(exitCode).toBe(0);
   });
 
+  it("rejects a negative --limit", async () => {
+    const path = join(dir, "input.json");
+    await writeFile(path, "[]");
+
+    const exitCode = await run([
+      "--inputs",
+      path,
+      "--output",
+      join(dir, "out.json"),
+      "--limit",
+      "-1",
+    ]);
+
+    expect(exitCode).toBe(2);
+  });
+
+  it("treats --limit 0 as unlimited", async () => {
+    const path = join(dir, "input.json");
+    await writeFile(path, "[]");
+
+    const exitCode = await run([
+      "--inputs",
+      path,
+      "--output",
+      join(dir, "out.json"),
+      "--limit",
+      "0",
+    ]);
+
+    expect(exitCode).toBe(0);
+  });
+
   it("accepts a whitespace-padded --seed value", async () => {
     const path = join(dir, "input.json");
     await writeFile(path, "[]");
