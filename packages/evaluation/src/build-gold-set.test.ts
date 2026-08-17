@@ -196,6 +196,59 @@ describe("buildGoldItem", () => {
     ]);
   });
 
+  it("falls back to original_line when line is missing/invalid", async () => {
+    const prUrl = "https://api.github.com/repos/owner/repo/pulls/1";
+    const t = target();
+    const fetchPrFiles = vi.fn().mockResolvedValue([{ path: "src/App.tsx", patch: "@@ -1 +1 @@" }]);
+    const apiGet = async (url: string, _token: string): Promise<unknown> => {
+      if (url.includes("/pulls/1/comments")) {
+        return [{ body: "uses original_line", path: "src/App.tsx", original_line: 7 }];
+      }
+      return { title: "PR", body: "", labels: [], html_url: prUrl };
+    };
+
+    const item = await buildGoldItem(t, "token", { apiGet, fetchPrFiles });
+
+    expect(item.human_findings[0]?.line).toBe(7);
+  });
+
+  it("defaults line to 1 when neither line nor original_line is valid", async () => {
+    const prUrl = "https://api.github.com/repos/owner/repo/pulls/1";
+    const t = target();
+    const fetchPrFiles = vi.fn().mockResolvedValue([{ path: "src/App.tsx", patch: "@@ -1 +1 @@" }]);
+    const apiGet = async (url: string, _token: string): Promise<unknown> => {
+      if (url.includes("/pulls/1/comments")) {
+        return [{ body: "no location", path: "src/App.tsx" }];
+      }
+      return { title: "PR", body: "", labels: [], html_url: prUrl };
+    };
+
+    const item = await buildGoldItem(t, "token", { apiGet, fetchPrFiles });
+
+    expect(item.human_findings[0]?.line).toBe(1);
+  });
+
+  it("excludes labels without a name from the output", async () => {
+    const prUrl = "https://api.github.com/repos/owner/repo/pulls/1";
+    const t = target();
+    const fetchPrFiles = vi.fn().mockResolvedValue([]);
+    const apiGet = async (url: string, _token: string): Promise<unknown> => {
+      if (url.includes("/pulls/1/comments")) {
+        return [];
+      }
+      return {
+        title: "PR",
+        body: "",
+        labels: [{ name: "bug" }, { color: "ff0000" }, { name: "priority:high" }],
+        html_url: prUrl,
+      };
+    };
+
+    const item = await buildGoldItem(t, "token", { apiGet, fetchPrFiles });
+
+    expect(item.labels).toEqual(["bug", "priority:high"]);
+  });
+
   it("carries the target stack to the gold item", async () => {
     const prUrl = "https://api.github.com/repos/owner/repo/pulls/1";
     const t = target({ stack: "vue" });
@@ -210,10 +263,54 @@ describe("buildGoldItem", () => {
     const prUrl = "https://api.github.com/repos/owner/repo/pulls/1";
     const t = target();
     const fetchPrFiles = vi.fn().mockResolvedValue([{ path: "README.md", patch: "@@ -1 +1 @@" }]);
+    const apiGet = async (url: string, _token: string): Promise<unknown> => {
+      if (url.includes("/pulls/1/comments")) {
+        return [{ body: "off-topic comment", path: "README.md", line: 1, html_url: "https://x" }];
+      }
+      if (url === prUrl) {
+        return { title: "PR", body: "", labels: [], html_url: prUrl };
+      }
+      throw new Error(`unexpected url: ${url}`);
+    };
 
-    const item = await buildGoldItem(t, "token", { apiGet: fakeApiGet(prUrl), fetchPrFiles });
+    const item = await buildGoldItem(t, "token", { apiGet, fetchPrFiles });
 
     expect(item.file_changes).toEqual([]);
+    expect(item.human_findings).toEqual([]);
+  });
+
+  it.each([[], null, "not-a-record", 42])(
+    "rejects a non-record PR response from apiGet (%j)",
+    async (badPrData) => {
+      const prUrl = "https://api.github.com/repos/owner/repo/pulls/1";
+      const t = target();
+      const fetchPrFiles = vi.fn().mockResolvedValue([]);
+      const apiGet = async (url: string, _token: string): Promise<unknown> => {
+        if (url === prUrl) {
+          return badPrData;
+        }
+        return [];
+      };
+
+      await expect(buildGoldItem(t, "token", { apiGet, fetchPrFiles })).rejects.toThrow(
+        /pull request response/i,
+      );
+    },
+  );
+
+  it("guards comment.html_url / prData.html_url with typeof before using them as source", async () => {
+    const t = target();
+    const fetchPrFiles = vi.fn().mockResolvedValue([{ path: "src/App.tsx", patch: "@@ -1 +1 @@" }]);
+    const apiGet = async (url: string, _token: string): Promise<unknown> => {
+      if (url.includes("/pulls/1/comments")) {
+        return [{ body: "bad url types", path: "src/App.tsx", line: 1, html_url: 12345 }];
+      }
+      return { title: "PR", body: "", labels: [], html_url: 67890 };
+    };
+
+    const item = await buildGoldItem(t, "token", { apiGet, fetchPrFiles });
+
+    expect(item.human_findings[0]?.source).toBeUndefined();
   });
 
   it("skips malformed (non-record) review comment entries without crashing", async () => {
@@ -317,6 +414,70 @@ describe("run (CLI)", () => {
 
     expect(exitCode).toBe(0);
     expect(await readFile(output, "utf-8")).toBe("");
+  });
+
+  it.each(["-1", "not-a-number", "NaN"])("rejects an invalid --sleep value (%j)", async (value) => {
+    const path = join(dir, "targets.json");
+    await writeFile(path, "[]");
+    const output = join(dir, "out.jsonl");
+
+    const exitCode = await run(["--input", path, "--output", output, "--sleep", value], {
+      env: { GITHUB_TOKEN: "token" },
+    });
+
+    expect(exitCode).toBe(2);
+  });
+
+  it("accepts a --sleep value of 0", async () => {
+    const path = join(dir, "targets.json");
+    await writeFile(path, "[]");
+    const output = join(dir, "out.jsonl");
+
+    const exitCode = await run(["--input", path, "--output", output, "--sleep", "0"], {
+      env: { GITHUB_TOKEN: "token" },
+    });
+
+    expect(exitCode).toBe(0);
+  });
+
+  it("sleeps between iterations even when a target is skipped", async () => {
+    const path = join(dir, "targets.json");
+    await writeFile(
+      path,
+      JSON.stringify([
+        { repository: "owner/repo", pr_number: 1, stack: "react" },
+        { repository: "owner/repo", pr_number: 2, stack: "react" },
+      ]),
+    );
+    const output = join(dir, "out.jsonl");
+    const sleep = vi.fn().mockResolvedValue(undefined);
+
+    const exitCode = await run(["--input", path, "--output", output], {
+      env: { GITHUB_TOKEN: "token" },
+      apiGet: async () => {
+        throw new Error("boom");
+      },
+      fetchPrFiles: vi.fn().mockResolvedValue([]),
+      sleep,
+    });
+
+    expect(exitCode).toBe(0);
+    expect(sleep).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns 2 with a descriptive error instead of crashing on invalid target input", async () => {
+    const path = join(dir, "targets.json");
+    await writeFile(
+      path,
+      JSON.stringify([{ repository: "no-slash", pr_number: 1, stack: "react" }]),
+    );
+    const output = join(dir, "out.jsonl");
+
+    const exitCode = await run(["--input", path, "--output", output], {
+      env: { GITHUB_TOKEN: "token" },
+    });
+
+    expect(exitCode).toBe(2);
   });
 
   it("skips a target whose fetch throws, continuing with the rest", async () => {

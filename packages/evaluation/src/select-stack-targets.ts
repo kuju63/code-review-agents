@@ -14,10 +14,10 @@
  * cross-language parity was never required -- only the --limit path is a
  * release-gate signal (see docs handoff notes for this port).
  */
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { Command, CommanderError, Option } from "commander";
+import { writeJsonAtomic } from "./lib/jsonl.js";
 import { getLogger } from "./lib/logging.js";
 
 const logger = getLogger("select_stack_targets");
@@ -101,14 +101,20 @@ export async function loadTargets(paths: readonly string[]): Promise<StackTarget
       }
       const prNumber = rawPrNumber;
 
-      let repository: string;
+      const rawRepository = record.repository;
+      if (typeof rawRepository !== "string" || !rawRepository.includes("/")) {
+        throw new Error(
+          `invalid target at ${location}: repository=${JSON.stringify(rawRepository)}`,
+        );
+      }
+      const repository = rawRepository;
+
       let stack: string;
       let repoType: string;
       let severity: string;
       let impact: string;
       let priority: string;
       try {
-        repository = String(record.repository);
         stack = validateChoice("stack", String(record.stack), KNOWN_STACKS);
         repoType = validateChoice("repo_type", String(record.repo_type), REPO_TYPES);
         severity = validateChoice(
@@ -122,7 +128,7 @@ export async function loadTargets(paths: readonly string[]): Promise<StackTarget
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(`invalid target at ${location}: ${message}`);
       }
-      if (!repository || prNumber < 1) {
+      if (prNumber < 1) {
         throw new Error(`invalid target identity at ${location}`);
       }
       targets.push({
@@ -519,10 +525,23 @@ export interface RunDeps {
   stdout?: (line: string) => void;
 }
 
+const STRICT_INTEGER_PATTERN = /^[+-]?\d+$/;
+
 function parseIntegerOption(name: string) {
   return (value: string): number => {
-    const parsed = Number.parseInt(value, 10);
-    if (!Number.isInteger(parsed)) {
+    if (!STRICT_INTEGER_PATTERN.test(value.trim())) {
+      throw new CommanderError(2, "commander.invalidArgument", `invalid ${name}: ${value}`);
+    }
+    return Number.parseInt(value, 10);
+  };
+}
+
+/** Like `parseIntegerOption`, but also rejects negative values (0 stays "unlimited"). */
+function parseNonNegativeIntegerOption(name: string) {
+  const parseInteger = parseIntegerOption(name);
+  return (value: string): number => {
+    const parsed = parseInteger(value);
+    if (parsed < 0) {
       throw new CommanderError(2, "commander.invalidArgument", `invalid ${name}: ${value}`);
     }
     return parsed;
@@ -541,7 +560,7 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
     .option(
       "--limit <n>",
       "Deterministic severity-ranked selection size",
-      parseIntegerOption("--limit"),
+      parseNonNegativeIntegerOption("--limit"),
       0,
     )
     .option("--stacks <stacks>", "Comma-separated stack filter", "")
@@ -617,11 +636,7 @@ export async function run(argv: string[], deps: RunDeps = {}): Promise<number> {
     }
   }
 
-  const outputDir = dirname(options.output);
-  if (outputDir) {
-    await mkdir(outputDir, { recursive: true });
-  }
-  await writeFile(options.output, `${JSON.stringify(toOutput(rows), null, 2)}\n`, "utf-8");
+  await writeJsonAtomic(options.output, toOutput(rows));
 
   const summary = summarize(rows);
   for (const warning of summary.coverage_warnings) {

@@ -121,12 +121,11 @@ export async function send_discord_notification(
       signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) {
-      throw new Error(`bad status for url '${webhook_url}': ${response.status}`);
+      throw new Error(`bad status: ${response.status}`);
     }
   } catch (error) {
-    // Node fetch/Error messages (and any embedded URL) can carry the
-    // webhook's auth token in its path -- redact it before it ever lands
-    // in logs.
+    // Node fetch/Error messages can still carry the webhook URL (and its
+    // auth token) -- redact it before it ever lands in logs.
     const raw = error instanceof Error ? error.message : String(error);
     const message = raw.replaceAll(webhook_url, "<redacted webhook url>");
     logger.warn(`Discord notification failed: ${message}`);
