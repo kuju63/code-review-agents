@@ -31,6 +31,8 @@ export interface ApiGetOptions {
   maxAttempts?: number;
   maxRedirects?: number;
   timeoutMilliseconds?: number;
+  now?: () => number;
+  maxRetryWaitMilliseconds?: number;
 }
 
 export type ApiGet = (url: string, token: string) => Promise<unknown>;
@@ -42,6 +44,7 @@ export interface FetchPrFilesOptions {
 
 const MAX_ATTEMPTS = 5;
 const BASE_BACKOFF_MILLISECONDS = 1000;
+const MAX_RETRY_WAIT_MILLISECONDS = 62_000;
 const MAX_REDIRECTS = 5;
 const MAX_PAGES = 100;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
@@ -69,7 +72,28 @@ function assertAllowedUrl(url: string, context = "call"): void {
 }
 
 function isRateLimited(response: Response): boolean {
-  return response.status === 403 && response.headers.get("x-ratelimit-remaining") === "0";
+  return (
+    response.status === 429 ||
+    (response.status === 403 && response.headers.get("x-ratelimit-remaining") === "0")
+  );
+}
+
+function retryDelayMilliseconds(
+  response: Response,
+  attempt: number,
+  now: () => number,
+  maximum: number,
+): number {
+  const backoff = BASE_BACKOFF_MILLISECONDS * 2 ** attempt;
+  const retryAfterHeader = response.headers.get("retry-after");
+  const retryAfter = retryAfterHeader === null ? Number.NaN : Number(retryAfterHeader);
+  if (Number.isFinite(retryAfter) && retryAfter >= 0) {
+    return Math.min(retryAfter * 1000, maximum);
+  }
+  const resetHeader = response.headers.get("x-ratelimit-reset");
+  const reset = resetHeader === null ? Number.NaN : Number(resetHeader);
+  const resetWait = Number.isFinite(reset) ? Math.max(reset * 1000 - now(), 0) : 0;
+  return Math.min(Math.max(backoff, resetWait), maximum);
 }
 
 export async function apiGet(
@@ -83,6 +107,8 @@ export async function apiGet(
   const maxAttempts = options.maxAttempts ?? MAX_ATTEMPTS;
   const maxRedirects = options.maxRedirects ?? MAX_REDIRECTS;
   const timeoutMilliseconds = options.timeoutMilliseconds ?? 30_000;
+  const now = options.now ?? Date.now;
+  const maxRetryWaitMilliseconds = options.maxRetryWaitMilliseconds ?? MAX_RETRY_WAIT_MILLISECONDS;
 
   if (maxAttempts < 1) {
     throw new RangeError("maxAttempts must be at least 1");
@@ -94,7 +120,7 @@ export async function apiGet(
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     let currentUrl = url;
     let redirects = 0;
-    let response: Response;
+    let response: Response | undefined;
 
     for (;;) {
       try {
@@ -114,7 +140,7 @@ export async function apiGet(
           throw error;
         }
         await sleep(BASE_BACKOFF_MILLISECONDS * 2 ** attempt);
-        response = undefined as never;
+        response = undefined;
         break;
       }
 
@@ -153,7 +179,7 @@ export async function apiGet(
       }
       throw new GitHubHttpError(response.status, currentUrl);
     }
-    await sleep(BASE_BACKOFF_MILLISECONDS * 2 ** attempt);
+    await sleep(retryDelayMilliseconds(response, attempt, now, maxRetryWaitMilliseconds));
   }
 
   throw new Error("GitHub API retry loop exhausted unexpectedly");

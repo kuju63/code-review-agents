@@ -573,7 +573,7 @@ describe("scoreSeeded", () => {
     expect(report.counts).toMatchObject({ seeded_total: 1, seeded_detected: 0 });
   });
 
-  it("awaits semantic judgment in both greedy and full-pool critical checks", async () => {
+  it("reuses semantic judgment across greedy and full-pool critical checks", async () => {
     const judge = vi.fn<SemanticJudge>().mockResolvedValue(true);
     const report = await scoreSeeded(
       [{ id: "seed1", must_find: [rawFinding({ severity: "critical" })] }],
@@ -581,7 +581,7 @@ describe("scoreSeeded", () => {
       judge,
     );
     expect(report.counts).toMatchObject({ seeded_detected: 1, seeded_critical_missed: 0 });
-    expect(judge).toHaveBeenCalledTimes(2);
+    expect(judge).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -623,11 +623,12 @@ describe("makeLlmSemanticJudge", () => {
   );
 
   it("fails closed and emits diagnostics to stderr on invocation errors", async () => {
-    mockInvoke.mockRejectedValue(new Error("upstream timed out"));
+    const error = new Error("upstream timed out");
+    mockInvoke.mockRejectedValue(error);
     const stderr = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const judge = makeLlmSemanticJudge("gpt-4o");
     await expect(judge("a", "b")).resolves.toBe(false);
-    expect(stderr).toHaveBeenCalledWith("semantic judge call failed; treating as non-match");
+    expect(stderr).toHaveBeenCalledWith("semantic judge call failed; treating as non-match", error);
     stderr.mockRestore();
   });
 });

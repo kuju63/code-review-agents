@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { Agent } from "@strands-agents/sdk";
@@ -11,6 +12,7 @@ import { hasInlineReviewComments, hasProductionCodeChange } from "./lib/target-c
 export const DEFAULT_STACKS = ["react", "vue", "angular", "svelte"] as const;
 export const MIN_STARS = 5000;
 export const RELEASE_WINDOW_DAYS = 180;
+export const PR_SEARCH_WINDOW_DAYS = 180;
 export const MAX_CHANGED_FILES = 20;
 export const MAX_CHANGED_LINES = 1000;
 export const LLM_TIMEOUT_MILLISECONDS = 120_000;
@@ -172,6 +174,9 @@ export class GitHubClient {
       if (response.status === 403 || response.status === 429) {
         const body = await response.text();
         if (response.status === 429 || body.toLowerCase().includes("rate limit")) {
+          if (attempt === 2) {
+            throw new Error(`GitHub API rate limit retries exhausted: ${url.href}`);
+          }
           const fallbackReset = Math.floor(this.#now() / 1000) + 60;
           const reset = Number.parseInt(
             response.headers.get("x-ratelimit-reset") ?? String(fallbackReset),
@@ -190,7 +195,7 @@ export class GitHubClient {
       }
       return response.json();
     }
-    return undefined;
+    throw new Error(`GitHub API rate limit retries exhausted: ${url.href}`);
   }
 
   async getRepo(repository: string): Promise<JsonObject | undefined> {
@@ -233,6 +238,11 @@ export class GitHubClient {
   }
 
   async listMergedPrs(repository: string, since: string, perPage = 50): Promise<JsonObject[]> {
+    const sinceDate = parseIso(since);
+    if (!sinceDate) {
+      throw new Error(`Invalid ISO 8601 since value: ${since}`);
+    }
+    const sinceTimestamp = sinceDate.getTime();
     const pullRequests: JsonObject[] = [];
     for (let page = 1; page <= this.#maxPages; page += 1) {
       const batch = asObjectArray(
@@ -247,18 +257,21 @@ export class GitHubClient {
       if (!batch || batch.length === 0) {
         break;
       }
-      let added = 0;
       for (const pullRequest of batch) {
+        const updatedAt = asString(pullRequest.updated_at);
+        const updatedDate = parseIso(updatedAt);
+        if (!updatedDate) {
+          throw new Error(`Invalid GitHub updated_at value: ${updatedAt}`);
+        }
+        if (updatedDate.getTime() < sinceTimestamp) {
+          return pullRequests;
+        }
         if (!pullRequest.merged_at) {
           continue;
         }
-        if (asString(pullRequest.updated_at) < since) {
-          return pullRequests;
-        }
         pullRequests.push(pullRequest);
-        added += 1;
       }
-      if (added === 0 || batch.length < perPage) {
+      if (batch.length < perPage) {
         break;
       }
       await this.#sleep(300);
@@ -266,22 +279,24 @@ export class GitHubClient {
     return pullRequests;
   }
 
-  async listPrFiles(repository: string, prNumber: number): Promise<JsonObject[]> {
-    return (
-      asObjectArray(
-        await this.get(`/repos/${repositoryPath(repository)}/pulls/${prNumber}/files`, {
-          per_page: 100,
-        }),
-      ) ?? []
-    );
-  }
-
-  async requirePrFiles(repository: string, prNumber: number): Promise<JsonObject[]> {
-    const files = asObjectArray(
-      await this.get(`/repos/${repositoryPath(repository)}/pulls/${prNumber}/files`, {
+  async #fetchPullRequestRows(
+    repository: string,
+    prNumber: number,
+    endpoint: "files" | "comments",
+  ): Promise<JsonObject[] | undefined> {
+    return asObjectArray(
+      await this.get(`/repos/${repositoryPath(repository)}/pulls/${prNumber}/${endpoint}`, {
         per_page: 100,
       }),
     );
+  }
+
+  async listPrFiles(repository: string, prNumber: number): Promise<JsonObject[]> {
+    return (await this.#fetchPullRequestRows(repository, prNumber, "files")) ?? [];
+  }
+
+  async requirePrFiles(repository: string, prNumber: number): Promise<JsonObject[]> {
+    const files = await this.#fetchPullRequestRows(repository, prNumber, "files");
     if (!files) {
       throw new Error(`GitHub fetch failed for ${repository}#${prNumber} files`);
     }
@@ -289,21 +304,11 @@ export class GitHubClient {
   }
 
   async listReviewComments(repository: string, prNumber: number): Promise<JsonObject[]> {
-    return (
-      asObjectArray(
-        await this.get(`/repos/${repositoryPath(repository)}/pulls/${prNumber}/comments`, {
-          per_page: 100,
-        }),
-      ) ?? []
-    );
+    return (await this.#fetchPullRequestRows(repository, prNumber, "comments")) ?? [];
   }
 
   async requireReviewComments(repository: string, prNumber: number): Promise<JsonObject[]> {
-    const comments = asObjectArray(
-      await this.get(`/repos/${repositoryPath(repository)}/pulls/${prNumber}/comments`, {
-        per_page: 100,
-      }),
-    );
+    const comments = await this.#fetchPullRequestRows(repository, prNumber, "comments");
     if (!comments) {
       throw new Error(`GitHub fetch failed for ${repository}#${prNumber} review comments`);
     }
@@ -459,11 +464,25 @@ export async function revalidateExistingTargets(
   return accepted;
 }
 
-const parseTargetRows = (value: unknown, path: string): Target[] => {
+const TargetRowSchema = z
+  .object({
+    repository: z.string(),
+    pr_number: z.number(),
+    stack: z.string(),
+  })
+  .loose();
+
+export const parseTargetRows = (value: unknown, path: string): Target[] => {
   if (!Array.isArray(value)) {
     throw new Error(`Existing target file is not a JSON array: ${path}`);
   }
-  return value as Target[];
+  return value.map((row, index) => {
+    const parsed = TargetRowSchema.safeParse(row);
+    if (!parsed.success) {
+      throw new Error(`${path}: invalid target row ${index}`);
+    }
+    return parsed.data as Target;
+  });
 };
 
 export async function loadSkippedTargets(
@@ -492,23 +511,28 @@ export async function loadSkippedTargets(
       }
       throw error;
     }
-    for (const value of parseTargetRows(JSON.parse(contents), path)) {
-      const row = asObject(value);
-      const repository = asString(row?.repository);
-      if (!row || !repositories.has(repository)) {
+    const parsedRows = JSON.parse(contents);
+    if (!Array.isArray(parsedRows)) {
+      throw new Error(`Existing target file is not a JSON array: ${path}`);
+    }
+    for (const [index, value] of parsedRows.entries()) {
+      const parsed = TargetRowSchema.safeParse(value);
+      if (!parsed.success || !Number.isInteger(parsed.data.pr_number)) {
+        console.error(`Ignoring invalid existing target in ${path} at row ${index}`);
         continue;
       }
-      const prNumber = Number(row.pr_number);
-      if (!Number.isInteger(prNumber)) {
-        console.error(`Ignoring invalid existing target in ${path}`);
+      const row = parsed.data;
+      const repository = row.repository;
+      if (!repositories.has(repository)) {
         continue;
       }
+      const prNumber = row.pr_number;
       const key = `${repository}\0${prNumber}`;
       if (seen.has(key)) {
         continue;
       }
       seen.add(key);
-      existing.push(value);
+      existing.push(row as Target);
     }
   }
   return existing;
@@ -527,10 +551,15 @@ export async function writeStackOutputs(
     grouped.set(target.stack, rows);
   }
   for (const [stack, rows] of grouped) {
-    await writeFile(
-      join(outputDir, `pr_targets_${stack}.json`),
-      `${JSON.stringify(rows, null, 2)}\n`,
-    );
+    const outputPath = join(outputDir, `pr_targets_${stack}.json`);
+    const temporaryPath = `${outputPath}.${process.pid}.${randomUUID()}.tmp`;
+    try {
+      await writeFile(temporaryPath, `${JSON.stringify(rows, null, 2)}\n`);
+      await rename(temporaryPath, outputPath);
+    } catch (error) {
+      await unlink(temporaryPath).catch(() => undefined);
+      throw error;
+    }
   }
 }
 
@@ -571,10 +600,11 @@ interface CliOptions {
   revalidateExisting: boolean;
 }
 
-const parseInteger = (value: string): number => {
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed)) {
-    throw new InvalidArgumentError("Expected an integer");
+export const parseInteger = (value: string): number => {
+  const normalized = value.trim();
+  const parsed = Number(normalized);
+  if (normalized.length === 0 || !Number.isInteger(parsed) || parsed < 0) {
+    throw new InvalidArgumentError("Expected a non-negative integer");
   }
   return parsed;
 };
@@ -633,7 +663,7 @@ export function createCli(): Command {
     .option("--skip-repos <repositories>", "Comma-separated repos to skip", "")
     .option(
       "--revalidate-existing",
-      "Reapply shared Gold criteria to existing per-stack targets without LLM reclassification",
+      "Reapply shared production-change and inline-comment criteria to existing per-stack targets without LLM reclassification",
       false,
     );
 }
@@ -690,7 +720,7 @@ export async function main(
   const now = (dependencies.now ?? (() => new Date()))();
   const since =
     options.since ??
-    new Date(now.getTime() - options.releaseWindowDays * 86_400_000)
+    new Date(now.getTime() - PR_SEARCH_WINDOW_DAYS * 86_400_000)
       .toISOString()
       .replace(/\.\d{3}Z$/, "Z");
   const skipRepos = new Set<string>(
@@ -770,7 +800,7 @@ export async function main(
           repositoryTargets.push(target);
         }
       } catch (error) {
-        console.error(`PR #${asNumber(pullRequest.number)} failed: ${(error as Error).name}`);
+        console.error(`PR #${asNumber(pullRequest.number)} failed:`, error);
         await pause(1000);
         continue;
       }

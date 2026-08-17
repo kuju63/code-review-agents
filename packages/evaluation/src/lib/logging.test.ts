@@ -34,6 +34,27 @@ describe("evaluation logging", () => {
     ]);
   });
 
+  it("allows the first explicit setup to replace implicit defaults", async () => {
+    const defaultWrite = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    const { getLogger, setupLogging } = await import("./logging.js");
+    const explicitWrite = vi.fn<(chunk: string) => boolean>(() => true);
+    const ignoredWrite = vi.fn<(chunk: string) => boolean>(() => true);
+
+    getLogger("evaluation").info("default");
+    setupLogging("debug", { stream: { write: explicitWrite } });
+    setupLogging("info", { stream: { write: ignoredWrite } });
+    getLogger("evaluation").debug("explicit");
+
+    expect(defaultWrite).toHaveBeenCalledOnce();
+    expect(defaultWrite).toHaveBeenCalledWith(expect.stringContaining("INFO evaluation: default"));
+    expect(explicitWrite).toHaveBeenCalledOnce();
+    expect(explicitWrite).toHaveBeenCalledWith(
+      expect.stringContaining("DEBUG evaluation: explicit"),
+    );
+    expect(ignoredWrite).not.toHaveBeenCalled();
+    defaultWrite.mockRestore();
+  });
+
   it("does not reconfigure or duplicate output when setup is called twice", async () => {
     const { getLogger, setupLogging } = await import("./logging.js");
     const firstWrite = vi.fn<(chunk: string) => boolean>(() => true);

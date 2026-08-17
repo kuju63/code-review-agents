@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
-import { pathToFileURL } from "node:url";
+import { readFileSync, realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { isTargetFile } from "@code-review-agent/agent-core/agents/target-file.js";
 import { Command, CommanderError } from "commander";
 import { fetchPrFiles as defaultFetchPrFiles } from "./lib/github-rest.js";
@@ -221,9 +221,16 @@ export function loadTargets(paths: string[]): SeededPrTarget[] {
           );
         }
         const rawOffset = defectRecord.line_offset;
+        const occurrence =
+          defectRecord.occurrence === undefined ? 0 : Number(defectRecord.occurrence);
+        if (!Number.isInteger(occurrence) || occurrence < 0) {
+          throw new Error(
+            `${path}: ${repository}#${prNumber}: invalid occurrence '${String(defectRecord.occurrence)}'; expected a non-negative integer`,
+          );
+        }
         defects.push({
           path: String(defectRecord.path),
-          occurrence: defectRecord.occurrence === undefined ? 0 : Number(defectRecord.occurrence),
+          occurrence,
           ruleId: String(defectRecord.rule_id),
           category,
           severity,
@@ -246,7 +253,7 @@ function markerKey(path: string, occurrence: number): string {
 }
 
 function resolveHit(hits: readonly MarkerHit[], occurrence: number): MarkerHit | undefined {
-  return occurrence < 0 ? hits[hits.length + occurrence] : hits[occurrence];
+  return hits[occurrence];
 }
 
 export function buildSeededItemFromFiles(target: SeededPrTarget, files: FileChange[]): SeededItem {
@@ -288,20 +295,15 @@ export function buildSeededItemFromFiles(target: SeededPrTarget, files: FileChan
     consumed.add(key);
 
     const hits = markersByPath.get(defect.path);
-    if (!hits || defect.occurrence >= hits.length) {
+    const hit = hits ? resolveHit(hits, defect.occurrence) : undefined;
+    if (!hit) {
       throw new Error(
         `${target.repository}#${target.prNumber}: no marker at path='${defect.path}' occurrence=${defect.occurrence}`,
       );
     }
     if (!isTargetFile(defect.path)) {
       throw new Error(
-        `${target.repository}#${target.prNumber}: marker file '${defect.path}' is excluded by pr_info_collector.is_target_file and would never reach a reviewer`,
-      );
-    }
-    const hit = resolveHit(hits, defect.occurrence);
-    if (!hit) {
-      throw new Error(
-        `${target.repository}#${target.prNumber}: no marker at path='${defect.path}' occurrence=${defect.occurrence}`,
+        `${target.repository}#${target.prNumber}: marker file '${defect.path}' is excluded by isTargetFile and would never reach a reviewer`,
       );
     }
     const line = resolveDefectLine(hit, defect.lineOffset);
@@ -514,12 +516,20 @@ export async function runBuildSeededSet(argv: string[], deps: RunDeps = {}): Pro
   return 0;
 }
 
+export function isDirectExecution(
+  metaUrl: string = import.meta.url,
+  entrypoint: string | undefined = process.argv[1],
+): boolean {
+  return (
+    entrypoint !== undefined && realpathSync(fileURLToPath(metaUrl)) === realpathSync(entrypoint)
+  );
+}
+
 export async function main(): Promise<number> {
   return runBuildSeededSet(process.argv.slice(2));
 }
 
-const entryArg = process.argv[1];
-if (entryArg && import.meta.url === pathToFileURL(entryArg).href) {
+if (isDirectExecution()) {
   main()
     .then((code) => {
       process.exitCode = code;

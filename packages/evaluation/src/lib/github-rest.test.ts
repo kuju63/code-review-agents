@@ -95,6 +95,55 @@ describe("GitHub retries", () => {
     expect(sleep).toHaveBeenCalledWith(1000);
   });
 
+  it("uses retry-after before exponential backoff", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(response({ message: "retry" }, 429, { "retry-after": "7" }))
+      .mockResolvedValueOnce(response({ ok: true }));
+    const sleep = vi.fn().mockResolvedValue(undefined);
+
+    await apiGet("https://api.github.com/x", "token", { fetch, sleep });
+    expect(sleep).toHaveBeenCalledWith(7000);
+  });
+
+  it("uses the greater of reset time and backoff and caps the wait", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        response({ message: "limited" }, 403, {
+          "x-ratelimit-remaining": "0",
+          "x-ratelimit-reset": "1100",
+        }),
+      )
+      .mockResolvedValueOnce(response({ ok: true }));
+    const sleep = vi.fn().mockResolvedValue(undefined);
+
+    await apiGet("https://api.github.com/x", "token", {
+      fetch,
+      sleep,
+      now: () => 1_000_000,
+      maxRetryWaitMilliseconds: 5000,
+    });
+    expect(sleep).toHaveBeenCalledWith(5000);
+  });
+
+  it("falls back to exponential backoff for malformed rate-limit headers", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        response({ message: "limited" }, 403, {
+          "x-ratelimit-remaining": "0",
+          "retry-after": "invalid",
+          "x-ratelimit-reset": "invalid",
+        }),
+      )
+      .mockResolvedValueOnce(response({ ok: true }));
+    const sleep = vi.fn().mockResolvedValue(undefined);
+
+    await apiGet("https://api.github.com/x", "token", { fetch, sleep });
+    expect(sleep).toHaveBeenCalledWith(1000);
+  });
+
   it("does not retry a non-rate-limited 403", async () => {
     const fetch = vi.fn().mockResolvedValue(response({ message: "forbidden" }, 403));
     const sleep = vi.fn();

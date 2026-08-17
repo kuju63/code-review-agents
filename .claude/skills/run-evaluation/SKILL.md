@@ -11,7 +11,7 @@ Gold set・Seeded setの準備 → A2Aサーバー起動 → 評価実行 → �
 ## ステップ概要
 
 ```text
-1. 前提チェック（.env, pr_targets_{stack}.json の存在, podman の存在）
+1. 前提チェック（.env, pr_targets_{stack}.json の存在, podman, nix の存在）
 2. Gold set / Seeded set の準備（なければビルド）
 3. A2A サーバーを podman コンテナとして起動
 4. 評価スクリプトを実行

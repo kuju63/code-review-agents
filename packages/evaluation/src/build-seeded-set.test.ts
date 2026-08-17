@@ -1,6 +1,7 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildSeededItem,
@@ -9,6 +10,7 @@ import {
   type Defect,
   detectIntentionalMarkers,
   type FileChange,
+  isDirectExecution,
   loadTargets,
   parseHunkNewStart,
   resolveDefectLine,
@@ -244,6 +246,25 @@ describe("loadTargets", () => {
       "has no defects",
     ],
     [
+      "negative occurrence",
+      targetPayload("owner/repo", "vue", [
+        {
+          pr_number: 1,
+          defects: [
+            {
+              path: "a.vue",
+              occurrence: -1,
+              rule_id: "r",
+              category: "security",
+              severity: "high",
+              summary: "s",
+            },
+          ],
+        },
+      ]),
+      "expected a non-negative integer",
+    ],
+    [
       "invalid category",
       targetPayload("owner/repo", "vue", [
         {
@@ -363,14 +384,6 @@ describe("Seeded item construction", () => {
         twoMarkerFiles,
       ),
     ).toThrow("duplicate defect");
-    expect(() =>
-      buildSeededItemFromFiles(
-        target({
-          defects: [defect({ occurrence: -1 }), defect({ occurrence: 0 })],
-        }),
-        twoMarkerFiles,
-      ),
-    ).toThrow("not covered by metadata");
   });
 
   it("rejects metadata that names a missing marker occurrence", () => {
@@ -396,7 +409,20 @@ describe("Seeded item construction", () => {
           "@@ -1 +1,3 @@\n # Changelog\n+// INTENTIONAL\n+const evil = eval(value);\n",
         ]),
       ),
-    ).toThrow("excluded by pr_info_collector.is_target_file");
+    ).toThrow("excluded by isTargetFile");
+  });
+});
+
+describe("isDirectExecution", () => {
+  it("resolves package-bin symlinks before comparing the entrypoint", () => {
+    const directory = makeTempDirectory();
+    const targetPath = join(directory, "build-seeded-set.js");
+    const symlinkPath = join(directory, "build-seeded-set");
+    writeFileSync(targetPath, "");
+    symlinkSync(targetPath, symlinkPath);
+
+    expect(isDirectExecution(pathToFileURL(targetPath).href, symlinkPath)).toBe(true);
+    expect(isDirectExecution(pathToFileURL(targetPath).href, undefined)).toBe(false);
   });
 });
 
@@ -617,7 +643,7 @@ describe("runBuildSeededSet", () => {
     expect(() => readFileSync(outputPath, "utf-8")).toThrow();
   });
 
-  it("preserves an existing output when atomic publication fails", async () => {
+  it("leaves an existing output untouched when delegated publication fails", async () => {
     const directory = makeTempDirectory();
     const path = writeTargets(directory, "targets.json", targetPayload());
     const outputPath = join(directory, "out.jsonl");

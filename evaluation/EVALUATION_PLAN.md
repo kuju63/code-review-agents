@@ -351,8 +351,8 @@ Soft targets:
 
 TypeScript judge migration parity is verified by an actual run on the
 designated evaluation machine, using the same prediction file for both judges.
-Acceptance requires Must-Find Recall to remain within -5 points of the Epic
-#249 Step 1 baseline and to be at least 0.60 in absolute terms.
+Acceptance requires Must-Find Recall to remain within -5 points of the
+Epic #249 Step 1 baseline and to be at least 0.60 in absolute terms.
 
 ## 5. Evaluation Workflow
 

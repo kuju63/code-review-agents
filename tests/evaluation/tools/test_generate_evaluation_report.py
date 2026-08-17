@@ -35,6 +35,12 @@ _seeded_heading = generate_evaluation_report._seeded_heading
 
 
 class TestScoreCli:
+    @pytest.fixture(autouse=True)
+    def _pnpm_path(self, monkeypatch):
+        monkeypatch.setattr(
+            generate_evaluation_report.shutil, "which", lambda command: "/nix/pnpm"
+        )
+
     def test_invokes_typescript_workspace_cli(self, monkeypatch):
         captured = {}
 
@@ -45,6 +51,9 @@ class TestScoreCli:
                 command, 0, stdout='{"gold": {}, "seeded": {}}'
             )
 
+        monkeypatch.setattr(
+            generate_evaluation_report.shutil, "which", lambda command: "/nix/pnpm"
+        )
         monkeypatch.setattr(generate_evaluation_report.subprocess, "run", fake_run)
 
         result = generate_evaluation_report._score(
@@ -53,7 +62,8 @@ class TestScoreCli:
 
         assert result == {"gold": {}, "seeded": {}}
         assert captured["command"] == [
-            "pnpm",
+            "/nix/pnpm",
+            "--silent",
             "--filter",
             "@code-review-agent/evaluation",
             "run",
@@ -69,6 +79,57 @@ class TestScoreCli:
             captured["kwargs"]["stdout"] is generate_evaluation_report.subprocess.PIPE
         )
         assert captured["kwargs"]["text"] is True
+        assert (
+            captured["kwargs"]["cwd"]
+            == generate_evaluation_report.Path(generate_evaluation_report.__file__)
+            .resolve()
+            .parents[2]
+        )
+        assert (
+            captured["kwargs"]["timeout"]
+            == generate_evaluation_report._SCORE_TIMEOUT_SECONDS
+        )
+
+    def test_raises_with_stdout_preview_when_scorer_output_is_not_json(
+        self, monkeypatch
+    ):
+        monkeypatch.setattr(
+            generate_evaluation_report.subprocess,
+            "run",
+            lambda command, **kwargs: (
+                generate_evaluation_report.subprocess.CompletedProcess(
+                    command, 0, stdout="pnpm banner before invalid output"
+                )
+            ),
+        )
+
+        with pytest.raises(RuntimeError, match="pnpm banner before invalid output"):
+            generate_evaluation_report._score(
+                "gold.jsonl", "seeded.jsonl", "pred.jsonl"
+            )
+
+    def test_raises_when_pnpm_is_not_on_path(self, monkeypatch):
+        monkeypatch.setattr(
+            generate_evaluation_report.shutil, "which", lambda command: None
+        )
+
+        with pytest.raises(RuntimeError, match=r"pnpm.*not found on PATH"):
+            generate_evaluation_report._score(
+                "gold.jsonl", "seeded.jsonl", "pred.jsonl"
+            )
+
+    def test_raises_when_scorer_times_out(self, monkeypatch):
+        def timed_out(command, **kwargs):
+            raise generate_evaluation_report.subprocess.TimeoutExpired(
+                command, kwargs["timeout"]
+            )
+
+        monkeypatch.setattr(generate_evaluation_report.subprocess, "run", timed_out)
+
+        with pytest.raises(RuntimeError, match="timed out after 1800s"):
+            generate_evaluation_report._score(
+                "gold.jsonl", "seeded.jsonl", "pred.jsonl"
+            )
 
     def test_raises_when_typescript_scorer_fails(self, monkeypatch):
         monkeypatch.setattr(

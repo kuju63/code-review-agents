@@ -30,17 +30,30 @@ const LEVEL_RANK: Record<LogLevel, number> = {
 };
 
 let config: LoggingConfig | undefined;
+let explicitlyConfigured = false;
+
+function defaultConfig(): LoggingConfig {
+  return {
+    level: "info",
+    stream: process.stderr,
+    now: () => new Date(),
+  };
+}
 
 export function setupLogging(level: LogLevel = "info", options: LoggingOptions = {}): void {
-  config ??= {
+  if (explicitlyConfigured) {
+    return;
+  }
+  config = {
     level,
     stream: options.stream ?? process.stderr,
     now: options.now ?? (() => new Date()),
   };
+  explicitlyConfigured = true;
 }
 
 function emit(name: string, level: LogLevel, message: string): void {
-  setupLogging();
+  config ??= defaultConfig();
   const activeConfig = config;
   if (!activeConfig || LEVEL_RANK[level] < LEVEL_RANK[activeConfig.level]) {
     return;

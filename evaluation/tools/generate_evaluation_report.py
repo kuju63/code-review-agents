@@ -21,6 +21,7 @@ import argparse
 import json
 import logging
 import os
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -111,6 +112,9 @@ def _load_failed_ids(
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+_SCORE_TIMEOUT_SECONDS = 1800
+
+
 def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
     """Run the TypeScript scorer CLI and return the parsed JSON result.
 
@@ -123,33 +127,54 @@ def _score(gold_path: str, seeded_path: str, pred_path: str) -> dict[str, Any]:
         The parsed JSON object printed by the scorer on stdout.
 
     Raises:
-        RuntimeError: If the scorer exits with a non-zero status.
+        RuntimeError: If the scorer exits with a non-zero status, is not
+            found on PATH, times out, or does not emit valid JSON.
     """
     repo_root = Path(__file__).resolve().parents[2]
-    result = subprocess.run(
-        [
-            "pnpm",
-            "--filter",
-            "@code-review-agent/evaluation",
-            "run",
-            "score-evaluation",
-            "--gold",
-            gold_path,
-            "--seeded",
-            seeded_path,
-            "--pred",
-            pred_path,
-        ],
-        stdout=subprocess.PIPE,
-        text=True,
-        cwd=repo_root,
-    )
+    pnpm = shutil.which("pnpm")
+    if pnpm is None:
+        raise RuntimeError(
+            "score-evaluation could not start: 'pnpm' was not found on PATH; "
+            "run this step inside the repository Nix toolchain "
+            "(nix develop --command ...)"
+        )
+    try:
+        result = subprocess.run(  # noqa: S603 - fixed argv list and no shell execution
+            [
+                pnpm,
+                "--silent",
+                "--filter",
+                "@code-review-agent/evaluation",
+                "run",
+                "score-evaluation",
+                "--gold",
+                gold_path,
+                "--seeded",
+                seeded_path,
+                "--pred",
+                pred_path,
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
+            cwd=repo_root,
+            timeout=_SCORE_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"score-evaluation timed out after {_SCORE_TIMEOUT_SECONDS}s"
+        ) from exc
     if result.returncode != 0:
         raise RuntimeError(
             f"score-evaluation failed (exit code {result.returncode}); "
             "see its stderr output above"
         )
-    return json.loads(result.stdout)
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            "score-evaluation emitted invalid JSON; "
+            f"stdout starts with {result.stdout[:200]!r}"
+        ) from exc
 
 
 def _sanitize_cell(text: Any, max_len: int = 100) -> str:

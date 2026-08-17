@@ -47,8 +47,8 @@ export function makeLlmSemanticJudge(
         return false;
       }
       return (result.structuredOutput as SemanticMatchVerdict).is_match;
-    } catch {
-      console.error("semantic judge call failed; treating as non-match");
+    } catch (error) {
+      console.error("semantic judge call failed; treating as non-match", error);
       return false;
     }
   };
@@ -359,6 +359,19 @@ export async function scoreSeeded(
   predById: PredById,
   semanticJudge?: SemanticJudge,
 ): Promise<Record<string, unknown>> {
+  const verdicts = new Map<string, Promise<boolean>>();
+  const cachedSemanticJudge = semanticJudge
+    ? (goldSummary: string, predSummary: string): Promise<boolean> => {
+        const key = JSON.stringify([goldSummary, predSummary]);
+        const existing = verdicts.get(key);
+        if (existing) {
+          return existing;
+        }
+        const verdict = semanticJudge(goldSummary, predSummary);
+        verdicts.set(key, verdict);
+        return verdict;
+      }
+    : undefined;
   let seededTotal = 0;
   let seededDetected = 0;
   let seededCriticalTotal = 0;
@@ -371,7 +384,7 @@ export async function scoreSeeded(
     const rawPredicted = (pred.agent_findings as RawFinding[]) ?? [];
     const mustFind = toFindings(rawExpected);
     const predFindings = toFindings(rawPredicted);
-    const result = await matchFindingsDetailed(mustFind, predFindings, semanticJudge);
+    const result = await matchFindingsDetailed(mustFind, predFindings, cachedSemanticJudge);
     seededTotal += mustFind.length;
     seededDetected += result.pairs.length;
     items.push(
@@ -383,7 +396,7 @@ export async function scoreSeeded(
         seededCriticalTotal += 1;
         let detected = false;
         for (const p of predFindings) {
-          if (await isMatch(mf, p, 5, semanticJudge)) {
+          if (await isMatch(mf, p, 5, cachedSemanticJudge)) {
             detected = true;
             break;
           }

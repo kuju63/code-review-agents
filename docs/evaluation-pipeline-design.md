@@ -28,7 +28,7 @@ Gold-set/Seeded-setの生成そのものよりも、生成後にレビューエ�
 
 | ディレクトリ | 役割 | 例 |
 |---|---|---|
-| `evaluation/input/` | 評価の**元データ**。`discover-candidate-prs`が生成/更新し、後段パイプラインは書き換えない | `repo_candidates.json`, `pr_targets_react.json`, `pr_targets_vue.json`, `pr_targets_angular.json`, `pr_targets_svelte.json` |
+| `evaluation/input/` | 評価の**元データ**。`discover-candidate-prs`が生成/更新し、後段パイプラインは書き換えない | `repo_candidates.json`, `pr_targets_react.json`, `pr_targets_vue.json`, `pr_targets_angular.json`, `pr_targets_svelte.json`, `seeded_pr_targets_{stack}.json` |
 | `evaluation/data/` | パイプラインが**生成する導出データ**。実行のたびに再生成されうる | `pr_targets.json`, `gold_pr_set.jsonl`, `seeded_set.jsonl`, `agent_predictions.jsonl`, `report_*.md` |
 
 `pr_targets_{stack}.json`は`discover-candidate-prs`がGitHubとLLMを使って生成する元データであり、
@@ -44,6 +44,7 @@ flowchart TD
     subgraph INPUT["evaluation/input/ 〈元データ〉"]
         REPOS["repo_candidates.json"]
         PERSTACK["pr_targets_{react,vue,angular,svelte}.json<br/>(スタック別ターゲット)"]
+        SEEDEDTARGETS["seeded_pr_targets_{react,vue,angular,svelte}.json<br/>(Seed PRメタデータ)"]
     end
 
     subgraph STEP0["Step 0: discover-candidate-prs（随時）"]
@@ -66,7 +67,7 @@ flowchart TD
 
     subgraph STEP23["Step 2-3: build_gold_set.py / build-seeded-set"]
         GHAPI[("GitHub API<br/>(PR詳細/files/review comments)")]
-        MUTATE["Phase2 LLM生成 + 検証<br/>(SEEDED_GEN_MODEL_ID 必須)<br/>失敗時のみ Phase1 決定的フォールバック"]
+        MARKERS["INTENTIONAL marker解決 + metadata検証<br/>不正・欠落時はfail-closed<br/>検証完了後にatomic write"]
     end
 
     subgraph STEP4["Step 4: run_agent_evaluation.py<br/>--concurrency 2(既定)"]
@@ -80,7 +81,7 @@ flowchart TD
     REPOS --> DISCOVER --> PERSTACK
     PERSTACK --> FILTER --> SAMPLE --> WARN --> TARGETS
     TARGETS --> GHAPI --> GOLD
-    GOLD --> MUTATE --> SEEDED
+    SEEDEDTARGETS --> GHAPI --> MARKERS --> SEEDED
     GOLD --> A2A
     SEEDED --> A2A
     A2A --> PRED
@@ -97,7 +98,7 @@ flowchart TD
 | 0 | `discover-candidate-prs` | `repo_candidates.json` | `input/pr_targets_{stack}.json` | GitHubとLLMで随時生成。`GITHUB_TOKEN`と生成モデルが必要 |
 | 1 | `select_stack_targets.py` | `input/pr_targets_{stack}.json` | `data/pr_targets.json` | フィルタ・サンプリング・構成比率警告 |
 | 2 | `build_gold_set.py` | `data/pr_targets.json` | `data/gold_pr_set.jsonl` | GitHub APIでPR詳細・files・review commentsを取得 |
-| 3 | `build-seeded-set` | `data/gold_pr_set.jsonl` | `data/seeded_set.jsonl` | Phase2 LLM生成（`SEEDED_GEN_MODEL_ID` 必須）→検証→失敗時のみPhase1決定的フォールバック |
+| 3 | `build-seeded-set` | `input/seeded_pr_targets_{stack}.json` | `data/seeded_set.jsonl` | GitHub上のSeed PRから`INTENTIONAL` markerを解決しmetadataを検証。不正・欠落時はfail-closed、全件成功後にatomic write |
 | 4 | `run_agent_evaluation.py` | `data/gold_pr_set.jsonl`, `data/seeded_set.jsonl` | `data/agent_predictions.jsonl`, `data/report_*.md` | A2Aサーバー経由でレビューエージェントを実行 |
 | 5 | `score-evaluation` | 上記3ファイル | スコアJSON | `run_agent_evaluation.py`内から呼び出される |
 
@@ -105,9 +106,11 @@ Step 1-3は`evaluation/tools/run_evaluation_pipeline.sh`が一括実行する。
 更新が必要なときにのみ個別実行する。Step 4-5は`run_agent_evaluation.py`が担う(A2Aサーバーの起動・停止を
 含む一連の流れは`.claude/skills/run-evaluation/SKILL.md`がオーケストレーションする)。
 
-`build-seeded-set`は生成モデルが未設定のとき(`SEEDED_GEN_MODEL_ID`未設定かつ`--model-id`未指定)、
-exit code 1 で停止する。詳細は [evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md) §3 と
-[docs/eval-seeded-mutation-injection-design.md](eval-seeded-mutation-injection-design.md) を参照。
+`build-seeded-set`は生成モデルを使用せず、手書きmetadataをSeed PRのdiffにある
+`INTENTIONAL` markerへ解決する。markerの欠落、件数不一致、レビュー対象外ファイルなどは
+fail-closedで停止し、全件の検証後に`seeded_set.jsonl`をatomic writeする。詳細は
+[evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md) §3 と
+[docs/eval-seeded-repo-based-generation-spec.md](eval-seeded-repo-based-generation-spec.md) を参照。
 
 ---
 

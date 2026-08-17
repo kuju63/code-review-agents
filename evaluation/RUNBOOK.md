@@ -123,8 +123,8 @@ Checkpoint:
   Issue #224's initial migration) and every row's `must_find` has at least
   one entry
 - The build fails closed rather than producing a partial file: a missing
-  marker, a marker/metadata count mismatch, or a marker sitting on a file
-  `pr_info_collector.is_target_file()` would exclude from review all raise
+  marker, a marker/metadata count mismatch, or a marker sitting in a file the
+  shared target-file predicate would exclude from review all raise
   and stop the run. If the build fails, fix the failing PR's metadata entry
   (or the seed repository's PR) rather than working around the error.
 - To inspect one PR's markers before writing its metadata (or to debug a
@@ -279,8 +279,8 @@ use it for Seeded-set hard gate runs (§6): it introduces non-determinism.
 
 The actual judge-parity run is performed on the designated evaluation machine
 using the same prediction file for the legacy and migrated judges. Migration
-acceptance requires Must-Find Recall to remain within -5 points of the Epic
-#249 Step 1 baseline and to be at least 0.60 in absolute terms.
+acceptance requires Must-Find Recall to remain within -5 points of the
+Epic #249 Step 1 baseline and to be at least 0.60 in absolute terms.
 
 ## 6. Gate decision
 
@@ -315,8 +315,8 @@ If Seeded recall is unstable:
   the reviewer isn't covering that defect category, not a dataset defect
 
 If `build-seeded-set` exits with a fail-closed error
-(marker/metadata mismatch, or a marker on a file `is_target_file()`
-excludes):
+(marker/metadata mismatch, or a marker on a file the shared target-file
+predicate excludes):
 
 - This is intentional (see
   [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)

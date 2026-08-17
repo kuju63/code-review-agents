@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Agent } from "@strands-agents/sdk";
@@ -15,29 +15,6 @@ vi.mock("@strands-agents/sdk/models/openai", () => ({
   OpenAIModel: vi.fn().mockImplementation(() => ({ kind: "openai" })),
 }));
 
-vi.mock("./lib/target-criteria.js", () => {
-  const isProduction = (path: string): boolean =>
-    /(?:\.js|\.jsx|\.ts|\.tsx|\.vue|\.svelte|\.css|\.scss|\.html|package\.json|angular\.json)$/.test(
-      path,
-    ) && !/(?:\.test\.|\.spec\.|\/tests?\/|\.mdx?$)/.test(path);
-  return {
-    hasProductionCodeChange: (files: Record<string, unknown>[]) =>
-      files.some(
-        (file) =>
-          typeof file.patch === "string" &&
-          file.patch.length > 0 &&
-          isProduction(String(file.filename ?? "")),
-      ),
-    hasInlineReviewComments: (comments: Record<string, unknown>[]) =>
-      comments.some(
-        (comment) =>
-          typeof comment.body === "string" &&
-          comment.body.trim().length > 0 &&
-          isProduction(String(comment.path ?? "")),
-      ),
-  };
-});
-
 import {
   buildTarget,
   collectReviewTexts,
@@ -49,6 +26,8 @@ import {
   loadStackOutputs,
   main,
   makeLlmAssessor,
+  parseInteger,
+  parseTargetRows,
   type RepoCandidate,
   type ReviewAssessment,
   revalidateExistingTargets,
@@ -203,6 +182,38 @@ describe("GitHubClient", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("throws after exhausting rate-limit retries", async () => {
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response("rate limit exceeded", {
+          status: 429,
+          headers: { "x-ratelimit-reset": "1060" },
+        }),
+      ),
+    );
+    const sleepMock = vi.fn().mockResolvedValue(undefined);
+    const client = new GitHubClient("tok", {
+      fetch: fetchMock,
+      sleep: sleepMock,
+      now: () => 1_000_000,
+      maxRateLimitWaitMilliseconds: 5000,
+    });
+
+    await expect(client.getRepo("o/r")).rejects.toThrow("rate limit retries exhausted");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(sleepMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws immediately for a non-rate-limit 403", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("forbidden", { status: 403 }));
+    const sleepMock = vi.fn();
+    const client = new GitHubClient("tok", { fetch: fetchMock, sleep: sleepMock });
+
+    await expect(client.getRepo("o/r")).rejects.toThrow("403 forbidden");
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(sleepMock).not.toHaveBeenCalled();
+  });
+
   it("refuses redirects outside api.github.com without leaking the token", async () => {
     const fetchMock = vi
       .fn()
@@ -252,6 +263,45 @@ describe("GitHubClient", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("continues paging after a full page without merged PRs", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        response(200, [
+          { number: 1, updated_at: "2026-06-02T00:00:00Z" },
+          { number: 2, updated_at: "2026-06-01T00:00:00Z" },
+        ]),
+      )
+      .mockResolvedValueOnce(
+        response(200, [{ number: 3, merged_at: "x", updated_at: "2026-05-31T00:00:00Z" }]),
+      );
+    const client = new GitHubClient("tok", {
+      fetch: fetchMock,
+      sleep: vi.fn().mockResolvedValue(undefined),
+    });
+
+    await expect(client.listMergedPrs("o/r", "2026-01-01", 2)).resolves.toMatchObject([
+      { number: 3 },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("compares offset and date-only since values as timestamps", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() =>
+        Promise.resolve(
+          response(200, [{ number: 1, merged_at: "x", updated_at: "2026-06-01T00:00:00Z" }]),
+        ),
+      );
+    const client = new GitHubClient("tok", { fetch: fetchMock });
+
+    await expect(client.listMergedPrs("o/r", "2026-06-01T01:00:00+01:00", 2)).resolves.toHaveLength(
+      1,
+    );
+    await expect(client.listMergedPrs("o/r", "2026-06-01", 2)).resolves.toHaveLength(1);
+  });
+
   it("fails closed when required revalidation data is unavailable", async () => {
     const client = new GitHubClient("tok", {
       fetch: vi.fn().mockResolvedValue(response(404, undefined)),
@@ -287,7 +337,7 @@ describe("repository validation", () => {
     [undefined, "repository not found"],
     [{ archived: true, stargazers_count: 10000 }, "repository archived"],
     [{ archived: false, stargazers_count: 100 }, "stars=100 < 5000"],
-  ])("rejects invalid repository metadata", async (repository, reason) => {
+  ])("rejects invalid repository metadata: %s", async (repository, reason) => {
     const client = clientWith({
       getRepo: vi.fn().mockResolvedValue(repository),
       listReleases: vi.fn().mockResolvedValue([]),
@@ -309,6 +359,13 @@ describe("repository validation", () => {
     await expect(
       validateRepo(client, candidate(), new Date("2026-07-01T00:00:00Z")),
     ).resolves.toEqual([false, "no release in last 180 days"]);
+  });
+  it("validates non-negative CLI integers", () => {
+    expect(parseInteger("0")).toBe(0);
+    expect(parseInteger("42")).toBe(42);
+    for (const value of ["", "   ", "-1", "1.5", "nope"]) {
+      expect(() => parseInteger(value)).toThrow("non-negative integer");
+    }
   });
 });
 
@@ -493,6 +550,37 @@ describe("stack outputs", () => {
     ).resolves.toEqual([kept]);
   });
 
+  it("logs and skips non-integer PR numbers in skipped repositories", async () => {
+    const directory = await temporaryDirectory();
+    await writeFile(
+      join(directory, "pr_targets_react.json"),
+      JSON.stringify([target(1), { ...target(2), pr_number: 1.5 }]),
+    );
+    const stderr = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    await expect(loadSkippedTargets(directory, [candidate()], new Set(["o/r"]))).resolves.toEqual([
+      target(1),
+    ]);
+    expect(stderr).toHaveBeenCalledWith(expect.stringContaining("row 1"));
+    stderr.mockRestore();
+  });
+
+  it("rejects non-array and invalid target rows with path and index", () => {
+    expect(() => parseTargetRows({}, "targets.json")).toThrow(
+      "Existing target file is not a JSON array: targets.json",
+    );
+    expect(() =>
+      parseTargetRows([{ repository: "o/r", pr_number: "1", stack: "react" }], "targets.json"),
+    ).toThrow("targets.json: invalid target row 0");
+  });
+
+  it("publishes stack outputs without leaving temporary files", async () => {
+    const directory = await temporaryDirectory();
+    await writeStackOutputs([target(1)], directory, ["react"]);
+
+    expect(await readdir(directory)).toEqual(["pr_targets_react.json"]);
+  });
+
   it("requires every stack file during atomic revalidation loading", async () => {
     const directory = await temporaryDirectory();
     await writeFile(join(directory, "pr_targets_react.json"), "[]");
@@ -578,6 +666,8 @@ describe("CLI workflow", () => {
           repos,
           "--output-dir",
           directory,
+          "--release-window-days",
+          "30",
           "--skip-repos",
           "o/skip",
         ],
@@ -597,6 +687,7 @@ describe("CLI workflow", () => {
     ).resolves.toBe(0);
 
     expect(assessorFactory).toHaveBeenCalledWith("test-model", "http://llm.test/v1");
+    expect(client.listMergedPrs).toHaveBeenCalledWith("o/new", "2026-01-02T00:00:00Z", 50);
     expect(assessor).toHaveBeenCalledWith("fix", ["fix", "context"]);
     expect(JSON.parse(await readFile(join(directory, "pr_targets_react.json"), "utf8"))).toEqual([
       preserved,
