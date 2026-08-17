@@ -186,7 +186,8 @@ Lead Engineer 自体は本リリースの対象外です。
 > `NEXTJS`/`NUXT`/`ANGULAR`/`SVELTE`/`VUE`/`REACT_TS` を判定できる（2節参照）。
 
 > **実装済みに変更（旧「未配線」）**: 参照ドキュメント取得は `AgentSkills` と
-> `src/code_review_agent/skills/` 内のスキルパッケージとして実装した。`ReactReviewer` は
+> `packages/agent-core/skills/` 内のスキルパッケージとして実装した（Issue #255でPython資産の
+> 撤去に伴い `src/code_review_agent/skills/` から移動）。`ReactReviewer` は
 > `AgentSkillType.REACT_REVIEW`（reviewing-universal / reviewing-languages / reviewing-frameworks
 > / reviewing-metaframeworks に加え Vercel の vercel-react-best-practices / vercel-composition-patterns）を、
 > `AngularReviewer` は `AgentSkillType.ANGULAR_REVIEW`（reviewing-universal / reviewing-languages /

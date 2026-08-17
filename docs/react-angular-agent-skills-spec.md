@@ -52,7 +52,7 @@ The project type detector currently treats TypeScript/JavaScript changes or `pac
 - `vercel-react-best-practices`
 - `vercel-composition-patterns`
 
-These skills must be vendored under `src/code_review_agent/skills/` with their rule files so the Strands AgentSkills progressive-disclosure flow can load detailed rules via `file_read` only when needed.
+These skills must be vendored under `packages/agent-core/skills/` with their rule files so the Strands AgentSkills progressive-disclosure flow can load detailed rules via `file_read` only when needed.
 
 ### 4.2 Angular Skill Separation
 
@@ -94,9 +94,9 @@ The following upstream skills must be vendored with source and license attributi
 
 | Skill | Upstream repository | License | Local directory |
 | --- | --- | --- | --- |
-| `vercel-react-best-practices` | `vercel-labs/agent-skills` | MIT | `src/code_review_agent/skills/vercel-react-best-practices/` |
-| `vercel-composition-patterns` | `vercel-labs/agent-skills` | MIT | `src/code_review_agent/skills/vercel-composition-patterns/` |
-| `angular-developer` | `angular/angular` | MIT | `src/code_review_agent/skills/angular-developer/` |
+| `vercel-react-best-practices` | `vercel-labs/agent-skills` | MIT | `packages/agent-core/skills/vercel-react-best-practices/` |
+| `vercel-composition-patterns` | `vercel-labs/agent-skills` | MIT | `packages/agent-core/skills/vercel-composition-patterns/` |
+| `angular-developer` | `angular/angular` | MIT | `packages/agent-core/skills/angular-developer/` |
 
 Each local skill directory must keep its directory name aligned with the `name` field in `SKILL.md`, because `Skill.from_file()` validates that relationship.
 

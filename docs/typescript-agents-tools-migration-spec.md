@@ -117,6 +117,13 @@ Issue #252本文は「`src/code_review_agent/skills/**`は言語非依存のた�
 
 **採用**: 移動しない。`skills/agent-skills-factory.ts`は`src/code_review_agent/skills/`配下を指す。
 
+**追記(Issue #255 PR3で移動実施)**: 上表の却下理由(②)で「移動は#255のタイミングで一括して
+行うのが自然」としていた通り、#255のPR3で`src/code_review_agent/skills/`配下のskillディレクトリ群を
+`packages/agent-core/skills/`へ`git mv`し、`agent-skills-factory.ts`の`SKILLS_DIR`を
+`resolve(import.meta.dirname, "../../skills")`に更新した。Python資産(`agent_skills_factory.py`、
+`__init__.py`)は`src/code_review_agent/skills/`に残置しており、その撤去はPR5(#255の後続)の
+責務のままである。
+
 ### 2.7 `model_provider_factory.ts`のプロバイダ表現
 
 | 選択肢 | 概要 | 採用/却下 | 理由 |

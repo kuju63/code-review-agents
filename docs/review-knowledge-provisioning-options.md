@@ -7,7 +7,7 @@ Agent Skills 方式を対象に、**より変更しやすく柔軟な知識提�
 ## 1. 背景
 
 技術レビュー(`ReactReviewer`)・セキュリティレビュー(`SecurityReviewer`)は、
-`src/code_review_agent/skills/` 配下の Markdown ベースの Agent Skills
+`packages/agent-core/skills/` 配下の Markdown ベースの Agent Skills
 (`SKILL.md` + `references/*.md`、progressive disclosure)でフレームワーク/言語/OWASP知識を
 与えている。この方式自体(知識をMarkdownで記述し、段階的にロードする設計)は機能しているが、
 コードを追うと次の構造的な制約がある。
