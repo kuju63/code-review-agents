@@ -22,9 +22,9 @@
 
 <!-- Describe what you tested and the results. -->
 
-- [ ] `uv run pytest` executed successfully
-- [ ] `uv run ruff check` executed successfully
-- [ ] `uv run ruff format --check` executed successfully
+- [ ] `pnpm exec tsc --noEmit` executed successfully
+- [ ] `pnpm exec biome check --no-errors-on-unmatched` executed successfully
+- [ ] `pnpm run test` executed successfully
 
 Details:
 
