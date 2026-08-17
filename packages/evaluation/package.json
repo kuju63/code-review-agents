@@ -7,12 +7,14 @@
     "build": "pnpm --filter @code-review-agent/agent-core run build && tsc --noEmit false",
     "build-seeded-set": "tsx src/build-seeded-set.ts",
     "discover-candidate-prs": "tsx src/discover-candidate-prs.ts",
-    "score-evaluation": "tsx src/score-evaluation.ts"
+    "score-evaluation": "tsx src/score-evaluation.ts",
+    "merge-predictions": "tsx src/merge-predictions.ts"
   },
   "bin": {
     "build-seeded-set": "./dist/build-seeded-set.js",
     "discover-candidate-prs": "./dist/discover-candidate-prs.js",
-    "score-evaluation": "./dist/score-evaluation.js"
+    "score-evaluation": "./dist/score-evaluation.js",
+    "merge-predictions": "./dist/merge-predictions.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
