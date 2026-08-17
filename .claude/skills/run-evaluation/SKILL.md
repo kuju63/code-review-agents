@@ -176,7 +176,7 @@ GitHub MCPのレート制限次第では2が現実的な上限であり、上げ
 コマンドは `evaluation/data/` 配下に以下を生成する:
 
 - `agent_predictions.jsonl` — Agentの予測結果
-- `agent_predictions.jsonl.failed_ids.json` — 失敗item idのsidecar（常に書き込まれる、0件でも）
+- `agent_predictions.failed_ids.json` — 失敗item idのsidecar（常に書き込まれる、0件でも）
 
 旧Python版runnerと異なり、`run-agent-evaluation`はレポート生成・Discord通知を自動実行しない
 （`docs/ts-agent-evaluation-runner-spec.md` §2.2で明示的にスコープ外）。続けて明示的に実行する:

@@ -27,9 +27,20 @@ To use a smaller/larger fast sample:
 
 bash evaluation/tools/run_evaluation_pipeline.sh --sample-n 8
 
-For a full, deterministic run (weekly refresh / release-gate evaluation per
-[EVALUATION_PLAN.md](EVALUATION_PLAN.md) §5.1), use `--limit` instead of
-`--sample-n` (they are mutually exclusive):
+For a full, deterministic run required for release-gate evaluation
+([EVALUATION_PLAN.md](EVALUATION_PLAN.md) §5.1 requires the full Gold+Seeded
+population, including low-severity items), pass `--limit 0` (unlimited) and
+`--min-severity low`. Note that `run_evaluation_pipeline.sh` defaults
+`--min-severity` to `medium` on its own even when the flag is omitted, so
+`--min-severity low` must be passed explicitly here:
+
+bash evaluation/tools/run_evaluation_pipeline.sh \
+  --limit 0 \
+  --min-severity low
+
+For a smaller, still-deterministic 30-target sample (not valid as a
+release-gate signal; see §2.0.3), use `--limit` with a `--min-severity`
+floor:
 
 bash evaluation/tools/run_evaluation_pipeline.sh \
   --limit 30 \
@@ -69,7 +80,20 @@ nix develop --command pnpm --filter @code-review-agent/evaluation run select-sta
   --print-summary
 ```
 
-Full/deterministic selection (weekly refresh / release-gate evaluation):
+Full population selection, required for release-gate evaluation
+(EVALUATION_PLAN.md §5.1 — includes low-severity items; do not add
+`--min-severity` here):
+
+```bash
+nix develop --command pnpm --filter @code-review-agent/evaluation run select-stack-targets \
+  --inputs evaluation/input/pr_targets_{react,vue,angular,svelte}.json \
+  --output evaluation/data/pr_targets.json \
+  --balanced \
+  --print-summary
+```
+
+Deterministic 30-target sample (not valid as a release-gate signal; see
+§2.0.3):
 
 ```bash
 nix develop --command pnpm --filter @code-review-agent/evaluation run select-stack-targets \
@@ -176,7 +200,7 @@ margin is smaller than it used to be.
 This produces:
 
 - `evaluation/data/agent_predictions.jsonl`
-- `evaluation/data/agent_predictions.jsonl.failed_ids.json` (sidecar; always
+- `evaluation/data/agent_predictions.failed_ids.json` (sidecar; always
   written, even when empty)
 
 Minimum record format:

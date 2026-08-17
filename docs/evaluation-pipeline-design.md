@@ -122,7 +122,10 @@ fail-closedで停止し、全件の検証後に`seeded_set.jsonl`をatomic write
 スクリプトはこの値を`--limit <n> --shuffle --stratify-repo-type`へ変換して
 `select-stack-targets`を呼び出す。これにより`repo_type`(ui-library/application)を
 ほぼ50/50に層化しつつ、層内はstack round-robin(`select_balanced`)と固定シード
-(`--seed`、既定42)によるランダム選択を組み合わせる。
+(`--seed`、既定42)によるランダム選択を組み合わせる。`run_evaluation_pipeline.sh`は
+`--balanced`も既定で(`BALANCED=1`)`select-stack-targets`へそのまま渡す。
+`--no-balanced`を指定した場合は`--balanced`を渡さず、`select-stack-targets`側の
+既定(unbalanced)が使われるため、stack round-robinは行われない。
 
 `select-stack-targets`自体が件数指定として受け付けるのは`--limit`だけである。
 `run_evaluation_pipeline.sh`へ`--limit`を明示指定した場合はshuffleと層化を付けずに渡し、
