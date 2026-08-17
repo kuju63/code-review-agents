@@ -82,11 +82,11 @@ TBD
 
 開発時に最低限必要なもの:
 
-- Python 3.12+
-- `uv`（推奨）
+- Node.js 24+ / pnpm（リポジトリルートの Nix flake が `nix develop` 経由で提供）
 - `betterleaks`（必須: 開発時のシークレットスキャンに利用）
 
-`pre-commit` は `uv sync` により開発依存としてインストールされます。
+`pre-commit` はリポジトリの `pyproject.toml`（Issue #255 で撤去済み）経由ではインストールできなくなっています。
+別途 `pip install pre-commit` 等でインストールしてください（フック定義自体の TypeScript 向け整理は PR6 で対応予定です）。
 
 #### Install betterleaks (required)
 
@@ -111,13 +111,13 @@ git clone https://github.com/kuju63/code-review-agent.git
 cd code-review-agent
 ```
 
-### 2. Create virtual environment and install package
+### 2. Install dependencies
 
 ```bash
-uv venv
-source .venv/bin/activate
-uv sync
+nix develop --command pnpm install --frozen-lockfile
 ```
+
+`nix develop` が使えない環境では、Node 24+ と pnpm を別途用意した上で `pnpm install --frozen-lockfile` を実行してください。
 
 ### 3. Enable Git hooks (pre-commit)
 
@@ -135,56 +135,36 @@ pre-commit run --all-files
 
 このプロジェクトでは、betterleaks を pre-commit フック経由で実行しています。
 
-### 4. Build package
+### 4. Run application
+
+ローカル開発時の最小実行手順（A2A HTTP サーバーを起動）:
 
 ```bash
-uv build
+nix develop --command pnpm --filter a2a-server run dev
 ```
 
-成果物は通常 `dist/` に生成されます。
-
-### 5. Run application
-
-ローカル開発時の最小実行手順:
+### 5. Test
 
 ```bash
-# If not activated yet
-source .venv/bin/activate
-
-# Run entrypoint via uv
-uv run code-review-agent
+nix develop --command pnpm run test
 ```
 
-`uv` を使わず仮想環境内で直接実行する場合:
+### 6. Lint, format, and type check (Biome / tsc)
 
-```bash
-code-review-agent
-```
-
-現時点では、上記コマンドで動作確認用のメッセージ（`Hello from code-review-agent!`）が出力されます。
-
-### 6. Test
-
-```bash
-uv run pytest
-```
-
-### 7. Lint and format (Ruff)
-
-このプロジェクトでは Ruff を Linter / Formatter として利用します。
+このプロジェクトでは Biome を Linter / Formatter として、`tsc --noEmit` を型チェックとして利用します。
 
 ```bash
 # Lint
-uv run ruff check
+nix develop --command pnpm run lint
 
-# Lint + auto-fix (safe fixes by default)
-uv run ruff check --fix
+# Lint + auto-fix
+nix develop --command pnpm run lint:fix
 
-# Format
-uv run ruff format
+# Format check
+nix develop --command pnpm run format:check
 
-# Format check only (CI向け)
-uv run ruff format --check
+# Type check
+nix develop --command pnpm run typecheck
 ```
 
 ## Evaluation Workflow (Current)
