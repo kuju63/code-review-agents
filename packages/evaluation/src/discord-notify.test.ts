@@ -127,7 +127,7 @@ describe("send_discord_notification", () => {
     ).resolves.toBeUndefined();
   });
 
-  it("logs a redacted URL and does not throw on an HTTP error status", async () => {
+  it("logs a message with no webhook URL/token and does not throw on an HTTP error status", async () => {
     const webhookUrl = "https://discord.example/api/webhooks/123/super-secret-token";
     const { send_discord_notification, write } = await freshModule();
     const fetch = vi.fn().mockResolvedValue(fakeResponse(false, 400));
@@ -137,6 +137,18 @@ describe("send_discord_notification", () => {
     expect(write).toHaveBeenCalled();
     const messages = write.mock.calls.map((call) => String(call[0]));
     expect(messages.some((m) => m.includes("Discord notification failed"))).toBe(true);
+    expect(messages.some((m) => m.includes("super-secret-token"))).toBe(false);
+    expect(messages.some((m) => m.includes(webhookUrl))).toBe(false);
+  });
+
+  it("still redacts a webhook URL that a fetch-thrown error embeds verbatim", async () => {
+    const webhookUrl = "https://discord.example/api/webhooks/123/super-secret-token";
+    const { send_discord_notification, write } = await freshModule();
+    const fetch = vi.fn().mockRejectedValue(new Error(`connect ECONNREFUSED ${webhookUrl}`));
+
+    await send_discord_notification(webhookUrl, { embeds: [] } as never, { fetch });
+
+    const messages = write.mock.calls.map((call) => String(call[0]));
     expect(messages.some((m) => m.includes("super-secret-token"))).toBe(false);
     expect(messages.some((m) => m.includes("<redacted webhook url>"))).toBe(true);
   });

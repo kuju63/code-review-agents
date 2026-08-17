@@ -631,4 +631,43 @@ describe("run (CLI)", () => {
     const exitCode = await run(["--gold", "gold.jsonl", "--seeded", "seeded.jsonl"]);
     expect(exitCode).toBe(2);
   });
+
+  it("forwards --allow-missing-failed-ids so a missing sidecar is not fatal", async () => {
+    const gold = join(dir, "gold.jsonl");
+    await writeFile(gold, "", "utf-8");
+    const seeded = join(dir, "seeded.jsonl");
+    await writeFile(seeded, "", "utf-8");
+    const pred = join(dir, "pred.jsonl");
+    // Intentionally no pred.failed_ids.json sidecar.
+
+    const exitCode = await run(
+      ["--gold", gold, "--seeded", seeded, "--pred", pred, "--allow-missing-failed-ids"],
+      {
+        score: async () => makeScores(),
+        sendDiscordNotification: async () => undefined,
+      },
+    );
+
+    expect(exitCode).toBe(0);
+  });
+
+  it("forwards --failed-ids-file to load the sidecar from a custom path", async () => {
+    const gold = join(dir, "gold.jsonl");
+    await writeFile(gold, "", "utf-8");
+    const seeded = join(dir, "seeded.jsonl");
+    await writeFile(seeded, "", "utf-8");
+    const pred = join(dir, "pred.jsonl");
+    const customFailedIds = join(dir, "custom.failed_ids.json");
+    await writeFile(customFailedIds, "[]", "utf-8");
+
+    const exitCode = await run(
+      ["--gold", gold, "--seeded", seeded, "--pred", pred, "--failed-ids-file", customFailedIds],
+      {
+        score: async () => makeScores(),
+        sendDiscordNotification: async () => undefined,
+      },
+    );
+
+    expect(exitCode).toBe(0);
+  });
 });
