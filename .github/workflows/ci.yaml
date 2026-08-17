@@ -5,7 +5,7 @@ on:
   pull_request: {}
 
 jobs:
-  ts-ci-check:
+  ci-check:
     runs-on: ubuntu-latest
     permissions:
       contents: read
