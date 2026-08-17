@@ -27,6 +27,20 @@ const logger = getLogger("merge_predictions");
 
 type Row = Record<string, unknown>;
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+/** Validate every row's `id` is a non-empty string, naming `path`+index on the first violation. */
+function validateRowIds(rows: readonly Row[], path: string): string | undefined {
+  for (const [index, row] of rows.entries()) {
+    if (!isNonEmptyString(row.id)) {
+      return `invalid id at ${path}[${index}]: ${JSON.stringify(row.id)}`;
+    }
+  }
+  return undefined;
+}
+
 async function readJsonl(path: string): Promise<Row[]> {
   const content = await readFile(path, "utf-8");
   const rows: Row[] = [];
@@ -73,7 +87,14 @@ export interface MergeOptions {
  */
 export async function merge(options: MergeOptions): Promise<number> {
   const { gold, seeded, output, predPaths, allowMissing } = options;
-  const expectedItems = [...(await readJsonl(gold)), ...(await readJsonl(seeded))];
+  const goldRows = await readJsonl(gold);
+  const seededRows = await readJsonl(seeded);
+  const idError = validateRowIds(goldRows, gold) ?? validateRowIds(seededRows, seeded);
+  if (idError) {
+    logger.error(idError);
+    return 2;
+  }
+  const expectedItems = [...goldRows, ...seededRows];
   const expectedIds = new Set(expectedItems.map((item) => item.id as string));
 
   const merged = new Map<string, Row>();
@@ -92,7 +113,13 @@ export async function merge(options: MergeOptions): Promise<number> {
       );
       continue;
     }
-    for (const row of await readJsonl(predPath)) {
+    const predRows = await readJsonl(predPath);
+    const predIdError = validateRowIds(predRows, predPath);
+    if (predIdError) {
+      logger.error(predIdError);
+      return 2;
+    }
+    for (const row of predRows) {
       const rid = row.id as string;
       if (merged.has(rid)) {
         duplicates.push([rid, mergedSource.get(rid) as string, predPath]);
@@ -126,8 +153,12 @@ export async function merge(options: MergeOptions): Promise<number> {
   for (const predPath of predPaths) {
     const sidecar = failedIdsPath(predPath);
     if (existsSync(sidecar)) {
-      const ids = JSON.parse(await readFile(sidecar, "utf-8")) as string[];
-      for (const id of ids) {
+      const parsed: unknown = JSON.parse(await readFile(sidecar, "utf-8"));
+      if (!Array.isArray(parsed) || parsed.some((id) => typeof id !== "string")) {
+        logger.error(`failed_ids sidecar at ${sidecar} must be a JSON array of strings`);
+        return 2;
+      }
+      for (const id of parsed) {
         knownFailed.add(id);
       }
     } else {

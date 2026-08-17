@@ -329,6 +329,146 @@ describe("merge missing shard file", () => {
   });
 });
 
+describe("merge input validation", () => {
+  it("rejects a Gold row with no id, naming the file and row index", async () => {
+    const { merge, write } = await freshMerge();
+    const gold = join(dir, "gold.jsonl");
+    await writeJsonl(gold, [{ title: "missing id" }]);
+    const seeded = join(dir, "seeded.jsonl");
+    await writeJsonl(seeded, []);
+
+    const output = join(dir, "merged.jsonl");
+    const exitCode = await merge({
+      gold,
+      seeded,
+      output,
+      predPaths: [],
+      allowMissing: false,
+    });
+
+    expect(exitCode).toBe(2);
+    expect(await exists(output)).toBe(false);
+    const messages = write.mock.calls.map((call) => String(call[0]));
+    expect(messages.some((m) => m.includes("gold.jsonl") && m.includes("[0]"))).toBe(true);
+  });
+
+  it("rejects a Seeded row with a non-string id", async () => {
+    const gold = join(dir, "gold.jsonl");
+    await writeJsonl(gold, [{ id: "g1" }]);
+    const seeded = join(dir, "seeded.jsonl");
+    await writeJsonl(seeded, [{ id: 42 }]);
+
+    const output = join(dir, "merged.jsonl");
+    const exitCode = await merge({
+      gold,
+      seeded,
+      output,
+      predPaths: [],
+      allowMissing: false,
+    });
+
+    expect(exitCode).toBe(2);
+    expect(await exists(output)).toBe(false);
+  });
+
+  it("rejects a shard prediction row with no id", async () => {
+    const gold = join(dir, "gold.jsonl");
+    await writeJsonl(gold, [{ id: "g1" }]);
+    const seeded = join(dir, "seeded.jsonl");
+    await writeJsonl(seeded, []);
+
+    const shard0 = join(dir, "shard0.jsonl");
+    await writeJsonl(shard0, [{ agent_findings: [] }]);
+    await writeSidecar(shard0, []);
+
+    const output = join(dir, "merged.jsonl");
+    const exitCode = await merge({
+      gold,
+      seeded,
+      output,
+      predPaths: [shard0],
+      allowMissing: false,
+    });
+
+    expect(exitCode).toBe(2);
+    expect(await exists(output)).toBe(false);
+  });
+
+  it("rejects a failed_ids sidecar that is not a JSON array", async () => {
+    const gold = join(dir, "gold.jsonl");
+    await writeJsonl(gold, [{ id: "g1" }]);
+    const seeded = join(dir, "seeded.jsonl");
+    await writeJsonl(seeded, []);
+
+    const shard0 = join(dir, "shard0.jsonl");
+    await writeJsonl(shard0, [{ id: "g1", agent_findings: [] }]);
+    await writeFile(failedIdsPath(shard0), JSON.stringify({ not: "an array" }), "utf-8");
+
+    const output = join(dir, "merged.jsonl");
+    const exitCode = await merge({
+      gold,
+      seeded,
+      output,
+      predPaths: [shard0],
+      allowMissing: false,
+    });
+
+    expect(exitCode).toBe(2);
+    expect(await exists(output)).toBe(false);
+  });
+
+  it("rejects a failed_ids sidecar containing a non-string element", async () => {
+    const gold = join(dir, "gold.jsonl");
+    await writeJsonl(gold, [{ id: "g1" }]);
+    const seeded = join(dir, "seeded.jsonl");
+    await writeJsonl(seeded, []);
+
+    const shard0 = join(dir, "shard0.jsonl");
+    await writeJsonl(shard0, [{ id: "g1", agent_findings: [] }]);
+    await writeFile(failedIdsPath(shard0), JSON.stringify(["g2", 3]), "utf-8");
+
+    const output = join(dir, "merged.jsonl");
+    const exitCode = await merge({
+      gold,
+      seeded,
+      output,
+      predPaths: [shard0],
+      allowMissing: false,
+    });
+
+    expect(exitCode).toBe(2);
+    expect(await exists(output)).toBe(false);
+  });
+
+  it("writes one output line per expected-item occurrence, matching the Python original's behavior when Gold and Seeded share an id", async () => {
+    // Not a recommended input shape (Gold/Seeded ids are expected to be
+    // disjoint), but merge_predictions.py's own `for item in expected_items`
+    // write loop has always duplicated the line in this case -- see
+    // evaluation/tools/merge_predictions.py:145-148. This test locks in that
+    // pre-existing behavior rather than silently changing it.
+    const gold = join(dir, "gold.jsonl");
+    await writeJsonl(gold, [{ id: "shared" }]);
+    const seeded = join(dir, "seeded.jsonl");
+    await writeJsonl(seeded, [{ id: "shared" }]);
+
+    const shard0 = join(dir, "shard0.jsonl");
+    await writeJsonl(shard0, [{ id: "shared", agent_findings: [] }]);
+    await writeSidecar(shard0, []);
+
+    const output = join(dir, "merged.jsonl");
+    const exitCode = await merge({
+      gold,
+      seeded,
+      output,
+      predPaths: [shard0],
+      allowMissing: false,
+    });
+
+    expect(exitCode).toBe(0);
+    expect(await readIds(output)).toEqual(["shared", "shared"]);
+  });
+});
+
 describe("run (CLI)", () => {
   it("parses flags and positional shard paths and merges successfully", async () => {
     const gold = join(dir, "gold.jsonl");
