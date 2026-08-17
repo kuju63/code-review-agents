@@ -181,7 +181,7 @@ mkdir -p "$(dirname "$TARGETS_OUTPUT")" "$(dirname "$GOLD_OUTPUT")" "$(dirname "
 if [[ "$SKIP_SELECT" -eq 0 ]]; then
   echo "[1/3] Selecting execution targets from per-stack inputs..."
   SELECT_ARGS=(
-    uv run python "$EVAL_DIR/tools/select_stack_targets.py"
+    nix develop --command pnpm --filter @code-review-agent/evaluation run select-stack-targets
     --inputs "${STACK_INPUTS[@]}"
     --output "$TARGETS_OUTPUT"
     --limit "$EFFECTIVE_LIMIT"
@@ -214,7 +214,7 @@ if [[ "$SKIP_GOLD" -eq 0 ]]; then
     echo "GITHUB_TOKEN is required for Gold build step." >&2
     exit 3
   fi
-  uv run python "$EVAL_DIR/tools/build_gold_set.py" \
+  nix develop --command pnpm --filter @code-review-agent/evaluation run build-gold-set \
     --input "$TARGETS_OUTPUT" \
     --output "$GOLD_OUTPUT"
 else
@@ -227,7 +227,7 @@ if [[ "$SKIP_SEEDED" -eq 0 ]]; then
     echo "GITHUB_TOKEN is required for Seeded build step." >&2
     exit 3
   fi
-  uv run python "$EVAL_DIR/tools/build_seeded_set.py" \
+  nix develop --command pnpm --filter @code-review-agent/evaluation run build-seeded-set \
     --targets "${SEEDED_INPUTS[@]}" \
     --output "$SEEDED_OUTPUT"
 else
@@ -244,10 +244,21 @@ Generated files:
 - $SEEDED_OUTPUT
 
 Next steps:
-1. Run the review agent and produce evaluation/data/agent_predictions.jsonl:
-   python evaluation/tools/run_agent_evaluation.py ... --concurrency 2
-2. Score results:
-   python evaluation/tools/score_evaluation.py \
+1. Run the review agent and produce evaluation/data/agent_predictions.jsonl
+   (the A2A server must already be running; see .claude/skills/run-evaluation/SKILL.md).
+   packages/evaluation has no "run-agent-evaluation" package.json script yet
+   (pre-existing gap from Issue #306/#307), so invoke tsx directly:
+   nix develop --command pnpm --filter @code-review-agent/evaluation exec tsx \
+     src/run-agent-evaluation.ts \
+     --gold $GOLD_OUTPUT \
+     --seeded $SEEDED_OUTPUT \
+     --pred evaluation/data/agent_predictions.jsonl \
+     --base-url http://localhost:8000 \
+     --concurrency 2
+2. Score results and generate the report + Discord notification
+   (run-agent-evaluation no longer invokes this automatically, unlike the
+   retired Python runner):
+   nix develop --command pnpm --filter @code-review-agent/evaluation run generate-evaluation-report \
      --gold $GOLD_OUTPUT \
      --seeded $SEEDED_OUTPUT \
      --pred evaluation/data/agent_predictions.jsonl
