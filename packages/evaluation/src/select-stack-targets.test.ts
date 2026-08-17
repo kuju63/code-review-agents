@@ -86,6 +86,17 @@ describe("loadTargets", () => {
       await expect(loadTargets([path])).rejects.toThrow(/bad\.json\[0\][\s\S]*pr_number/);
     },
   );
+
+  it.each([null, 42, { owner: "owner", repo: "repo" }, "no-slash"])(
+    "rejects a repository that is not a string containing '/' (%j)",
+    async (invalidRepository) => {
+      const path = join(dir, "bad.json");
+      const row: Record<string, unknown> = { ...makeRow(), repository: invalidRepository };
+      await writeFile(path, JSON.stringify([row]));
+
+      await expect(loadTargets([path])).rejects.toThrow(/bad\.json\[0\][\s\S]*repository/);
+    },
+  );
 });
 
 describe("filterRows and dedupeRows", () => {
@@ -401,5 +412,56 @@ describe("run (CLI)", () => {
     ]);
 
     expect(exitCode).toBe(2);
+  });
+
+  it.each(["5.7", "5abc", "5.0", "", " "])(
+    "rejects a partially-numeric --limit value %j instead of truncating it",
+    async (value) => {
+      const path = join(dir, "input.json");
+      await writeFile(path, "[]");
+
+      const exitCode = await run([
+        "--inputs",
+        path,
+        "--output",
+        join(dir, "out.json"),
+        "--limit",
+        value,
+      ]);
+
+      expect(exitCode).toBe(2);
+    },
+  );
+
+  it("accepts a negative integer --seed", async () => {
+    const path = join(dir, "input.json");
+    await writeFile(path, "[]");
+
+    const exitCode = await run([
+      "--inputs",
+      path,
+      "--output",
+      join(dir, "out.json"),
+      "--seed",
+      "-3",
+    ]);
+
+    expect(exitCode).toBe(0);
+  });
+
+  it("accepts a whitespace-padded --seed value", async () => {
+    const path = join(dir, "input.json");
+    await writeFile(path, "[]");
+
+    const exitCode = await run([
+      "--inputs",
+      path,
+      "--output",
+      join(dir, "out.json"),
+      "--seed",
+      " 5 ",
+    ]);
+
+    expect(exitCode).toBe(0);
   });
 });
