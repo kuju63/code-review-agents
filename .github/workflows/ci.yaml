@@ -5,53 +5,11 @@ on:
   pull_request: {}
 
 jobs:
-  ci-check:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v7
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.14'
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Cache dependencies
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-      - name: Install dependencies
-        run: uv sync --frozen
-      - name: Run formatter
-        run: uv run ruff format --check
-      - name: Run linters
-        run: uv run ruff check
-      - name: Run type checkers
-        run: uv run pyright
-      - name: Run tests
-        run: uv run pytest --cov=code_review_agent --cov-branch --cov-report=xml --cov-fail-under=75 --junitxml=junit.xml -o junit_family=legacy
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v7
-        with:
-          use_oidc: true
-          report_type: test_results
-      - name: Upload coverage reports to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v7
-        with:
-          use_oidc: true
-          report_type: coverage
-
   ts-ci-check:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v7
       - name: Set up pnpm + Node.js
@@ -66,5 +24,17 @@ jobs:
         run: pnpm run typecheck
       - name: Run tests
         run: pnpm run test
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v7
+        with:
+          use_oidc: true
+          report_type: test_results
+      - name: Upload coverage reports to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@v7
+        with:
+          use_oidc: true
+          report_type: coverage
       - name: Build node-runtime image (validation only, not pushed)
         run: docker build --target node-runtime -t code-review-agent:node-runtime-ci .
