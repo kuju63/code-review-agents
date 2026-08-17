@@ -10,7 +10,8 @@
     "score-evaluation": "tsx src/score-evaluation.ts",
     "merge-predictions": "tsx src/merge-predictions.ts",
     "select-stack-targets": "tsx src/select-stack-targets.ts",
-    "build-gold-set": "tsx src/build-gold-set.ts"
+    "build-gold-set": "tsx src/build-gold-set.ts",
+    "generate-evaluation-report": "tsx src/generate-evaluation-report.ts"
   },
   "bin": {
     "build-seeded-set": "./dist/build-seeded-set.js",
@@ -18,7 +19,8 @@
     "score-evaluation": "./dist/score-evaluation.js",
     "merge-predictions": "./dist/merge-predictions.js",
     "select-stack-targets": "./dist/select-stack-targets.js",
-    "build-gold-set": "./dist/build-gold-set.js"
+    "build-gold-set": "./dist/build-gold-set.js",
+    "generate-evaluation-report": "./dist/generate-evaluation-report.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
