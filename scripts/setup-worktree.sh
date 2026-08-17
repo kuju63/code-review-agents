@@ -2,12 +2,6 @@
 
 set -euo pipefail
 
-# Python環境のセットアップ
-uv venv
-# shellcheck source=.venv/bin/activate
-source .venv/bin/activate
-uv sync --frozen
-
 # Worktreeセットアップ後の設定のリンク
 WORKTREE_ROOT=$(git rev-parse --show-toplevel)
 PROJECT_ROOT=$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)
