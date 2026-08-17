@@ -78,6 +78,10 @@ class TestScoreCli:
         assert (
             captured["kwargs"]["stdout"] is generate_evaluation_report.subprocess.PIPE
         )
+        assert (
+            captured["kwargs"].get("stderr")
+            is not generate_evaluation_report.subprocess.PIPE
+        )
         assert captured["kwargs"]["text"] is True
         assert (
             captured["kwargs"]["cwd"]

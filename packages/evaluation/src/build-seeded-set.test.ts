@@ -265,6 +265,44 @@ describe("loadTargets", () => {
       "expected a non-negative integer",
     ],
     [
+      "fractional occurrence",
+      targetPayload("owner/repo", "vue", [
+        {
+          pr_number: 1,
+          defects: [
+            {
+              path: "a.vue",
+              occurrence: 0.5,
+              rule_id: "r",
+              category: "security",
+              severity: "high",
+              summary: "s",
+            },
+          ],
+        },
+      ]),
+      "expected a non-negative integer",
+    ],
+    [
+      "fractional line_offset",
+      targetPayload("owner/repo", "vue", [
+        {
+          pr_number: 1,
+          defects: [
+            {
+              path: "a.vue",
+              rule_id: "r",
+              category: "security",
+              severity: "high",
+              summary: "s",
+              line_offset: 1.5,
+            },
+          ],
+        },
+      ]),
+      "invalid line_offset",
+    ],
+    [
       "invalid category",
       targetPayload("owner/repo", "vue", [
         {

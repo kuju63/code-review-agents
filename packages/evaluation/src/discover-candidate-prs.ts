@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { Agent } from "@strands-agents/sdk";
@@ -178,10 +178,8 @@ export class GitHubClient {
             throw new Error(`GitHub API rate limit retries exhausted: ${url.href}`);
           }
           const fallbackReset = Math.floor(this.#now() / 1000) + 60;
-          const reset = Number.parseInt(
-            response.headers.get("x-ratelimit-reset") ?? String(fallbackReset),
-            10,
-          );
+          const parsedReset = Number.parseInt(response.headers.get("x-ratelimit-reset") ?? "", 10);
+          const reset = Number.isFinite(parsedReset) ? parsedReset : fallbackReset;
           const waitSeconds = Math.max(reset - Math.floor(this.#now() / 1000), 1) + 2;
           const waitMilliseconds = Math.min(waitSeconds * 1000, this.#maxRateLimitWaitMilliseconds);
           console.error(`[rate limit] waiting ${Math.ceil(waitMilliseconds / 1000)}s ...`);
@@ -467,7 +465,7 @@ export async function revalidateExistingTargets(
 const TargetRowSchema = z
   .object({
     repository: z.string(),
-    pr_number: z.number(),
+    pr_number: z.number().int().nonnegative(),
     stack: z.string(),
   })
   .loose();
@@ -517,7 +515,7 @@ export async function loadSkippedTargets(
     }
     for (const [index, value] of parsedRows.entries()) {
       const parsed = TargetRowSchema.safeParse(value);
-      if (!parsed.success || !Number.isInteger(parsed.data.pr_number)) {
+      if (!parsed.success) {
         console.error(`Ignoring invalid existing target in ${path} at row ${index}`);
         continue;
       }
@@ -561,6 +559,13 @@ export async function writeStackOutputs(
       throw error;
     }
   }
+}
+
+export async function discoverStackOutputs(outputDir: string): Promise<string[]> {
+  const stacks = (await readdir(outputDir))
+    .map((name) => /^pr_targets_(.+)\.json$/.exec(name)?.[1])
+    .filter((stack): stack is string => stack !== undefined);
+  return [...new Set(stacks)].sort();
 }
 
 export async function loadStackOutputs(
@@ -702,9 +707,10 @@ export async function main(
   }
   const client = (dependencies.clientFactory ?? ((value) => new GitHubClient(value)))(token);
   if (options.revalidateExisting) {
-    const targets = await loadStackOutputs(options.outputDir);
+    const stacks = await discoverStackOutputs(options.outputDir);
+    const targets = await loadStackOutputs(options.outputDir, stacks);
     const accepted = await revalidateExistingTargets(client, targets);
-    await writeStackOutputs(accepted, options.outputDir);
+    await writeStackOutputs(accepted, options.outputDir, stacks);
     console.error(
       `Revalidated targets: before=${targets.length}, after=${accepted.length}, removed=${targets.length - accepted.length}`,
     );

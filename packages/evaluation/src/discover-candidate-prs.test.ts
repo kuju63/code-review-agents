@@ -182,6 +182,29 @@ describe("GitHubClient", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("uses a finite fallback for a malformed rate-limit reset", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response("rate limit exceeded", {
+          status: 403,
+          headers: { "x-ratelimit-reset": "not-a-number" },
+        }),
+      )
+      .mockResolvedValueOnce(response(200, { ok: true }));
+    const sleepMock = vi.fn().mockResolvedValue(undefined);
+    const client = new GitHubClient("tok", {
+      fetch: fetchMock,
+      sleep: sleepMock,
+      now: () => 1_000_000,
+      maxRateLimitWaitMilliseconds: 62_000,
+    });
+
+    await expect(client.getRepo("o/r")).resolves.toEqual({ ok: true });
+    expect(sleepMock).toHaveBeenCalledWith(62_000);
+    expect(Number.isFinite(sleepMock.mock.calls[0]?.[0])).toBe(true);
+  });
+
   it("throws after exhausting rate-limit retries", async () => {
     const fetchMock = vi.fn().mockImplementation(() =>
       Promise.resolve(
@@ -572,6 +595,14 @@ describe("stack outputs", () => {
     expect(() =>
       parseTargetRows([{ repository: "o/r", pr_number: "1", stack: "react" }], "targets.json"),
     ).toThrow("targets.json: invalid target row 0");
+    for (const prNumber of [-1, 1.5]) {
+      expect(() =>
+        parseTargetRows(
+          [{ repository: "o/r", pr_number: prNumber, stack: "react" }],
+          "targets.json",
+        ),
+      ).toThrow("targets.json: invalid target row 0");
+    }
   });
 
   it("publishes stack outputs without leaving temporary files", async () => {
@@ -611,9 +642,9 @@ describe("CLI workflow", () => {
     ).resolves.toBe(1);
   });
 
-  it("revalidates without constructing an assessor", async () => {
+  it("revalidates all existing stack files without constructing an assessor", async () => {
     const directory = await temporaryDirectory();
-    await writeStackOutputs([target(1)], directory);
+    await writeStackOutputs([target(1), target(2, { stack: "solid" })], directory);
     const client = clientWith({
       requirePrFiles: vi.fn().mockResolvedValue([{ filename: "src/app.ts", patch: "@@ -1 +1 @@" }]),
       requireReviewComments: vi.fn().mockResolvedValue([{ body: "fix", path: "src/app.ts" }]),
@@ -631,6 +662,9 @@ describe("CLI workflow", () => {
     expect(assessorFactory).not.toHaveBeenCalled();
     expect(JSON.parse(await readFile(join(directory, "pr_targets_react.json"), "utf8"))).toEqual([
       target(1),
+    ]);
+    expect(JSON.parse(await readFile(join(directory, "pr_targets_solid.json"), "utf8"))).toEqual([
+      target(2, { stack: "solid" }),
     ]);
   });
 

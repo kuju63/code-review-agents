@@ -228,6 +228,12 @@ export function loadTargets(paths: string[]): SeededPrTarget[] {
             `${path}: ${repository}#${prNumber}: invalid occurrence '${String(defectRecord.occurrence)}'; expected a non-negative integer`,
           );
         }
+        const lineOffset = rawOffset === undefined || rawOffset === null ? null : Number(rawOffset);
+        if (lineOffset !== null && (!Number.isInteger(lineOffset) || lineOffset <= 0)) {
+          throw new Error(
+            `${path}: ${repository}#${prNumber}: invalid line_offset '${String(rawOffset)}'; expected a positive integer or null`,
+          );
+        }
         defects.push({
           path: String(defectRecord.path),
           occurrence,
@@ -235,7 +241,7 @@ export function loadTargets(paths: string[]): SeededPrTarget[] {
           category,
           severity,
           summary: String(defectRecord.summary),
-          lineOffset: rawOffset === undefined || rawOffset === null ? null : Number(rawOffset),
+          lineOffset,
         });
       }
       if (defects.length === 0) {
