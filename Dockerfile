@@ -35,8 +35,8 @@ RUN pnpm run lint && pnpm run typecheck
 # Stage 2: node-runtime (Issue #250)
 # Red Hat Hardened Image — nonroot UID 65532 がビルトイン。
 # 本Sub-Issue時点ではプロダクションのエントリポイントはまだ存在しない
-# (agents/api/a2aの移行は #252/#253)。CMDは暫定のプレースホルダーであり、
-# 実サービスのエントリポイントが実装されるまでの間はこの状態が続く。
+# (agents/api/a2aの移行は #252/#253)。このステージは pnpm install や
+# 依存物のコピーが最終形で成立することを確認する「ビルド検証専用」ステージである。
 # デフォルトターゲット（ファイル末尾のステージ）: `docker build .` /
 # `podman build .` は --target 未指定時にこのステージを使う。Issue #255 で
 # Python版 (`runtime`) ステージを撤去したため、レジストリへのpush対象も
