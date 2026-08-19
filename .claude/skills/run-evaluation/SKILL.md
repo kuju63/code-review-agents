@@ -270,7 +270,7 @@ echo "Report: $REPORT_PATH"
 
 ## 注意事項
 
-- `GITHUB_TOKEN` は `.env` から読み込む。`gh` コマンド等の実作業には使用しない（`.env` の `GITHUB_TOKEN` は評価パイプライン専用）。評価パイプラインのbuild系スクリプト（`select-stack-targets`/`build-gold-set`/`build-seeded-set`等）はIssue #255で全てTypeScript化されており `venv` は不要（`nix develop`のみで完結する）。GitHub MCP呼び出し（レビューAgent自体の動作、`src/code_review_agent/`配下）は引き続き `venv`（`source .venv/bin/activate`）を使う。
+- `GITHUB_TOKEN` は `.env` から読み込む。`gh` コマンド等の実作業には使用しない（`.env` の `GITHUB_TOKEN` は評価パイプライン専用）。評価パイプラインのbuild系スクリプト（`select-stack-targets`/`build-gold-set`/`build-seeded-set`等）と、レビューAgent自体の動作（GitHub MCP呼び出しを含む、`packages/agent-core/`/`packages/a2a-server/`配下）は、Issue #255で全てTypeScript化されており `venv` は不要（`nix develop`のみで完結する。レビューAgent自体はpodmanコンテナとして起動するため、コンテナ内にも`venv`は存在しない）。
 - A2A サーバーは `code-review-agent-eval` という固定名のpodmanコンテナとして起動する（デフォルトポートは`8000`、`--network=host`のためホストと同じ`localhost:8000`でアクセスできる）。`--replace`が置き換えるのは**停止済み**の同名コンテナ（前回異常終了時の残骸など）のみで、**稼働中**の同名コンテナがあれば`start_a2a_container.sh`は置き換えずに明示的に起動失敗する（他セッションの評価実行中を誤って停止しないため）。
 - `pr_targets.json` / Gold set / Seeded set が既に存在する場合はビルドをスキップして再利用する。
 - 既定は`--sample-n 15`によるランダムサンプリング(高速・日常イテレーション用)。全件に近いフル評価が

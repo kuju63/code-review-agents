@@ -44,45 +44,7 @@ brew install gh
 gh auth login
 ```
 
-### Python環境のセットアップ
-
-#### pyenvのインストール
-
-Homebrewを使用してpyenvをインストールする。pyenvはPythonのバージョン管理を行うツールであり、プロジェクト毎にPythonバージョンを切り替えることができる
-
-```shell
-brew install pyenv
-pyenv init --install
-exec "$SHELL"
-```
-
-`pyenv install`はソースからPythonをビルドするため、Ubuntu/Debian/WSL環境では事前にビルド依存関係のインストールが必要となる（macOSはHomebrewのみで完結するため不要）。
-
-```shell
-# Ubuntu/Debian/WSLの場合のみ実行する
-sudo apt-get update
-sudo apt-get install -y build-essential libssl-dev zlib1g-dev libbz2-dev \
-  libreadline-dev libsqlite3-dev libncursesw5-dev xz-utils tk-dev \
-  libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
-```
-
-```shell
-pyenv install 3.14.6
-```
-
-#### uvのインストール
-
-[`uv`](https://docs.astral.sh/uv/)は`pip`と同様にパッケージ管理を行うツールである。非常に高速で動作することからプロジェクトではこれを採用している.
-
-```shell
-brew install uv
-
-uv venv
-source .venv/bin/activate
-uv sync --frozen
-```
-
-#### pre-commitのインストール
+### pre-commitのインストール
 
 [pre-commit](https://pre-commit.com/)はGitへのコミット都度、最低限のチェックを行い、品質を担保することができるツールである。
 
@@ -94,12 +56,14 @@ pre-commit install
 
 [`Graphify`](https://github.com/Graphify-Labs/graphify)はコードベースをナレッジグラフ化し、AIエージェントがファイルを逐次検索せずに構造や依存関係を参照できるようにするツールである。
 CLIはプロジェクトの`.venv`ではなく、`uv tool`が管理する独立した環境へインストールする。
+`uv`自体はリポジトリルートのNix flakeが`nix develop`経由で提供するため、以下のコマンドは
+`nix develop --command`を前置するか、`nix develop`シェル内で実行すること。
 
 共有された `.opencode/skills/graphify/.graphify_version` を単一の版ソースとしてインストールする（コミット済みグラフとスキルの整合を保つため）。
 
 ```shell
 GRAPHIFY_VERSION=$(tr -d '[:space:]' < .opencode/skills/graphify/.graphify_version)
-uv tool install "graphifyy==$GRAPHIFY_VERSION"
+nix develop --command uv tool install "graphifyy==$GRAPHIFY_VERSION"
 graphify --version
 graphify hook install
 ```
@@ -147,10 +111,9 @@ ollama pull gpt-oss:latest
 開発は原則としてGitのWorktree上で行う。
 そのため、Worktreeへ移動後は以下を行う必要がある。
 
-1. venv環境の構成
-2. Claude Codeのローカル設定の同期
-3. .envの同期
-4. 評価用データの同期
+1. Claude Codeのローカル設定の同期
+2. .envの同期
+3. 評価用データの同期
 
 これらの処理は`scripts/setup-worktree.sh`を実行することで行うことができる
 
@@ -166,8 +129,9 @@ scripts/remove-worktree.sh --force .claude/worktrees/<worktree-name>
 
 ## AIエージェント上でのシェルスクリプト実施時
 
-AIエージェント上でシェルスクリプトを実行する場合、都度venv環境をactivateしないといけない。
+AIエージェント上でTypeScriptツールチェーン（pnpm/biome等）を必要とするコマンドを実行する場合、
+都度`nix develop --command`を前置しないといけない。
 
 ```shell
-source .venv/bin/activate; <任意のコマンド>
+nix develop --command <任意のコマンド>
 ```

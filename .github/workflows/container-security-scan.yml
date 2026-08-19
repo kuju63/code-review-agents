@@ -6,9 +6,9 @@ on:
     paths:
       - Dockerfile
       - .dockerignore
-      - src/**
-      - pyproject.toml
-      - uv.lock
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
       - .github/workflows/container-security-scan.yml
   # main への直接プッシュ (bot の依存更新等) もスキャン対象にする
   push:
@@ -16,9 +16,9 @@ on:
     paths:
       - Dockerfile
       - .dockerignore
-      - src/**
-      - pyproject.toml
-      - uv.lock
+      - packages/**
+      - package.json
+      - pnpm-lock.yaml
       - .github/workflows/container-security-scan.yml
   schedule:
     - cron: '22 21 * * 4'
