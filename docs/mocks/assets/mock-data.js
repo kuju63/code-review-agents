@@ -74,10 +74,10 @@ const STRINGS = {
 };
 
 const STATUS_TAG = {
-  not_started: { type: 'gray', labelKey: 'statusNotStarted' },
-  analyzing: { type: 'blue', labelKey: 'statusInReview' },
-  waiting: { type: 'purple', labelKey: 'statusWaiting' },
-  error: { type: 'red', labelKey: 'statusError' },
+  not_started: { key: 'not_started', type: 'gray', labelKey: 'statusNotStarted' },
+  analyzing: { key: 'analyzing', type: 'blue', labelKey: 'statusInReview' },
+  waiting: { key: 'waiting', type: 'purple', labelKey: 'statusWaiting' },
+  error: { key: 'error', type: 'red', labelKey: 'statusError' },
 };
 const PR_STATE_TAG = { open: { type: 'green', label: 'Open' }, closed: { type: 'gray', label: 'Closed' }, merged: { type: 'purple', label: 'Merged' } };
 const CATEGORY_TAG = {
@@ -284,6 +284,9 @@ function buildFileRows(file, commentStatus, lang) {
     const marker = type === 'add' ? '+' : type === 'del' ? '-' : ' ';
     const markerColor = type === 'add' ? 'var(--support-success)' : type === 'del' ? 'var(--support-error)' : 'var(--text-secondary)';
     rows.push({ isCode: true, isThread: false, bg, markerColor, oldNum: oldNum === '' ? '' : String(oldNum), newNum: newNum === '' ? '' : String(newNum), marker, text });
+    // afterLine is compared against idx, the zero-based index into file.lines
+    // (not a diff/file line number). A comment whose afterLine has no matching
+    // idx is silently skipped — no error, it just never renders.
     (file.comments || []).filter((c) => c.afterLine === idx).forEach((c) => {
       const status = getCommentStatus(c, commentStatus);
       const catTag = CATEGORY_TAG[c.category] || CATEGORY_TAG.Style;

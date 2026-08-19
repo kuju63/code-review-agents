@@ -46,7 +46,9 @@ Issue #243 の受け入れ条件「登録 → 結果確認 → close」に対応
 
 ## 状態の保持
 
-言語切替（JA/EN）、サイドバー開閉、フィルタ、GitHub URL/PAT、コメント対応状況、close済みレビュー等は`localStorage`（`cra_`プレフィックス）に保存される。ブラウザのlocalStorageをクリアすると初期状態に戻る。
+言語切替（JA/EN）、サイドバー開閉、フィルタ、GitHub URL、コメント対応状況、close済みレビュー等は`localStorage`（`cra_`プレフィックス）に保存される。ブラウザのlocalStorageをクリアすると初期状態に戻る。
+
+**Personal Access Tokenの値自体は保存しない。** 設定画面に入力したPATの文字列はlocalStorageに書き込まれず、「入力済みかどうか」を示すフラグのみが保存される（トークン未設定時のエラー表示・導線の判定に使うだけで、値そのものは保持・送信しない）。本モックアップは実APIに接続しないため、**動作確認の際は実際のPersonal Access Tokenを入力せず、ダミー値（例: `ghp_dummy`）を使用すること**。
 
 ## 動作確認したい場合
 

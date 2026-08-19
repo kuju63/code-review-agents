@@ -25,6 +25,14 @@
 .btn-ghost { background: transparent; color: var(--link-primary); padding-left: 8px; padding-right: 8px; }
 .btn-ghost:hover:not(:disabled) { background: var(--background-hover); }
 
+/* Some buttons are rendered as <a class="btn ...">, since a <button> is not
+   valid content inside another <a> (see review-row nav / close-button split).
+   The global `a:hover` rule (shell.css) outranks a plain `.btn-*` class, so
+   re-assert the button look on hover/focus here. */
+a.btn:hover, a.btn:focus { text-decoration: none; }
+a.btn-primary:hover, a.btn-primary:focus { color: var(--text-on-color); }
+a.btn-secondary:hover, a.btn-secondary:focus { color: var(--text-on-color); }
+
 .tag {
   display: inline-flex;
   align-items: center;

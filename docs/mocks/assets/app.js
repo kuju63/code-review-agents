@@ -62,10 +62,10 @@ function renderSidebar(active, lang, collapsed) {
   <div class="app-sidebar${collapsed ? ' collapsed' : ''}" id="app-sidebar">
     ${items}
     <div class="sidebar-spacer"></div>
-    <div class="sidebar-toggle" id="sidebar-toggle" title="${escapeHtml(RD.L('toggleSidebarLabel', lang))}">
+    <button type="button" class="sidebar-toggle" id="sidebar-toggle" title="${escapeHtml(RD.L('toggleSidebarLabel', lang))}" aria-expanded="${collapsed ? 'false' : 'true'}">
       <img class="icon" id="sidebar-toggle-icon" src="${ICON(collapsed ? 'chevron-right.svg' : 'chevron-left.svg')}" alt="" />
       <span>${escapeHtml(RD.L('collapseSidebar', lang))}</span>
-    </div>
+    </button>
   </div>`;
 }
 
@@ -106,6 +106,7 @@ function mountShell({ active, breadcrumb }) {
     RD.saveLS('sidebarCollapsed', next);
     document.getElementById('app-sidebar').classList.toggle('collapsed', next);
     document.getElementById('sidebar-toggle-icon').src = ICON(next ? 'chevron-right.svg' : 'chevron-left.svg');
+    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', String(!next));
   });
 
   return { lang, contentEl: document.getElementById('page-content') };
@@ -123,7 +124,7 @@ function initListPage() {
     'tokenMissingTitle', 'tokenMissingSubtitle', 'goToSettingsBtn'], lang);
   const filterAll = RD.L('filterAll', lang);
 
-  const tokenMissing = !RD.loadLS('githubToken', '').trim();
+  const tokenMissing = !RD.loadLS('hasGithubToken', false);
   let commentStatus = RD.loadLS('commentStatus', {});
   let closedReviewIds = RD.loadLS('closedReviewIds', {});
   let collapsedRepos = RD.loadLS('collapsedRepos', {});
@@ -164,28 +165,29 @@ function initListPage() {
       : `<span style="color:var(--text-secondary);font-size:13px">—</span>`;
     const prTag = RD.PR_STATE_TAG[r.prState];
     const commentSummary = r.files.length ? (lang === 'ja' ? `${counts.total}件` : `${counts.total}`) : (r.stage === 'error' ? T.statusError : '—');
-    const showCloseBtn = statusInfo === RD.STATUS_TAG.waiting || r.prState === 'closed' || r.prState === 'merged';
+    const showCloseBtn = (statusInfo && statusInfo.key === 'waiting') || r.prState === 'closed' || r.prState === 'merged';
+    const href = `review-result.html?id=${encodeURIComponent(r.id)}`;
     return `
-      <a href="review-result.html?id=${encodeURIComponent(r.id)}" class="review-row">
-        <span class="cell-title">#${r.number} ${escapeHtml(r.title)}</span>
+      <div class="review-row">
+        <span class="cell-title"><a href="${href}">#${r.number} ${escapeHtml(r.title)}</a></span>
         <span class="cell-branch">${escapeHtml(r.branch)}</span>
         <span>${reviewTag}</span>
         <span class="cell-center"><span class="tag tag-sm tag-${prTag.type}">${prTag.label}</span></span>
         <span class="cell-muted">${escapeHtml(commentSummary)}</span>
         <span class="cell-muted">${escapeHtml(r.updatedAt)}</span>
         <span>${showCloseBtn ? `<button type="button" class="btn btn-ghost btn-sm" data-close-id="${r.id}">${escapeHtml(T.closeReviewBtn)}</button>` : ''}</span>
-      </a>`;
+      </div>`;
   }
 
   function renderGroup(g) {
     const collapsed = !!collapsedRepos[g.full];
     return `
       <div class="repo-group">
-        <div class="repo-group-header" data-toggle-repo="${g.full}">
+        <button type="button" class="repo-group-header" data-toggle-repo="${g.full}" aria-expanded="${collapsed ? 'false' : 'true'}">
           <img class="icon" src="${ICON(collapsed ? 'chevron-right.svg' : 'chevron-down.svg')}" alt="" />
           <span class="repo-name">${escapeHtml(g.full)}</span>
           <span class="repo-count">${lang === 'ja' ? `${g.reviews.length}件` : `${g.reviews.length}`}</span>
-        </div>
+        </button>
         ${collapsed ? '' : `
         <div class="repo-group-body">
           <div class="review-table-head">
@@ -204,14 +206,14 @@ function initListPage() {
           <h1 class="page-title">${escapeHtml(T.listTitle)}</h1>
           <p class="page-subtitle">${escapeHtml(T.listSubtitle)}</p>
         </div>
-        ${!tokenMissing ? `<a href="review-request.html"><button type="button" class="btn btn-primary">${escapeHtml(T.newReviewBtn)}</button></a>` : ''}
+        ${!tokenMissing ? `<a href="review-request.html" class="btn btn-primary">${escapeHtml(T.newReviewBtn)}</a>` : ''}
       </div>`;
 
     if (tokenMissing) {
       html += `
         <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
           <div class="inline-notification kind-error"><div class="n-body"><span class="n-title">${escapeHtml(T.tokenMissingTitle)} </span><span class="n-subtitle">${escapeHtml(T.tokenMissingSubtitle)}</span></div></div>
-          <a href="settings.html"><button type="button" class="btn btn-secondary">${escapeHtml(T.goToSettingsBtn)}</button></a>
+          <a href="settings.html" class="btn btn-secondary">${escapeHtml(T.goToSettingsBtn)}</a>
         </div></div>`;
       contentEl.innerHTML = html;
       return;
@@ -255,7 +257,11 @@ function initListPage() {
 
   function attachEvents() {
     const dismiss = document.getElementById('dismiss-banner');
-    if (dismiss) dismiss.addEventListener('click', () => { submittedTarget = null; history.replaceState({}, '', 'index.html'); render(); });
+    if (dismiss) dismiss.addEventListener('click', () => {
+      submittedTarget = null;
+      try { history.replaceState({}, '', 'index.html'); } catch (e) { /* file:// history API restrictions vary by browser */ }
+      render();
+    });
     const fr = document.getElementById('filter-repo');
     if (fr) fr.addEventListener('change', (e) => { filterRepo = e.target.value; render(); });
     const fs = document.getElementById('filter-status');
@@ -303,7 +309,7 @@ function initRequestPage() {
   const T = pick(['newTitle', 'newSubtitle', 'progressStep1', 'progressStep2', 'progressStep3', 'orgLabel', 'repoLabel',
     'orgPlaceholder', 'repoPlaceholderNoOrg', 'prListLabel', 'payloadHeading', 'submitBtn', 'cancelBtn',
     'tokenMissingTitle', 'tokenMissingSubtitle', 'goToSettingsBtn'], lang);
-  const tokenMissing = !RD.loadLS('githubToken', '').trim();
+  const tokenMissing = !RD.loadLS('hasGithubToken', false);
 
   let newOrg = '';
   let newRepo = '';
@@ -317,7 +323,7 @@ function initRequestPage() {
       html += `
         <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
           <div class="inline-notification kind-error"><div class="n-body"><span class="n-title">${escapeHtml(T.tokenMissingTitle)} </span><span class="n-subtitle">${escapeHtml(T.tokenMissingSubtitle)}</span></div></div>
-          <a href="settings.html"><button type="button" class="btn btn-secondary">${escapeHtml(T.goToSettingsBtn)}</button></a>
+          <a href="settings.html" class="btn btn-secondary">${escapeHtml(T.goToSettingsBtn)}</a>
         </div></div>`;
       contentEl.innerHTML = html;
       return;
@@ -355,13 +361,13 @@ function initRequestPage() {
         <div style="font-size:12px;color:var(--text-secondary)">${T.prListLabel}</div>
         <div style="display:flex;flex-direction:column;gap:8px">
           ${prList.map((pr) => `
-            <div class="pr-card ${newPR === pr.number ? 'selected' : ''}" data-pr="${pr.number}">
-              <div class="pr-card-main">
+            <button type="button" class="pr-card ${newPR === pr.number ? 'selected' : ''}" data-pr="${pr.number}">
+              <span class="pr-card-main">
                 <span class="pr-card-title">#${pr.number} ${escapeHtml(pr.title)}</span>
                 <span class="pr-card-meta">${escapeHtml(pr.branch)} · ${escapeHtml(pr.author)}</span>
-              </div>
+              </span>
               <span class="tag tag-sm tag-green">Open</span>
-            </div>`).join('')}
+            </button>`).join('')}
         </div>
       </div>`;
     }
@@ -373,7 +379,7 @@ function initRequestPage() {
         <pre class="payload-pre">${escapeHtml(payload)}</pre>
         <div style="display:flex;gap:12px">
           <button type="button" class="btn btn-primary" id="submit-request">${escapeHtml(T.submitBtn)}</button>
-          <a href="index.html"><button type="button" class="btn btn-ghost">${escapeHtml(T.cancelBtn)}</button></a>
+          <a href="index.html" class="btn btn-ghost">${escapeHtml(T.cancelBtn)}</a>
         </div>
       </div>`;
     }
@@ -433,6 +439,7 @@ function initResultPage() {
   let filePanelCollapsed = RD.loadLS('filePanelCollapsed', false);
   let viewedFiles = RD.loadLS(`viewedFiles_${review.id}`, {});
   let errorRetried = false;
+  const githubBase = (RD.loadLS('githubUrl', 'https://github.com') || 'https://github.com').trim().replace(/\/+$/, '') || 'https://github.com';
 
   function render() {
     const statusInfo = RD.computeReviewStatus(review, commentStatus);
@@ -449,8 +456,8 @@ function initResultPage() {
             <span class="tag tag-${prTag.type}">${prTag.label}</span>
             ${statusInfo ? `<span class="tag tag-${statusInfo.type}">${escapeHtml(RD.L(statusInfo.labelKey, lang))}</span>` : ''}
           </div>
-          <div style="font-size:13px;font-family:var(--font-mono);color:var(--text-secondary)">${escapeHtml(review.org)}/${escapeHtml(review.repo)} · ${escapeHtml(review.baseBranch)} ← <a href="https://github.com/${encodeURIComponent(review.org)}/${encodeURIComponent(review.repo)}/tree/${encodeURIComponent(review.branch)}" target="_blank" rel="noopener noreferrer">${escapeHtml(review.branch)}</a></div>
-          <div style="font-size:12px;color:var(--text-secondary)">${T.commitLabel}: <a href="https://github.com/${encodeURIComponent(review.org)}/${encodeURIComponent(review.repo)}/commit/${review.commitSha}" target="_blank" rel="noopener noreferrer" style="font-family:var(--font-mono)">${review.commitSha.slice(0, 7)}</a></div>
+          <div style="font-size:13px;font-family:var(--font-mono);color:var(--text-secondary)">${escapeHtml(review.org)}/${escapeHtml(review.repo)} · ${escapeHtml(review.baseBranch)} ← <a href="${githubBase}/${encodeURIComponent(review.org)}/${encodeURIComponent(review.repo)}/tree/${encodeURIComponent(review.branch)}" target="_blank" rel="noopener noreferrer">${escapeHtml(review.branch)}</a></div>
+          <div style="font-size:12px;color:var(--text-secondary)">${T.commitLabel}: <a href="${githubBase}/${encodeURIComponent(review.org)}/${encodeURIComponent(review.repo)}/commit/${review.commitSha}" target="_blank" rel="noopener noreferrer" style="font-family:var(--font-mono)">${review.commitSha.slice(0, 7)}</a></div>
         </div>
         ${hasFiles ? `
         <div style="text-align:right;font-size:12px;color:var(--text-secondary);white-space:nowrap;line-height:1.8">
@@ -513,25 +520,25 @@ function initResultPage() {
     const commentCount = (f.comments || []).length;
     const viewed = !!viewedFiles[f.id];
     if (collapsed) {
-      return `<div class="file-row collapsed ${selected ? 'selected' : ''}" data-select-file="${f.id}" title="${escapeHtml(f.name)}">
+      return `<button type="button" class="file-row collapsed ${selected ? 'selected' : ''}" data-select-file="${f.id}" title="${escapeHtml(f.name)}">
         <span class="file-badge" style="background:${badge.bg};color:${badge.color}">${f.status}</span>
-      </div>`;
+      </button>`;
     }
     return `<div class="file-row ${selected ? 'selected' : ''}">
       <label class="checkbox-row" style="flex-shrink:0" title="${escapeHtml(RD.L('viewedLabel', getLang()))}">
         <input type="checkbox" data-viewed-file="${f.id}" ${viewed ? 'checked' : ''} />
       </label>
-      <div class="file-row-main" data-select-file="${f.id}" style="opacity:${viewed ? 0.6 : 1}">
-        <div class="file-row-name">
+      <button type="button" class="file-row-main" data-select-file="${f.id}" style="opacity:${viewed ? 0.6 : 1}">
+        <span class="file-row-name">
           <span class="file-badge" style="background:${badge.bg};color:${badge.color}">${f.status}</span>
           <span class="file-name" style="text-decoration:${viewed ? 'line-through' : 'none'}">${escapeHtml(f.name)}</span>
-        </div>
-        <div class="file-row-stats">
+        </span>
+        <span class="file-row-stats">
           <span style="color:var(--support-success)">+${f.additions}</span>
           <span style="color:var(--support-error)">-${f.deletions}</span>
           ${commentCount > 0 ? `<span class="comment-badge">${commentCount}</span>` : ''}
-        </div>
-      </div>
+        </span>
+      </button>
     </div>`;
   }
 
@@ -611,7 +618,11 @@ function initSettingsPage() {
     'githubTokenLabel', 'githubTokenHelper', 'saveBtn'], lang);
 
   let githubUrl = RD.loadLS('githubUrl', 'https://github.com');
-  let githubToken = RD.loadLS('githubToken', '');
+  // The PAT value itself is never persisted (this mock never calls a real API)
+  // — only whether a token has been entered is stored, as a boolean flag. The
+  // field is therefore always blank on load, even if a token was set before.
+  let githubToken = '';
+  let hasToken = RD.loadLS('hasGithubToken', false);
   let settingsSaved = false;
 
   function render() {
@@ -620,6 +631,7 @@ function initSettingsPage() {
     if (settingsSaved) {
       html += `<div class="inline-notification kind-success"><div class="n-body"><span class="n-title">${escapeHtml(T.settingsSavedTitle)}</span></div><img class="n-close icon" id="dismiss-saved" src="${ICON('close.svg')}" alt="" /></div>`;
     }
+    const tokenPlaceholder = hasToken ? '••••••••••••••••••••' : 'ghp_xxxxxxxxxxxxxxxxxxxx';
     html += `<div style="display:flex;flex-direction:column;gap:20px">
       <div class="field">
         <label>${T.githubUrlLabel}</label>
@@ -628,7 +640,7 @@ function initSettingsPage() {
       </div>
       <div class="field">
         <label>${T.githubTokenLabel}</label>
-        <input type="password" id="github-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" value="${escapeHtml(githubToken)}" />
+        <input type="password" id="github-token" placeholder="${tokenPlaceholder}" value="${escapeHtml(githubToken)}" />
         <span class="helper">${T.githubTokenHelper}</span>
       </div>
     </div>`;
@@ -643,9 +655,14 @@ function initSettingsPage() {
       githubUrl = e.target.value; RD.saveLS('githubUrl', githubUrl); settingsSaved = false;
     });
     document.getElementById('github-token').addEventListener('input', (e) => {
-      githubToken = e.target.value; RD.saveLS('githubToken', githubToken); settingsSaved = false;
+      githubToken = e.target.value; settingsSaved = false;
     });
-    document.getElementById('save-settings').addEventListener('click', () => { settingsSaved = true; render(); });
+    document.getElementById('save-settings').addEventListener('click', () => {
+      hasToken = githubToken.trim().length > 0 || hasToken;
+      RD.saveLS('hasGithubToken', hasToken);
+      settingsSaved = true;
+      render();
+    });
     const dismiss = document.getElementById('dismiss-saved');
     if (dismiss) dismiss.addEventListener('click', () => { settingsSaved = false; render(); });
   }

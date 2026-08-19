@@ -105,9 +105,16 @@ img.icon { display: block; }
 .app-sidebar span { font-size: 14px; white-space: nowrap; }
 .app-sidebar .sidebar-spacer { flex: 1; }
 .app-sidebar .sidebar-toggle {
-  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
   border-top: 1px solid var(--border-subtle-01);
-  margin-top: 8px;
+  margin: 8px 0 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 .app-sidebar .sidebar-toggle span { font-size: 13px; color: var(--text-secondary); }
 .app-sidebar.collapsed span { display: none; }

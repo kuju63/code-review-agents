@@ -11,7 +11,11 @@
   align-items: center;
   gap: 8px;
   padding: 12px 4px;
+  border: none;
   border-bottom: 1px solid var(--border-subtle-01);
+  background: none;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
 }
 .repo-group-header:hover { background: var(--layer-hover-01); }
@@ -48,6 +52,8 @@
   cursor: pointer;
   background: var(--layer-02);
   border: 1px solid var(--border-subtle-01);
+  font: inherit;
+  text-align: left;
 }
 .pr-card.selected { background: var(--layer-selected-01); border-color: var(--border-interactive); }
 .pr-card-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -110,8 +116,32 @@
   border-bottom: 1px solid var(--border-subtle-01);
 }
 .file-row.selected { border-left-color: var(--border-interactive); background: var(--layer-selected-01); }
-.file-row.collapsed { justify-content: center; padding: 8px 0; cursor: pointer; }
-.file-row-main { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex: 1; min-width: 0; cursor: pointer; }
+.file-row.collapsed {
+  justify-content: center;
+  padding: 8px 0;
+  cursor: pointer;
+  background: none;
+  /* Only reset the sides .file-row doesn't already define — a `border: none`
+     shorthand here would also wipe out border-left, clobbering .selected's
+     border-left-color when both classes apply together (collapsed + selected). */
+  border-top: none;
+  border-right: none;
+  font: inherit;
+}
+.file-row-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+}
 .file-row-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .file-badge {
   display: inline-flex;
