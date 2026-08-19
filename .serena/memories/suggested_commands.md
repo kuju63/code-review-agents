@@ -1,50 +1,58 @@
 # Suggested Commands
 
+Local dev commands need the Nix-provided toolchain — prefix with `nix develop --command` (or run inside an active `nix develop` shell) rather than assuming pnpm/biome are on the host PATH. CI does not use Nix (see CLAUDE.md §"TypeScript Toolchain").
+
 ## Setup
 
-```bash
-uv venv
-source .venv/bin/activate
-uv sync
-pre-commit install   # requires `betterleaks` installed (brew install betterleaks) for the secret-scan hook
-```
+​```bash
+nix develop --command pnpm install --frozen-lockfile
+​```
 
 ## Test / Lint / Format / Type-check
 
-```bash
-uv run pytest
-uv run ruff check
-uv run ruff check --fix
-uv run ruff format
-uv run ruff format --check
-```
-Pyright also runs standalone in CI via `uv run pyright` (see `.github/workflows/ci.yaml`); pymarkdown (docs) only runs via `pre-commit run --all-files`.
+​```bash
+nix develop --command pnpm exec tsc --noEmit
+nix develop --command pnpm exec biome check --no-errors-on-unmatched
+nix develop --command pnpm run test
+​```
+These three (`tsc --noEmit`, `biome check`, `pnpm run test`) are the mandatory validation commands per CLAUDE.md's per-feature checklist. Caveat on `tsc --noEmit`: root `tsconfig.json` is solution-style (`files: []` + `references` to only `packages/agent-core`/`packages/evaluation` — `packages/a2a-server` isn't referenced), and `tsc --noEmit` without `-b` does not follow references, so it currently type-checks nothing (verified: `--listFilesOnly` prints no files). CI's `ci-check` job runs `pnpm run typecheck` instead (= `pnpm -r --parallel exec tsc --noEmit`, one real invocation per workspace package) — do not treat the two as equivalent; only the CI form actually type-checks. CI also runs `pnpm run lint` (= `biome check .`, no `--no-errors-on-unmatched` flag) and `pnpm run test`. `pnpm run lint` is optional locally, not a separate mandatory command — it's `biome check` under a different invocation, already covered by the mandatory `biome check --no-errors-on-unmatched` above.
+
+## pre-commit hooks
+
+`.pre-commit-config.yaml` is still the active git hook entry point (husky was evaluated and its dependency removed — `core.hooksPath` is shared across all git worktrees, so switching to husky would disable pre-commit enforcement in every other concurrently checked-out worktree). Hooks: betterleaks (secret scan), pymarkdown (`*.md`, via `.pymarkdown.json`), `no-commit-to-branch`, and `lint-staged (biome)` (runs `pnpm exec lint-staged` under Nix). No pyright/pytest — those were the Python-era hooks, now gone.
+
+​```bash
+pre-commit run --all-files
+​```
 
 ## Run
 
-```bash
-uv run code-review-agent   # CLI entrypoint is currently a placeholder ("Hello from code-review-agent!")
-```
-Real usage is the FastAPI A2A app (`src/code_review_agent/api/app.py:create_app`), typically run via Docker/Podman — see README "Using Podman" section.
+​```bash
+nix develop --command pnpm --filter a2a-server run dev
+​```
+Runs the A2A HTTP server (`packages/a2a-server/src/index.ts`, Hono) exposing the review agents. For the compiled entrypoint:
+​```bash
+nix develop --command pnpm --filter a2a-server run build
+nix develop --command pnpm --filter a2a-server run start
+​```
 
 ## Evaluation pipeline
 
-```bash
+​```bash
 bash evaluation/tools/run_evaluation_pipeline.sh
-python evaluation/tools/score_evaluation.py --gold evaluation/data/gold_pr_set.jsonl --seeded evaluation/data/seeded_set.jsonl --pred evaluation/data/agent_predictions.jsonl
-```
-
-## Darwin-specific notes
-
-- `betterleaks` is installed via Homebrew per README's "Install betterleaks" section; no GNU-specific `find`/`grep` flags appear in this repo's scripts as of this writing, so BSD (macOS) userland has not required special-casing.
+nix develop --command pnpm --filter @code-review-agent/evaluation run score-evaluation \
+  --gold evaluation/data/gold_pr_set.jsonl \
+  --seeded evaluation/data/seeded_set.jsonl \
+  --pred evaluation/data/agent_predictions.jsonl
+​```
 
 ## Worktrees (project convention, not a generic git op)
 
-```bash
+​```bash
 WORKTREE_ROOT=$(git rev-parse --show-toplevel)
 PROJECT_ROOT=$(cd "$(dirname "$(git rev-parse --git-common-dir)")" && pwd)
 mkdir -p "$WORKTREE_ROOT/.claude"
 [ -f "$PROJECT_ROOT/.claude/settings.local.json" ] && cp "$PROJECT_ROOT/.claude/settings.local.json" "$WORKTREE_ROOT/.claude/"
 [ -f "$PROJECT_ROOT/.env" ] && ln -sf "$PROJECT_ROOT/.env" "$WORKTREE_ROOT/.env"
-```
+​```
 `.env` must be a symlink, not a copy, per CLAUDE.md.
