@@ -1,0 +1,119 @@
+/* Carbon Design System tokens, consolidated from the Claude Design mockup project
+   (colors.css + typography.css + spacing.css + motion.css + themes.css + fonts.css).
+   White theme values only — this mockup does not switch themes. */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --black: #000000;
+  --white: #ffffff;
+
+  --gray-10: #f4f4f4;
+  --gray-20: #e0e0e0;
+  --gray-30: #c6c6c6;
+  --gray-40: #a8a8a8;
+  --gray-50: #8d8d8d;
+  --gray-60: #6f6f6f;
+  --gray-70: #525252;
+  --gray-80: #393939;
+  --gray-90: #262626;
+  --gray-100: #161616;
+
+  --blue-10: #edf5ff;
+  --blue-20: #d0e2ff;
+  --blue-40: #78a9ff;
+  --blue-50: #4589ff;
+  --blue-60: #0f62fe;
+  --blue-70: #0043ce;
+  --blue-80: #002d9c;
+  --blue-90: #001d6c;
+
+  --green-20: #a7f0ba;
+  --green-50: #24a148;
+  --green-60: #198038;
+
+  --red-20: #ffd7d9;
+  --red-60: #da1e28;
+  --red-70: #a2191f;
+
+  --purple-20: #e8daff;
+  --teal-20: #9ef0f0;
+  --cool-gray-20: #dde1e6;
+
+  /* Semantic tokens — White theme */
+  --background: var(--white);
+  --background-hover: rgba(141, 141, 141, 0.12);
+  --background-selected: rgba(141, 141, 141, 0.2);
+
+  --layer-01: var(--gray-10);
+  --layer-02: var(--white);
+  --layer-hover-01: #e8e8e8;
+  --layer-selected-01: var(--gray-20);
+  --layer-accent-01: var(--gray-20);
+
+  --field-01: var(--gray-10);
+
+  --border-subtle-00: var(--gray-20);
+  --border-subtle-01: var(--gray-30);
+  --border-strong-01: var(--gray-50);
+  --border-interactive: var(--blue-60);
+
+  --text-primary: var(--gray-100);
+  --text-secondary: var(--gray-70);
+  --text-helper: var(--gray-60);
+  --text-inverse: var(--white);
+  --text-on-color: var(--white);
+  --text-disabled: rgba(22, 22, 22, 0.25);
+
+  --link-primary: var(--blue-60);
+  --link-primary-hover: var(--blue-70);
+
+  --icon-primary: var(--gray-100);
+  --icon-disabled: rgba(22, 22, 22, 0.25);
+
+  --support-error: var(--red-60);
+  --support-success: var(--green-50);
+  --support-info: var(--blue-70);
+
+  --focus: var(--blue-60);
+  --interactive: var(--blue-60);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --toggle-off: var(--gray-50);
+
+  --ai-border-strong: var(--blue-50);
+  --ai-border-start: rgba(166, 200, 255, 0.64);
+  --ai-border-end: var(--blue-40);
+  --ai-popover-background: var(--white);
+  --ai-popover-shadow-outer-01: rgba(0, 67, 206, 0.06);
+  --ai-popover-shadow-outer-02: rgba(0, 0, 0, 0.04);
+
+  --button-primary: var(--blue-60);
+  --button-primary-hover: var(--blue-70);
+  --button-secondary: var(--gray-80);
+  --button-secondary-hover: var(--gray-70);
+  --button-danger-primary: var(--red-60);
+  --button-danger-hover: var(--red-70);
+  --button-disabled: var(--gray-30);
+
+  /* Typography */
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', Menlo, 'DejaVu Sans Mono', Courier, monospace;
+
+  /* Spacing (Carbon 2px base, x1.5 progression) */
+  --spacing-02: 0.25rem;
+  --spacing-03: 0.5rem;
+  --spacing-04: 0.75rem;
+  --spacing-05: 1rem;
+  --spacing-06: 1.5rem;
+  --spacing-07: 2rem;
+
+  /* Motion */
+  --duration-fast-02: 110ms;
+  --ease-standard-productive: cubic-bezier(0.2, 0, 0.38, 0.9);
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+}
