@@ -15,7 +15,7 @@ nix develop --command pnpm exec tsc --noEmit
 nix develop --command pnpm exec biome check --no-errors-on-unmatched
 nix develop --command pnpm run test
 ​```
-These three (`tsc --noEmit`, `biome check`, `pnpm run test`) are the mandatory validation commands per CLAUDE.md's per-feature checklist. CI (`ci-check` job in `.github/workflows/ci.yaml`) runs the equivalent checks via root `package.json` scripts instead: `pnpm run lint` (= `biome check .`, no `--no-errors-on-unmatched` flag), `pnpm run typecheck` (= `pnpm -r --parallel exec tsc --noEmit`), `pnpm run test`.
+These three (`tsc --noEmit`, `biome check`, `pnpm run test`) are the mandatory validation commands per CLAUDE.md's per-feature checklist. Caveat on `tsc --noEmit`: root `tsconfig.json` is solution-style (`files: []` + `references` to only `packages/agent-core`/`packages/evaluation` — `packages/a2a-server` isn't referenced), and `tsc --noEmit` without `-b` does not follow references, so it currently type-checks nothing (verified: `--listFilesOnly` prints no files). CI's `ci-check` job runs `pnpm run typecheck` instead (= `pnpm -r --parallel exec tsc --noEmit`, one real invocation per workspace package) — do not treat the two as equivalent; only the CI form actually type-checks. CI also runs `pnpm run lint` (= `biome check .`, no `--no-errors-on-unmatched` flag) and `pnpm run test`.
 
 ## pre-commit hooks
 
