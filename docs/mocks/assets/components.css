@@ -1,0 +1,118 @@
+/* Small hand-rolled stand-ins for the Carbon Design System components used in
+   the source Claude Design mockup (Button, Tag, TextInput, Select,
+   InlineNotification, Checkbox, ProgressIndicator, AILabel). */
+
+.btn {
+  height: 40px;
+  padding: 0 15px 0 16px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background var(--duration-fast-02) var(--ease-standard-productive);
+}
+.btn:disabled { cursor: not-allowed; background: var(--button-disabled) !important; color: var(--text-disabled) !important; }
+.btn.btn-sm { height: 32px; font-size: 13px; }
+.btn-primary { background: var(--button-primary); color: var(--text-on-color); }
+.btn-primary:hover:not(:disabled) { background: var(--button-primary-hover); }
+.btn-secondary { background: var(--button-secondary); color: var(--text-on-color); }
+.btn-secondary:hover:not(:disabled) { background: var(--button-secondary-hover); }
+.btn-ghost { background: transparent; color: var(--link-primary); padding-left: 8px; padding-right: 8px; }
+.btn-ghost:hover:not(:disabled) { background: var(--background-hover); }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+.tag.tag-sm { height: 20px; }
+.tag-gray { background: var(--gray-20); }
+.tag-blue { background: var(--blue-20); }
+.tag-green { background: var(--green-20); }
+.tag-red { background: var(--red-20); }
+.tag-purple { background: var(--purple-20); }
+.tag-teal { background: var(--teal-20); }
+.tag-cool-gray { background: var(--cool-gray-20); }
+
+.field { display: flex; flex-direction: column; gap: 4px; width: 100%; font-family: var(--font-sans); }
+.field label { font-size: 12px; color: var(--text-secondary); }
+.field input[type="text"],
+.field input[type="password"],
+.field select {
+  height: 40px;
+  background: var(--field-01);
+  border: none;
+  border-bottom: 1px solid var(--border-strong-01);
+  padding: 0 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+  outline: none;
+  font-family: var(--font-sans);
+  width: 100%;
+}
+.field select { appearance: none; -webkit-appearance: none; padding-right: 40px; }
+.field input:focus, .field select:focus { outline: 2px solid var(--focus); outline-offset: -2px; }
+.field .helper { font-size: 12px; color: var(--text-helper); }
+.select-wrap { position: relative; }
+.select-wrap::after {
+  content: "\25BE";
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  pointer-events: none;
+  color: var(--icon-primary);
+}
+
+.inline-notification {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: var(--layer-01);
+  border-left: 3px solid var(--support-info);
+  padding: 12px 16px;
+  font-family: var(--font-sans);
+}
+.inline-notification.kind-success { border-left-color: var(--support-success); }
+.inline-notification.kind-error { border-left-color: var(--support-error); }
+.inline-notification .n-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.inline-notification .n-subtitle { font-size: 14px; color: var(--text-primary); }
+.inline-notification .n-body { flex: 1; }
+.inline-notification .n-close { cursor: pointer; width: 16px; height: 16px; flex-shrink: 0; opacity: 0.6; }
+.inline-notification .n-close:hover { opacity: 1; }
+
+.checkbox-row { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-sans); font-size: 14px; cursor: pointer; }
+.checkbox-row input { width: 16px; height: 16px; accent-color: var(--icon-primary); cursor: pointer; }
+
+.progress-indicator { display: flex; align-items: center; font-family: var(--font-sans); }
+.progress-step { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 100px; }
+.progress-dot { width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--icon-primary); }
+.progress-step.done .progress-dot { background: var(--support-success); border: none; }
+.progress-step.current .progress-dot { background: var(--interactive); border: none; }
+.progress-label { font-size: 12px; color: var(--text-secondary); text-align: center; }
+.progress-step.current .progress-label { color: var(--text-primary); }
+.progress-line { flex: 1; height: 1px; background: var(--border-subtle-01); margin-bottom: 18px; }
+.progress-line.done { background: var(--support-success); }
+
+.ai-label {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ai-border-strong);
+  border: 1px solid var(--ai-border-end);
+  font-family: var(--font-sans);
+}
