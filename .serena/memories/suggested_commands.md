@@ -14,9 +14,8 @@ nix develop --command pnpm install --frozen-lockfile
 nix develop --command pnpm exec tsc --noEmit
 nix develop --command pnpm exec biome check --no-errors-on-unmatched
 nix develop --command pnpm run test
-nix develop --command pnpm run lint
 ​```
-These three (`tsc --noEmit`, `biome check`, `pnpm run test`) are the mandatory validation commands per CLAUDE.md's per-feature checklist.
+These three (`tsc --noEmit`, `biome check`, `pnpm run test`) are the mandatory validation commands per CLAUDE.md's per-feature checklist. CI (`ci-check` job in `.github/workflows/ci.yaml`) runs the equivalent checks via root `package.json` scripts instead: `pnpm run lint` (= `biome check .`, no `--no-errors-on-unmatched` flag), `pnpm run typecheck` (= `pnpm -r --parallel exec tsc --noEmit`), `pnpm run test`.
 
 ## pre-commit hooks
 
