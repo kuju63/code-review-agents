@@ -58,7 +58,7 @@ RUN uv sync --frozen --no-dev --no-editable --no-cache && \
 # - corepack は同梱されていないため pnpm は npm 経由で直接インストールする
 # - multi-arch index ダイジェスト固定: amd64 / arm64 を同一参照で提供
 ###############################################################################
-FROM registry.access.redhat.com/hi/nodejs:26-builder@sha256:0c02e031958bf4ccaa2ad0504151276adae7d04129ba0b0198b7e4b5ef94e919 AS node-builder
+FROM registry.access.redhat.com/hi/nodejs:26-builder@sha256:14dfb366a4a1922938177e948d28bc3557d601d27c6b7c2e1eb6d7f32a73c454 AS node-builder
 
 USER root
 
