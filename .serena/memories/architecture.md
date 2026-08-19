@@ -1,15 +1,14 @@
 # Agent Architecture
 
-## Layering: agents/ vs api/agents/ vs a2a/
+## Layering
 
-- `src/code_review_agent/agents/*.py` (`pr_info_collector.py`, `review_orchestrator.py`, `lead_engineer.py`, `base_reviewer.py`, `registry.py`) contain the actual agent behavior, independent of transport.
-- `src/code_review_agent/api/agents/*.py` (`pr_info_collector.py`, `orchestrator.py`, `frontend_reviewer.py`, `security_reviewer.py`, `lead_engineer.py`) are thin FastAPI/A2A adapters — one per core agent, wired via `src/code_review_agent/api/agents/common.py` (`ReviewerSkillInput`/`LeadEngineerSkillInput`, `verify_github_token`). `src/code_review_agent/api/app.py:create_app` assembles the FastAPI app from these.
-- `src/code_review_agent/a2a/models.py` defines the A2A protocol wire types (`A2ATask`, `A2AMessage`, `AgentCard`, etc.) shared by all `api/agents/*` adapters; `src/code_review_agent/a2a/sanitizers.py` and `src/code_review_agent/a2a/task_store.py` are supporting infra.
-- The core `agents/*` classes have no auth/sanitization of their own — that's implemented in the `api/agents/*` adapters (`verify_github_token`, input sanitizers). Prefer invoking agents through the A2A HTTP API rather than importing and calling the core classes directly, so that layer isn't bypassed.
+- `packages/agent-core/src/agents/*.ts` (`pr-info-collector.ts`, `review-orchestrator.ts`, `lead-engineer.ts`, `base-reviewer.ts`, `registry.ts`) contain the actual agent behavior, independent of transport. Unlike the old Python version there is no separate `api/agents/*` FastAPI adapter layer — the core classes are invoked more or less directly.
+- `packages/a2a-server/` (Hono, `@hono/node-server`) is the thin HTTP layer exposing each core agent as an A2A endpoint (`src/index.ts`). Prefer invoking agents through the A2A HTTP API rather than importing and calling the core classes directly, so validation/auth at that layer isn't bypassed.
 
-## Reviewer plugin pattern (`src/code_review_agent/agents/registry.py` + `agents/base_reviewer.py`)
+## Reviewer plugin pattern (`packages/agent-core/src/agents/registry.ts` + `base-reviewer.ts`)
 
-- New specialist reviewers live under `src/code_review_agent/agents/reviewers/` (e.g. `frontend.py`, `security.py`) and self-register via the `@register_reviewer` class decorator (appends to module-level `_REGISTRY`).
-- `ReviewAgent`/`LLMReviewAgent` (`base_reviewer.py`) are the base classes; reviewers declare scope via `perspective` and `project_types` class metadata.
-- `detect_project_types` in `registry.py` maps a PR's changed files to applicable project types — extend this (plus `tests/agents/test_registry.py`) when adding stack support, per CLAUDE.md.
-- `ReviewOrchestrator` (`src/code_review_agent/agents/review_orchestrator.py`) discovers reviewers via `get_reviewer_classes`/`get_registered_reviewers` and runs them in parallel — do not hard-code reviewer selection in the orchestrator itself.
+- New specialist reviewers live under `packages/agent-core/src/agents/reviewers/` (e.g. `react.ts`, `angular.ts`, `svelte.ts`, `vue.ts`, `security.ts`) and self-register by calling `registerReviewer(cls)` as a plain function call at the bottom of the module — NOT a decorator (`export function registerReviewer<T extends ReviewerClass>(cls: T): T` in `registry.ts`). `reviewers/index.ts` re-exports every reviewer class so importing it triggers all the registration side effects.
+- `ReviewerClass` (`base-reviewer.ts`) is the base type; reviewers declare scope via `perspective` and `projectTypes` static properties.
+- `detectProjectTypes` in `registry.ts` maps a PR's changed files to applicable `ProjectType`s in three tiers, each returning immediately on a match: (1) `DETECTION_RULES` — manifest-name/file-extension rules for Angular/Svelte/Vue; (2) content-based detection via `collectDirectPackageNames`/`detectProjectTypeFromPackages` (manifest file contents) — resolves metaframeworks (Next.js→React, Nuxt→Vue) that share their base framework's extensions; (3) coarse fallback — `package.json` or generic `.ts`/`.tsx`/`.js`/`.jsx` changes assumed React/TypeScript. Extend this (plus `registry.test.ts`) when adding stack support, per CLAUDE.md.
+- `getReviewerClasses(projectType, perspectives?)` in `registry.ts` selects applicable reviewer classes, including metaframework base-type fallback.
+- `ReviewOrchestrator` (`review-orchestrator.ts`) discovers reviewers via the registry and runs them in parallel — do not hard-code reviewer selection in the orchestrator itself.
