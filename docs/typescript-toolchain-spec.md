@@ -7,7 +7,7 @@
 | 項目 | 決定 | 出典 |
 |---|---|---|
 | 開発環境 | Nix (flake) | #250コメント |
-| pre-commit | husky + lint-staged（TS側）※Python側`.pre-commit-config.yaml`は#255まで併存 | #250コメント |
+| pre-commit | husky + lint-staged（TS側）※Python側フック(ruff/pyright)は#255まで`.pre-commit-config.yaml`に併存。ただし§2.5の通り、hookエントリポイントのhuskyへの移行自体は#255で撤回され、`.pre-commit-config.yaml`というファイルそのものはPython撤去後も存続する | #250コメント |
 | パッケージマネージャ | pnpm | #250コメント |
 | テストランナー | vitest（APIモックはMSW） | #250コメント |
 | linter/formatter | biome | #250コメント |
@@ -71,7 +71,9 @@ pytestの`--cov-fail-under=75`(CI引数側で指定)と役割を揃える必要�
 | ① huskyの`prepare`スクリプトで`core.hooksPath`をhusky管理下に切り替え | `pnpm install`実行時に`git config core.hooksPath .husky/_`が走り、huskyが`.git`の実質的なhookエントリポイントになる | 却下（実装中に発覚した事故から） | `core.hooksPath`は`.git/config`への書き込みであり**リポジトリの全worktreeで共有**される。実際に試したところ、TS移行と無関係な他のworktree(main含む)のpre-commit(シークレット検知・ruff等)まで無条件に無効化された。`pnpm install`を叩くたびに再発するため、Epic期間中(#251〜#254の各worktreeが本ブランチから分岐するたびに`pnpm install`が走る)繰り返しリスクになる。 |
 | ② 既存`pre-commit`フレームワークがgit hookの所有権を維持し、`.pre-commit-config.yaml`に`local`フック(`lint-staged (biome)`)を1件追加してTS側を委譲する | `entry: nix develop --command pnpm exec lint-staged`を、既存の`shellcheck`ローカルフックと同じ`language: unsupported`パターンで追加。`.ts`/`.tsx`/`.js`/`.jsx`/`.mjs`/`.cjs`/`.json`にマッチする`files`正規表現(詳細は`.pre-commit-config.yaml`本体を参照)で、対象ファイルが無ければ自動skip | **採用** | worktree間の副作用が一切発生しない。lint-staged(ステージ済みファイルへのbiome適用)という決定事項自体は変更せず、「誰がgit hookのエントリポイントを持つか」だけを変更している。huskyは`.husky/pre-commit`スクリプトとしてリポジトリに存在させておくが、`package.json`に`"prepare": "husky"`は**置かない**(=`pnpm install`では有効化されない)。 |
 
-**採用**: `.pre-commit-config.yaml`の`local`フックとして`lint-staged`を追加(既存`shellcheck`フックと同じ`language: unsupported`パターン)。`core.hooksPath`の切り替え(=huskyへの実質移行)は、Python側`.pre-commit-config.yaml`自体が消える#255のタイミングで改めて実施する。
+**採用(#250時点)**: `.pre-commit-config.yaml`の`local`フックとして`lint-staged`を追加(既存`shellcheck`フックと同じ`language: unsupported`パターン)。`core.hooksPath`の切り替え(=huskyへの実質移行)は#255で再検討する予定としていたが、後述の「#255での最終決定」により撤回された。
+
+**#255での最終決定（当初計画からの撤回）**: 上表①を却下した理由——`core.hooksPath`が`.git/config`への書き込みでリポジトリの全worktreeに共有され、無関係なworktreeのpre-commit enforcementを無条件に無効化する——はPythonとTSの共存期間に固有の事情ではなく、worktreeベースの開発フローを採る限り恒久的に成り立つ制約である。したがって#255でPython側フック(ruff-check/ruff-format/pyright)を`.pre-commit-config.yaml`から削除した際、当初計画していた「huskyへのhookエントリポイント移行」は実施せず撤回した。pre-commitフレームワークを恒久的なgit hookエントリポイントとして維持し、`husky`パッケージ自体（`.husky/`ディレクトリ、`package.json`の`devDependencies`)を削除した。`lint-staged`(TSファイルへのbiome適用)は引き続き`.pre-commit-config.yaml`の`local`フック経由で呼び出す。
 
 ## 3. Nix flakeに関する運用上の注意（重要）
 

@@ -4,17 +4,6 @@ repos:
     hooks:
       - id: betterleaks-system
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.0
-    hooks:
-      - id: ruff-check
-      - id: ruff-format
-
-  - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.409
-    hooks:
-      - id: pyright
-
   - repo: https://github.com/jackdewinter/pymarkdown
     rev: v0.9.37
     hooks:
@@ -39,15 +28,18 @@ repos:
         args:
           - -x
 
-      # TypeScript side of the toolchain (Issue #250). husky/lint-staged
-      # is decided as the TS linter/formatter runner (see
-      # docs/typescript-toolchain-spec.md), but the git hook entry point
-      # itself stays owned by this pre-commit framework: core.hooksPath
-      # is shared across all git worktrees of this repo, so switching it
-      # to husky mid-Epic would silently disable pre-commit enforcement
-      # (secret detection, ruff, etc.) in every concurrently checked-out
-      # worktree that hasn't adopted the TS toolchain yet. Revisit this
-      # once #255 removes the Python side entirely.
+      # TypeScript side of the toolchain (Issue #250). lint-staged is the
+      # TS linter/formatter runner (see docs/typescript-toolchain-spec.md
+      # §2.5), but the git hook entry point itself stays owned by this
+      # pre-commit framework: core.hooksPath is written to .git/config,
+      # which is shared across all git worktrees of this repo, so pointing
+      # it at husky would disable pre-commit enforcement (secret
+      # detection, pymarkdown, etc.) in every other concurrently checked
+      # out worktree. That constraint is not about Python coexisting with
+      # TS -- it holds regardless of language -- so with Issue #255 having
+      # removed the Python side entirely, the plan to revisit this at #255
+      # is superseded: pre-commit remains the permanent hook entry point
+      # and the husky dependency has been removed rather than promoted.
       - id: lint-staged
         name: lint-staged (biome)
         language: unsupported

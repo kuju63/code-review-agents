@@ -47,8 +47,15 @@ gh auth login
 ### pre-commitのインストール
 
 [pre-commit](https://pre-commit.com/)はGitへのコミット都度、最低限のチェックを行い、品質を担保することができるツールである。
+Issue #255でPython資産(および`uv sync`が入れていたdev依存経由のpre-commit)を撤去した後も、
+pre-commitはこのリポジトリの唯一のgit hookエントリポイントであり続ける
+（huskyへの移行は検討したが、`core.hooksPath`がリポジトリの全worktreeで共有される都合上、
+Worktreeベースの開発フローと相性が悪く採用していない。詳細は
+[docs/typescript-toolchain-spec.md](docs/typescript-toolchain-spec.md)を参照）。
+このプロジェクトの`pyproject.toml`は既に存在しないため、`brew`で単独インストールする。
 
 ```shell
+brew install pre-commit
 pre-commit install
 ```
 

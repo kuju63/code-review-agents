@@ -85,8 +85,12 @@ TBD
 - Node.js 24+ / pnpm（リポジトリルートの Nix flake が `nix develop` 経由で提供）
 - `betterleaks`（必須: 開発時のシークレットスキャンに利用）
 
-`pre-commit` はリポジトリの `pyproject.toml`（Issue #255 で撤去済み）経由ではインストールできなくなっています。
-別途 `pip install pre-commit` 等でインストールしてください（フック定義自体の TypeScript 向け整理は PR6 で対応予定です）。
+`pre-commit` はリポジトリの `pyproject.toml`（Issue #255 で撤去済み）経由ではインストールできません。
+`brew install pre-commit`（または `uv tool install pre-commit`）などで別途インストールしてください。
+フック定義自体も Issue #255 で TypeScript 向けに整理済みで、Python 専用フック（ruff/pyright）は
+`.pre-commit-config.yaml` から削除され、pre-commit はこのリポジトリの恒久的な git hook エント
+リポイントです（husky は未使用のため削除済み。詳細は
+[docs/typescript-toolchain-spec.md](docs/typescript-toolchain-spec.md) §2.5）。
 
 #### Install betterleaks (required)
 
