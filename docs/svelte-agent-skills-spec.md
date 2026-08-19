@@ -120,7 +120,7 @@ The upstream skill is vendored with source and license attribution:
 
 | Skill | Upstream repository | License | Local directory |
 | --- | --- | --- | --- |
-| `svelte-core-bestpractices` | `sveltejs/ai-tools` | MIT | `src/code_review_agent/skills/svelte-core-bestpractices/` |
+| `svelte-core-bestpractices` | `sveltejs/ai-tools` | MIT | `packages/agent-core/skills/svelte-core-bestpractices/` |
 
 The local skill directory name is aligned with the `name` field in `SKILL.md`
 because `Skill.from_file()` validates that relationship. Its `references` remain

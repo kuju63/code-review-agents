@@ -4,67 +4,52 @@ on:
     branches: [main]
   pull_request: {}
 
+permissions:
+  contents: read
+
 jobs:
   ci-check:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
+    strategy:
+      matrix:
+        node-version:
+          - 24
+          - 26
     steps:
       - uses: actions/checkout@v7
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.14'
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
-      - name: Cache dependencies
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-
-      - name: Install dependencies
-        run: uv sync --frozen
-      - name: Run formatter
-        run: uv run ruff format --check
-      - name: Run linters
-        run: uv run ruff check
-      - name: Run type checkers
-        run: uv run pyright
-      - name: Run tests
-        run: uv run pytest --cov=code_review_agent --cov-branch --cov-report=xml --cov-fail-under=75 --junitxml=junit.xml -o junit_family=legacy
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v7
-        with:
-          use_oidc: true
-          report_type: test_results
-      - name: Upload coverage reports to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v7
-        with:
-          use_oidc: true
-          report_type: coverage
-
-  ts-ci-check:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - name: Set up pnpm + Node.js
+      - name: Set up Node.js
         uses: pnpm/setup@v2
         with:
-          runtime: node@26
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          runtime: node@${{ matrix.node-version }}
+          version: "11.20.0"
+          cache: true
       - name: Run linter
         run: pnpm run lint
       - name: Run type checker
         run: pnpm run typecheck
       - name: Run tests
         run: pnpm run test
-      - name: Build node-runtime image (validation only, not pushed)
-        run: docker build --target node-runtime -t code-review-agent:node-runtime-ci .
+  build-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Login to Red Hat registry
+        uses: docker/login-action@v4
+        with:
+          registry: registry.access.redhat.com
+          username: ${{ secrets.REDHAT_CLIENTID }}
+          password: ${{ secrets.REDHAT_CLIENT_SECRET }}
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v4
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUARY_USERNAME }}
+          password: ${{ secrets.QUARY_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      
+      - name: Build only
+        run: |
+          docker build -t code-review-agents .

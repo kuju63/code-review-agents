@@ -29,13 +29,13 @@ describe("createAgentSkills", () => {
     mockedAgentSkills.mockClear();
   });
 
-  it("resolves the skills directory to the existing Python-owned location", () => {
+  it("resolves the skills directory to the packages/agent-core/skills location", () => {
     createAgentSkills(AgentSkillType.WEB_SECURITY_REVIEW);
 
     const skills = skillsOf(mockedAgentSkills.mock.calls[0]);
     expect(skills).toHaveLength(1);
     expect(existsSync(skills[0] as string)).toBe(true);
-    expect(skills[0]).toMatch(/src\/code_review_agent\/skills\/reviewing-web-security$/);
+    expect(skills[0]).toMatch(/packages\/agent-core\/skills\/reviewing-web-security$/);
   });
 
   it("builds the React review bundle", () => {

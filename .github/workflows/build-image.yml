@@ -51,12 +51,11 @@ jobs:
         if: github.event_name == 'push'
         with:
           context: .
-          # Explicit target (Issue #250): the Dockerfile now also defines
-          # node-builder/node-runtime stages that coexist with this Python
-          # target until Issue #255. Pinning `target: runtime` guarantees
-          # the pushed image stays the Python production build regardless
-          # of stage order in the file (see docs/typescript-toolchain-spec.md §4.1).
-          target: runtime
+          # Explicit target (Issue #250, switched to node-runtime for Issue
+          # #255): the Python builder/runtime stages have been removed from
+          # the Dockerfile, so node-runtime is now both the default final
+          # stage and the pushed production build.
+          target: node-runtime
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -68,7 +67,7 @@ jobs:
         if: github.event_name == 'release'
         with:
           context: .
-          target: runtime
+          target: node-runtime
           platforms: linux/amd64,linux/arm64
           push: true
           tags: quay.io/kuju63/code-review-agent:${{ steps.vars-version.outputs.VERSION }}

@@ -2,13 +2,14 @@ import { resolve } from "node:path";
 import { AgentSkills } from "@strands-agents/sdk/vended-plugins/skills";
 
 /**
- * The skill bundle assets (`SKILL.md`, references) still live under
- * `src/code_review_agent/skills/` -- they are language-agnostic and are not
- * duplicated or moved here. Removing that Python-owned copy is Issue #255's
- * responsibility, once every language stops referencing it. See
- * typescript-agents-tools-migration-spec.md section 2.6.
+ * The skill bundle assets (`SKILL.md`, references) live under
+ * `packages/agent-core/skills/`. They used to live under the Python-owned
+ * `src/code_review_agent/skills/` and were moved here as part of Issue
+ * #255 (removal of the legacy Python assets); see
+ * typescript-agents-tools-migration-spec.md section 2.6 for the original
+ * decision and its supersession note.
  */
-export const SKILLS_DIR = resolve(import.meta.dirname, "../../../../src/code_review_agent/skills");
+export const SKILLS_DIR = resolve(import.meta.dirname, "../../skills");
 
 function skillPath(name: string): string {
   return resolve(SKILLS_DIR, name);
