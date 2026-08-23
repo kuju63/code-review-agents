@@ -7,7 +7,7 @@
 > でしか成り立たず、「実PRのdiffに後から異物を継ぎ足す」構造そのものが到達可能性(R1)・
 > 文脈的整合性(R3)を原理的に担保しにくいという結論に至った経緯は、この移行を正当化する
 > 一次資料として本ドキュメントに残す。現行の設計は
-> [docs/eval-seeded-repo-based-generation-spec.md](eval-seeded-repo-based-generation-spec.md)
+> [docs/eval-seeded-repo-based-generation-spec.md](../eval-seeded-repo-based-generation-spec.md)
 > を参照。
 
 2026-07-08評価 (`evaluation/data/report_*.md`; `evaluation/data/` は `.gitignore` の

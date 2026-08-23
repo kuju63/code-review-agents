@@ -42,18 +42,10 @@
 | 案A | `agent(prompt)` でツールループを回して実データ取得 → `agent.structured_output(PRInfoResult)` で会話文脈を構造化 | **採用** | 既存 API のみで最小変更。1回実測で Title/Label が0%→完全一致に改善し原因が裏付け済み |
 | 案B | `__call__` に `structured_output_model` を直接渡す（strands 1.41 推奨パス） | 却下（将来課題） | DeprecationWarning 追随の観点では望ましいが、本修正では変更を最小化し回帰評価の切り分けを優先 |
 
-採用する実装:
-
-```python
-agent = Agent(model=openai_model, system_prompt=SYSTEM_PROMPT, tools=[mcp_client])
-# 1) ツールループを回し GitHub から実データを取得（toolUse が発生する）
-agent(prompt)
-# 2) 直近の会話文脈（取得済み実データ）を構造化（prompt 引数は渡さない）
-result = agent.structured_output(PRInfoResult)
-```
-
-`structured_output(PRInfoResult)` は **prompt 引数なし**で呼ぶ（strands 1.41 で prompt は省略可、
-省略時は会話履歴を構造化する）。MCP クライアントの `finally` での `stop()` クリーンアップは現状維持。
+採用する実装: MCPツールを与えたAgentを通常通り呼び出してツールループを回し、GitHubから実データを
+取得させる（この時点でtoolUseが発生する）。その直後、`prompt`引数を渡さない構造化出力呼び出しを
+続けて行い、直近の会話文脈（取得済み実データ）だけを構造化させる。`prompt`省略時は会話履歴を
+構造化する、というSDKの挙動を利用する。MCPクライアントのクリーンアップ処理は現状維持。
 
 ### 2.2 file 一覧対処（SYSTEM_PROMPT 強化）
 
@@ -150,9 +142,9 @@ LLM に再生成させる必然性がない。`MCPClient.call_tool_sync` でツ�
 
 ---
 
-## 3. Patch 同梱設計（2026-06-27）
+## 4. Patch 同梱設計（2026-06-27）
 
-### 3.1 背景と根本原因
+### 4.1 背景と根本原因
 
 2026-06-27 の評価（commit `3915f0d`）で Gold set の全スコアが 0 になった根本原因を調査した結果、
 `collect()` が `patch=None` を返すため、レビュアーが差分を GitHub MCP 経由でフェッチしようとし、
@@ -166,7 +158,7 @@ Gold と Seeded の評価パスが非対称になっていた（Gold のみが f
 | Gold | ~3,600 chars | なし（`patch=None`） | 必要 → context 蓄積 → 超過 |
 | Seeded | ~14,800 chars | あり（実 patch 内容） | 不要 → context 蓄積なし |
 
-### 3.2 設計決定
+### 4.2 設計決定
 
 **問題1（Gold findings=0）・問題2（評価パス非対称）の同時解消** を目的とした改修:
 
@@ -183,7 +175,7 @@ Gold と Seeded の評価パスが非対称になっていた（Gold のみが f
 
 閾値は `CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` / `CODE_REVIEW_PATCH_MAX_FILES` 環境変数で上書き可能。
 
-### 3.3 残る問題
+### 4.3 残る問題
 
 - **閾値超過の大きな PR**: 依然として `patch=None` でフォールバックし、レビュアーが MCP fetch する。
   コンテキスト超過リスクは消えない（モデルのコンテキスト窓に依存）。
@@ -192,18 +184,6 @@ Gold と Seeded の評価パスが非対称になっていた（Gold のみが f
 
 ---
 
-## 4. 検証手順
-
-```bash
-# 単体テスト（決定論コレクタ）
-uv run pytest tests/agents/test_pr_info_collector.py
-
-# 全体検証
-uv run pytest && uv run ruff check && uv run ruff format --check
-
-# 20回計測 → 決定論レポート生成
-python evaluation/tools/verify_pr_collector_repeated.py --runs 20
-python evaluation/tools/analyze_pr_collector_repeated.py \
-  --jsonl evaluation/data/pr_collector_repeated_google_gemma-4-e4b.jsonl \
-  > evaluation/PR_COLLECTOR_ACCURACY_GEMMA4_E4B_DETERMINISTIC.md
-```
+検証手順（Python版）: [docs/plan/pr-info-collector-tooluse-fix-spec.md](plan/pr-info-collector-tooluse-fix-spec.md)。
+現行TS実装（決定論的収集、`call_tool_sync`相当の直接呼び出し、patch同梱ロジック）は
+`packages/agent-core/src/agents/pr-info-collector.ts`。

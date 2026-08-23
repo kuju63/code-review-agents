@@ -6,7 +6,7 @@
 HTTP API として公開する。実装は TDD（RED → GREEN → REFACTOR → Commit）サイクルで進め、
 各 Phase 完了後にコミットし、全 Phase 完了後に全体リファクタリングを実施する。
 
-詳細設計: [docs/a2a-api-design.md](../docs/a2a-api-design.md)
+詳細設計: [docs/a2a-api-design.md](../a2a-api-design.md)
 
 ---
 
