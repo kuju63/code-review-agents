@@ -488,22 +488,34 @@ Strands非依存の実行環境を具体的に要求する時点まで見送る�
    い）→`ReviewPipeline` Portの順で段階的に行う。
 6. `agent-core`の`package.json`の`exports`は、安定した公開入口として`.`
    （`models/index.ts`がre-exportするdomain契約。`ReviewerMetadata.apiVersion`と
-   併せて互換性契約の主体とする）を先に固定し、残る7エントリは性質により2種に
-   区分して扱う。`agents/target-file.js`（`isTargetFile`は特定reviewerに紐付か
-   ない汎用utilityでありuse-case化の対象外）は恒久的に公開を維持する。残り6エン
-   トリ（`agents/model-provider-factory.js`, `agents/pr-info-collector.js`,
+   併せて互換性契約の主体とする）を先に固定する。論点3の決定により`ReviewerClass`
+   も`ReviewerMetadata`と並ぶ安定した公開契約に含まれるため、型定義を現状の
+   `agents/base-reviewer.ts`から`models/`配下のdomain契約へ移設し、`.`
+   （`models/index.ts`のre-export）経由で公開する。import pathは
+   `@code-review-agent/agent-core`のルートエントリのまま維持し、後述する
+   `agents/base-reviewer.js`（実装側の移行対象entry）の削除可否とは独立させる。
+   残る公開エントリは性質により3種に区分して扱う。`agents/target-file.js`
+   （`isTargetFile`は特定reviewerに紐付かない汎用utilityでありuse-case化の対象
+   外）は恒久的に公開を維持する。移行対象エントリ（`agents/pr-info-collector.js`,
    `agents/lead-engineer.js`, `agents/review-orchestrator.js`,
    `agents/base-reviewer.js`, `agents/reviewers/*.js`）は、`agents/application/`
-   のuse-case経由呼び出しに置き換わる内部実装として移行対象とする。移行期間中は
-   biomeの`noRestrictedImports`ルールでこれら6エントリへの**新規import**を
+   のuse-case経由呼び出しに置き換わる内部実装であり、移行期間中はbiomeの
+   `noRestrictedImports`ルールでこれらのエントリへの**新規import**を
    `agent-core`パッケージ外から禁止しCIで強制する。既存の呼び出し元（`a2a-server`
    の`orchestrator.service.ts`/`lead-engineer.service.ts`/`pr-info.service.ts`/
-   `reviewers/*.service.ts`各サービス）は許可リストとして明示し、Stage4
-   （`ReviewPipeline` Port導入）完了時に対応するuse-case呼び出しへ置換した時点で
-   許可リストおよび`@deprecated`注記を経て`exports`から削除する。`evaluation`パ
-   ッケージの`score-evaluation.ts`による`model-provider-factory.js`直接利用は、
-   レビューpipelineではなくLLM-as-judgeスコアリング用途であり本移行の対象外とし
-   て許可リストに残す。
+   `reviewers/*.service.ts`各サービス）は許可リストとして明示するが、削除は
+   Stage4（`ReviewPipeline` Port導入）完了時点でこれらを一括削除するのではなく、
+   エントリごとに最後の許可コンシューマの移行が完了した時点で個別に
+   `@deprecated`注記を経て`exports`から削除する。
+   残る2エントリは、対応する許可コンシューマが利用し続ける限り維持する恒常的な
+   安定entryとする。`agents/model-provider-factory.js`は`evaluation`パッケージ
+   の`score-evaluation.ts`がLLM-as-judgeスコアリング用途（レビューpipelineでは
+   ない）で直接利用するため本移行の対象外とし、`score-evaluation.ts`がこの
+   entryを利用し続ける間`exports`に維持する。新設する`agents/bootstrap.js`
+   （組込reviewerクラス群への参照のみを持つ、`registerReviewer()`自己登録廃止後
+   の明示登録専用エントリ）は、composition root（`a2a-server/src/index.ts`）が
+   合意事項3に基づき組込reviewerを`ReviewerRegistry`へ明示`register()`するため
+   に利用し続ける間`exports`に維持する。
 7. コア/拡張の分類は「application契約（use-case/port/3-stage構造）への影響度」
    を主基準とし、「本リポジトリ内保守か外部保守か」を拡張のサブ分類として用い
    る。
