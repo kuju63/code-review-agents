@@ -33,16 +33,30 @@ uv run ruff check
 uv run ruff format --check
 ```
 
-加えて実環境検証(外部プロセス連携を伴う変更のため任意ではなく必須):
+加えて実環境検証(外部プロセス連携を伴う変更のため任意ではなく必須)。以下はPython版
+`run_agent_evaluation.py`の`--shard-index`/`--shard-count`を前提とした旧手順を、現行TS実装
+(`packages/evaluation/src/run-agent-evaluation.ts`)向けに置き換えたものである
+——TS版はshard指定フラグを持たないため(§2.2の分割ロジックはPython版限定)、
+shard分割はgold/seeded入力JSONLを事前に手動で4分割したファイルを渡すことで代替する:
 
-1. A2Aサーバーをローカル起動し、`--shard-count 4` で `--shard-index 0`/`1`/`2`/`3` を
-   それぞれ指定して `run_agent_evaluation.py` を4回実行
-   (各回が実際にサーバーを停止しないこと、レポート生成subprocessが呼ばれないこと、対象件数が
-   合計24件になることをログで確認)
-2. `merge_predictions.py` で4shard分をマージし、exit code・summaryを確認
-3. `generate_evaluation_report.py` でMarkdownレポートと(設定していれば)Discord通知が生成される
-   ことを確認
-4. 生成された `agent_predictions.jsonl`・スコアが、非shard実行(`--concurrency 2` フル実行)の
-   結果と一致すること(または既知の非決定要素の範囲内であること)を比較確認
+> A2Aサーバーの起動方法によって`--base-url`/healthの実際の待受先が変わる点に注意すること。
+> `.claude/skills/run-evaluation/scripts/start_a2a_container.sh`はコンテナ起動後
+> `http://localhost:8000/health`を待ち受けるが、現行サーバー(`packages/a2a-server/src/index.ts`)
+> は`:3000`で待受け`/health`もマウントしていない、既知の未解決事項である
+> ([docs/a2a-api-design.md](../a2a-api-design.md) §1)。解消済みか実際に疎通確認してから
+> 以下を実行すること。
+
+1. A2Aサーバーを起動する。gold/seeded入力JSONLを4分割したファイル(shard0〜shard3)を
+   事前に用意し、shardごとに`tsx packages/evaluation/src/run-agent-evaluation.ts
+   --seeded <shard>.jsonl [--gold <shard>.jsonl] --pred shard{N}.jsonl
+   --base-url <実際の待受先>`を4回実行する(対象件数の合計が24件になることをログで確認)。
+2. `tsx packages/evaluation/src/merge-predictions.ts --gold <full>.jsonl
+   --seeded <full>.jsonl --output agent_predictions.jsonl
+   shard0.jsonl shard1.jsonl shard2.jsonl shard3.jsonl`で4shard分をマージし、
+   exit code・summaryを確認する。
+3. `tsx packages/evaluation/src/generate-evaluation-report.ts`でMarkdownレポートと
+   (設定していれば)Discord通知が生成されることを確認する。
+4. 生成された `agent_predictions.jsonl`・スコアが、非shard実行(単一プロセスでのフル実行)の
+   結果と一致すること(または既知の非決定要素の範囲内であること)を比較確認する。
 5. 非shard実行(既存コマンドそのまま)を1回実行し、出力ファイル・終了コード・コンソール出力が
-   従来と変わらないことを確認(リファクタリングの回帰確認)
+   従来と変わらないことを確認する(リファクタリングの回帰確認)。

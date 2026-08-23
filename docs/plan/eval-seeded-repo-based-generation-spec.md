@@ -43,9 +43,9 @@
 3. メタデータ執筆をスタック単位で4コミット(React → Vue → Angular → Svelte)。
    各コミット後に`build_seeded_set.py --stacks <stack>`でfail-closed
    バリデーションを通過させてからコミットする。
-4. ~~`evaluate_seeded_item()`簡略化~~ + テスト → コミット。(2026-08-08更新、Issue #237で
-   `evaluate_seeded_item()`は`evaluate_item()`に統合されたため、`evaluate_item()`の
-   簡略化・`TestEvaluateItem`のテストに読み替える。詳細は
+4. `evaluate_item()`簡略化 + `TestEvaluateItem`のテスト追加 → コミット。
+   (歴史的経緯: 本チェックリスト策定時点の対象は`evaluate_seeded_item()`だったが、
+   2026-08-08、Issue #237で`evaluate_item()`に統合された。詳細は
    [docs/plan/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)。)
 5. `pr_info_collector.py`の`.vue`追加 + テスト → コミット。
 6. `run_evaluation_pipeline.sh` + `seeded_item.schema.json` +

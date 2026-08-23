@@ -131,8 +131,10 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
   `ReviewerConfig` を注入して instantiate。
 - 各レビュアーの `review()` 呼び出しを `Promise.all`/`Promise.race` で束ねて**並列実行**する。
   各レビュアーは元々非同期実装のため、スレッドオフロードのような追加の仕組みは不要。
-- 例外は `ReviewError` に変換して `ReviewReport.errors` に隔離する。1 つのレビュアーの失敗が
-  他のレビュアーを巻き込まない。
+- レビュアー個別の失敗は `ReviewError` に変換して `ReviewReport.errors` に隔離する。1 つの
+  レビュアーの失敗が他のレビュアーを巻き込まない。ただし `GithubMcpConnectionError` 等の
+  インフラ層エラー（`isInfraError()` で判定）は `ReviewError` へ降格せずそのまま re-throw し、
+  `run()` 自体を reject させる（インフラ障害をビジネス層の部分失敗として握りつぶさないため）。
 
 ### 3.5 出力 — `ReviewReport`
 
