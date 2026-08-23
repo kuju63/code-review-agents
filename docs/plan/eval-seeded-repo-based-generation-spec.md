@@ -43,10 +43,27 @@
 3. メタデータ執筆をスタック単位で4コミット(React → Vue → Angular → Svelte)。
    各コミット後に`build_seeded_set.py --stacks <stack>`でfail-closed
    バリデーションを通過させてからコミットする。
-4. `evaluate_item()`簡略化 + `TestEvaluateItem`のテスト追加 → コミット。
+4. `evaluate_item()`簡略化 + `TestEvaluateItem`のテスト追加 → コミット。完了条件:
+   - 処理内容(owner/repo split → `/orchestrator`へPOST →
+     `_to_predictions(lead_data, item["id"])`)は変更しない。
+   - `item["stack"]`/`item["file_changes"]`は`seeded_set.jsonl`のスキーマ上は残すが、
+     本関数では一切参照しない(データセット生成時のメタデータとしてのみ意味を持つ)。
+   - 正常系はGold形状(`stack`/`file_changes`キーなし)・Seeded形状(両キーあり)の
+     どちらでも同一の呼び出しパターンで完了し、`_run_a2a`の戻り値をそのまま
+     `_to_predictions`に渡す。`stack`が未知の値または欠落していても例外を投げず
+     正常評価される(fail-closedにしない)。
+   - `TestEvaluateItem`の必須アサーション:
+     1. `_run_a2a`が`f"{base_url}/orchestrator"`と`{owner, repo, pr_number, model_id}`
+        のペイロードで正確に1回呼ばれること。
+     2. `item["id"]`が`_to_predictions`に正しく渡ること。
+     3. Gold形状・Seeded形状の両方のitemで同じ呼び出しパターンになり正常終了すること。
+     4. `stack`が未知の値または欠落していても例外を投げず正常評価されること
+        (削除される`evaluate_seeded_item()`側のfail-closedテストの裏返しとしての
+        回帰ガード)。
    (歴史的経緯: 本チェックリスト策定時点の対象は`evaluate_seeded_item()`だったが、
    2026-08-08、Issue #237で`evaluate_item()`に統合された。詳細は
-   [docs/plan/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)。)
+   [docs/plan/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)
+   §3.1/3.2。)
 5. `pr_info_collector.py`の`.vue`追加 + テスト → コミット。
 6. `run_evaluation_pipeline.sh` + `seeded_item.schema.json` +
    `EVALUATION_PLAN.md` + `RUNBOOK.md` + 廃止ヘッダー2件 → コミット。

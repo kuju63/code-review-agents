@@ -46,9 +46,9 @@ shard分割はgold/seeded入力JSONLを事前に手動で4分割したファイ�
 > ([docs/a2a-api-design.md](../a2a-api-design.md) §1)。解消済みか実際に疎通確認してから
 > 以下を実行すること。
 
-1. A2Aサーバーを起動する。gold/seeded入力JSONLを4分割したファイル(shard0〜shard3)を
-   事前に用意し、shardごとに`tsx packages/evaluation/src/run-agent-evaluation.ts
-   --seeded <shard>.jsonl [--gold <shard>.jsonl] --pred shard{N}.jsonl
+1. A2Aサーバーを起動する。gold/seeded入力JSONLをshardごとに分割したファイル
+   (N=0〜3)を事前に用意し、shardごとに`tsx packages/evaluation/src/run-agent-evaluation.ts
+   --gold gold-shardN.jsonl --seeded seeded-shardN.jsonl --pred shardN.jsonl
    --base-url <実際の待受先>`を4回実行する(対象件数の合計が24件になることをログで確認)。
 2. `tsx packages/evaluation/src/merge-predictions.ts --gold <full>.jsonl
    --seeded <full>.jsonl --output agent_predictions.jsonl
@@ -56,7 +56,20 @@ shard分割はgold/seeded入力JSONLを事前に手動で4分割したファイ�
    exit code・summaryを確認する。
 3. `tsx packages/evaluation/src/generate-evaluation-report.ts`でMarkdownレポートと
    (設定していれば)Discord通知が生成されることを確認する。
-4. 生成された `agent_predictions.jsonl`・スコアが、非shard実行(単一プロセスでのフル実行)の
-   結果と一致すること(または既知の非決定要素の範囲内であること)を比較確認する。
-5. 非shard実行(既存コマンドそのまま)を1回実行し、出力ファイル・終了コード・コンソール出力が
-   従来と変わらないことを確認する(リファクタリングの回帰確認)。
+4. 非shard実行(基準・既存コマンドそのまま)として`tsx packages/evaluation/src/run-agent-evaluation.ts
+   --gold <full>.jsonl --seeded <full>.jsonl --pred agent_predictions.baseline.jsonl
+   --base-url <shard実行と同一の待受先>`を1プロセスとして実行する。出力ファイル・
+   終了コード・コンソール出力が従来(リファクタリング前)と変わらないことを確認したうえで、
+   shard実行の結果と以下を比較する:
+   - **id集合と順序**: マージ後`agent_predictions.jsonl`のid集合が基準実行の
+     predictions.jsonlのid集合と過不足なく一致し、`merge-predictions.ts`が
+     元のgold+seeded入力順を再構成する設計であるため順序も一致すること。
+   - **failed_ids**: 両実行ともsidecarが空(既知の失敗0件)であること。
+   - **件数**: 両実行とも合計24件(Gold 8件+Seeded 16件)であること。
+   - **終了コード**: 両実行とも0であること(missing/duplicate idなし)。
+   - **スコアの許容差**: `score-evaluation`の既定(rule-basedのpath/line/category
+     一致、`--semantic-judge`未使用)によるMust-Find Recall等の決定的スコアは
+     完全一致すること。ただし評価対象のレビュー結果自体(`/orchestrator`がLLM呼び出し
+     経由で返すfinding内容)は実行のたびに変わりうる非決定要素であり許容差を
+     定義できないため比較対象に含めない — この検証はスコアの再現性ではなく、
+     shard分割・マージ機構がidの過不足・重複・順序崩れを起こさないことの確認に限定する。
