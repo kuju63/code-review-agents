@@ -38,7 +38,8 @@ Agentへ送信しポーリングし結果を `agent_predictions.jsonl` へ変換
   predictions.jsonl + failed_ids sidecarのJSONL契約さえ満たせば、既存のPython製レポート生成を
   そのまま流用できるため変更しない。
 - Gold set対応の検証。今回はSeeded-only運用を前提に実装・検証するが、`/orchestrator`呼び出しの
-  リクエスト形状はGold/Seeded双方で共通(Issue #237, `docs/plan/eval-seeded-orchestrator-unification-spec.md`)
+  リクエスト形状はGold/Seeded双方で共通(Issue #237,
+  [docs/plan/eval-seeded-orchestrator-unification-spec.md](plan/eval-seeded-orchestrator-unification-spec.md))
   であるため、コード上はGold項目もそのまま処理できる。
 
 ## 3. 変換ロジックの再利用

@@ -172,7 +172,7 @@ reviewerを一切起動せず`out_of_scope`のような明示ステータスを�
 
 - Issue #54のスコープは「トリミング実装」のまま維持しつつ、既存の`patch_total_char_limit`
   / `patch_max_files`によるbinaryロジックを置き換える(既存実装の破棄を伴う変更)。
-- `FileChange`へのフィールド追加はA2A `outputSchema`(`docs/plan/a2a-api-design.md` §4)にも
+- `FileChange`へのフィールド追加はA2A `outputSchema`([docs/a2a-api-design.md](../a2a-api-design.md) §2)にも
   波及する。破壊的スキーマ変更ではないが、既存の評価データ(`agent_predictions.jsonl`)
   との互換性はTDDのGreenフェーズで確認する。
 - Option 2導入により「除外ファイルの有無」を評価レポートに出力する場合、

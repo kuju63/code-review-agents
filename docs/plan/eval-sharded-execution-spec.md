@@ -35,7 +35,8 @@ uv run ruff format --check
 
 加えて実環境検証(外部プロセス連携を伴う変更のため任意ではなく必須):
 
-1. A2Aサーバーをローカル起動し、`--shard-count 4` で4回に分けて `run_agent_evaluation.py` を実行
+1. A2Aサーバーをローカル起動し、`--shard-count 4` で `--shard-index 0`/`1`/`2`/`3` を
+   それぞれ指定して `run_agent_evaluation.py` を4回実行
    (各回が実際にサーバーを停止しないこと、レポート生成subprocessが呼ばれないこと、対象件数が
    合計24件になることをログで確認)
 2. `merge_predictions.py` で4shard分をマージし、exit code・summaryを確認

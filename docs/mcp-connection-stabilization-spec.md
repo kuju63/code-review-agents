@@ -20,7 +20,7 @@
 
 [ADR-0003](adr/0003-github-mcp-startup-retry-strategy.md)が明記する通り、起動リトライ・セッション共有は
 いずれも strands の `MCPClient`(`ToolProvider`実装)一般に適用できる設計である。本プロジェクトが現時点で
-利用するMCP統合は GitHub MCP(`create_github_mcp_client`、[github-mcp-streamable-http-migration-spec.md](plan/github-mcp-streamable-http-migration-spec.md))
+利用するMCP統合は GitHub MCP(`createGithubMcpClient`、[github-mcp-streamable-http-migration-spec.md](plan/github-mcp-streamable-http-migration-spec.md))
 のみであるため、以降の変更対象ファイル・具体例は結果的に GitHub MCP 関連ファイルのみになるが、これは
 「現状GitHub MCPしか無いから」であって「GitHub MCP専用の設計」ではない。以降、リトライ対象・共有対象は
 「`MCPClient`/`ToolProvider`の起動処理」という一般的な語彙で記述し、GitHub MCPはその唯一の具体例として

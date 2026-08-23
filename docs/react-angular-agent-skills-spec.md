@@ -31,7 +31,7 @@ The project type detector currently treats TypeScript/JavaScript changes or `pac
 
 ### 3.1 React Skill Enhancement
 
-`AgentSkillType.FRONTEND_REVIEW` must include the existing four frontend skills and the following Vercel-provided skills:
+`AgentSkillType.REACT_REVIEW` must include the existing four frontend skills and the following Vercel-provided skills:
 
 - `vercel-react-best-practices`
 - `vercel-composition-patterns`

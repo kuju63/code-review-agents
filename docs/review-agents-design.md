@@ -68,7 +68,7 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
                                       │      React→ReactReviewer / Angular→AngularReviewer │ Promise.all
                                       │      Vue→VueReviewer / Svelte→SvelteReviewer        │ で並列
                                       └──▶ SecurityReviewer (security, 全stack共通)         ┘
-                                   ──▶ ReviewReport(results, errors)  ──▶ (将来) Lead Engineer
+                                   ──▶ ReviewReport(results, errors)  ──▶ Lead Engineer
 ```
 
 ### 3.1 入力境界 — `ReviewContext`
@@ -166,7 +166,6 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
 ## 5. 未配線の拡張点（本リリースで意図的に未実装）
 
 - **spec / requirement 入力**: `ReviewContext` の拡張フィールドとして追加予定（4 節参照）。
-- **Lead Engineer 合成**: `ReviewReport` を入力とする合成エージェントを別途実装予定。
 - **Next.js/Nuxt 専用レビュアー**: `ProjectType.NEXTJS`/`NUXT` は検出できるが、専用の
   `NextReviewer`/`NuxtReviewer` は未実装。現状は `get_reviewer_classes()` のフォールバックで
   `ReactReviewer`/`VueReviewer` を再利用する（2節参照）。

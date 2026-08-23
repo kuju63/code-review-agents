@@ -117,5 +117,9 @@ BashツールはCWDを呼び出しをまたいで保持するが、シェル変�
 
 変更の影響範囲(Python版): [docs/plan/eval-a2a-container-runtime-spec.md](plan/eval-a2a-container-runtime-spec.md)。
 現行運用は`.claude/skills/run-evaluation/scripts/{start,stop}_a2a_container.sh`として維持されており、
-本設計の内容(healthエンドポイントでの起動待機、`--env-file`を使わない値なし`-e KEY`転送、
-`GITHUB_TOKEN`非転送、`--network=host`必須)は現行スクリプトと一致していることを確認済み。
+`--env-file`を使わない値なし`-e KEY`転送・`GITHUB_TOKEN`非転送・`--network=host`必須という方針は
+現行スクリプトと一致している。ただし`start_a2a_container.sh`が待ち受ける`http://localhost:8000/health`は
+TS版サーバー(`packages/a2a-server/src/index.ts`)の待受ポート`3000`・`health`モジュールの未マウント状態
+（[docs/a2a-api-design.md](a2a-api-design.md) §1「既知の未接続箇所」参照）と整合していない。
+このポート/ヘルスエンドポイントの不一致は未解決事項であり、実際にコンテナを起動して起動待機が
+成立するか確認してから前提とすること。

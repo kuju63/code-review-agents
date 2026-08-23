@@ -51,13 +51,12 @@ The feature is verified by unit tests covering these behaviors:
 
 ## Validation
 
-Final validation runs (Python-era commands; current TS equivalent is
-`pnpm exec tsc --noEmit`, `pnpm exec biome check`, `pnpm run test`):
+Final validation runs:
 
 ```bash
-uv run pytest
-uv run ruff check
-uv run ruff format --check
+pnpm exec tsc --noEmit
+pnpm exec biome check
+pnpm run test
 ```
 
 Coverage must remain at or above 75% for the final quality gate.

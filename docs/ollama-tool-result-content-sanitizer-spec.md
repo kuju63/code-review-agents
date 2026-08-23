@@ -98,7 +98,7 @@ WARNINGログでツール名と省略した型を通知する。該当ブロッ�
 
 ### 3.4 レビュアーへの配線
 
-`provider_type`がOllamaのときだけ、レビュアーが構築するAgentにこのサニタイザーを渡す。
+`providerType`がOllamaのときだけ、レビュアーが構築するAgentにこのサニタイザーを渡す。
 OpenAI経路は`document`を正しく処理できることを確認済みのため変更しない。位置情報を持たない
 `PRInfoCollector`・`LeadEngineerAgent`はツールを一切使わないため、この経路で`document`ブロックが
 混入することは原理的になく、変更不要。

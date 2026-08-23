@@ -11,6 +11,7 @@
 | S3 | `score-evaluation.ts`、scorerテスト、`generate_evaluation_report.py`のCLI接続変更 |
 | S4 | `discover-candidate-prs.ts`、GitHub client、テスト、利用者向けdocument更新 |
 
+spec更新完了後・S1着手前に、rollbackの起点として「Spec baseline」をcommitする。
 各sliceはRed（実行されたassertion failure）、Green、Refactor、CodeRabbit review、validationの順に進め、rollback可能なcommitを作る。
 
 ## 検証

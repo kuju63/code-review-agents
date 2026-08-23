@@ -42,8 +42,11 @@ provider種別はリクエスト単位のオーバーライドを許可しない
 ### 2.2 呼び出し元
 
 各技術レビュアー・`SecurityReviewer`・`LeadEngineerAgent`・`PRInfoCollector` はいずれも
-`ReviewerConfig`（`providerType`, `modelId`, `llmBaseUrl`, `temperature`, `maxTokens`,
+`ReviewerConfig`（`providerType`, `modelId`, `llmBaseUrl`, `maxTokens`,
 `frequencyPenalty` を保持）から `createModelProvider` を呼び出してモデルを構築する。
+`temperature`は`ReviewerConfig`のフィールドではなく、呼び出し元ごとに固定値
+（`base-reviewer.ts`は`0.1`、`lead-engineer.ts`/`pr-info-collector.ts`は`0.3`）を
+`createModelProvider`に直接渡している。
 評価パイプライン側のLLM呼び出し（意味的判定・seed生成）も同じファクトリに委譲し、
 レビュー対象モデルと評価用モデルの設定を独立させたまま（評価バイアス回避の意図を保つため）
 provider種別を選べるようにしている。

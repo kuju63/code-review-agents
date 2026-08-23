@@ -100,7 +100,7 @@ Zodスキーマとして`packages/a2a-server/src/modules/a2a/`に定義されて
   仕込む。プロセスの正常終了を妨げないよう、タイマーは`unref()`される。同一タスクへの再スケジュール時は
   既存タイマーをクリアしてから積み直す。
 - **エラーサニタイズ**: タスク失敗時に保存するエラーメッセージは、`Bearer <token>`・`ghp_*`・
-  `gho_*`・`ghp_*`等のGitHubトークンらしき文字列パターンを`[REDACTED]`に置換してから保存する
+  `gho_*`・`github_pat_*`等のGitHubトークンらしき文字列パターンを`[REDACTED]`に置換してから保存する
   （§7.3参照）。
 - **タスク実行の待受**: `sendTask`はタスクをすぐに`submitted`状態で作成して返し、実処理は
   バックグラウンドの`Promise`としてキューに積む。`runPendingTasks()`は積まれた`Promise`をすべて

@@ -144,7 +144,7 @@ LLM に再生成させる必然性がない。`MCPClient.call_tool_sync` でツ�
 
 ## 4. Patch 同梱設計（2026-06-27）
 
-### 3.1 背景と根本原因
+### 4.1 背景と根本原因
 
 2026-06-27 の評価（commit `3915f0d`）で Gold set の全スコアが 0 になった根本原因を調査した結果、
 `collect()` が `patch=None` を返すため、レビュアーが差分を GitHub MCP 経由でフェッチしようとし、
@@ -158,7 +158,7 @@ Gold と Seeded の評価パスが非対称になっていた（Gold のみが f
 | Gold | ~3,600 chars | なし（`patch=None`） | 必要 → context 蓄積 → 超過 |
 | Seeded | ~14,800 chars | あり（実 patch 内容） | 不要 → context 蓄積なし |
 
-### 3.2 設計決定
+### 4.2 設計決定
 
 **問題1（Gold findings=0）・問題2（評価パス非対称）の同時解消** を目的とした改修:
 
@@ -175,7 +175,7 @@ Gold と Seeded の評価パスが非対称になっていた（Gold のみが f
 
 閾値は `CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` / `CODE_REVIEW_PATCH_MAX_FILES` 環境変数で上書き可能。
 
-### 3.3 残る問題
+### 4.3 残る問題
 
 - **閾値超過の大きな PR**: 依然として `patch=None` でフォールバックし、レビュアーが MCP fetch する。
   コンテキスト超過リスクは消えない（モデルのコンテキスト窓に依存）。
