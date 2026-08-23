@@ -25,6 +25,7 @@
             # (Python and TypeScript coexist for the duration of the Epic).
             python314
             uv
+            pre-commit
           ];
 
           shellHook = ''
@@ -34,6 +35,8 @@
             echo "python: $(python3 --version)"
             echo "uv: $(uv --version)"
             echo "gh: $(gh --version | head -1)"
+
+            pre-commit install
 
             # Keep everyone on the same Stacked PR tooling: gh extensions
             # aren't Nix packages, so install it here, pinned to a known
