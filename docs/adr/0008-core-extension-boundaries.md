@@ -419,7 +419,13 @@ unregisterはcomposition root専用API、version compatibilityは`apiVersion`の
 
 許容するトレードオフは、`ReviewContext`からの`McpClient`型除去を後回しにするこ
 とで、移行完了までの中間状態で一部レイヤにStrands型が残存し続ける期間が生じる
-こと。
+こと。この「一部レイヤ」とは具体的に`models/review.ts`の`ReviewContext.
+sharedMcpClient`を指し、後述する合意事項2の「Agent/McpClient/Model型は
+`agents/runtime/`にのみ許容する」という原則に対する、Stage3完了までの明示的な例
+外である。この間、biomeのimport制限ルールは`agents/application/**`および組込
+reviewer検出ロジックからの`@strands-agents/sdk`直接importを禁止する形で適用し、
+`models/review.ts`はStage3完了（`McpClient`型除去）までルール適用除外パスとし
+て扱う。
 
 #### 論点5: 公開APIと互換性ポリシー（論点1の帰結）
 
@@ -431,11 +437,13 @@ unregisterはcomposition root専用API、version compatibilityは`apiVersion`の
 
 この論点は独立の意思決定ではなく、論点1でどの案を採るかによって選択肢が決まる
 （現状exports維持は案1、exports中心+biome補助は案2、package分割による強制は案3
-に、それぞれ一対一で対応する）。`agent-core`のexportsは案2採用時、段階移行の完了
-まで現状の7エントリを維持し、完了後にdriving adapterから直接importされていた内部
-クラスを非推奨化する。バージョニングはexports surfaceの安定性 + reviewer契約の
-`apiVersion`フィールドで代替する（全packageが`private:true`のためnpm semverは使
-わない）。
+に、それぞれ一対一で対応する）。`agent-core`のexportsは案2採用時、単に現状維持す
+るのではなく、安定入口（`.`）と移行完了まで公開を保つ汎用utility
+（`agents/target-file.js`）、移行対象の内部実装（残り6エントリ）に区分し、内部実
+装への新規importをbiomeで禁止しつつ既存呼び出し元を許可リスト化する（具体的な運
+用はDecision項目6を参照）。バージョニングはexports surfaceの安定性 + reviewer契
+約の`apiVersion`フィールドで代替する（全packageが`private:true`のためnpm semver
+は使わない）。
 
 ## Decision
 
@@ -462,6 +470,9 @@ Strands非依存の実行環境を具体的に要求する時点まで見送る�
 2. `packages/agent-core/src/agents/runtime/`を新設し、`model-provider-factory.ts`
    等のStrands依存実装を配置する。`Agent`/`McpClient`/`Model`型はこのディレクトリ
    にのみ許容し、application/domain/組込reviewerの検出ロジックからは参照しない。
+   ただし`models/review.ts`の`ReviewContext.sharedMcpClient`は、合意事項5のStage3
+   （`McpClient`型除去）が完了するまでの間、この原則に対する明示的な例外として
+   許容する（詳細は論点4の検討内容を参照）。
 3. `registry.ts`の`registerReviewer()`による自己登録パターンを廃止し、
    composition root（`a2a-server/src/index.ts`、将来のCLI起動処理）が
    `ReviewerRegistry`インスタンスを生成し明示的に`register()`する方式へ移行す
@@ -475,10 +486,24 @@ Strands非依存の実行環境を具体的に要求する時点まで見送る�
 5. Strands依存の隔離は`ModelProvider` Port→`GitHubClient` Port→
    `ReviewContext`からの`McpClient`型除去（ADR-0004の参照カウント設計は変更しな
    い）→`ReviewPipeline` Portの順で段階的に行う。
-6. `agent-core`の`package.json`の`exports`は移行完了まで現状の7エントリを維持
-   し、完了後にdriving adapterから直接importされていたエントリを非推奨化する。
-   内部import制限はexportsフィールドを第一の強制手段とし、biomeのimport制限ルー
-   ルは補助的に用いる。
+6. `agent-core`の`package.json`の`exports`は、安定した公開入口として`.`
+   （`models/index.ts`がre-exportするdomain契約。`ReviewerMetadata.apiVersion`と
+   併せて互換性契約の主体とする）を先に固定し、残る7エントリは性質により2種に
+   区分して扱う。`agents/target-file.js`（`isTargetFile`は特定reviewerに紐付か
+   ない汎用utilityでありuse-case化の対象外）は恒久的に公開を維持する。残り6エン
+   トリ（`agents/model-provider-factory.js`, `agents/pr-info-collector.js`,
+   `agents/lead-engineer.js`, `agents/review-orchestrator.js`,
+   `agents/base-reviewer.js`, `agents/reviewers/*.js`）は、`agents/application/`
+   のuse-case経由呼び出しに置き換わる内部実装として移行対象とする。移行期間中は
+   biomeの`noRestrictedImports`ルールでこれら6エントリへの**新規import**を
+   `agent-core`パッケージ外から禁止しCIで強制する。既存の呼び出し元（`a2a-server`
+   の`orchestrator.service.ts`/`lead-engineer.service.ts`/`pr-info.service.ts`/
+   `reviewers/*.service.ts`各サービス）は許可リストとして明示し、Stage4
+   （`ReviewPipeline` Port導入）完了時に対応するuse-case呼び出しへ置換した時点で
+   許可リストおよび`@deprecated`注記を経て`exports`から削除する。`evaluation`パ
+   ッケージの`score-evaluation.ts`による`model-provider-factory.js`直接利用は、
+   レビューpipelineではなくLLM-as-judgeスコアリング用途であり本移行の対象外とし
+   て許可リストに残す。
 7. コア/拡張の分類は「application契約（use-case/port/3-stage構造）への影響度」
    を主基準とし、「本リポジトリ内保守か外部保守か」を拡張のサブ分類として用い
    る。
