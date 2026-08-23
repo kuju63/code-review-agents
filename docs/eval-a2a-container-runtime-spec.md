@@ -122,4 +122,4 @@ BashツールはCWDを呼び出しをまたいで保持するが、シェル変�
 TS版サーバー(`packages/a2a-server/src/index.ts`)の待受ポート`3000`・`health`モジュールの未マウント状態
 （[docs/a2a-api-design.md](a2a-api-design.md) §1「既知の未接続箇所」参照）と整合していない。
 このポート/ヘルスエンドポイントの不一致は未解決事項であり、実際にコンテナを起動して起動待機が
-成立するか確認してから前提とすること。
+成立するか確認してから前提とすること。追跡: [Issue #362](https://github.com/kuju63/code-review-agents/issues/362)。

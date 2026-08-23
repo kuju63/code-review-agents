@@ -43,8 +43,18 @@ shard分割はgold/seeded入力JSONLを事前に手動で4分割したファイ�
 > `.claude/skills/run-evaluation/scripts/start_a2a_container.sh`はコンテナ起動後
 > `http://localhost:8000/health`を待ち受けるが、現行サーバー(`packages/a2a-server/src/index.ts`)
 > は`:3000`で待受け`/health`もマウントしていない、既知の未解決事項である
-> ([docs/a2a-api-design.md](../a2a-api-design.md) §1)。解消済みか実際に疎通確認してから
-> 以下を実行すること。
+> ([docs/a2a-api-design.md](../a2a-api-design.md) §1、[Issue #362](https://github.com/kuju63/code-review-agents/issues/362))。
+>
+> **解消の受け入れ条件**: (1) `index.ts`のリスニングポートと
+> `start_a2a_container.sh`/`stop_a2a_container.sh`が待ち受ける/操作するポートが一致する、
+> (2) `modules/health/`の`/health`ルートが`index.ts`にマウントされ、コンテナを実際に
+> 起動して`GET /health`が200を返すことをテストで検証する。
+>
+> **暫定の疎通確認手順**(解消されるまで、以下の実行前に必ず行う): コンテナ起動後、
+> `curl -sf http://localhost:3000/health`(現行サーバーの実ポート)と
+> `curl -sf http://localhost:8000/health`(スクリプトの既定待受先)の両方を試す。
+> いずれも200を返さない場合は`podman logs <container>`で実際の待受ポートを確認し、
+> 以下の`--base-url`をそのポートに手動で合わせること。
 
 1. A2Aサーバーを起動する。gold/seeded入力JSONLをshardごとに分割したファイル
    (N=0〜3)を事前に用意し、shardごとに`tsx packages/evaluation/src/run-agent-evaluation.ts
@@ -67,9 +77,10 @@ shard分割はgold/seeded入力JSONLを事前に手動で4分割したファイ�
    - **failed_ids**: 両実行ともsidecarが空(既知の失敗0件)であること。
    - **件数**: 両実行とも合計24件(Gold 8件+Seeded 16件)であること。
    - **終了コード**: 両実行とも0であること(missing/duplicate idなし)。
-   - **スコアの許容差**: `score-evaluation`の既定(rule-basedのpath/line/category
-     一致、`--semantic-judge`未使用)によるMust-Find Recall等の決定的スコアは
-     完全一致すること。ただし評価対象のレビュー結果自体(`/orchestrator`がLLM呼び出し
-     経由で返すfinding内容)は実行のたびに変わりうる非決定要素であり許容差を
-     定義できないため比較対象に含めない — この検証はスコアの再現性ではなく、
-     shard分割・マージ機構がidの過不足・重複・順序崩れを起こさないことの確認に限定する。
+   - **スコア比較は対象外**: 評価対象のレビュー結果自体(`/orchestrator`がLLM呼び出し
+     経由で返すfinding内容)は実行のたびに変わりうる非決定要素であり、
+     `score-evaluation`のマッチングロジック自体はrule-based(path/line/category)で
+     決定的でも、入力となるfindingが実行ごとに変わりうる以上スコアが一致する保証は
+     ない。したがって本検証はスコア一致の確認を対象外とし、上記の
+     id集合・順序・failed_ids・件数・終了コードという決定的な成果物のみを比較する
+     ——shard分割・マージ機構がidの過不足・重複・順序崩れを起こさないことの確認に限定する。
