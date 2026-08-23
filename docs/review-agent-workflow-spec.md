@@ -2,6 +2,10 @@
 
 LangFlow ワークフロー `Review-Agent.json` から抽出したAgent仕様書です。
 
+> 本ドキュメントはプロジェクト起点の由来記録であり、現行実装のアーキテクチャとは大きく異なる
+> (LangFlow/Ollama gemma4:e4b前提)。現行の並列レビュー段設計は
+> [docs/review-agents-design.md](review-agents-design.md)を参照。
+
 ---
 
 ## 1. システム概要

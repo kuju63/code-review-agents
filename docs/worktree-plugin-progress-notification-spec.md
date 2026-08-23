@@ -17,9 +17,4 @@ Related Issue: #182
 - Limit each toast request to two seconds.
 - Preserve existing workspace and Git operation behavior and timeout semantics.
 
-## Verification
-
-- Unit tests verify immediate, delayed, repeated, success, and error notifications.
-- Unit tests verify that an unresolved toast request does not block the wrapped operation.
-- Existing Python quality gates remain successful.
-- The plugin passes JavaScript syntax checking and its Node test suite.
+Verification plan: [docs/plan/worktree-plugin-progress-notification-spec.md](plan/worktree-plugin-progress-notification-spec.md).

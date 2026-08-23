@@ -5,7 +5,7 @@
 > 方式へ移行し廃止されたため、この重複問題は構造的に発生しなくなった(Seeded set
 > は固定PRリストから1PR=1アイテムで決定論的に構築される)。バグ修正の経緯記録として
 > 残す。現行の設計は
-> [docs/eval-seeded-repo-based-generation-spec.md](eval-seeded-repo-based-generation-spec.md)
+> [docs/eval-seeded-repo-based-generation-spec.md](../eval-seeded-repo-based-generation-spec.md)
 > を参照。
 
 `evaluation/tools/build_seeded_set.py` の `--multiplier >= 2` 実行時に、同一 Gold item に対して

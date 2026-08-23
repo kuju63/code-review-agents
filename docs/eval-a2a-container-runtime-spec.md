@@ -115,12 +115,11 @@ BashツールはCWDを呼び出しをまたいで保持するが、シェル変�
 という前提は成立しない(実際、既存の `run_agent_evaluation.py` もこれを前提とせず自前で
 `load_dotenv()` している)。`start_a2a_container.sh` は自分自身で `.env` を読み込む。
 
-## 3. 変更の影響範囲
-
-- `evaluation/tools/run_agent_evaluation.py`: `--server-pid-file`・`_shutdown_server()`・
-  `signal` importを削除。`main()` の `finally`/`shard_validation_ok` を撤去し、
-  shard引数バリデーションのエラーハンドリングのみを残す。
-- `.claude/skills/run-evaluation/SKILL.md`: Step 1にpodman前提チェックを追加、
-  Step 3/5をscript呼び出しに置換、Step 4から `--server-pid-file` を除去。
-- `evaluation/RUNBOOK.md` §4a、`docs/eval-sharded-execution-spec.md` 2.3節:
-  `--server-pid-file` を前提にした記述を新方式に合わせて更新。
+変更の影響範囲(Python版): [docs/plan/eval-a2a-container-runtime-spec.md](plan/eval-a2a-container-runtime-spec.md)。
+現行運用は`.claude/skills/run-evaluation/scripts/{start,stop}_a2a_container.sh`として維持されており、
+`--env-file`を使わない値なし`-e KEY`転送・`GITHUB_TOKEN`非転送・`--network=host`必須という方針は
+現行スクリプトと一致している。ただし`start_a2a_container.sh`が待ち受ける`http://localhost:8000/health`は
+TS版サーバー(`packages/a2a-server/src/index.ts`)の待受ポート`3000`・`health`モジュールの未マウント状態
+（[docs/a2a-api-design.md](a2a-api-design.md) §1「既知の未接続箇所」参照）と整合していない。
+このポート/ヘルスエンドポイントの不一致は未解決事項であり、実際にコンテナを起動して起動待機が
+成立するか確認してから前提とすること。追跡: [Issue #362](https://github.com/kuju63/code-review-agents/issues/362)。

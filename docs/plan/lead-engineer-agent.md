@@ -6,7 +6,7 @@
 
 Lead Engineer は「上がってきた指摘を評価・取捨選択して優先リストを作る意思決定者」であり、自らコードを読んで新たな問題を見つける役割ではない。この性質から、技術特定のツール（GitHub MCP）は不要で、React 以外の技術スタックにも自然に対応できる。
 
-機能設計の詳細は [docs/lead-engineer-agent-design.md](../docs/lead-engineer-agent-design.md) を参照。
+機能設計の詳細は [docs/lead-engineer-agent-design.md](../lead-engineer-agent-design.md) を参照。
 
 ---
 
@@ -16,7 +16,7 @@ Lead Engineer は「上がってきた指摘を評価・取捨選択して優先
 
 ```text
 docs/lead-engineer-agent-design.md   <- Agent 機能設計書（保守メンテナンス用）
-plan/lead-engineer-agent.md          <- この実装プランのプロジェクト内コピー
+docs/plan/lead-engineer-agent.md     <- この実装プランのプロジェクト内コピー
 src/code_review_agent/
   models/lead_engineer.py
   agents/lead_engineer.py
