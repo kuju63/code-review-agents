@@ -23,7 +23,7 @@
 - **ネットワーク・負荷分散**: ロードバランサーの導入方法と、内部コンポーネント間の通信プロトコル。
 - **スケーリング戦略**: リクエストベースのスケールか、ジョブキューベースのスケールか。
 
-**スコープ境界:** 本ADRはコンテナ構成（トポロジ）レベルの意思決定に限定する。Queueの実装方式（in-process queue/semaphore、DB-backed queue + worker lease、外部broker等）の比較、backpressureや過負荷時のAPI応答、timeout/cancellation/staggler処理、shutdown・再起動時のリカバリ、配信契約（ACK・retry・dead-letter・冪等性）といった運用上の詳細仕様は対象外とし、Issue #345 のフォローアップとして後続ADRで決定する（[影響・フォローアップ](#影響フォローアップ) 参照）。
+**スコープ境界:** 本ADRはコンテナ構成（トポロジ）レベルの意思決定に限定する。Queueの実装方式（in-process queue/semaphore、DB-backed queue + worker lease、外部broker等）の比較、backpressureや過負荷時のAPI応答、timeout/cancellation/straggler処理、shutdown・再起動時のリカバリ、配信契約（ACK・retry・dead-letter・冪等性）といった運用上の詳細仕様は対象外とし、Issue #345 のフォローアップとして後続ADRで決定する（[影響・フォローアップ](#影響フォローアップ) 参照）。
 
 ## 検討内容
 
