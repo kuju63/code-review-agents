@@ -65,7 +65,7 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
                                       │  stack (react_ts/angular/vue/svelte) に
                                       │  対応する技術レビュアーを1つ選択
                                       ├──▶ {Stack}Reviewer   (technical, 検出stackに対応)  ┐
-                                      │      React→ReactReviewer / Angular→AngularReviewer │ asyncio.gather
+                                      │      React→ReactReviewer / Angular→AngularReviewer │ Promise.all
                                       │      Vue→VueReviewer / Svelte→SvelteReviewer        │ で並列
                                       └──▶ SecurityReviewer (security, 全stack共通)         ┘
                                    ──▶ ReviewReport(results, errors)  ──▶ (将来) Lead Engineer
@@ -82,42 +82,43 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
 
 ### 3.2 レビュアー — `ReviewAgent` / `LLMReviewAgent`
 
-- `ReviewAgent`（ABC）: ClassVar メタデータ `reviewer_id` / `perspective` / `project_types` を持ち、
-  抽象メソッド `review(context: ReviewContext) -> ReviewResult` を定義する。
+- `ReviewAgent`（抽象クラス）: 各サブクラスが `static readonly` で宣言する識別メタデータ
+  `reviewerId` / `perspective` / `projectTypes` を持ち、抽象メソッド
+  `review(context: ReviewContext, projectType?: ProjectType): Promise<ReviewResult>` を定義する。
 - `LLMReviewAgent`: Strands `Agent` + GitHub MCP を使う共通実装。具体レビュアーは
-  `system_prompt` 等の設定差分のみを与える（設定で振る舞いを変える、コードは共有）。
-  任意で `skills_dir: Path | None` を設定可能。設定された場合、`AgentSkills(skills=skills_dir)`
-  プラグインと `file_read` ツール（`strands-agents-tools`）が Agent に追加され、
-  プログレッシブ・ディスクロージャーによるスキルの段階的ロードが有効になる。
-  `shell` ツールは注入しない（スキルのリファレンスファイルは `file_read` で十分、かつ任意コマンド実行は最小権限の原則に反する）。
-- `_build_prompt()` はプロンプト内のパッチ各行に実ファイル行番号を付与する（`+L{N}:` 形式）。
-  ただし、この付与は `PRInfoResult.file_changes` に事前収録されたパッチのみに適用される。
-  **現時点の設計上の制限**: エージェントが実行中に GitHub MCP 経由でオンデマンド取得したパッチは
-  アノテーション対象外となるため、その場合のエージェントが報告する行番号は `@@` ヘッダーの
-  開始行をそのまま使用する等、実ファイル行番号と一致しない場合がある
-  （patch サイズが閾値を超えて `patch=None` にフォールバックした PR で発生しうる）。
-- 各レビュアーの `review()` は**同期**実装で、`PRInfoCollector.collect()` と同じく
-  `create_github_mcp_client` を `with` で開いて使う（MCP の同期コンテキストマネージャを
-  そのまま扱える）。
-- `agent(...).structured_output` は `max_agent_turns` 使い切りで `None` になりうる
-  （strands はこの場合例外を送出しない）。`review()` はこれを明示チェックし
-  `StructuredOutputMissingError` を送出する。3.4 節の `ReviewError` 変換により、単一レビュアーの
-  この失敗が他のレビュアーを巻き込むことはない。詳細は
+  システムプロンプト等の設定差分のみを与える（設定で振る舞いを変える、コードは共有）。
+  任意でスキルディレクトリを設定可能。設定された場合、Agent Skills プラグインと
+  ファイル読み取りツールが Agent に追加され、プログレッシブ・ディスクロージャーによる
+  スキルの段階的ロードが有効になる。シェル実行ツールは注入しない（スキルのリファレンス
+  ファイルはファイル読み取りで十分、かつ任意コマンド実行は最小権限の原則に反する）。
+- プロンプト構築処理はパッチ各行に実ファイル行番号を付与する。ただし、この付与は
+  `PRInfoResult` に事前収録されたパッチのみに適用される。**現時点の設計上の制限**:
+  エージェントが実行中に GitHub MCP 経由でオンデマンド取得したパッチはアノテーション対象外と
+  なるため、その場合のエージェントが報告する行番号は `@@` ヘッダーの開始行をそのまま使用する等、
+  実ファイル行番号と一致しない場合がある（patch サイズが閾値を超えてパッチ本体を含まない
+  形にフォールバックした PR で発生しうる）。
+- 各レビュアーの `review()` は Promise を返す非同期実装。3.4節のオーケストレータは
+  複数レビュアーの `review()` 呼び出しを直接 `Promise.all`/`Promise.race` で束ねて並列化する
+  （スレッドオフロードは不要）。
+- 構造化出力は、ターン数上限を使い切った場合に例外を送出せず未定義のまま結果が返ることがある。
+  `review()` はこれを明示チェックし `StructuredOutputMissingError` を送出する。3.4 節の
+  `ReviewError` 変換により、単一レビュアーのこの失敗が他のレビュアーを巻き込むことはない。詳細は
   [docs/lead-engineer-agent-design.md §8.1](lead-engineer-agent-design.md#81-structured_output-が得られない場合のフェイルファスト)。
 
 ### 3.3 レジストリ — `registry`
 
-- `@register_reviewer` でレビュアークラスを登録（インスタンスではなくクラス。設定注入は
-  オーケストレータが行う）。
-- `get_reviewer_classes(project_type, perspectives=None)` が、対象種別に適用され観点フィルタに
+- `registerReviewer(cls)` でレビュアークラスを登録する（関数呼び出しであり、デコレータでは
+  ない — TypeScriptのクラスは型としても値としても使うため、デコレータ構文にすると具象クラスの
+  型情報が失われる）。渡すのはインスタンスではなくクラス自体で、設定注入はオーケストレータが行う。
+- `getReviewerClasses(projectType, perspectives?)` が、対象種別に適用され観点フィルタに
   合致するレビュアークラス群を返す。**拡張の中心点**であり、新しいセルの追加はクラス追加 +
-  デコレータ登録だけで完結する。
-- `detect_project_types(pr_info)` が変更ファイルの拡張子・manifest、および `PRInfoResult.manifest_contents`
+  登録呼び出しだけで完結する。
+- `detectProjectTypes(prInfo)` が変更ファイルの拡張子・manifest、および `manifestContents`
   （`package.json`/`package-lock.json`/`pnpm-lock.yaml` の中身、詳細は2節参照）から種別を推定する。
-  `dependency_files` は「リポジトリ直下に存在する」manifest（PRでの変更有無を問わない）の
-  パス一覧である。`manifest_contents` はそのうち中身を取得できたものの実データに加え、ルート
+  `dependencyFiles` は「リポジトリ直下に存在する」manifest（PRでの変更有無を問わない）の
+  パス一覧である。`manifestContents` はそのうち中身を取得できたものの実データに加え、ルート
   `package.json` の `workspaces` フィールドから解決されたworkspace配下各パッケージの
-  `package.json` の中身も含む（`dependency_files` 自体はリポジトリ直下のみでworkspace配下は
+  `package.json` の中身も含む（`dependencyFiles` 自体はリポジトリ直下のみでworkspace配下は
   含まない）。両者を組み合わせても決め手がない場合、`src/*.tsx` だけ変更する典型 PR を
   取りこぼさないよう、TS/JS/JSX の変更が
   あれば（package.json 変更がなくても）react_ts と判定する最終フォールバックへ落ちる。
@@ -126,19 +127,18 @@ PRInfoResult ──▶ ReviewContext ──▶ ReviewOrchestrator
 
 ### 3.4 オーケストレータ — `ReviewOrchestrator`
 
-- プロジェクト種別（明示 or `detect_project_types`）からレビュアーを選び、共通設定
+- プロジェクト種別（明示 or `detectProjectTypes`）からレビュアーを選び、共通設定
   `ReviewerConfig` を注入して instantiate。
-- `asyncio.gather(asyncio.to_thread(reviewer.review, context), ...)` で**並列実行**する。
-  各レビュアーは同期だが、スレッドにオフロードすることで MCP の同期コンテキストマネージャを
-  レビュアー単位で隔離しつつ並列性を得る。
+- 各レビュアーの `review()` 呼び出しを `Promise.all`/`Promise.race` で束ねて**並列実行**する。
+  各レビュアーは元々非同期実装のため、スレッドオフロードのような追加の仕組みは不要。
 - 例外は `ReviewError` に変換して `ReviewReport.errors` に隔離する。1 つのレビュアーの失敗が
   他のレビュアーを巻き込まない。
 
 ### 3.5 出力 — `ReviewReport`
 
-`results: list[ReviewResult]` と `errors: list[ReviewError]` を持つ集約結果。
-これは将来の Lead Engineer 合成エージェント（spec 3.4）の入力にそのままなる形です。
-Lead Engineer 自体は本リリースの対象外です。
+`results: ReviewResult[]` と `errors: ReviewError[]` を持つ集約結果。
+これは Lead Engineer 合成エージェント（[docs/lead-engineer-agent-design.md](lead-engineer-agent-design.md)）の
+入力にそのままなる形です。
 
 ---
 
@@ -146,18 +146,19 @@ Lead Engineer 自体は本リリースの対象外です。
 
 ### プロジェクト種別を追加する（例: Spring Boot 技術レビュー）
 
-1. `models/review.py` の `ProjectType` に値が無ければ追加（`SPRING_BOOT` は宣言済み）。
-2. `agents/reviewers/spring_boot.py` に `LLMReviewAgent` を継承したレビュアークラスを作り、
-   `perspective=TECHNICAL`、`project_types={ProjectType.SPRING_BOOT}` を宣言、`@register_reviewer`。
-3. `detect_project_types` に判定分岐を追加（例: `pom.xml` / `build.gradle` → SPRING_BOOT）。
-4. `agents/reviewers/__init__.py` で import して登録副作用を発火。
+1. `models/review.ts` の `ProjectType` に値が無ければ追加（`SPRING_BOOT` は宣言済み）。
+2. `agents/reviewers/spring-boot.ts` に `LLMReviewAgent` を継承したレビュアークラスを作り、
+   `perspective=TECHNICAL`、`projectTypes={ProjectType.SPRING_BOOT}` を `static readonly` で
+   宣言し、`registerReviewer(cls)` で登録する。
+3. `detectProjectTypes` に判定分岐を追加（例: `pom.xml` / `build.gradle` → SPRING_BOOT）。
+4. `agents/reviewers/index.ts` で import して登録副作用を発火。
 
 オーケストレータ・レジストリ本体は無改修。
 
 ### レビュー観点を追加する（例: 仕様整合性）
 
-1. `models/review.py` の `ReviewPerspective` に値が無ければ追加（`SPEC_CONSISTENCY` は宣言済み）。
-2. `ReviewContext` に必要な入力（例: `spec_documents`）を追加。
+1. `models/review.ts` の `ReviewPerspective` に値が無ければ追加（`SPEC_CONSISTENCY` は宣言済み）。
+2. `ReviewContext` に必要な入力（例: 仕様書ドキュメント）を追加。
 3. その観点のレビュアークラスを作り `perspective=SPEC_CONSISTENCY` で登録。
 
 ---
@@ -194,7 +195,7 @@ Lead Engineer 自体は本リリースの対象外です。
 > reviewing-frameworks に加え Angular公式の angular-developer）を、`VueReviewer` は
 > `AgentSkillType.VUE_REVIEW`（reviewing-universal / reviewing-languages / reviewing-frameworks。
 > Angular/Svelteと異なりVue公式Agent Skillは未ベンダリングのため、`reviewing-frameworks/references/vue.md`
-> の汎用知識に依拠する — 追従課題は docs/seeded-reviewer-stack-routing-spec.md §4 参照）を
+> の汎用知識に依拠する — 追従課題は docs/plan/seeded-reviewer-stack-routing-spec.md §4 参照）を
 > `skill_type` 経由で読み込む。
 > いずれも GitHub MCP + `file_read` ツールとともに動作する（`shell` は最小権限の原則から注入しない）。
 

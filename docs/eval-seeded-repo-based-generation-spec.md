@@ -1,13 +1,14 @@
 # Seeded set生成: 専用Seedリポジトリ方式 設計ドキュメント
 
 関連Issue: #224(親)、#225(Angular)、#226(React)、#227(Svelte)、#228(Vue)
+実装計画（テスト方針・移行チェックリスト）: [docs/plan/eval-seeded-repo-based-generation-spec.md](plan/eval-seeded-repo-based-generation-spec.md)
 
 ## 1. 背景と問題
 
 現行のSeeded set(意図的に脆弱性・バッドプラクティスを混入させた評価用データ)は、
 `evaluation/tools/build_seeded_set.py` がGold PRのunified diffパッチに対して
 LLM推論/決定論的にmutationを注入するハイブリッド方式で生成していた。この設計の
-経緯は `docs/eval-seeded-mutation-injection-design.md` に記録されている。
+経緯は `docs/plan/eval-seeded-mutation-injection-design.md` に記録されている。
 
 5件のIssue(#110/#111/#112/#127/#131)と数ヶ月の調整を経てもなお、fallback率は
 目標の30%を安定して下回れず、`.d.ts`型定義ファイルへの`eval()`注入や
@@ -257,7 +258,7 @@ usage: build_seeded_set.py --targets PATH [PATH ...] --output PATH
 matching their stack label ... plus SecurityReviewer」)により、stack別
 ルーティング + SecurityReviewer限定呼び出しという固有スコープを維持する必要が
 あるため。`_technical_reviewer_endpoint`と
-`docs/seeded-reviewer-stack-routing-spec.md`(Issue #181で実装済み)のルーティング
+`docs/plan/seeded-reviewer-stack-routing-spec.md`(Issue #181で実装済み)のルーティング
 設計自体は変更しない。
 
 > **判断の反転（2026-08-08更新、Issue #237）**: 上記「統合はしない」の判断は覆した。
@@ -266,7 +267,7 @@ matching their stack label ... plus SecurityReviewer」)により、stack別
 > ため。この決定により`evaluate_gold_item()`と`evaluate_seeded_item()`(本節で述べた
 > file_changes上書き削除後)は文字通り同一の実装(owner/repo抽出→`/orchestrator`へ
 > POST→`_to_predictions`)に帰着するため、両者は`evaluate_item()`に統合された。
-> `_technical_reviewer_endpoint`と`docs/seeded-reviewer-stack-routing-spec.md`の
+> `_technical_reviewer_endpoint`と`docs/plan/seeded-reviewer-stack-routing-spec.md`の
 > クライアント側ルーティング設計(§6)は削除・supersededとなった。`evaluate_item()`は
 > `stack`を一切参照しないため、EVALUATION_PLAN.md §4後半のfail-closed要件(unsupported/
 > missing stackを明示的に失敗させる)は59件のいずれに対しても実行されなくなった。実測で
@@ -274,7 +275,7 @@ matching their stack label ... plus SecurityReviewer」)により、stack別
 > 副産物として現時点で一致している55件を含む恒久的な保証ではない。EVALUATION_PLAN.md
 > §4のhard gate文言自体は変更していないため、この状態は期限付きの既知逸脱として
 > EVALUATION_PLAN.md §5に記録されている。詳細は
-> [docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)
+> [docs/plan/eval-seeded-orchestrator-unification-spec.md](plan/eval-seeded-orchestrator-unification-spec.md)
 > を参照。
 
 ## 7. `seeded_item.schema.json` の変更
@@ -301,61 +302,14 @@ Vue Seed PRを機能させる前提条件として併せて修正する。
 `is_production_code_file`の実体)には既に`.vue`が含まれており、このバグは
 本番`pr_info_collector.py`固有である。
 
-## 9. テスト方針
-
-- `detect_intentional_markers()`: `.ts`/`.tsx`/`.vue`の`// INTENTIONAL`、
-  `.html`の`<!-- INTENTIONAL -->`、`.svelte`の`// INTENTIONAL: SEED-nnn`各構文の
-  検出、マーカーなしpatchで空リスト、複数マーカー(vue#13/#14、svelte#16相当の
-  合成fixture)で複数ヒット。
-- `resolve_defect_line()`: 標準+1ケース、`line_offset`未指定での空行/コメント
-  スキップ(svelte#6相当)、`line_offset`明示指定(react#8相当)、
-  `parse_hunk_new_start`/`count_new_lines_before`との結線を検証する回帰テスト
-  (new-file行番号であることを直接アサートする)。
-- `build_seeded_item()`: 正常系(1マーカー1defect、モックHTTPレスポンス)、
-  マーカー0件でのfail-closed、マーカー数≠defects数でのfail-closed、
-  `is_target_file()`がFalseを返すファイルにマーカーがある場合のfail-closed
-  (`.vue`バグの回帰ガードそのもの)。
-- `github_api.py::fetch_pr_files()`: HTTPモックでの正常系。
-- CLI: `--print-markers`モードの出力フォーマット、`--pr`単一PR指定、
-  `--stacks`フィルタ。
-- `run_agent_evaluation.py`: `evaluate_seeded_item()`が`file_changes`を
-  上書きしないことを検証するテストを追加。~~既存のstack別ルーティングテストは
-  変更不要。~~ (2026-08-08更新、Issue #237で誤り: `evaluate_seeded_item()`自体が
-  `evaluate_item()`に統合されたため、stack別ルーティングテストは削除され
-  `TestEvaluateItem`に置き換わった。詳細は
-  [docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)。)
-- `test_pr_info_collector.py`: `.vue`拡張子ケースを追加。
-
-`tests/evaluation/tools/test_build_seeded_set.py`は全面書き換えとする。
-
-## 10. 移行チェックリスト・作業順序
-
-ツール実装を先行させ、メタデータ作成をその出力(`--print-markers`)に依存させる
-順序にする。TDD Red→Green→RefactorのサイクルごとにCLAUDE.mdの規約に従い
-コミット(ロールバックポイント)する。
-
-1. 本ドキュメント作成 → コミット。
-2. `github_api.py` + `build_seeded_set.py`のマーカー検出/行解決/アイテム構築 +
-   テスト(Red→Green) → コミット。この時点でメタデータは未作成、
-   `--print-markers`のみで動作確認。
-3. メタデータ執筆をスタック単位で4コミット(React → Vue → Angular → Svelte)。
-   各コミット後に`build_seeded_set.py --stacks <stack>`でfail-closed
-   バリデーションを通過させてからコミットする。
-4. `evaluate_seeded_item()`簡略化 + テスト → コミット。
-5. `pr_info_collector.py`の`.vue`追加 + テスト → コミット。
-6. `run_evaluation_pipeline.sh` + `seeded_item.schema.json` +
-   `EVALUATION_PLAN.md` + `RUNBOOK.md` + 廃止ヘッダー2件 → コミット。
-7. `seeded_mutations.json`削除、`build_seeded_set.py`の旧mutation関数完全除去 →
-   コミット。
-8. `uv run pytest` / `uv run ruff check` / `uv run ruff format --check`
-   全通過を確認 → 最終コミット。
-
-## 11. 対象外
+## 9. 対象外
 
 - Gold set系列(`discover_candidate_prs.py`、`repo_candidates.json`、
   `select_stack_targets.py`、`build_gold_set.py`)は変更しない。
-- `docs/seeded-reviewer-stack-routing-spec.md`のstack別ルーティング設計自体は
-  変更しない(再利用する)。
+- `docs/plan/seeded-reviewer-stack-routing-spec.md`のstack別ルーティング設計は、
+  本ドキュメント作成時点では「変更しない(再利用する)」前提だったが、後にIssue #237で
+  クライアント側ルーティング自体が`/orchestrator`単一呼び出しへ統合されたため、
+  この前提は失効している（詳細は§6参照）。
 - 4スタック以外への拡張は考えない。
 - EVALUATION_PLAN.md §4のRelease Gate閾値数値そのものの変更判断は本タスクでは
   行わない(母数変化の注記のみ行う)。

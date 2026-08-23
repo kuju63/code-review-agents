@@ -12,11 +12,11 @@ Lead Engineer は、並列レビュー段が生成した `ReviewReport` を受�
 
 ### Lead Engineer がすること
 
-- 各レビュアーの指摘（`ReviewFinding`）を評価し、accept / reject を判定する
-- 判定理由（`reason`）と修正しない場合の自由記述インパクト（`impact`）を明示する
-- 指摘ごとにseverity（`severity`）と品質特性（`impact_category`）を分類する
-- accept した指摘に3段階の最終優先度（`final_priority`）を割り当てる（レビュアーの優先度と異なっても良い）
-- 全指摘の評価を踏まえた総合サマリー（`overall_summary`）を生成する
+- 各レビュアーの指摘（finding）を評価し、accept / reject を判定する
+- 判定理由（reason）と修正しない場合の自由記述インパクト（impact）を明示する
+- 指摘ごとにseverity（重大度）と品質特性（impactCategory）を分類する
+- accept した指摘に3段階の最終優先度（finalPriority）を割り当てる（レビュアーの優先度と異なっても良い）
+- 全指摘の評価を踏まえた総合サマリー（overallSummary）を生成する
 
 ### Lead Engineer がしてはならないこと
 
@@ -35,13 +35,13 @@ Lead Engineer は、並列レビュー段が生成した `ReviewReport` を受�
 [PR Info Collector]
     PRInfoResult
        ↓
-[ReviewOrchestrator] ← ReactCodeReviewer, SecurityReviewer, (将来のレビュアー...)
+[ReviewOrchestrator] ← 各スタックのレビュアー、SecurityReviewer
     ReviewReport(results, errors)
        ↓
 [LeadEngineerAgent]
-    LeadEngineerReport(overall_summary, decisions, reviewer_errors)
+    LeadEngineerReport(overallSummary, decisions, reviewerErrors)
        ↓
-  チャット出力（to_markdown）  ← 現在
+  チャット出力（toMarkdown）  ← 現在
   GitHub PR コメント（将来）
 ```
 
@@ -49,89 +49,35 @@ Lead Engineer は、並列レビュー段が生成した `ReviewReport` を受�
 
 ## 3. 技術非依存設計
 
-ワークフロー仕様（`docs/review-agent-workflow-spec.md`）の初版は React に特化していましたが、
 Lead Engineer は技術スタックに依存しない設計をとります。
 
-具体的には:
-
-- システムプロンプトに React / Spring Boot などの特定技術名を含めない
-- 各 finding に付与された `perspective`（technical, security など）と `reviewer_id` を文脈として使う
+- システムプロンプトに特定技術名を含めない（レビュアーが明示的に言及した場合を除く）
+- 各 finding に付与された perspective（technical, security など）と reviewerId を文脈として使う
 - 新しいレビュアーが追加されても Lead Engineer のコードは無改修で対応できる
 
 ---
 
 ## 4. データモデル
 
-### 4.1 `DecisionVerdict`
+すべて `models/lead-engineer.ts` に Zod スキーマとして定義されている。フィールド名は
+camelCase（並列レビュー段の `ReviewFinding` と同じ命名規則）。
 
-```python
-class DecisionVerdict(StrEnum):
-    ACCEPT = "accept"   # 開発者が対応すべき指摘
-    REJECT = "reject"   # 対応不要（偽陽性・スコープ外・価値が低い）
-```
+| モデル | 役割 | 主なフィールド |
+|---|---|---|
+| `DecisionVerdict` | 判定の2値 | `accept` / `reject` |
+| `FindingSeverity` | 最終重大度 | `critical` / `high` / `medium` / `low` |
+| `FindingImpact` | 影響を受ける品質特性 | `security` / `correctness` / `performance` / `maintainability` |
+| `FindingPriority` | 最終優先度 | `high` / `medium` / `low` |
+| `FindingDecisionOutput` | LLM生成スキーマ（1件の判定） | `findingIndex`（1始まりの整数）, `verdict`, `reason`, `impact`, `severity`, `impactCategory`, `finalPriority` |
+| `LeadEngineerOutput` | LLM生成スキーマ（全体） | `overallSummary`, `decisions: FindingDecisionOutput[]` |
+| `FindingDecision` | 最終出力（1件） | 上記 `FindingDecisionOutput` の各フィールド ＋ インデックス解決で復元した `reviewerId` / `perspective` / `finding`（元の `ReviewFinding` そのもの） |
+| `LeadEngineerReport` | 最終出力（全体） | `overallSummary`, `decisions: FindingDecision[]`, `reviewerErrors`（並列レビューステージのエラーを透過転送） |
 
-### 4.2 `FindingDecisionOutput`（LLM 生成用）
+`LeadEngineerReport` には以下の派生関数が付随する（`models/lead-engineer.ts`）:
 
-`Agent.structured_output` に渡すスキーマ。LLM は finding の番号（finding_index）のみ返し、
-finding の内容はコード側でインデックスマップから引く（finding 再現によるデータ破損防止）。
-
-```python
-class FindingDecisionOutput(BaseModel):
-    finding_index: int          # 1-based。プロンプト中の Finding #N と対応
-    verdict: DecisionVerdict
-    reason: str                 # 判断理由
-    impact: str                 # 修正しない場合の自由記述インパクト
-    severity: FindingSeverity   # critical / high / medium / low
-    impact_category: FindingImpact  # security / correctness / performance / maintainability
-    final_priority: FindingPriority # high / medium / low
-```
-
-### 4.3 `LeadEngineerOutput`（LLM 生成用）
-
-```python
-class LeadEngineerOutput(BaseModel):
-    overall_summary: str
-    decisions: list[FindingDecisionOutput]
-```
-
-### 4.4 `FindingDecision`（最終出力）
-
-Agent コードがインデックス解決で元の `ReviewFinding` を付与した最終オブジェクト。
-
-```python
-class FindingDecision(BaseModel):
-    reviewer_id: str
-    perspective: ReviewPerspective
-    finding: ReviewFinding      # インデックス解決で取得した元 finding
-    verdict: DecisionVerdict
-    reason: str
-    impact: str
-    severity: FindingSeverity
-    impact_category: FindingImpact
-    final_priority: FindingPriority
-```
-
-### 4.5 `LeadEngineerReport`（最終出力）
-
-```python
-class LeadEngineerReport(BaseModel):
-    overall_summary: str
-    decisions: list[FindingDecision]
-    reviewer_errors: list[ReviewError]  # 並列レビューステージのエラーを透過転送
-
-    def accepted(self) -> list[FindingDecision]: ...
-    # CRITICAL → HIGH → MEDIUM → LOW 順でソートした accept 決定リスト
-
-    def rejected(self) -> list[FindingDecision]: ...
-    # 同順でソートした reject 決定リスト
-
-    def to_markdown(self) -> str: ...
-    # チャット出力用 Markdown（accepted findings を優先度順に列挙、rejected は <details> に収納）
-
-    def to_evaluation_format(self, pr_id: str) -> dict: ...
-    # evaluation/tools/score_evaluation.py が期待するフォーマット
-    # {"id": ..., "agent_findings": [accepted のみ], "lead_decisions": [全決定]}
-```
+- `acceptedDecisions()` / `rejectedDecisions()`: `FindingSeverity` の宣言順（critical→high→medium→low）でソートした decisions を返す。ソート順を別配列で持たず、スキーマ自身の enum 宣言順を使うため、severity の並びとソート順が構造的にずれない。
+- `toMarkdown()`: チャット出力用 Markdown を生成する（§7.1参照）。
+- `toEvaluationFormat(prId)`: 評価パイプラインが期待する `{id, agent_findings, lead_decisions}` 形式に変換する。このフォーマットは評価パイプライン側との外部契約であるためキーはあえて snake_case のまま。`filePath`/`line` が欠落した finding はサイレントにスキップされず `console.warn` で明示的に警告される — 設計理由は [docs/finding-location-silent-drop-spec.md](finding-location-silent-drop-spec.md) を参照。
 
 ---
 
@@ -139,19 +85,29 @@ class LeadEngineerReport(BaseModel):
 
 LLM に finding を「再現」させると、以下のリスクがある:
 
-- フィールド値の部分的な欠落・変形（特に `file_path` や `line` の誤記）
+- フィールド値の部分的な欠落・変形（特に `filePath` や `line` の誤記）
 - LLM が finding の内容を「要約」してしまい元の指摘内容が失われる
 
 このリスクを回避するため、プロンプト内で各 finding を `Finding #N` として番号付けし、
-LLM には番号（`finding_index`）のみ返させる。Agent コードがインデックスマップ
-`{N: (reviewer_id, perspective, finding)}` から元の finding を引くことで、データの完全性を保証する。
+LLM には番号（`findingIndex`）のみ返させる。Agent コードがインデックスマップから元の
+finding を引くことで、データの完全性を保証する。
+
+このインデックス解決には3つのフォールバックが組み込まれている:
+
+- **未知のインデックス**: LLMが存在しない番号を返した場合、警告ログを出して無視する。
+- **重複したインデックス**: 同じ番号に複数の判定が返った場合、最初の1件のみ採用し警告を出す。
+- **判定が返らなかったfinding**: 全findingについて必ず1件の判定を出すよう指示しているが、
+  LLMが一部のfindingを判定し忘れることがある。その場合、当該findingは黙って欠落させず、
+  元の finding の priority/perspective から機械的に導出した既定値で **REJECT** として補完する
+  （reason は「Lead Engineerから判定が得られなかった」旨を明記）。これにより
+  `LeadEngineerReport.decisions` の件数は常に入力findingの総数と一致することが保証される。
 
 ---
 
 ## 6. システムプロンプト設計方針
 
-推測禁止（`Do NOT introduce new issues`, `do not speculate`）と技術非依存
-（特定技術名をプロンプト本文に含めない）を明示的に強制する。
+推測禁止（新規issueの追加禁止・憶測禁止）と技術非依存（特定技術名をプロンプト本文に
+含めない）を明示的に強制する。
 
 判断の3軸を明示:
 
@@ -159,7 +115,9 @@ LLM には番号（`finding_index`）のみ返させる。Agent コードがイ�
 2. **Impact**: 修正しない場合の影響
 3. **Priority**: PR の目標に対する緊急性
 
-すべての finding に対して決定を返すよう指示（`Every Finding MUST receive a decision`）。
+すべての finding に対して決定を返すよう指示する。`findingIndex` は必ずJSON数値として
+返させ、文字列（`"Finding #1"` 等）での応答を明示的に禁止する（構造化出力のバリデーション
+失敗を減らすため）。
 
 ---
 
@@ -167,7 +125,7 @@ LLM には番号（`finding_index`）のみ返させる。Agent コードがイ�
 
 ### 7.1 現在: チャット出力
 
-`LeadEngineerReport.to_markdown()` が Markdown 文字列を返す。フォーマット:
+`toMarkdown(report)` が Markdown 文字列を返す。フォーマット:
 
 ```markdown
 # Lead Engineer Review Report
@@ -180,7 +138,10 @@ LLM には番号（`finding_index`）のみ返させる。Agent コードがイ�
 ### 1. [CRITICAL] `src/App.tsx` L42
 **Reviewer**: react-technical (technical)
 **Finding**: ...
-**Impact**: ...
+**Severity**: ...
+**Impact category**: ...
+**Priority**: ...
+**Impact if not fixed**: ...
 **Decision rationale**: ...
 **Suggested fix**: ...
 
@@ -198,9 +159,9 @@ LLM には番号（`finding_index`）のみ返させる。Agent コードがイ�
 
 `LeadEngineerReport` を起点に以下の形式でコメントを生成する予定:
 
-- **PR レビューコメント（サマリー）**: `overall_summary` + accepted findings 一覧
-- **インラインコメント**: `accepted()` の各 `FindingDecision.finding.file_path` と
-  `finding.line` を使って差分の該当行にコメントを付ける
+- **PR レビューコメント（サマリー）**: `overallSummary` + accepted findings 一覧
+- **インラインコメント**: `acceptedDecisions()` の各 finding の `filePath` と `line` を
+  使って差分の該当行にコメントを付ける
 
 この拡張は `LeadEngineerReport` 自体を変更せず、別の出力フォーマッタ関数を追加するだけで対応できる。
 
@@ -215,38 +176,32 @@ LLM には番号（`finding_index`）のみ返させる。Agent コードがイ�
 
 ### 出力チャネルを追加する場合
 
-`LeadEngineerReport` に新しいメソッド（例: `to_github_comments()`）を追加する。既存の
-`to_markdown()` は変更不要。
+`LeadEngineerReport` を扱う新しいフォーマッタ関数（例: `toGithubComments()`）を追加する。
+既存の `toMarkdown()` は変更不要。
 
 ### Lead Engineer を複数のサブ Agent に分割する場合
 
-`LeadEngineerReport` の契約（`overall_summary`, `decisions`, `reviewer_errors`）は変えず、
+`LeadEngineerReport` の契約（`overallSummary`, `decisions`, `reviewerErrors`）は変えず、
 `LeadEngineerAgent.evaluate()` の内部実装のみ変更する。
 
 ---
 
 ## 8.1 structured_output が得られない場合のフェイルファスト
 
-strands は `Agent.__call__` の `limits={"turns": N}` を使い切った場合、例外を送出せず
-`AgentResult(stop_reason="limit_turns", structured_output=None)` を返す（例外が起きるのは
-「forced 呼び出し後もモデルがツールを一切呼ばなかった」場合のみ）。モデルがツール自体は呼ぶが
-引数の型を間違え続ける場合（例: `finding_index` を `"Finding #1"` のような文字列で返す）、
-バリデーションエラーのリトライで `max_agent_turns` を消費し尽くし、後者の経路（None を無例外で
-返す）に到達しうる。
+Agentランタイムは、強制ツール呼び出し（structured output）が一度も成功しないままターン数上限
+に達した場合、例外を送出せず出力が未定義のまま結果を返すことがある。`evaluate()` はこれを
+`result.structuredOutput === undefined` として明示チェックし、`StructuredOutputMissingError`
+を送出する。チェックを省くと未定義値への属性アクセスで原因不明のエラーになり、デバッグが
+困難になる（Python版での実例はIssue #88）。
 
-`LeadEngineerAgent.evaluate()` と `LLMReviewAgent.review()` はどちらも
-`result.structured_output is None` を明示チェックし、`StructuredOutputMissingError`
-（`agents/exceptions.py`）を送出する。チェックを省くと `output.decisions` 等への属性アクセスで
-`AttributeError: 'NoneType' object has no attribute ...` という原因不明のエラーになり、
-デバッグが困難になる（2026-07-04 の評価実行で実際に発生、詳細は Issue #88）。
-
-このチェックは事後対応であり、根本的なモデルの型ミス自体を減らすものではない。システムプロンプト
-（`_SYSTEM_PROMPT`）に `finding_index` は整数である旨の明示例を追加しているが、モデル
-（特に小規模なローカルモデル）が指示に従わずリトライを消費し尽くす可能性は残る。
+このチェックは事後対応であり、根本的なモデルの型ミス自体を減らすものではない。システム
+プロンプトに `findingIndex` は整数である旨の明示例を含めているが、モデル（特に小規模な
+ローカルモデル）が指示に従わずリトライを消費し尽くす可能性は残る。
 
 ## 9. 関連ドキュメント
 
 - 由来の記録: [docs/review-agent-workflow-spec.md](review-agent-workflow-spec.md)
 - 並列レビュー段設計: [docs/review-agents-design.md](review-agents-design.md)
+- finding欠落時の可視化設計: [docs/finding-location-silent-drop-spec.md](finding-location-silent-drop-spec.md)
 - 要件検証基準: [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md)
-- 実装プラン: [plan/lead-engineer-agent.md](../plan/lead-engineer-agent.md)
+- 実装プラン: [docs/plan/lead-engineer-agent.md](plan/lead-engineer-agent.md)

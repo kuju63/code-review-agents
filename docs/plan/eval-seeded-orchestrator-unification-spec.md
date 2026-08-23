@@ -21,7 +21,7 @@
 だった頃、`file_changes`をpr-info-collectorの応答に対して上書きする必要があったことに
 由来する。Issue #224でSeededのデータソースが専用リポジトリ
 (`kuju63/{react,vue,angular,svelte}-seeded`)上の実PRに移行し、この上書きロジックは
-既に削除された。[docs/eval-seeded-repo-based-generation-spec.md](eval-seeded-repo-based-generation-spec.md)
+既に削除された。[docs/eval-seeded-repo-based-generation-spec.md](../eval-seeded-repo-based-generation-spec.md)
 §6には、その時点で「`evaluate_gold_item()`と構造的に近くなるが、統合はしない」という
 判断が記録されていた。理由はただ一つ、EVALUATION_PLAN.md §4のRelease Gate要件
 （stack別ルーティング + fail-closed要件）を満たすため、クライアント側の明示的
@@ -101,7 +101,7 @@ Issue #237の「クライアント側ルーティング廃止」という設計�
 回帰テスト**として行い、`uv run pytest`がリリース前のゲートとなる。
 EVALUATION_PLAN.md §4のhard gate文言はこの検証方法に合わせて更新済み（旧
 「unsupported or missing stackを明示的に失敗させる」という評価実行時fail-closedの
-文言は撤回）。詳細は[evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md)
+文言は撤回）。詳細は[evaluation/EVALUATION_PLAN.md](../../evaluation/EVALUATION_PLAN.md)
 §4・§5を参照。
 
 ## 5. タイムアウト予算への影響
@@ -122,14 +122,15 @@ Seeded項目は従来、`pr-info-collector`/技術+security並列/`lead-engineer
 
 `evaluate_item()`統合前のコミット(spec baseline)に戻せば、`evaluate_gold_item`/
 `evaluate_seeded_item`の分離実装と対応するテストが復元される。ドキュメント変更
-(EVALUATION_PLAN.md §5、`eval-seeded-repo-based-generation-spec.md` §6/§9、
+(EVALUATION_PLAN.md §5、`eval-seeded-repo-based-generation-spec.md` §6、
+`docs/plan/eval-seeded-repo-based-generation-spec.md`のテスト方針、
 `seeded-reviewer-stack-routing-spec.md`のsuperseded注記、本ファイル)も同一コミットに
 含まれるため、単一のrevertで一貫した状態に戻る。
 
 ## 8. 関連ドキュメント
 
-- [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md) §4(Release Gate)・§5(評価パスの前提)
-- [docs/eval-seeded-repo-based-generation-spec.md](eval-seeded-repo-based-generation-spec.md) §6(判断の反転を記録)
+- [evaluation/EVALUATION_PLAN.md](../../evaluation/EVALUATION_PLAN.md) §4(Release Gate)・§5(評価パスの前提)
+- [docs/eval-seeded-repo-based-generation-spec.md](../eval-seeded-repo-based-generation-spec.md) §6(判断の反転を記録)
 - [docs/seeded-reviewer-stack-routing-spec.md](seeded-reviewer-stack-routing-spec.md)(§6/§8がsuperseded)
-- [docs/evaluation-pipeline-design.md](evaluation-pipeline-design.md)(シーケンス図・レビュアー選択の説明を更新)
-- [evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md) §4a(タイムアウト予算の注記)
+- [docs/evaluation-pipeline-design.md](../evaluation-pipeline-design.md)(シーケンス図・レビュアー選択の説明を更新)
+- [evaluation/RUNBOOK.md](../../evaluation/RUNBOOK.md) §4a(タイムアウト予算の注記)

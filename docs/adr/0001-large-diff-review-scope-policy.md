@@ -9,7 +9,7 @@
 > としての引用であり、[evaluation/RUNBOOK.md](../../evaluation/RUNBOOK.md)の手順を
 > 実行すれば同名ファイルを再生成できる。同様の引用パターンは
 > [docs/granite-structured-output-failure-spec.md](../granite-structured-output-failure-spec.md)
-> や [docs/eval-concurrent-log-attribution-fix-spec.md](../eval-concurrent-log-attribution-fix-spec.md)
+> や [docs/plan/eval-concurrent-log-attribution-fix-spec.md](../plan/eval-concurrent-log-attribution-fix-spec.md)
 > でも既に使われている。
 
 ## Context

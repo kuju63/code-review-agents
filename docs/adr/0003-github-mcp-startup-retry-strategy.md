@@ -2,7 +2,7 @@
 
 - Status: Proposed(未実装・レビュー待ち)
 - Date: 2026-07-12
-- Related: Issue #115, [docs/review-orchestrator-infra-exception-propagation-spec.md](../review-orchestrator-infra-exception-propagation-spec.md), [docs/github-mcp-streamable-http-migration-spec.md](../github-mcp-streamable-http-migration-spec.md)
+- Related: Issue #115, [docs/review-orchestrator-infra-exception-propagation-spec.md](../plan/review-orchestrator-infra-exception-propagation-spec.md), [docs/github-mcp-streamable-http-migration-spec.md](../plan/github-mcp-streamable-http-migration-spec.md)
 
 ## Context
 

@@ -45,7 +45,7 @@ LangFlow/Difyへ移行する場合、各AgentのA2Aレスポンスを「メッ�
 
 | 観点 | メッセージベース(自由記述テキストを主とする) | 構造化出力(現状: Pydanticスキーマ検証済み) |
 |---|---|---|
-| 系統Aとの関係 | 収束先の制約(`structured_output_model`)自体を外すため、「スキーマに収束できず`StructuredOutputMissingError`」という失敗モードは原理的に消える。ただし変換責務が消えるわけではなく、後続ノード(LeadEngineer相当)側でのパース失敗に**移動するだけ**の可能性が高い(`docs/granite-structured-output-failure-spec.md` §5と同型のモグラたたきが再演しうる) | 現状の実装。収束失敗が`StructuredOutputMissingError`として起きうる(系統Aの直接原因)。ADR-0001の対策は入力側を縮小することでこの収束確率を上げるアプローチ |
+| 系統Aとの関係 | 収束先の制約(`structured_output_model`)自体を外すため、「スキーマに収束できず`StructuredOutputMissingError`」という失敗モードは原理的に消える。ただし変換責務が消えるわけではなく、後続ノード(LeadEngineer相当)側でのパース失敗に**移動するだけ**の可能性が高い(`docs/plan/granite-structured-output-failure-spec.md`の検証結果と同型のモグラたたきが再演しうる) | 現状の実装。収束失敗が`StructuredOutputMissingError`として起きうる(系統Aの直接原因)。ADR-0001の対策は入力側を縮小することでこの収束確率を上げるアプローチ |
 | LangFlow/Difyとの親和性 | 両ツールともノード間の既定の受け渡し単位は「Message」型であり、チャットUI的な確認・デバッグがしやすい。プロンプトエンジニアリングだけでフロー変更が完結する | JSON Schemaをテキストとして流し、後続ノードでパースするカスタムコードノードが別途必要になり、フロー定義側の複雑度が増す。ただし両ツールとも「Structured Output」相当のノード/機能を持ち、構造化のまま渡すこと自体は両ツールのサポート範囲内 |
 | 評価パイプラインとの整合性 | `score_evaluation.py::to_findings()`が読む`agent_predictions.jsonl`のキー(`path`/`line`/`category`等、`evaluation/EVALUATION_PLAN.md` §3.1 Matching rule)を前提にしており、自由記述テキストからの再パース層が新たに必要になる。評価の再現性・決定性が低下するリスクがある | 現状のまま評価パイプラインと直結。追加実装不要 |
 | 型安全性・契約の所在 | 検証責務がLangFlow/Dify側のプロンプト設計や追加のFunctionノードに分散する。契約は自然言語プロンプトでしか表現できず、`AgentCard.outputSchema`(`docs/a2a-api-design.md` §4)が採用した「自己完結JSON Schema」という既存の設計判断と矛盾する | 契約は`model_json_schema()`で自己完結し、`AgentCard`にそのまま埋め込める。既存の設計審査(§4冒頭の選択肢比較表、却下案B「非自己完結な`#/components`参照」)がこの理由で構造化出力を選んだ経緯と一貫する |
