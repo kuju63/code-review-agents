@@ -491,9 +491,16 @@ Strands非依存の実行環境を具体的に要求する時点まで見送る�
    併せて互換性契約の主体とする）を先に固定する。論点3の決定により`ReviewerClass`
    も`ReviewerMetadata`と並ぶ安定した公開契約に含まれるため、型定義を現状の
    `agents/base-reviewer.ts`から`models/`配下のdomain契約へ移設し、`.`
-   （`models/index.ts`のre-export）経由で公開する。import pathは
-   `@code-review-agent/agent-core`のルートエントリのまま維持し、後述する
-   `agents/base-reviewer.js`（実装側の移行対象entry）の削除可否とは独立させる。
+   （`models/index.ts`のre-export）経由で公開する。移設にあたり、`ReviewerClass`
+   の構築契約（`new (config: ReviewerConfig): T`）がdomain外へ逆依存しないよう、
+   `ReviewerConfig`のうちprovider選択に関わるフィールド（`providerType`等、現状
+   `agents/model-provider-factory.ts`の`ProviderType`に依存）は合意事項1/5で定
+   義した`ModelProvider` Portの抽象化対象としdomain側の契約には含めない（合意事
+   項2のStrands隔離原則を維持するため）。`ReviewerConfig`各フィールドの具体的な
+   移行先・型定義の詳細設計はADRの決定粒度を超えるため、DoD項目9に基づき別途
+   Sub-Issueで扱う。import pathは`@code-review-agent/agent-core`のルートエント
+   リのまま維持し、後述する`agents/base-reviewer.js`（実装側の移行対象entry）の
+   削除可否とは独立させる。
    残る公開エントリは性質により3種に区分して扱う。`agents/target-file.js`
    （`isTargetFile`は特定reviewerに紐付かない汎用utilityでありuse-case化の対象
    外）は恒久的に公開を維持する。移行対象エントリ（`agents/pr-info-collector.js`,
@@ -506,12 +513,19 @@ Strands非依存の実行環境を具体的に要求する時点まで見送る�
    `reviewers/*.service.ts`各サービス）は許可リストとして明示するが、削除は
    Stage4（`ReviewPipeline` Port導入）完了時点でこれらを一括削除するのではなく、
    エントリごとに最後の許可コンシューマの移行が完了した時点で個別に
-   `@deprecated`注記を経て`exports`から削除する。
+   `@deprecated`注記を経て`exports`から削除する。CI強制の具体的な実装方式（PR
+   差分ベースのimport specifier単位検査、allowlist解除条件、移行完了判定基準
+   等）はADRの決定粒度を超えるため、DoD項目9に基づき別途Sub-Issueで扱う。
    残る2エントリは、対応する許可コンシューマが利用し続ける限り維持する恒常的な
    安定entryとする。`agents/model-provider-factory.js`は`evaluation`パッケージ
    の`score-evaluation.ts`がLLM-as-judgeスコアリング用途（レビューpipelineでは
-   ない）で直接利用するため本移行の対象外とし、`score-evaluation.ts`がこの
-   entryを利用し続ける間`exports`に維持する。新設する`agents/bootstrap.js`
+   ない）で直接利用するため本移行の対象外とする。合意事項4の「`evaluation`の既
+   存評価CLI群はA2A HTTP API経由のみ」という制約は、レビュー実行を要求する呼び
+   出し経路を対象としたものであり、生成済み予測に対する事後スコアリングである
+   `score-evaluation.ts`はその対象外として扱う。許容するStrands依存範囲は
+   `createModelProvider`/`ProviderType`によるモデル呼び出しのみとし、
+   `ReviewPipeline`やreviewer実装群への依存は含めない。`score-evaluation.ts`が
+   このentryを利用し続ける間`exports`に維持する。新設する`agents/bootstrap.js`
    （組込reviewerクラス群への参照のみを持つ、`registerReviewer()`自己登録廃止後
    の明示登録専用エントリ）は、composition root（`a2a-server/src/index.ts`）が
    合意事項3に基づき組込reviewerを`ReviewerRegistry`へ明示`register()`するため
