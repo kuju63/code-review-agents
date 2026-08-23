@@ -77,15 +77,7 @@ pytestの`--cov-fail-under=75`(CI引数側で指定)と役割を揃える必要�
 
 ## 3. Nix flakeに関する運用上の注意（重要）
 
-Nix flakeは**gitの管理下にないファイルを評価対象外として無視する**。`flake.nix`を新規作成した直後に`nix flake check`や`nix develop`を実行しても、`git add`されていなければ評価に反映されない（最悪、ファイルごと存在しないものとして扱われる）。
-
-運用手順:
-
-1. `flake.nix`（+初回`nix flake lock`で生成される`flake.lock`）を書く
-2. 直ちに`git add flake.nix flake.lock`する（コミットまでは不要だが、addは必須）
-3. `nix flake check`で評価が通ることを確認
-4. `nix develop`でdevShellに入り、`node -v` / `pnpm -v`等が期待通りであることを確認
-5. 以降、`flake.nix`を変更するたびに 2〜4 を繰り返す
+Nix flakeは**gitの管理下にないファイルを評価対象外として無視する**。`flake.nix`を新規作成した直後に`nix flake check`や`nix develop`を実行しても、`git add`されていなければ評価に反映されない（最悪、ファイルごと存在しないものとして扱われる）。運用手順は[docs/plan/typescript-toolchain-spec.md](plan/typescript-toolchain-spec.md)を参照。
 
 ## 4. コンテナビルド方針
 
@@ -126,17 +118,9 @@ Nix flakeは**gitの管理下にないファイルを評価対象外として無
 
 ### (a) OpenAI互換 `base_url` 指定
 
-`@strands-agents/sdk/models/openai`の`OpenAIModel`が`clientConfig: { baseURL }`を受け付ける。Python版`client_args={"base_url": llm_base_url}`と対応する。
-
-```typescript
-new OpenAIModel({
-  api: "chat", // Python版はChat Completions相当。デフォルトはResponses APIなので明示指定が必要
-  modelId: "gpt-oss-120b",
-  clientConfig: { baseURL: "http://localhost:11434/v1" },
-});
-```
-
-**成立**。`api: "chat"`を明示しないとデフォルトのResponses APIになり、OpenAI互換サーバー(vLLM/Ollamaの`/v1`エンドポイント等)の多くが未対応のため、#252実装時にこの明示指定を引き継ぐ必要がある。
+`@strands-agents/sdk/models/openai`の`OpenAIModel`が`clientConfig: { baseURL }`を受け付ける。Python版`client_args={"base_url": llm_base_url}`と対応する。**成立**を確認済み。ただし`api: "chat"`を
+明示しないとデフォルトのResponses APIになり、OpenAI互換サーバー(vLLM/Ollamaの`/v1`エンドポイント等)の
+多くが未対応のため、#252実装時にこの明示指定を引き継ぐ必要がある。
 
 ### (b) VercelModel + ai-sdk-ollama経由でのOllama
 
@@ -144,16 +128,9 @@ new OpenAIModel({
 
 - `@strands-agents/sdk@1.12.0`(2026-08-10時点の最新)は`VercelModel`の`provider`に`@ai-sdk/provider@^3.0.0`ベースの`LanguageModelV3`を要求する(`peerDependencies`で明記)。
 - `ai-sdk-ollama`の最新版(`4.1.0`)は`ai@^7.0.31`(`@ai-sdk/provider` V4世代、`LanguageModelV4`)に追従済みで、`VercelModel`に渡すと型エラーになる(`Type 'LanguageModelV4' is not assignable to type 'LanguageModelV3'`)。
-- `ai-sdk-ollama@3.8.x`系(`peerDependencies: { ai: "^6.0.197" }`, `@ai-sdk/provider@^3.0.10`)まで下げると`@strands-agents/sdk`の要求と一致し、型チェック・構築ともに成功する。
-
-```typescript
-import { VercelModel } from "@strands-agents/sdk/models/vercel";
-import { createOllama } from "ai-sdk-ollama"; // ★ "ai-sdk-ollama": "3.8.x" に固定する
-
-// host(baseURL)はプロバイダ側の設定であり、モデル呼び出し側の第2引数では指定できない
-const ollamaProvider = createOllama({ baseURL: "http://localhost:11434" });
-const model = new VercelModel({ provider: ollamaProvider("gpt-oss-120b") });
-```
+- `ai-sdk-ollama@3.8.x`系(`peerDependencies: { ai: "^6.0.197" }`, `@ai-sdk/provider@^3.0.10`)まで下げると`@strands-agents/sdk`の要求と一致し、型チェック・構築ともに成功する。`ai-sdk-ollama`が公開する
+  プロバイダファクトリにホスト(`baseURL`)を渡し、そのプロバイダから得たモデルを`VercelModel`に渡す
+  構成が成立する（hostはプロバイダ側の設定であり、モデル呼び出し側では指定できない点に注意）。
 
 **#252スコープへの影響**: `ai-sdk-ollama`の依存を`3.8.x`にピン留めする(Renovate等の自動更新が`4.x`へ上げないよう除外設定が必要)。`@strands-agents/sdk`側が将来`@ai-sdk/provider` V4に対応した時点でピン留めを解除できるか再確認する。この制約は#252着手時に`packages/agent-core/package.json`へ引き継ぐ。
 
@@ -163,13 +140,8 @@ const model = new VercelModel({ provider: ollamaProvider("gpt-oss-120b") });
 
 ## 6. Stacked PR運用（`gh` + `gh-stack`）
 
-Epic全体(#249〜#255)を直列のStacked PRとして進めるにあたり、`gh`(GitHub CLI)と拡張機能[`gh-stack`](https://github.com/github/gh-stack)をNix devShell経由で提供する。手動での`git switch -c` + `gh pr create --base <直前のブランチ>` + マージ後の`gh pr edit --base main`付け替えは、ブランチ数が増えるほど付け替え忘れのリスクが高くなるため、`gh-stack`のスタック管理コマンド（`push` / `submit` / `sync` / `rebase` / `up` / `down` / `top` / `bottom`等）に置き換える。
-
-- `flake.nix`の`devShells.default.packages`に`gh`を追加済み（`nix develop`で`gh`が使用可能）。
-- `gh-stack`拡張はNixパッケージではなく`gh`のプラグイン機構で管理されるため`packages`には含められないが、**全員が同一の環境になるよう`shellHook`で自動インストールする**。`gh extension list`で未導入の場合のみ`gh extension install github/gh-stack --pin v0.1.0`を実行し(リリースタグに固定、暗黙のアップグレードでpinをすり抜けない)、導入済みの場合はバージョン表示のみで再インストールは行わない(`gh extension install`はデフォルトでは導入済みだと失敗するため、事前チェックで分岐させている)。手動でのインストール手順を案内する必要はなく、`nix develop`するだけで`gh stack`コマンドが使えるようになる。拡張自体を更新する場合は`gh extension upgrade stack`を使い、`--pin`のタグをこのドキュメントとflake.nixの両方で更新する。
-- 各Sub-Issueのブランチ作成・PR作成・親ブランチへのリベース/追従は`gh stack`コマンド経由で行う。詳細な運用（コミット粒度・PRタイトル規約等）は#251着手時に確定させる。
+Epic全体(#249〜#255)を直列のStacked PRとして進めるにあたり、`gh`(GitHub CLI)と拡張機能[`gh-stack`](https://github.com/github/gh-stack)をNix devShell経由で提供する。手動での`git switch -c` + `gh pr create --base <直前のブランチ>` + マージ後の`gh pr edit --base main`付け替えは、ブランチ数が増えるほど付け替え忘れのリスクが高くなるため、`gh-stack`のスタック管理コマンド（`push` / `submit` / `sync` / `rebase` / `up` / `down` / `top` / `bottom`等）に置き換える。導入手順は[docs/plan/typescript-toolchain-spec.md](plan/typescript-toolchain-spec.md)を参照。各Sub-Issueのブランチ作成・PR作成・親ブランチへのリベース/追従は`gh stack`コマンド経由で行う。
 
 ## 7. #251以降への申し送り
 
-- 次のSub-Issueは[#251](https://github.com/kuju63/code-review-agents/issues/251)（models/ → TS型 + Zod）。ブランチは本Sub-Issueのブランチ(`feat/ts-migration/250-toolchain`)から分岐する。
-- モデル配置先: `packages/agent-core/src/models/`（本ドキュメント§2.1の決定に従う）。
+導入直後の引き継ぎメモは[docs/plan/typescript-toolchain-spec.md](plan/typescript-toolchain-spec.md)を参照（#249〜#255は完了済みのため、以降のTS移行タスクの前提として読む場合のみ有効）。モデル配置先の決定（`packages/agent-core/src/models/`）自体は本ドキュメント§2.1に記録されている。

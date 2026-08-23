@@ -139,10 +139,10 @@ python evaluation/tools/verify_pr_collector_repeated.py --runs 1
 
 ## 5. 関連ドキュメント
 
-- [`pr-info-collector-tooluse-fix-spec.md`](pr-info-collector-tooluse-fix-spec.md) — `create_github_mcp_client` /
+- [`pr-info-collector-tooluse-fix-spec.md`](../pr-info-collector-tooluse-fix-spec.md) — `create_github_mcp_client` /
   `MCPClient.call_tool_sync` を使った決定論的な GitHub MCP 呼び出しパターン（`pr_info_collector.py` 側の
   呼び出し元）を記述
-- [`review-agents-design.md`](review-agents-design.md) — レビューエージェント側（`base_reviewer.py`）が
+- [`review-agents-design.md`](../review-agents-design.md) — レビューエージェント側（`base_reviewer.py`）が
   `create_github_mcp_client` を `Agent` のツールとして渡す呼び出しパターンを記述
 - [`review-orchestrator-infra-exception-propagation-spec.md`](review-orchestrator-infra-exception-propagation-spec.md) —
   GitHub MCP 接続確立失敗時に送出される `MCPClientInitializationError` の扱いを記述。本ドキュメントの

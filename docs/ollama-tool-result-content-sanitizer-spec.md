@@ -1,5 +1,14 @@
 # Ollamaバックエンドが処理できないツール結果コンテンツ型の除去 設計ドキュメント
 
+> TS版実装: `packages/agent-core/src/tools/tool-result-sanitizer.ts`。設計思想（対象イベント・
+> フェイルセーフな置換・型一覧の運用方針）はそのまま踏襲しているが、配線方式は異なる。
+> Python版のAgentは`hooks=[...]`のコンストラクタ引数でHookProviderを直接渡せたのに対し、
+> TS版のAgent設定にはhooksフィールドが無いため、このサニタイザーはPluginとして実装し、
+> Agent初期化時に自分自身でフックを登録する形を取る（詳細は
+> [docs/typescript-agents-tools-migration-spec.md](typescript-agents-tools-migration-spec.md) §2.4）。
+> テスト方針・検証手順は
+> [docs/plan/ollama-tool-result-content-sanitizer-spec.md](plan/ollama-tool-result-content-sanitizer-spec.md)。
+
 Seeded評価(`angular-seeded#10`, `#22`)で `TypeError: content_type=<document> | unsupported type` によりレビュー全体が失敗する不具合への対応。個別ツールの特定モードを潰す場当たり的な対応ではなく、どのツール(既存の`file_read`・GitHub MCP・将来追加される任意のMCP)が原因でも一律に効く汎用の防御機構を導入する。
 
 ---
@@ -76,82 +85,23 @@ sequenceDiagram
 
 ### 3.3 実装
 
-新規ファイル `src/code_review_agent/tools/tool_result_sanitizer.py`(`github_mcp.py`と同じ「ツール周りのインフラ」という位置づけで`tools/`配下に置く)。
+`OllamaUnsupportedContentSanitizer`という名前のコンポーネントを、ツール周りのインフラと同じ
+位置づけで配置する。非対応と確認済みのコンテンツ型の一覧を定数として持ち、`AfterToolCallEvent`
+発火時にツール結果の各コンテンツブロックをこの一覧と照合する。該当するブロックが1つでもあれば、
+そのブロックだけを「非対応コンテンツ型を省略した」旨のテキストプレースホルダに置換し、
+WARNINGログでツール名と省略した型を通知する。該当ブロックがなければ何もしない
+（変更なし・ログなし）。
 
-```python
-import logging
+現時点で確認済みの非対応コンテンツ型は`document`のみ。将来SDK側が対応した場合は不要になるが、
+対応可否は都度ソースで確認してこの一覧を更新する方針であり、未検証の型を憶測で先回りして
+追加することはしない。
 
-from strands.hooks import HookProvider, HookRegistry
-from strands.hooks.events import AfterToolCallEvent
-from strands.types.tools import ToolResultContent
+### 3.4 レビュアーへの配線
 
-logger = logging.getLogger(__name__)
-
-# 現時点で Ollama backend (OllamaModel._format_request_message_contents) が
-# ToolResultContent 側で処理できないと確認済みのキー。
-# 将来 strands 側が対応した場合は不要になるが、対応可否は都度ソースで確認して
-# ここを更新する方針(未検証のキーを憶測で足さない)。
-_OLLAMA_UNSUPPORTED_CONTENT_KEYS = frozenset({"document"})
-
-
-class OllamaUnsupportedContentSanitizer(HookProvider):
-    """Strip ToolResultContent blocks the active Ollama backend cannot serialize.
-
-    Hooks ``AfterToolCallEvent``, which fires for every tool call regardless
-    of which tool produced the result, so no per-tool special-casing is
-    needed when new MCP integrations are added later (see
-    docs/ollama-tool-result-content-sanitizer-spec.md).
-    """
-
-    def register_hooks(self, registry: HookRegistry, **kwargs) -> None:
-        registry.add_callback(AfterToolCallEvent, self._sanitize)
-
-    def _sanitize(self, event: AfterToolCallEvent) -> None:
-        content = event.result.get("content")
-        if not content:
-            return
-
-        sanitized: list[ToolResultContent] = []
-        changed = False
-        for block in content:
-            unsupported = _OLLAMA_UNSUPPORTED_CONTENT_KEYS.intersection(block)
-            if unsupported:
-                changed = True
-                logger.warning(
-                    "Stripping unsupported content type(s) %s from tool "
-                    "'%s' result (Ollama backend cannot serialize them)",
-                    sorted(unsupported),
-                    event.tool_use.get("name"),
-                )
-                sanitized.append(
-                    {"text": f"[omitted: unsupported content type {sorted(unsupported)}]"}
-                )
-            else:
-                sanitized.append(block)
-
-        if changed:
-            event.result["content"] = sanitized
-```
-
-### 3.4 `base_reviewer.py`での配線
-
-`LLMReviewAgent.review()`の`Agent(...)`構築箇所(`base_reviewer.py:314-319`)で、`provider_type == ProviderType.OLLAMA`のときだけhooksを渡す。OpenAI経路は`document`を正しく処理できることを確認済みのため変更しない。
-
-```python
-hooks: list = []
-if self._config.provider_type == ProviderType.OLLAMA:
-    hooks.append(OllamaUnsupportedContentSanitizer())
-
-agent = Agent(
-    model=model,
-    system_prompt=compose_system_prompt(self.system_prompt),
-    tools=tools,
-    plugins=plugins,
-    hooks=hooks,
-)
-```
-
-`pr_info_collector.py`・`lead_engineer.py`は`tools=[]`でツールを一切使わないため、この経路で`document`ブロックが混入することは原理的になく、変更不要。
+`providerType`がOllamaのときだけ、レビュアーが構築するAgentにこのサニタイザーを渡す。
+OpenAI経路は`document`を正しく処理できることを確認済みのため変更しない。位置情報を持たない
+`PRInfoCollector`・`LeadEngineerAgent`はツールを一切使わないため、この経路で`document`ブロックが
+混入することは原理的になく、変更不要。
 
 ### 3.5 設定フラグは追加しない
 
@@ -167,32 +117,7 @@ agent = Agent(
 
 ---
 
-## 5. テスト方針(TDD)
-
-1. `OllamaUnsupportedContentSanitizer`単体テスト(`tests/tools/test_tool_result_sanitizer.py`):
-   - `document`キーを含む`ToolResultContent`がtextプレースホルダに置換されること
-   - `document`を含まない結果は変更されないこと
-   - 複数ブロック中の一部だけが`document`の場合、該当ブロックのみ置換されること
-   - warningログが出ること(`caplog`で検証)
-2. `base_reviewer.py`側(`tests/agents/test_base_reviewer.py`):
-   - `provider_type=ProviderType.OLLAMA`のとき`Agent(...)`呼び出しに`hooks`が渡ること
-   - `provider_type=ProviderType.OPENAI`のとき`hooks`が渡らない(または空)こと
-
----
-
-## 6. 検証手順
-
-```bash
-uv run pytest tests/tools/test_tool_result_sanitizer.py tests/agents/test_base_reviewer.py
-uv run ruff check
-uv run ruff format --check
-```
-
-`mode="document"`を選ぶかどうか自体がモデルの非決定的な判断に依存するため、評価パイプラインの単発再実行で「発生しなかった」ことは無罪証明にならない。単体テストでの担保を主とし、評価パイプラインでの再現待ちはしない。
-
----
-
-## 7. 関連ドキュメント
+## 5. 関連ドキュメント
 
 - [MCP接続の安定化 設計ドキュメント (Issue #115)](mcp-connection-stabilization-spec.md) — 同じくGitHub MCP周りの信頼性向上を扱うが、対象は接続断・起動リトライであり本ドキュメントの対象(コンテンツ型の非互換)とは独立
 - [ModelProviderFactory によるOllamaネイティブ対応 設計ドキュメント (Issue #214)](model-provider-factory-spec.md) — `ProviderType`/`create_model_provider`の設計根拠

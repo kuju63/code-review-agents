@@ -187,8 +187,8 @@ Gold・Seeded項目とも`/orchestrator`経由で評価され、`ReviewOrchestra
 自動検出に一本化された。ただし`detect_project_types`は`svelte-seeded#8`・`#9`、
 `vue-seeded#16`・`#20`の4件を`ReactReviewer`に誤ルーティングする既知の制限があり、
 [Issue #238](https://github.com/kuju63/code-review-agents/issues/238)で追跡中。詳細は
-[Seeded評価のスタック別レビュアールーティング仕様](seeded-reviewer-stack-routing-spec.md)(supersededの記録)、
-[docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md)を参照。
+[Seeded評価のスタック別レビュアールーティング仕様](plan/seeded-reviewer-stack-routing-spec.md)(supersededの記録)、
+[docs/plan/eval-seeded-orchestrator-unification-spec.md](plan/eval-seeded-orchestrator-unification-spec.md)を参照。
 
 ### なぜ既定を2並列にするか
 
@@ -225,8 +225,9 @@ Gold・Seeded問わず常に行われる。両者は互いの結果に依存し�
 ## 7. 関連ドキュメント
 
 - [docs/goldset-per-stack-spec.md](goldset-per-stack-spec.md) — スタック別ターゲット選定の仕様
-- [docs/seeded-reviewer-stack-routing-spec.md](seeded-reviewer-stack-routing-spec.md) — Seeded評価のスタック別レビュアールーティング仕様(一部superseded)
-- [docs/eval-seeded-orchestrator-unification-spec.md](eval-seeded-orchestrator-unification-spec.md) — Seeded評価を`/orchestrator`単一呼び出しへ統合した仕様
+- [docs/eval-seeded-repo-based-generation-spec.md](eval-seeded-repo-based-generation-spec.md) — Seeded set生成の現行設計
+- [docs/plan/seeded-reviewer-stack-routing-spec.md](plan/seeded-reviewer-stack-routing-spec.md) — Seeded評価のスタック別レビュアールーティング仕様(一部superseded、歴史的記録)
+- [docs/plan/eval-seeded-orchestrator-unification-spec.md](plan/eval-seeded-orchestrator-unification-spec.md) — Seeded評価を`/orchestrator`単一呼び出しへ統合した経緯(歴史的記録)
 - [docs/adr/0005-per-stack-evaluation-target-pipeline.md](adr/0005-per-stack-evaluation-target-pipeline.md) — 正規経路化の設計判断
 - [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md) — 何を測るか・合否基準・データセット戦略
 - [evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md) — 評価実行の具体的な手順

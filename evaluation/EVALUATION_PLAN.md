@@ -161,7 +161,7 @@ This replaces the earlier mutation-injection approach (splicing synthetic
 defects into Gold PR diffs after the fact via an earlier revision of
 `build-seeded-set`), which could not guarantee the
 injected code was reachable or contextually coherent -- see
-[docs/eval-seeded-mutation-injection-design.md](../docs/eval-seeded-mutation-injection-design.md)
+[docs/plan/eval-seeded-mutation-injection-design.md](../docs/plan/eval-seeded-mutation-injection-design.md)
 (now superseded) for that approach's history, and
 [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)
 for the current design. Reachability and contextual coherence are not
@@ -370,10 +370,10 @@ pr-info-collectorが返す `file_changes` をそのまま使い、mutation注入
 行わない（Issue #224、
 [docs/eval-seeded-repo-based-generation-spec.md](../docs/eval-seeded-repo-based-generation-spec.md)）。
 以前はSeeded項目の`stack`ラベルに応じてクライアント側が技術レビュアーを明示的に選択していたが
-（[docs/seeded-reviewer-stack-routing-spec.md](../docs/seeded-reviewer-stack-routing-spec.md)、
+（[docs/plan/seeded-reviewer-stack-routing-spec.md](../docs/plan/seeded-reviewer-stack-routing-spec.md)、
 Issue #181）、Issue #237でこの明示ルーティングは廃止し、Gold同様`detect_project_types`による
 自動検出に一本化した。詳細は
-[docs/eval-seeded-orchestrator-unification-spec.md](../docs/eval-seeded-orchestrator-unification-spec.md)
+[docs/plan/eval-seeded-orchestrator-unification-spec.md](../docs/plan/eval-seeded-orchestrator-unification-spec.md)
 を参照。
 PR の diff が閾値（`CODE_REVIEW_PATCH_TOTAL_CHAR_LIMIT` chars・`CODE_REVIEW_PATCH_MAX_FILES` ファイル、
 デフォルト 30,000 chars・30 ファイル）以内の場合、両評価パスのレビュアーは

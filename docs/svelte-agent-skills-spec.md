@@ -17,36 +17,12 @@ The change has three goals:
    no findings, so the downstream Lead Engineer agent is not fed irrelevant
    Svelte-specific input.
 
-## 2. Operating Constraints
+Implementation plan (operating constraints, TDD cycle): [docs/plan/svelte-agent-skills-spec.md](plan/svelte-agent-skills-spec.md).
 
-All implementation work for this feature happens in a dedicated Git worktree
-under `.claude/worktrees/`.
+## 2. Current State
 
-Documentation is written and committed before implementation starts. Commits are
-split at logical rollback points:
-
-1. Spec baseline plus vendored skill.
-2. Empty implementation stubs plus Red tests.
-3. Minimal Green implementation.
-4. Refactor plus final validation.
-
-The TDD cycle for this feature uses an empty implementation before running the
-Red tests. The required order is:
-
-1. Create empty implementation stubs.
-2. Add tests that describe the intended behavior.
-3. Run tests and confirm they fail against the stubs.
-4. Implement the minimum behavior to pass.
-5. Run tests and confirm Green.
-6. Refactor while preserving behavior.
-7. Re-run validation.
-
-Any new or updated Python docstring must use Google Style. No other docstring
-format is permitted.
-
-## 3. Current State
-
-The parallel review stage has `FrontendReviewer` (React/TypeScript technical),
+The parallel review stage has `ReactReviewer` (React/TypeScript technical, renamed
+from `FrontendReviewer` — see [docs/plan/seeded-reviewer-stack-routing-spec.md](plan/seeded-reviewer-stack-routing-spec.md) §5),
 `AngularReviewer` (Angular technical), and `SecurityReviewer` (cross-cutting web
 security). Project-type detection classifies TypeScript/JavaScript changes or
 `package.json` as `ProjectType.REACT_TS`, with Angular taking priority when
@@ -55,9 +31,9 @@ security). Project-type detection classifies TypeScript/JavaScript changes or
 Svelte projects also use TypeScript and `package.json`, so without a dedicated
 detection branch a Svelte PR would be misrouted to the React/TypeScript reviewer.
 
-## 4. Target Behavior
+## 3. Target Behavior
 
-### 4.1 Svelte Skill Bundle
+### 3.1 Svelte Skill Bundle
 
 A new `AgentSkillType.SVELTE_REVIEW` resolves the following skills:
 
@@ -69,7 +45,7 @@ A new `AgentSkillType.SVELTE_REVIEW` resolves the following skills:
 This mirrors the Angular bundle structure, pairing the project's generic
 frontend and language review skills with the framework-specific official skill.
 
-### 4.2 Svelte Project Type and Reviewer
+### 3.2 Svelte Project Type and Reviewer
 
 Svelte is represented as a separate project type:
 
@@ -78,7 +54,7 @@ Svelte is represented as a separate project type:
 A new `SvelteReviewer` is registered for `ProjectType.SVELTE` with the technical
 perspective and the `SVELTE_REVIEW` skill bundle.
 
-### 4.3 Svelte Detection
+### 3.3 Svelte Detection
 
 Svelte detection runs after Angular and before the coarse React/TypeScript
 heuristic. A PR is classified as Svelte when either signal is present:
@@ -92,7 +68,7 @@ TypeScript/JavaScript or `package.json` heuristic. This avoids routing Svelte
 PRs through React-specific technical review. Angular retains priority over Svelte
 in the rare event that both signal sets are present.
 
-### 4.4 Non-Svelte Guard
+### 3.4 Non-Svelte Guard
 
 The Svelte reviewer must produce no findings when the target PR is not a Svelte
 project. `SvelteReviewer.review()` re-detects the project type from the PR
@@ -103,18 +79,18 @@ This guard lives in the reviewer (not only in orchestrator selection) so the
 guarantee holds even when the reviewer is invoked directly through its A2A
 endpoint, where orchestrator-level project-type selection does not apply.
 
-### 4.5 Security Reviewer Coverage
+### 3.5 Security Reviewer Coverage
 
 The existing security reviewer also applies to `ProjectType.SVELTE` because web
 security review is framework-cross-cutting.
 
-### 4.6 Dependency File Recognition
+### 3.6 Dependency File Recognition
 
 The PR Info Collector treats `svelte.config.js` and `svelte.config.ts` as
 dependency files so repository-level Svelte configuration is available to the
 detector and reviewers.
 
-## 5. Vendored Skill Source
+## 4. Vendored Skill Source
 
 The upstream skill is vendored with source and license attribution:
 
@@ -128,38 +104,9 @@ available, but the top-level `SKILL.md` is adapted for review usage so
 code-generation-oriented phrasing does not become runtime instructions for the
 review agent.
 
-## 6. Tests
+Test plan and validation commands: [docs/plan/svelte-agent-skills-spec.md](plan/svelte-agent-skills-spec.md).
 
-The feature is verified by unit tests covering these behaviors:
-
-1. `AgentSkillType.SVELTE_REVIEW` resolves four skills including
-   `svelte-core-bestpractices`.
-2. The vendored Svelte references are available on disk.
-3. The vendored `SKILL.md` is adapted for review.
-4. `ProjectType.SVELTE` exists and serializes as `"svelte"`.
-5. `detect_project_types()` returns Svelte for a `.svelte` file change.
-6. `detect_project_types()` returns Svelte for a `svelte.config.js`/`.ts` signal.
-7. Svelte detection suppresses coarse React/TypeScript detection.
-8. Angular detection retains priority over Svelte.
-9. `SvelteReviewer` is registered and selected for `ProjectType.SVELTE`.
-10. `SecurityReviewer` is selected for `ProjectType.SVELTE`.
-11. `SvelteReviewer.review()` returns an empty result without invoking the LLM
-    for a non-Svelte PR.
-12. `PRInfoCollector` treats `svelte.config.js`/`.ts` as dependency files.
-
-## 7. Validation
-
-Final validation runs:
-
-```bash
-uv run pytest
-uv run ruff check
-uv run ruff format --check
-```
-
-Coverage must remain at or above 75% for the final quality gate.
-
-## 8. Future Change Points
+## 5. Future Change Points
 
 The Svelte detector relies on file names and configuration path signals because
 dependency file contents are not part of `PRInfoResult`. A future enhancement may

@@ -1,5 +1,9 @@
 # レビュー知識(Agent Skills)提供方式の比較検討
 
+> 本文中のファイルパスはPython実装時点(`src/code_review_agent/skills/agent_skills_factory.py`)の
+> ものである。TS移行後の現行実装は`packages/agent-core/src/skills/agent-skills-factory.ts`。
+> 比較検討の内容自体は言語非依存で現在も有効。
+
 本ドキュメントは、レビュアーにフレームワーク/言語/セキュリティ知識を与えている現行の
 Agent Skills 方式を対象に、**より変更しやすく柔軟な知識提供方式**を検討したものである。
 実装方針そのものではなく、複数アプローチを統一の観点で比較できる形に整理することが目的。
@@ -14,29 +18,13 @@ Agent Skills 方式を対象に、**より変更しやすく柔軟な知識提�
 
 ### 1.1 スキル束ねの配線がPythonコードに直書きされている
 
-[`src/code_review_agent/skills/agent_skills_factory.py`](../src/code_review_agent/skills/agent_skills_factory.py)
-の `AgentSkillType`(`StrEnum`)と `_build_react_review_skills()` /
-`_build_web_security_review_skills()` が、「どのレビュアーにどのスキルパッケージ群を束ねるか」を
-Pythonコードとして直書きしている。
+`agent_skills_factory.py`の`AgentSkillType`列挙型と、レビュアー種別ごとにスキルパッケージ群を
+組み立てる複数のbuilder関数(`_build_react_review_skills()`等)が、「どのレビュアーにどの
+スキルパッケージ群を束ねるか」をコードとして直書きしている。各builder関数は、対象レビュアー
+向けのスキルディレクトリ一覧を固定的に列挙して返すだけの単純な構造である。
 
-```python
-class AgentSkillType(StrEnum):
-    NONE = ""
-    REACT_REVIEW = "react_review"
-    WEB_SECURITY_REVIEW = "web_security_review"
-
-def _build_react_review_skills() -> list[SkillSource]:
-    return [
-        Skill.from_file(_SKILLS_DIR / "reviewing-universal"),
-        Skill.from_file(_SKILLS_DIR / "reviewing-languages"),
-        Skill.from_file(_SKILLS_DIR / "reviewing-frameworks"),
-        Skill.from_file(_SKILLS_DIR / "reviewing-metaframeworks"),
-    ]
-```
-
-各レビュアー([`agents/reviewers/react.py`](../src/code_review_agent/agents/reviewers/react.py)、
-[`agents/reviewers/security.py`](../src/code_review_agent/agents/reviewers/security.py))は
-`skill_type: ClassVar[AgentSkillType]` でこの束を選択する。新しいスキルパッケージ
+各レビュアー(`agents/reviewers/react.py`、`agents/reviewers/security.py`)は
+スキル種別を表すクラス変数でこの束を選択する。新しいスキルパッケージ
 (例: 新フレームワーク、Spring Boot 等の新スタック向け知識)を追加するたびに、
 **enum値の追加 + builder関数の追加 + レビュアークラスの `skill_type` 配線**という
 コード変更が必要になる。

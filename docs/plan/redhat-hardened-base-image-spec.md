@@ -2,6 +2,14 @@
 
 関連 Issue: #155
 
+> **歴史資料としての位置づけ**: 本ドキュメントはPython実装時点(`registry.access.redhat.com/hi/python`)の
+> 移行spec・実測結果である。TS移行後、コンテナのbuilder/runtimeステージは
+> `registry.access.redhat.com/hi/nodejs:26-builder` / `hi/nodejs:26`(node-builder/node-runtime)に
+> 置き換わっており、その調査結果・digest・UID・CI受入条件は
+> [docs/typescript-toolchain-spec.md](../typescript-toolchain-spec.md) §4.2を参照。
+> Red Hat Hardened Imageへ移行するという判断自体はNode.js版にも引き継がれているが、
+> 以下のimage名・digest・UIDはPython版当時の値であり現行構成には対応しない。
+
 ## 背景
 
 現行のコンテナ base image は Chainguard (`cgr.dev/chainguard/python`) を使用している。

@@ -115,17 +115,9 @@ Python側の `src/code_review_agent/models/` は削除しない。撤去は #255
 | `lead_engineer.py: FindingDecision` | `lead-engineer.ts: FindingDecisionSchema` |
 | `lead_engineer.py: LeadEngineerReport` | `lead-engineer.ts: LeadEngineerReportSchema` + `acceptedDecisions`/`rejectedDecisions`/`toMarkdown`/`toEvaluationFormat` |
 
-## 4. コミット粒度・PRタイトル規約（`typescript-toolchain-spec.md` §6/§7 の申し送り事項）
+コミット粒度・PRタイトル規約: [docs/plan/typescript-models-migration-spec.md](plan/typescript-models-migration-spec.md)。
 
-- PRタイトル: `feat: migrate models/ to TypeScript types + Zod schemas (Issue #251)`
-- コミット単位:
-  1. 本ドキュメント（スペックのロールバックポイント）
-  2. `pr-info.ts`（RED→GREEN→REFACTOR）
-  3. `review.ts`（`pr-info.ts`に依存）
-  4. `lead-engineer.ts` + `index.ts`バレル更新 + プレースホルダ削除
-  5. 必要であればリファクタ後の品質ゲート通過コミット
-
-## 5. #252以降への申し送り
+## 4. #252以降への申し送り
 
 - 次のSub-Issueは #252（`agents/`・`tools/`のTS移行）。`ReviewContext`の`sharedMcpClient`型が
   `@strands-agents/sdk`のMCPクライアント型と実際に整合するかは#252着手時に確認する

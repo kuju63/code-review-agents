@@ -1,5 +1,11 @@
 # MCP接続の安定化 設計ドキュメント (Issue #115)
 
+> 本ドキュメントはPython実装時点(`src/code_review_agent/`)の設計記録である。TS移行後の
+> 実装・決定ログは [docs/typescript-agents-tools-migration-spec.md](typescript-agents-tools-migration-spec.md)
+> §2.1〜2.3・§5.3を参照。共有クライアント・参照カウント・起動リトライという設計思想自体は
+> そのまま引き継がれている。変更対象ファイル・テスト方針・検証手順は
+> [docs/plan/mcp-connection-stabilization-spec.md](plan/mcp-connection-stabilization-spec.md)。
+
 評価パイプライン実行中に多発したMCP接続エラー(起動タイムアウト・接続断・空ボディ応答)への対応として合意された2方針
 「1. 起動リトライ」「2. MCPクライアントのセッション共有」について、
 [ADR-0003](adr/0003-github-mcp-startup-retry-strategy.md)・[ADR-0004](adr/0004-mcp-client-session-sharing.md)
@@ -14,7 +20,7 @@
 
 [ADR-0003](adr/0003-github-mcp-startup-retry-strategy.md)が明記する通り、起動リトライ・セッション共有は
 いずれも strands の `MCPClient`(`ToolProvider`実装)一般に適用できる設計である。本プロジェクトが現時点で
-利用するMCP統合は GitHub MCP(`create_github_mcp_client`、[github-mcp-streamable-http-migration-spec.md](github-mcp-streamable-http-migration-spec.md))
+利用するMCP統合は GitHub MCP(`createGithubMcpClient`、[github-mcp-streamable-http-migration-spec.md](plan/github-mcp-streamable-http-migration-spec.md))
 のみであるため、以降の変更対象ファイル・具体例は結果的に GitHub MCP 関連ファイルのみになるが、これは
 「現状GitHub MCPしか無いから」であって「GitHub MCP専用の設計」ではない。以降、リトライ対象・共有対象は
 「`MCPClient`/`ToolProvider`の起動処理」という一般的な語彙で記述し、GitHub MCPはその唯一の具体例として
@@ -275,24 +281,7 @@ sequenceDiagram
 
 ---
 
-## 5. 変更対象ファイル
-
-| ファイル | 変更の性質 |
-|---|---|
-| [src/code_review_agent/tools/github_mcp.py](../src/code_review_agent/tools/github_mcp.py) | `create_github_mcp_client`が返す`MCPClient`の`start()`にリトライ機構(3.2節)を追加。3経路すべてがここを通るため、これが唯一のリトライ実装箇所となる |
-| [src/code_review_agent/agents/review_orchestrator.py](../src/code_review_agent/agents/review_orchestrator.py) | 共有クライアントの生成・初回起動・参照登録/解放を追加(起動自体のリトライは`github_mcp.py`側で一元化されるため、ここでの実装は不要) |
-| [src/code_review_agent/agents/base_reviewer.py](../src/code_review_agent/agents/base_reviewer.py) | 共有クライアント使用時のフォールバック分岐、終了処理を`agent.cleanup()`に変更 |
-| [src/code_review_agent/agents/pr_info_collector.py](../src/code_review_agent/agents/pr_info_collector.py) | 変更なし(起動処理は経路(1)のまま`MCPClient.start()`を直接呼ぶが、リトライは`github_mcp.py`側で一元化されるため呼び出し元の変更は不要) |
-| [src/code_review_agent/agents/exceptions.py](../src/code_review_agent/agents/exceptions.py) | `INFRA_EXCEPTIONS`に`ToolProviderException`を追加 |
-| [src/code_review_agent/api/config.py](../src/code_review_agent/api/config.py) | `mcp_startup_retry_attempts`・`mcp_startup_retry_backoff_seconds`を追加 |
-| [pyproject.toml](../pyproject.toml) | `tenacity`を直接依存として追加 |
-| [src/code_review_agent/models/review.py](../src/code_review_agent/models/review.py)(`ReviewContext`定義箇所) | 共有MCPクライアントを保持する拡張フィールドを追加(4.2節 設計判断A) |
-
-(このドキュメント自体は`docs/`直下に配置されており、上記の相対パスは`docs/`からの相対パスである。)
-
----
-
-## 6. スコープ外の明示
+## 5. スコープ外の明示
 
 - **ツール呼び出し単位のリトライ**: 起動ハンドシェイクのリトライのみを対象とし、`call_tool_sync`等の
   個別呼び出しのリトライは見送る([ADR-0003](adr/0003-github-mcp-startup-retry-strategy.md)の決定通り)。
@@ -303,41 +292,12 @@ sequenceDiagram
 
 ---
 
-## 7. テスト方針
-
-具体的なテストコードは実装(TDD)フェーズで確定するが、少なくとも次の観点をカバーする:
-
-- 起動リトライがバックオフを伴って動作し、最大試行回数で打ち切られること(3経路それぞれ)。
-- 経路(2)(3)それぞれで、リトライを尽くした後の最終失敗が`ToolProviderException`として`INFRA_EXCEPTIONS`に
-  分類され、`ReviewOrchestrator.run_async()`から再送出されること。
-- 並列レビュー実行時、複数レビュアー間でMCPクライアントのインスタンスが共有されること(生成回数が1回に
-  なること)。
-- オーケストレータ・複数レビュアーが参照カウントの利用者として正しく登録・解放され、全利用者が解放された
-  時点でのみ接続が終了すること。
-- 共有クライアントが渡されない場合(単体利用・MCP不使用レビュアー)は現状と同じ挙動(個別生成・個別終了)を
-  維持すること(既存テストの回帰確認)。
-
----
-
-## 8. 検証手順
-
-```bash
-uv run pytest
-uv run ruff check
-uv run ruff format --check
-```
-
-実装完了後、必要に応じて評価パイプライン([evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md))を再実行し、
-Issue #115の受け入れ基準(MCP接続起因の失敗が0件または大幅減)を確認する。
-
----
-
-## 9. 関連ドキュメント
+## 6. 関連ドキュメント
 
 - [ADR-0003: MCP起動リトライ戦略](adr/0003-github-mcp-startup-retry-strategy.md)
 - [ADR-0004: MCPクライアントのセッション共有(レビュアー間)](adr/0004-mcp-client-session-sharing.md)
 - [並列レビュー段 拡張アーキテクチャ設計](review-agents-design.md)
-- [インフラ例外の握りつぶし修正 設計ドキュメント (Issue #56)](review-orchestrator-infra-exception-propagation-spec.md)
-- [GitHub MCP Streamable HTTP移行仕様](github-mcp-streamable-http-migration-spec.md)
+- [TS移行の決定ログ(§2.1〜2.3・§5.3)](typescript-agents-tools-migration-spec.md)
+- [GitHub MCP Streamable HTTP移行仕様](plan/github-mcp-streamable-http-migration-spec.md)
 - [evaluation/EVALUATION_PLAN.md](../evaluation/EVALUATION_PLAN.md)
 - [evaluation/RUNBOOK.md](../evaluation/RUNBOOK.md)
