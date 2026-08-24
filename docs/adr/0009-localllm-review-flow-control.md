@@ -64,8 +64,9 @@
 - スコープ外:
   - システム全体のLLM同時実行上限の**具体的な実現機構**、ジョブ/reviewer fan-out/provider
     単位の上限と既定値、slot解放条件、timeout/cancellation/straggler の扱い → **Issue #367**。
-  - delivery semantics（at-least-once等）、ACK/lease/retry/dead-letter/冪等キー、再起動時
-    のジョブ回復、queue/runtime state と review workflow state の分離 → **Issue #368**。
+  - delivery semantics（at-least-once等）、ACK/lease/retry/dead-letter、Worker再配信・重複実行
+    によるレビュー結果／外部副作用の冪等性、再起動時のジョブ回復、queue/runtime state と
+    review workflow state の分離 → **Issue #368**。enqueue受付の冪等性は本節で決定する。
   - Web/CLI クライアント側のポーリング/WebSocket 実装の詳細（ADR-0007 が既にトレードオフ
     として受容済み）。
 
@@ -95,6 +96,7 @@ flowchart LR
   - 可観測性（キュー長・待機時間・滞留ジョブを観測できるか）
   - Queue上限と過負荷時のAPIレスポンス（Queue内部状態 `queued` / A2A外部状態 `submitted` で
     受付後に返す／上限超過で 429・503／caller を待たせる、の比較）
+  - 受付の冪等性（応答消失後のクライアント再送で同一ジョブが重複 enqueue されないか）
   - 外部Broker不要性（単一ユーザーのローカル運用で追加の常駐ミドルウェアを避けられるか）
 
 > **注**: 本ADRは Queue の「実装方式（＝ジョブをどこに保持し、どう取り出すか）」を決める。
@@ -168,7 +170,7 @@ flowchart LR
 
 | 観点 | 内容 |
 | --- | --- |
-| メリット | **再起動耐性がある**（ジョブが永続化され、プロセス/コンテナ再起動後も残る。#368 の delivery semantics・lease・retry・dead-letter・冪等キーを載せる**土台になる**）。**将来の worker 分離に発展しやすい**（同一DBを複数 Worker が参照でき、ADR-0007 が見据える水平スケールへ素直に伸ばせる）。**外部Broker不要**（埋め込みDBで完結し、単一ユーザーのローカル運用の制約を満たす）。**可観測性が高い**（キュー状態がテーブルとして永続化され、キュー長・滞留・失敗を SQL で観測できる）。backpressure はキュー上限（行数/未処理件数）で実現し、過負荷時応答も `queued`／429・503／待機を選択可能。#367 の同時実行上限は lease 同時数の制御として接続できる。 |
+| メリット | **再起動耐性がある**（ジョブが永続化され、プロセス/コンテナ再起動後も残る。本節のenqueue冪等キーと、#368 の delivery semantics・lease・retry・dead-letter・Worker再配信時の冪等性を載せる**土台になる**）。**将来の worker 分離に発展しやすい**（同一DBを複数 Worker が参照でき、ADR-0007 が見据える水平スケールへ素直に伸ばせる）。**外部Broker不要**（埋め込みDBで完結し、単一ユーザーのローカル運用の制約を満たす）。**可観測性が高い**（キュー状態がテーブルとして永続化され、キュー長・滞留・失敗を SQL で観測できる）。backpressure はキュー上限（行数/未処理件数）で実現し、過負荷時応答も `queued`／429・503／待機を選択可能。#367 の同時実行上限は lease 同時数の制御として接続できる。 |
 | デメリット | **実装/運用コストが案Bより高い**（スキーマ設計、lease 失効・可視性タイムアウト、状態遷移、DBファイルの永続ボリューム管理が必要）。**job ordering に注意が要る**（複数 Worker が並行 lease すると厳密な FIFO は崩れうるため、順序保証が要る場合は明示的な設計が必要）。単一DBファイルへの同時書き込みは SQLite の書き込みロック特性の理解を要し、高並列では別RDBへの移行検討が生じうる（ただし現状の同時実行は少数のため実害は小さい）。 |
 
 ### 案D: 外部 message broker（Redis / RabbitMQ 等）
@@ -193,8 +195,9 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
      キューゆえ**再起動でジョブが消失し**、後続の #368（配信契約・再起動時回復）が保証を
      載せる**永続化の土台を持てない**。#366 は「#367・#368 の前提」と位置づけられており、
      ここで永続化の土台を欠くと後続2件の設計余地を先に潰してしまう。案C は永続ストアを
-     持つため #368 の delivery semantics・lease・retry・dead-letter・冪等キーを自然に載せ
-     られ、ADR-0007 が見据える Worker 水平スケール（案C図の「Worker 2（将来）」）へも同一
+     持つため本節の enqueue 冪等キー（`UNIQUE(ownerPrincipalId, idempotencyKey)`）を載せられ、
+     #368 の delivery semantics・lease・retry・dead-letter・Worker再配信時の冪等性も自然に載せ
+     られる。ADR-0007 が見据える Worker 水平スケール（案C図の「Worker 2（将来）」）へも同一
      キューのまま伸ばせる。
   3. **過剰にならない範囲での永続化**: 埋め込みDB（SQLite 等）に限定することで、案D の
      運用コストを負わずに再起動耐性・可観測性（SQL によるキュー観測）を得られる。現状の
@@ -225,6 +228,35 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
     Unavailable` を `Retry-After` 付きで返す**（過負荷を上流へ明示的に伝える backpressure）。
     認可・バリデーション不正など**クライアント起因の拒否は従来どおり 4xx**（429 はレート
     制限を別途導入する場合に用いるが、本ADRでは容量起因の過負荷を 503 で表す）。
+  - **enqueue受付の冪等性**:
+    - **生成主体**: Gateway は受付APIにクライアント生成の `Idempotency-Key` を必須とする。
+      値は推測可能な連番ではなくUUID等の十分なエントロピーを持つopaque stringとし、認証済み
+      principalが同一の論理レビュー要求を再送するときは同じキーを再利用する。
+    - **一意性境界**: 共通の永続ジョブレコードに `idempotencyKey` と入力payloadの正規化hashを
+      保存し、DBに **`UNIQUE(ownerPrincipalId, idempotencyKey)`** 制約を設ける。他principalは
+      同じキー文字列を独立に利用できるが、同一principal内では1ジョブだけを表す。正規化hashは
+      バリデーション済みレビュー入力だけを対象に、object keyを辞書順へ揃えた決定的JSONの
+      SHA-256とする（認証token・冪等header等のtransport情報は含めない）。
+    - **初回受付**: 容量確認、taskId生成、`queued`/`submitted`正規レコードの挿入、冪等キーの
+      保存を同じ `BEGIN IMMEDIATE` トランザクションで行う。commit成功後にだけ `202 Accepted`
+      と `submitted` タスク（taskId）を返す。
+    - **同一キーの再送**: 容量判定や新規enqueueを行わず、既存レコードとpayload hashを比較する。
+      hashが一致すれば既存の同一taskIdと現在のA2A状態を既存送信契約の `202 Accepted` で返す。
+      これは既存ジョブの参照であり `N_queue` を消費しない。hashが異なる場合はキーの誤再利用と
+    - **保持期間**: 冪等キーはジョブの全状態とterminal遷移後**24時間**まで保持する。24時間を
+      過ぎたterminalレコードは削除可能で、その後の同じキーは新規受付として扱う。処理中レコード
+      のキーは時間経過だけで削除しない。保持期間は重複実行防止とローカルDB肥大化の均衡として
+      設け、将来変更する場合はクライアント互換性を評価する。
+    - **競合時の原子性**: 同一キーが同時到来した場合、DB一意制約を最終防衛線とし、勝者だけが
+      enqueue/commitする。敗者は一意制約競合後に既存レコードを読み直し、上記再送応答を返す。
+      `503`や応答消失後のクライアント再試行でも、既存レコードがある場合に新しいtaskIdを発行しては
+      ならない。トランザクションがcommitせず `503`/`500` になった場合は冪等キーレコードも残らず、
+      同じキーの再送を新規受付として再試行できる。
+  - **冪等受付の受入テスト（実装時）**: (1) commit後に初回応答を破棄して同じprincipal・key・
+    payloadを再送すると、レコード数と`N_queue`消費が増えず同じtaskIdが返ること、(2) 同一keyを
+    同時送信しても1件だけcommitされ全応答が同じtaskIdを指すこと、(3) 同一principal・keyで
+    payloadを変えると`409`、別principalの同じkeyは独立受付になること、(4) terminal後24時間内は
+    既存結果を返し、期限後は新規受付可能であることを検証する。
   - **受入テスト（実装時に満たすべき観測可能な条件）**: (1) Worker を停止した状態で
     `N_queue + 1` 件を同時投入したとき、commit 済みの `queued` ジョブ件数が `N_queue` を超えず、
     超過分のリクエストのみが `Retry-After` 付き `503` を受け取ること。(2) 容量に余裕があっても
@@ -234,8 +266,9 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
     `Retry-After` を付けないこと。これらの不変条件を実装PRの acceptance テストとして検証する。
   - **Queue と TaskStore の永続化境界・受付原子性**: 受付時点では Queue レコードと TaskStore
     レコードを別々に二重書きせず、**同一の永続ジョブレコードを Queue と TaskStore の共通の
-    正規レコード**として扱う。このレコードは最低限 `taskId`、`ownerPrincipalId`、A2A外部状態
-    `submitted`、Queue内部状態 `queued` を持つ。前述の SQLite `BEGIN IMMEDIATE` トランザクション
+    正規レコード**として扱う。このレコードは最低限 `taskId`、`ownerPrincipalId`、
+    `idempotencyKey`、入力payloadの正規化hash、A2A外部状態 `submitted`、Queue内部状態 `queued` を
+    持つ。前述の SQLite `BEGIN IMMEDIATE` トランザクション
     内で容量確認とこの正規レコードの挿入を行い、commit 後は同じストアに対する
     `TaskStore.get(taskId, ownerPrincipalId)` で直ちに取得可能であることを確認してから `202` を返す。
     したがって「Queueだけcommit済み／TaskStoreには未登録」という中間状態は作らない。#368は
@@ -293,9 +326,15 @@ sequenceDiagram
     participant A2A as "a2a-server (実行)"
     participant LLM as LocalLLM
 
-    Client->>GW: 要求
-    GW->>DB: BEGIN IMMEDIATE; 容量確認 + enqueue
-    alt N_queue未満かつcommit成功
+    Client->>GW: 要求 (Idempotency-Key付き)
+    GW->>DB: BEGIN IMMEDIATE; 冪等キー確認 + 容量確認 + enqueue
+    alt 既存キー(payload一致)
+        DB-->>GW: 既存taskId + 現在状態
+        GW-->>Client: 202 + 既存taskId (新規enqueueなし)
+    else 既存キー(payload不一致)
+        DB-->>GW: 競合
+        GW-->>Client: 409 Conflict
+    else 新規キーかつN_queue未満かつcommit成功
         DB-->>GW: COMMIT成功 + taskId
         GW-->>Client: 202 Accepted + taskId (状態=submitted)
     else 上限到達
@@ -313,11 +352,11 @@ sequenceDiagram
     GW->>DB: TaskStore.get(taskId, ownerPrincipalId)
 ```
 
-この図は、採用候補の案C において、容量確認と enqueue の原子性（`BEGIN IMMEDIATE` による
-直列化）、commit 成功後の非同期受付応答、永続バッファ、lease による実行を分離し、キュー上限
-超過やロック競合を `503` で backpressure として返す全体像を示している。同時実行上限の具体値・
-実現機構（#367）と配信契約（#368）は本図の「Worker→A2A→LLM」区間および「永続Queue」の
-状態遷移として後続で肉付けする。
+この図は、採用候補の案C において、`Idempotency-Key` による重複受付の抑止、容量確認と enqueue の
+原子性（`BEGIN IMMEDIATE` による直列化）、commit 成功後の非同期受付応答、永続バッファ、lease に
+よる実行を分離し、キュー上限超過やロック競合を `503` で backpressure として返す全体像を示して
+いる。同時実行上限の具体値・実現機構（#367）とWorker再配信の配信契約（#368）は本図の
+「Worker→A2A→LLM」区間および「永続Queue」の状態遷移として後続で肉付けする。
 
 ## 検討事項B: システム全体のLLM同時実行上限（#367、後続）
 
@@ -335,7 +374,9 @@ sequenceDiagram
 > **未決（Issue #368 で追記）**。本節は検討事項A の採用候補（永続Queue）が承認されることを
 > 土台に、以下を決定するプレースホルダである。ここが埋まるまで本項目は「未決」とする。
 >
-> - delivery semantics（at-least-once 等）、ACK / lease / retry / dead-letter / 冪等キー
+> - delivery semantics（at-least-once 等）、ACK / lease / retry / dead-letter
+> - Worker再配信・重複実行時のレビュー結果／外部副作用の冪等性（enqueue受付の冪等キー契約は
+>   検討事項Aで決定済み）
 > - Worker クラッシュ後のジョブ回復、再起動時のリカバリ
 > - queue/runtime state と review workflow state の分離
 >
