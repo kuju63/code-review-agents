@@ -62,12 +62,24 @@ Issue #365は当初、#366/#367/#368の決定を`docs/adr/0009-localllm-review-f
   (339行目)を呼ぶ。並列上限を差し込む自然な候補地点はここであり、`PRInfoCollector`・
   `LeadEngineerAgent`も同じ`createModelProvider()`を個別に呼んでいる。
 - **Strands SDKは協調キャンセルを第一級機能として持つ(要検証事項の解消)**: 本プロジェクトが
-  依存する`@strands-agents/sdk`の型定義(`InvokeOptions.cancelSignal?: AbortSignal`、
-  `dist/src/types/agent.d.ts`)により、`Agent.invoke()`は外部`AbortSignal`による協調キャンセルを
-  標準サポートする。シグナルはAgent内部のcontrollerと合成され、発火すると「次のキャンセル
-  チェックポイントで停止し`stopReason: 'cancelled'`を返す」——ただし即時打ち切りではなく
-  チェックポイント単位(ターン境界)である。現状の`base-reviewer.ts`はこのオプションを一切
-  渡していない。
+  依存する`@strands-agents/sdk`(`package.json`の宣言は`^1.12.0`、`pnpm-lock.yaml`の実解決は
+  `1.14.0`)の型定義(`InvokeOptions.cancelSignal?: AbortSignal`、`dist/src/types/agent.d.ts`)
+  により、`Agent.invoke()`は外部`AbortSignal`による協調キャンセルを標準サポートする。シグナルは
+  Agent内部のcontrollerと合成され、発火すると「次のキャンセルチェックポイントで停止し
+  `stopReason: 'cancelled'`を返す」——ただし即時打ち切りではなくチェックポイント単位
+  (ターン境界)である。現状の`base-reviewer.ts`はこのオプションを一切渡していない。
+  **個別Toolのキャンセル転送状況(SDK 1.14.0のソースで確認済み)**: SDKが提供する
+  `httpRequest`(`vended-tools/http-request/http-request.js`)は
+  `AbortSignal.any([timeoutSignal, context.cancelSignal])`でtoolのtimeoutと
+  `cancelSignal`を合成し`fetch`へ渡す。MCPツール呼び出し(`tools/mcp-tool.js`、GitHub MCPが
+  該当)も`signal: toolContext.cancelSignal`を基盤のMCPリクエストへ転送する。したがって
+  これら2種のToolについては、ターン境界を待たずTool呼び出し単体の途中でも中断されうる。
+  一方、本プロジェクト独自の`tools/file-read-tool.ts`(`createFileReadTool()`、skills用の
+  ローカルファイル読み取り)の`callback`は`cancelSignal`を一切参照しておらず、中断対象外
+  である(ただし`maxBytes`によるサイズ上限付きのローカルディスクI/Oのため、ハングのリスクは
+  ネットワークI/Oより低いと評価する)。したがって「チェックポイントに到達できないハング」の
+  実質的なリスクは、主にLLM呼び出し自体(モデルの単一completion呼び出しの最中)、および
+  `file_read`のローカルI/Oが異常に遅延する場合に限られる。
 - **provider単位の共有・プール機構は存在しない**: `model-provider-factory.ts`の
   `createModelProvider()`は呼び出しごとに新しい`Model`インスタンスを生成する。GitHub MCPには
   `SharedMcpClient`(ADR-0004、参照カウント方式)という同種の共有機構が既にあるが、LLM呼び出し
@@ -186,7 +198,13 @@ semaphoreのpermitを待ち、job全体・fan-outの並列度がsemaphoreを通�
 
 機構は案1と同じsemaphoreだが、job deadline(`reviewerTimeoutSeconds`)・ユーザーcancel・
 shutdown drainのいずれかが発火した時点で`AbortController`を発火させ、`agent.invoke(prompt,
-{ ..., cancelSignal })`へ伝播する。
+{ ..., cancelSignal })`へ伝播する。**この伝播は`ReviewAgent.review()`のインターフェース契約
+変更を伴う**: 現状の`review(context: ReviewContext, projectType?: ProjectType):
+Promise<ReviewResult>`(`base-reviewer.ts`)は`cancelSignal`を受け取る経路を持たないため、
+既存の`projectType`引数はそのまま維持しつつ、`cancelSignal`を運ぶ第3引数(オプション)を
+追加する形(`review(context, projectType, options?: { cancelSignal })`)へ拡張し、
+`ReviewAgent`を継承する全reviewer実装および呼び出し元(`ReviewOrchestrator`)を一貫して
+更新する。
 
 ```mermaid
 sequenceDiagram
@@ -196,7 +214,7 @@ sequenceDiagram
     participant SDK as Strands Agent.invoke()
 
     RO->>RO: AbortController生成(job deadline/cancel/drainで発火)
-    RO->>Agent: review(context, { cancelSignal })
+    RO->>Agent: review(context, projectType, { cancelSignal })
     Agent->>Sem: acquire(cancelSignal)で permit取得待ち
     alt 待機中にsignal発火(まだpermit未取得)
         Sem-->>Agent: permitを払い出さず即座に settle
@@ -304,8 +322,10 @@ semaphoreは経路によらず効く)。
 **案2「協調キャンセル導入」を採用する。**
 
 Worker(a2a-serverの実行ロール)内に、provider/endpoint単位のbounded semaphoreを実装し、
-job deadline・ユーザーcancel・shutdown drainを単一の`AbortSignal`に合流させて`agent.invoke()`
-の`cancelSignal`オプションへ伝播する。この1つの決定を構成する実装レベルの合意事項は以下の
+job deadline・ユーザーcancel・shutdown drainのそれぞれを、**新規受付停止**(enqueue/
+semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke()`の`cancelSignal`
+オプションへ実際に伝播するキャンセル)という性質の異なる2つの合図に整理した上で、後者を
+実行中・待機中の呼び出しへ伝播する。この1つの決定を構成する実装レベルの合意事項は以下の
 通り。
 
 1. `createModelProvider()`を呼ぶ全経路(`LLMReviewAgent.review()`、`PRInfoCollector`、
@@ -316,7 +336,15 @@ job deadline・ユーザーcancel・shutdown drainを単一の`AbortSignal`に�
    コード上の位置を指すのみであり、permitの保持期間とは別である**: `createModelProvider()`
    自体はネットワーク呼び出しを伴わない軽量な処理のためpermitを要求しない。permitは
    `agent.invoke()`を呼ぶ直前に取得し、`agent.invoke()`の呼び出しが完了する(settleする)まで
-   保持する(具体的な取得・解放のタイミングは合意事項5を参照)。
+   保持する(具体的な取得・解放のタイミングは合意事項5を参照)。**`ProviderSemaphore`自体は
+   Workerプロセス内で正規化したprovider/endpointキー(例: providerType +
+   `llmBaseUrl`を正規化した文字列)ごとに1インスタンスだけ存在する共有レジストリ
+   (`Map<string, ProviderSemaphore>`)として実装し、3経路それぞれが独自にインスタンスを
+   生成することを禁止する**: 同一のprovider/endpointを指す呼び出しが`LLMReviewAgent.review()`
+   経由・`PRInfoCollector`経由・`LeadEngineerAgent`経由のいずれから来ても、レジストリを
+   通じて同一のsemaphoreインスタンスを取得し同じpermit poolを奪い合う。経路ごとに独立した
+   semaphoreを作ってしまうと、実効的な同時実行数が経路数倍に膨れ上がり合意事項2の既定値が
+   意味を失うため、この共有を必須の契約とする。
 2. 粒度はprovider/endpoint単位を基本とし、job全体・reviewer fan-outはこのsemaphoreへの
    待機を通じて間接的に絞る(別途の明示的なカウンタは持たない)。**この上限は各Workerプロセス
    内でのみ有効なローカルな上限である。** 現状の想定運用形態(ADR-0007が前提とする、水平
@@ -333,17 +361,27 @@ job deadline・ユーザーcancel・shutdown drainを単一の`AbortSignal`に�
    バックしない)。未設定時は既定値`1`を用いる。
 3. GitHub MCP呼び出し(ADR-0004の対象)はこの枠から除外し、ADR-0004の参照カウント方式は変更
    しない。
-4. job deadline(既存の`reviewerTimeoutSeconds`)、将来実装されるユーザーcancel、shutdown時の
-   drainのいずれかが発火した時点で単一の`AbortController`を発火させ、
-   `review-orchestrator.ts`から`base-reviewer.ts`の`agent.invoke(prompt, { ...,
-   cancelSignal })`まで伝播する。`cancelSignal`が発火してもSDKは「次のキャンセルチェック
-   ポイント(ターン境界)」まで停止しないため、即時打ち切りではないことを利用側の前提とする。
-   **shutdown drainとjob deadline/ユーザーcancelは、発火タイミングが異なる2段階として扱う**:
-   shutdownシグナル受信時点ではまず新規`enqueue`/新規`ProviderSemaphore.acquire()`の受付のみ
-   停止し(新規ジョブ・新規permit取得待ちを拒否)、既に実行中の呼び出しは猶予期間
-   (grace period、具体的な長さは実装時に決定)の間は継続を許す。猶予期間を過ぎても
-   settleしない呼び出しに対して初めて、job deadline/ユーザーcancelと同じ`cancelSignal`を
-   発火させ強制的にキャンセルへ倒す。
+4. **新規受付停止シグナルとcancelシグナルは別個の合図として扱う**(合意事項の冒頭で述べた
+   区別の具体化):
+   - **新規受付停止**: shutdown drain開始時にのみ発火する。以後、`orchestrator.service.ts`の
+     新規`enqueue`、および`ProviderSemaphore.acquire()`への新規の待機開始を拒否する
+     (=まだ`acquire()`を呼んでいないジョブ・reviewerは、この時点で新規に受け付けられない)。
+     この合図自体は`cancelSignal`ではなく、実行中・待機中の呼び出しには何も伝播しない。
+   - **cancel(`cancelSignal`)**: job deadline(既存の`reviewerTimeoutSeconds`)またはユーザー
+     cancelが発火した場合は**即座に**該当jobの`cancelSignal`を発火させる。shutdown drainの
+     場合は、新規受付停止から始まる猶予期間(grace period、具体的な長さは実装時に決定)の間は
+     実行中・待機中の呼び出しを妨げず、**猶予期間が終了してもsettleしていない呼び出しに
+     対してのみ**、job deadline/ユーザーcancelと同じ`cancelSignal`を発火させる。
+   - この`cancelSignal`は`review-orchestrator.ts`から`base-reviewer.ts`の`agent.invoke(prompt,
+     { ..., cancelSignal })`まで伝播する。`cancelSignal`が発火してもSDKは「次のキャンセル
+     チェックポイント(ターン境界)」まで停止しないため、即時打ち切りではないことを利用側の
+     前提とする。
+   - **3つの局面それぞれの扱い**: (a) 新規受付停止の時点で`ProviderSemaphore.acquire()`の
+     permit払い出し待ちだったジョブは、新規受付停止そのものでは中断されず、猶予期間中は
+     通常どおりpermit払い出しを待ち続けられる(猶予期間終了後は上記の通りcancelSignalが
+     発火し、合意事項5の待機中cancel経路に合流する)。(b) 猶予期間中に実行中(`agent.invoke()`
+     実行中)のジョブは妨げられず、通常どおり完了できる。(c) 猶予期間中に自然にsettleした
+     ジョブは、そのままの結果(成功/エラー)を返す——shutdownを理由に結果を破棄しない。
 5. `ProviderSemaphore`のpermitは、対応する`review()`呼び出しのPromiseが(通常完了・
    `stopReason: 'cancelled'`によるキャンセル完了のいずれであっても)真に settle した時点で
    `finally`により解放する。この解放条件自体は案1と変わらないが、cancelSignalの導入により
@@ -352,7 +390,24 @@ job deadline・ユーザーcancel・shutdown drainを単一の`AbortSignal`に�
    `acquire()`はpermitを一切払い出さずに即座に拒否し、permit払い出し待ちでキュー内にある
    `acquire()`呼び出しは、待機中にsignalが発火した時点でpermitを得ないまま即座に settle
    する。これにより、まだ`agent.invoke()`を開始していない(=semaphore待機中の)reviewerも、
-   job deadlineやユーザーcancelの発火を無駄なく反映できる。
+   job deadlineやユーザーcancelの発火を無駄なく反映できる。**permitの`finally`解放は、
+   実際にpermitを取得できた場合にのみ実行する**契約とし、`acquire()`がpermit未払い出しの
+   まま拒否・settleした経路では解放処理を呼ばない(何も取得していないものを解放しようとして
+   カウントを狂わせない)。
+   `acquire()`のキャンセルによる拒否、および`agent.invoke()`の`stopReason: 'cancelled'`は、
+   いずれも`ReviewOrchestrator`から見て**専用の、非infra扱いの結果**として扱う。
+   `packages/agent-core/src/agents/exceptions.ts`の`isInfraError()`は
+   `GithubMcpConnectionError`または`ModelError`のインスタンスのみを true と判定し、それ以外は
+   既定でfalseを返す(`review-orchestrator.ts`はfalseの場合バッチ全体を中断せず個々の
+   `ReviewError`として`errors`配列に積む)ため、この専用結果を`ModelError`/
+   `GithubMcpConnectionError`のいずれとも継承関係を持たない独立したエラー型
+   (例:`ReviewerCancelledError`)として実装する限り、この安全な既定の挙動から外れない。
+   既存の`review-orchestrator.ts`の「timeoutで`outcomes`に未登録のまま`Reviewer timed out
+   after ${timeoutSeconds}s`という`ReviewError`を積む」経路と同様、キャンセルされた
+   reviewerも人間が読んで区別できるメッセージ(例:`Reviewer cancelled (shutdown drain /
+   user cancel / job deadline)`)を持つ`ReviewError`としてレポートし、
+   `StructuredOutputMissingError`(現状「turn limitを満たせなかった」という誤解を招く
+   メッセージを持つ)を誤って使い回さない。
 6. `cancelSignal`が機能しない異常系(モデルサーバーの無応答等、チェックポイントに到達しない
    ハング)への備えとして、ADR-0007が確立したWorkerのコンテナ境界を用いた強制終了を
    **最終手段のフォールバック**として残す。この監視・強制終了は**有界(bounded)な待機時間で
@@ -361,8 +416,10 @@ job deadline・ユーザーcancel・shutdown drainを単一の`AbortSignal`に�
    他ジョブは巻き込まれ再試行対象になる、という副作用は許容する)。具体的なトリガー条件
    (ヘルスチェック閾値・有界時間の具体値等)・オーケストレーション手順・強制終了後の
    ジョブ再試行の扱いは、本ADRの決定粒度を超えるため、Issue #368(配信契約・再起動時回復)の
-   スコープとして扱う([Consequences](#consequences)に記載の、#368が設計する delivery
-   semanticsとの接続点を参照)。
+   スコープとして扱う。本ADRは、上記の性質(有界性・単一Worker限定・同一Worker上ジョブの
+   再試行対象化)を**Issue #368の受け入れ条件に追加すべき実行可能な制約**として明示的に
+   引き継ぐ([Consequences](#consequences)に記載の、#368が設計する delivery semanticsとの
+   接続点を参照)。
 
 ## Consequences
 
@@ -382,7 +439,11 @@ job deadline・ユーザーcancel・shutdown drainを単一の`AbortSignal`に�
   必要がある。
 - Issue #368は、本ADRが合意事項6で決定した「Workerプロセス強制終了」というslot回収の最終
   手段を前提として、その際のジョブの delivery semantics(再試行するか、失敗として扱うか等)
-  を設計する必要がある。
+  を設計する必要がある。#368の受け入れ条件には、本ADRが要件として定めた以下3点を実行可能な
+  形で含めること: (1) 強制終了トリガーの監視は有界(bounded)な待機時間で必ず判定が確定する
+  こと、(2) 強制終了は当該Workerプロセス単位に限定され他のWorkerで実行中の並行ジョブに
+  影響しないこと、(3) 強制終了で巻き込まれた同一Worker上の他ジョブは再試行対象として扱う
+  delivery semanticsを定義すること。
 - ADR-0004(MCPクライアントのセッション共有)の決定は変更しない。GitHub MCPの輻輳対策と
   LocalLLMの並列上限は引き続き別々の仕組みとして扱う。
 - ADR-0008が定める`ModelProvider` Portの段階移行が完了するまでの間、本ADRの`ProviderSemaphore`
