@@ -2,7 +2,7 @@ import type { MiddlewareHandler } from "hono";
 import { describe, expect, it, vi } from "vitest";
 import type { GithubAuthEnv } from "../a2a/auth.middleware.js";
 import { createOrchestratorRoute } from "./orchestrator.route.js";
-import type { OrchestratorService } from "./orchestrator.service.js";
+import { InMemoryOrchestratorTaskStore, type OrchestratorService } from "./orchestrator.service.js";
 
 const requestBody = {
   message: {
@@ -98,5 +98,38 @@ describe("Orchestrator route", () => {
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ detail: "Task not found" });
     expect(service.getTask).toHaveBeenCalledWith("nonexistent-id", "12345");
+  });
+
+  it("derives the task owner from the authenticated principal, not client input", async () => {
+    const store = new InMemoryOrchestratorTaskStore();
+    const owned = await store.create("owner-1");
+    const service = createService({
+      getTask: vi.fn((taskId, ownerPrincipalId) => store.get(taskId, ownerPrincipalId)),
+    });
+
+    const asOwner: MiddlewareHandler<GithubAuthEnv> = async (c, next) => {
+      c.set("githubToken", "ghp_owner");
+      c.set("githubPrincipalId", "owner-1");
+      await next();
+    };
+    const asOther: MiddlewareHandler<GithubAuthEnv> = async (c, next) => {
+      c.set("githubToken", "ghp_other");
+      c.set("githubPrincipalId", "owner-2");
+      await next();
+    };
+
+    const ownerApp = createOrchestratorRoute({ service, authMiddleware: asOwner });
+    const ownerResponse = await ownerApp.request(`/tasks/${owned.id}`, {
+      headers: { Authorization: "Bearer ghp_owner", "x-owner-principal-id": "owner-2" },
+    });
+    expect(ownerResponse.status).toBe(200);
+    expect(service.getTask).toHaveBeenCalledWith(owned.id, "owner-1");
+
+    const otherApp = createOrchestratorRoute({ service, authMiddleware: asOther });
+    const otherResponse = await otherApp.request(`/tasks/${owned.id}`, {
+      headers: { Authorization: "Bearer ghp_other", "x-owner-principal-id": "owner-1" },
+    });
+    expect(otherResponse.status).toBe(404);
+    expect(service.getTask).toHaveBeenLastCalledWith(owned.id, "owner-2");
   });
 });

@@ -208,33 +208,59 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
     作らない）。**DBレベルの直列化方式**: 初期サポートDBである SQLite では既定の遅延
     （DEFERRED）トランザクションだと両者が同一の件数を観測して上限を超過しうるため、受付
     トランザクションは **`BEGIN IMMEDIATE`（書き込みロックを開始時に取得）** で開始し、容量
-    確認から挿入までを直列化する。ロック取得を待って失効した場合（`SQLITE_BUSY`）は、挿入が
-    行われていないことが確定するため `503 Service Unavailable` を `Retry-After` 付きで返す。
+    確認から挿入までを直列化する。採用するSQLiteドライバは拡張結果コードを取得できることを
+    必須とし、`SQLITE_BUSY` / `SQLITE_LOCKED`（各派生コードを含む）を一時的なロック競合に
+    分類する。ロック待機はDBの busy timeout **5秒**を上限とし、Gatewayでの追加再試行は行わない
+    （受付レイテンシを有界にするため）。開始時またはcommit時に待機期限が切れた場合は挿入／
+    commitが成立していないことを確認して、容量に余裕があっても `503 Service Unavailable` と
+    `Retry-After: 1` を返す。非一時的なI/O・破損・制約違反等は再試行可能と偽らず `500` とする。
     別RDBへ移行する場合は、同等の直列化（例: 該当行/カウンタへの排他ロック、または
-    `SERIALIZABLE` 相当）を採用DBごとに定める。**トランザクションが commit に成功した後に
-    のみ**、**受付レスポンス（HTTP `202 Accepted` と taskId）** を返す。永続化・commit が失敗
-    した場合は成功応答も永続的なジョブ参照も返さず、エラー（例: `500`／再試行可能な `503`）と
-    して扱う。受付成功後、クライアントは taskId でポーリングして進捗を確認する（ADR-0007 が
+    `SERIALIZABLE` 相当）と、一時的競合/恒久エラーの分類・待機上限を採用DBごとに定める。
+    **トランザクションが commit に成功した後にのみ**、**受付レスポンス（HTTP `202 Accepted` と
+    taskId）** を返す。永続化・commit が失敗した場合は成功応答も永続的なジョブ参照も返さず、
+    上記分類に従って `503` または `500` として扱う。受付成功後、クライアントは taskId で
+    ポーリングして進捗を確認する（ADR-0007 が
     受容済みの非同期化トレードオフに準拠。既存 A2A 契約との対応は後述の「A2A 契約との整合」
     参照）。**上限（`N_queue`）に達している場合はトランザクション内で挿入を行わず `503 Service
     Unavailable` を `Retry-After` 付きで返す**（過負荷を上流へ明示的に伝える backpressure）。
     認可・バリデーション不正など**クライアント起因の拒否は従来どおり 4xx**（429 はレート
     制限を別途導入する場合に用いるが、本ADRでは容量起因の過負荷を 503 で表す）。
-  - **受入テスト（実装時に満たすべき観測可能な条件）**: Worker を停止した状態で `N_queue + 1`
-    件を同時投入したとき、commit 済みの `queued` ジョブ件数が `N_queue` を超えず、超過分の
-    リクエストのみが `Retry-After` 付き `503` を受け取ること。この不変条件を実装PRの
-    acceptance テストとして検証する。
-  - **A2A 契約との整合**: 既存の A2A `TaskStore` は状態 enum を `submitted / working /
-    completed / failed`（`packages/a2a-server/src/modules/a2a/response.model.ts`）で持ち、
+  - **受入テスト（実装時に満たすべき観測可能な条件）**: (1) Worker を停止した状態で
+    `N_queue + 1` 件を同時投入したとき、commit 済みの `queued` ジョブ件数が `N_queue` を超えず、
+    超過分のリクエストのみが `Retry-After` 付き `503` を受け取ること。(2) 容量に余裕があっても
+    受付トランザクションが busy timeout を超えるロック競合（`SQLITE_BUSY`/`SQLITE_LOCKED`）や
+    commit 失敗に至ったリクエストは、ジョブを永続化せずに `Retry-After` 付き `503` を返すこと
+    （commit 済み件数が増えないことを併せて検証）。(3) 非一時的エラーは `500` として分類され
+    `Retry-After` を付けないこと。これらの不変条件を実装PRの acceptance テストとして検証する。
+  - **Queue と TaskStore の永続化境界・受付原子性**: 受付時点では Queue レコードと TaskStore
+    レコードを別々に二重書きせず、**同一の永続ジョブレコードを Queue と TaskStore の共通の
+    正規レコード**として扱う。このレコードは最低限 `taskId`、`ownerPrincipalId`、A2A外部状態
+    `submitted`、Queue内部状態 `queued` を持つ。前述の SQLite `BEGIN IMMEDIATE` トランザクション
+    内で容量確認とこの正規レコードの挿入を行い、commit 後は同じストアに対する
+    `TaskStore.get(taskId, ownerPrincipalId)` で直ちに取得可能であることを確認してから `202` を返す。
+    したがって「Queueだけcommit済み／TaskStoreには未登録」という中間状態は作らない。#368は
+    この共通レコードを前提に、lease/retry/dead-letter等の後続状態遷移とworkflow stateの分離を
+    決める（受付時の正規レコードを別ストアへ分割する決定は本契約を上書きする後継ADRを要する）。
+  - **A2A 契約との整合と所有者境界**: 既存の A2A `TaskStore` は状態 enum を `submitted /
+    working / completed / failed`（`packages/a2a-server/src/modules/a2a/response.model.ts`）で持ち、
     受付時に `submitted` のタスクを生成、`get(taskId, ownerPrincipalId)` で所有者を検証する。
     本ADRの「`queued`」は**Queue 内部のジョブ状態**を指す用語であり、外部 A2A レスポンスの
     状態スキーマへ新たな `queued` 値を追加することは意図しない。外部契約としては、受付は
     既存の `submitted` を返し、Queue 内部状態 `queued` を A2A の `submitted` に対応付ける
     （Worker が lease で実行を開始したら `working` へ遷移）。ジョブ識別子は既存の `taskId` を
     そのまま用い、本文中の「jobId」は taskId の別名として扱う（新規識別子は導入しない）。
-    クライアントは既存の取得エンドポイントを通じて `TaskStore.get(taskId, ownerPrincipalId)`
-    でポーリングし、リクエストごとに所有者が検証される。状態マッピング・識別子の対応・所有者
-    分離を確認する契約テストは、これらを実装するPRで既存スキーマを保ったまま追加する。
+    Gateway と取得エンドポイントは、`ownerPrincipalId` を**認証middlewareが検証済みリクエスト
+    コンテキストへ設定したprincipalからのみ**取得する。リクエストbody/query、クライアント指定
+    headerの値をownerとして採用・上書きしてはならない。クライアントは既存の取得エンドポイント
+    を通じて `TaskStore.get(taskId, ownerPrincipalId)` でポーリングし、リクエストごとに認証済み
+    principalとの所有者一致を検証する。
+  - **A2A契約の受入テスト（実装時）**: (1) `202` 受信直後に、受付時と同じ認証済みprincipalで
+    `TaskStore.get(taskId, ownerPrincipalId)` を呼ぶと `submitted` タスクを取得できること、
+    (2) 同じtaskIdを別principalでポーリングすると存在を開示せず `404`（storeでは `null`）になる
+    こと、(3) body/query/追加headerに別ownerを指定しても認証コンテキストのprincipalだけが
+    `TaskStore.get`へ渡ること、(4) 状態マッピングとtaskIdの単一性を、既存状態スキーマを変えずに
+    契約テストで確認する。既存実装にはstore単位のowner isolationとrouteのprincipal引き渡しテスト
+    があるため、Queue実装PRでは受付から即時ポーリングまでの統合契約を追加する。
 - 外部Broker不要構成の可否（#366 受け入れ条件に対応）:
   - **不要にできる**。埋め込みDB（SQLite 等）をローカルファイルとして持つことで、常駐する
     外部 Broker を導入せずに永続キューを実現する。これにより単一ユーザーのローカル運用が
@@ -282,7 +308,9 @@ sequenceDiagram
     Worker->>DB: leaseで取得 (queued→working)
     Worker->>A2A: 実行要求
     A2A->>LLM: 同時実行上限は#367で決定
-    Client->>GW: TaskStore.get(taskId, owner)でポーリング
+    Client->>GW: taskIdでポーリング
+    GW->>GW: 認証contextからownerPrincipalId取得
+    GW->>DB: TaskStore.get(taskId, ownerPrincipalId)
 ```
 
 この図は、採用候補の案C において、容量確認と enqueue の原子性（`BEGIN IMMEDIATE` による
