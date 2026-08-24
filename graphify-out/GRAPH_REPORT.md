@@ -1,16 +1,16 @@
 # Graph Report - issue--366--queue--adr  (2026-08-25)
 
 ## Corpus Check
-- 474 files · ~307,920 words
+- 474 files · ~308,037 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3703 nodes · 5102 edges · 352 communities (259 shown, 93 thin omitted)
+- 3703 nodes · 5102 edges · 353 communities (260 shown, 93 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 32 edges (avg confidence: 0.7)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7a068d9c`
+- Built from commit: `dcddae0a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -121,6 +121,7 @@
 - 5. FastAPI アプリケーション構成
 - 7.4 対応方針
 - 2. A2A プロトコル実装仕様
+- lead-engineer.route.ts
 - Build (Developer Setup)
 - granite 構造化出力失敗: テスト・検証結果 (Python版)
 - 2. 要検討事項（比較表 + 採用/却下理由）
@@ -384,7 +385,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (352 total, 93 thin omitted)
+## Communities (353 total, 93 thin omitted)
 
 ### Community 0 - "config.ts"
 Cohesion: 0.43
@@ -671,8 +672,8 @@ Cohesion: 0.29
 Nodes (6): PR Review Agent — 画面モックアップ (Issue #243), 動作確認したい場合, 状態の保持, 画面一覧, 設計判断：静的HTML＋依存ゼロで構成した理由, 開き方
 
 ### Community 71 - "orchestrator.service.ts"
-Cohesion: 0.10
-Nodes (24): app, settings, createOrchestratorRoute(), CreateOrchestratorRouteOptions, requestBody, A2AOrchestratorSettings, createOrchestratorService(), DEFAULT_ORCHESTRATOR_SETTINGS (+16 more)
+Cohesion: 0.08
+Nodes (25): app, settings, createOrchestratorRoute(), CreateOrchestratorRouteOptions, requestBody, A2AOrchestratorSettings, createOrchestratorService(), DEFAULT_ORCHESTRATOR_SETTINGS (+17 more)
 
 ### Community 72 - "Code Review Agent"
 Cohesion: 0.14
@@ -794,6 +795,10 @@ Nodes (4): 7.4.1 V2 (`verify_only_additions_changed`) への対応: 構造的原
 Cohesion: 0.67
 Nodes (3): 2.1 Pydantic モデル（`src/code_review_agent/a2a/models.py`）, 2.2 TaskStore（`src/code_review_agent/a2a/task_store.py`）, 2. A2A プロトコル実装仕様
 
+### Community 106 - "lead-engineer.route.ts"
+Cohesion: 0.12
+Nodes (12): hono, hono, createGithubAuthMiddleware(), GithubAuthEnv, GithubAuthMiddlewareOptions, GithubAuthVariables, callMiddleware(), createLeadEngineerRoute() (+4 more)
+
 ### Community 107 - "Build (Developer Setup)"
 Cohesion: 0.22
 Nodes (9): 0. Requirements, 1. Clone and enter workspace, 2. Install dependencies, 3. Enable Git hooks (pre-commit), 4. Run application, 5. Test, 6. Lint, format, and type check (Biome / tsc), Build (Developer Setup) (+1 more)
@@ -839,8 +844,8 @@ Cohesion: 0.15
 Nodes (7): Function bindings, Keyed each blocks, CSP, Serialization, $inspect.trace(...), $inspect(...).with, createSubscriber
 
 ### Community 118 - "A2ATask"
-Cohesion: 0.07
-Nodes (8): A2APart, A2ATask, LeadEngineerTaskStore, InMemoryOrchestratorTaskStore, OrchestratorTaskStore, TaskStore, InMemoryReviewerTaskStore, ReviewerTaskStore
+Cohesion: 0.08
+Nodes (7): A2APart, A2ATask, LeadEngineerTaskStore, OrchestratorTaskStore, TaskStore, InMemoryReviewerTaskStore, ReviewerTaskStore
 
 ### Community 119 - "3. 比較対象アプローチ"
 Cohesion: 0.10
@@ -871,8 +876,8 @@ Cohesion: 0.17
 Nodes (12): 6.10 Use React DOM Resource Hints, 6.11 Use useTransition Over Manual Loading States, 6.1 Animate SVG Wrapper Instead of SVG Element, 6.2 CSS content-visibility for Long Lists, 6.3 Hoist Static JSX Elements, 6.4 Optimize SVG Precision, 6.5 Prevent Hydration Mismatch Without Flickering, 6.6 Suppress Expected Hydration Mismatches (+4 more)
 
 ### Community 126 - "pr-info.service.ts"
-Cohesion: 0.09
-Nodes (16): A2ASendTaskRequest, A2ASendTaskResponse, AgentCard, requestBody, A2AServerSettings, createPrInfoService(), DEFAULT_A2A_SERVER_SETTINGS, InMemoryTaskStore (+8 more)
+Cohesion: 0.10
+Nodes (15): A2ASendTaskRequest, A2ASendTaskResponse, AgentCard, A2AServerSettings, createPrInfoService(), DEFAULT_A2A_SERVER_SETTINGS, InMemoryTaskStore, PrInfoService (+7 more)
 
 ### Community 127 - "開発環境の初期セットアップ"
 Cohesion: 0.22
@@ -951,7 +956,7 @@ Cohesion: 0.14
 Nodes (13): $id, file_changes, id, pr_number, repository, stack, required, $schema (+5 more)
 
 ### Community 149 - "reviewing-universal/SKILL.md"
-Cohesion: 0.22
+Cohesion: 0.25
 Nodes (3): Quick triage, Reference files, Reviewing universal concerns
 
 ### Community 150 - "React Composition Patterns"
@@ -1131,7 +1136,7 @@ Cohesion: 0.29
 Nodes (7): Bundle size, Contents, Image optimization, Issue format, List virtualization, Memoization opportunity, Performance checks
 
 ### Community 204 - "Test quality checks"
-Cohesion: 0.29
+Cohesion: 0.25
 Nodes (7): Assertion presence, Behavior vs implementation detail, Contents, Coverage of changed paths, Issue format, Test isolation, Test quality checks
 
 ### Community 205 - "1. Eliminating Waterfalls"
@@ -1315,8 +1320,8 @@ Cohesion: 0.32
 Nodes (11): buildAngularReviewSkills(), buildReactReviewSkills(), buildSvelteReviewSkills(), buildVueReviewSkills(), buildWebSecurityReviewSkills(), createAgentSkills(), skillPath(), SKILLS_DIR (+3 more)
 
 ### Community 387 - "lead-engineer.service.ts"
-Cohesion: 0.07
-Nodes (27): hono, hono, createGithubAuthMiddleware(), GithubAuthEnv, GithubAuthMiddlewareOptions, GithubAuthVariables, callMiddleware(), A2AMessage (+19 more)
+Cohesion: 0.13
+Nodes (16): A2AMessage, A2ALeadEngineerSettings, createLeadEngineerService(), DEFAULT_LEAD_ENGINEER_SETTINGS, extractData(), InMemoryLeadEngineerTaskStore, jsonSchemaWithOptionalDefaults(), LeadEngineerAgentClass (+8 more)
 
 ### Community 388 - "base-reviewer.review.test.ts"
 Cohesion: 0.20
@@ -1386,9 +1391,9 @@ Nodes (7): ADR-0002: ワークフロー外部化(LangFlow/Dify)の検討, Conseq
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does ``agents/` + `tools/` TypeScript移行 設計ドキュメント (Issue #252)` connect `2. 要検討事項（比較表 + 採用/却下理由）` to `docs/mcp-connection-stabilization-spec.md`?**
+- **Why does ``agents/` + `tools/` TypeScript移行 設計ドキュメント (Issue #252)`` connect `2. 要検討事項（比較表 + 採用/却下理由）` to `docs/mcp-connection-stabilization-spec.md`?**
   _High betweenness centrality (0.007) - this node is a cross-community bridge._
-- **Why does `hono` connect `lead-engineer.service.ts` to `reviewer-runtime.ts`, `orchestrator.service.ts`, `health/index.ts`, `a2a/request.model.ts`, `a2a-server/package.json`?**
+- **Why does `hono` connect `lead-engineer.route.ts` to `reviewer-runtime.ts`, `orchestrator.service.ts`, `health/index.ts`, `a2a/request.model.ts`, `a2a-server/package.json`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **What connects `common.sh script`, `start_a2a_container.sh script`, `stop_a2a_container.sh script` to the rest of the system?**
   _2026 weakly-connected nodes found - possible documentation gaps or missing edges._
