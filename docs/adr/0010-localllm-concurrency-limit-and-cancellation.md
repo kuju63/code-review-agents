@@ -387,8 +387,9 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
      待機キューへ登録され、後に順序付けられた`acquire()`は待機キューへ入る前に
      即座に拒否される(permitを得ないまま、`cancelled`とは異なる**専用の`rejected`
      結果**としてsettleする——まだ試みてすらいない受付を「キャンセルされた」と表現しない
-     ための区別。この`rejected`結果の`ReviewOrchestrator`側の扱いは合意事項5の
-     非infra扱いの結果契約に準ずる)。
+     ための区別。この`rejected`結果は合意事項5で定義する専用の独立したエラー型
+     `ReviewerRejectedError`として`ReviewOrchestrator`へ伝わり、`ReviewerCancelledError`
+     とは別のメッセージを持つ`ReviewError`としてレポートされる)。
    - **cancel(`cancelSignal`)**: job deadline(既存の`reviewerTimeoutSeconds`)またはユーザー
      cancelが発火した場合は**即座に**該当jobの`cancelSignal`を発火させる。shutdown drainの
      場合は、新規受付停止(上記)が発火した時刻を起点とする**秒単位・有界(bounded)の
@@ -410,19 +411,28 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
      ユーザーcancelはjob/Workerプロセス全体に及ぶ合図のため3経路すべてに等しく適用する。
      一方job deadline(`reviewerTimeoutSeconds`)は並列レビュー段のreviewer群にのみ定義された
      既存の設定であり、`PRInfoCollector`(PR情報収集段)・`LeadEngineerAgent`(最終判定段)には
-     現状これに相当する段階別timeoutが存在しない。この2経路にjob deadline相当の専用timeoutを
-     新設するかどうかは本ADRの決定粒度を超えるため、当面はshutdown drain/ユーザーcancelの
-     `cancelSignal`のみを受け取る経路として扱い、段階別timeoutの要否は実装Issueで判断する。
+     現状これに相当する段階別timeoutが存在しない。**ただし、shutdown/ユーザーcancelのいずれも
+     発火しないまま`agent.invoke()`が解決しない場合に備え、この2経路にも何らかの有界(bounded)
+     な終了条件を持つことをADRレベルの要件とする**(現状これらの経路には一切のtimeoutが
+     存在せず、合意事項1でこれらも共有permitを保持するようになった以上、無期限に保持され続け
+     るリスクを放置できないため)。具体的な実現方式は次のいずれかとし、選択は実装Issueに
+     委ねる: (i) `PRInfoCollector`・`LeadEngineerAgent`それぞれに専用の段階別timeoutを新設し、
+     発火時に`cancelSignal`を発火させる、または (ii) reviewer群の`reviewerTimeoutSeconds`とは
+     別に、job全体(3段階すべて)を包含する単一のjob deadlineを新設し、3経路共通の
+     `cancelSignal`源とする。いずれの方式でも、timeout・shutdown・ユーザーcancelのいずれで
+     `cancelSignal`が発火した場合も、対応する`ProviderSemaphore`のpermit(取得済みであれば)を
+     合意事項5の解放契約に従い確実に解放するbounded cleanupを実装する。
    - **3つの局面それぞれの扱い**: (a) 新規受付停止の時点で`ProviderSemaphore.acquire()`の
      permit払い出し待ちだったジョブは、新規受付停止そのものでは中断されず、猶予期間中は
      通常どおりpermit払い出しを待ち続けられる(猶予期間終了後は上記の通りcancelSignalが
      発火し、合意事項5の待機中cancel経路に合流する)。(b) 猶予期間中に実行中(`agent.invoke()`
      実行中)のジョブは妨げられず、通常どおり完了できる。(c) 猶予期間中に自然にsettleした
      ジョブは、そのままの結果(成功/エラー)を返す——shutdownを理由に結果を破棄しない。
-5. `ProviderSemaphore`のpermitは、対応する`review()`呼び出しのPromiseが(通常完了・
-   `stopReason: 'cancelled'`によるキャンセル完了のいずれであっても)真に settle した時点で
-   `finally`により解放する。この解放条件自体は案1と変わらないが、cancelSignalの導入により
-   settleが早まる分だけ実効的な待機時間が短くなる。**`ProviderSemaphore.acquire()`自体も
+5. `ProviderSemaphore`のpermitは、対応する呼び出し(`LLMReviewAgent.review()`・
+   `PRInfoCollector`・`LeadEngineerAgent`のいずれも同一の契約に従う)のPromiseが(通常完了・
+   `stopReason: 'cancelled'`によるキャンセル完了のいずれであっても)真に settle した時点で、
+   その呼び出し自身の`finally`により**ちょうど一度だけ**解放する。この解放条件自体は案1と
+   変わらないが、cancelSignalの導入によりsettleが早まる分だけ実効的な待機時間が短くなる。**`ProviderSemaphore.acquire()`自体も
    `cancelSignal`を受け取り、これを観測する契約とする**: 既にabort済みのsignalを渡した
    `acquire()`はpermitを一切払い出さずに即座に拒否し、permit払い出し待ちでキュー内にある
    `acquire()`呼び出しは、待機中にsignalが発火した時点でpermitを得ないまま即座に settle
@@ -447,20 +457,29 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
    処理は、そのライフサイクル中ちょうど1回だけ実行される(通常完了・`cancelled`完了の
    いずれの経路でも、二重解放によってpermitカウントを不正に増やすことがないよう、
    解放処理自体を冪等または一度きりの操作として実装する)。
-   `acquire()`のキャンセルによる拒否、および`agent.invoke()`の`stopReason: 'cancelled'`は、
-   いずれも`ReviewOrchestrator`から見て**専用の、非infra扱いの結果**として扱う。
-   `packages/agent-core/src/agents/exceptions.ts`の`isInfraError()`は
-   `GithubMcpConnectionError`または`ModelError`のインスタンスのみを true と判定し、それ以外は
-   既定でfalseを返す(`review-orchestrator.ts`はfalseの場合バッチ全体を中断せず個々の
-   `ReviewError`として`errors`配列に積む)ため、この専用結果を`ModelError`/
-   `GithubMcpConnectionError`のいずれとも継承関係を持たない独立したエラー型
-   (例:`ReviewerCancelledError`)として実装する限り、この安全な既定の挙動から外れない。
-   既存の`review-orchestrator.ts`の「timeoutで`outcomes`に未登録のまま`Reviewer timed out
-   after ${timeoutSeconds}s`という`ReviewError`を積む」経路と同様、キャンセルされた
-   reviewerも人間が読んで区別できるメッセージ(例:`Reviewer cancelled (shutdown drain /
-   user cancel / job deadline)`)を持つ`ReviewError`としてレポートし、
-   `StructuredOutputMissingError`(現状「turn limitを満たせなかった」という誤解を招く
-   メッセージを持つ)を誤って使い回さない。
+   **`rejected`と`cancelled`は別契約の独立した結果として扱う**: `ProviderSemaphore.acquire()`
+   が新規受付停止(合意事項4)により待機キューへ入る前に拒否する`rejected`と、
+   `acquire()`が待機中にcancelSignalで中断される場合・`agent.invoke()`が
+   `stopReason: 'cancelled'`で完了する場合の`cancelled`は、意味が異なる(前者はそもそも
+   受け付けられなかった、後者は受け付けられた後に中断された)ため、それぞれ専用の独立した
+   エラー型として区別する: `ReviewerRejectedError`(`rejected`用)と
+   `ReviewerCancelledError`(`cancelled`用、`acquire()`待機中キャンセル・
+   `agent.invoke()`の`stopReason: 'cancelled'`の両方をこちらに統一する)。
+   いずれも`packages/agent-core/src/agents/exceptions.ts`の`isInfraError()`が判定する
+   `GithubMcpConnectionError`/`ModelError`のいずれとも継承関係を持たない独立したエラー型
+   として実装し、`isInfraError()`の既定false判定(`review-orchestrator.ts`はfalseの場合
+   バッチ全体を中断せず個々の`ReviewError`として`errors`配列に積む)から外れないようにする。
+   **変換の責務**: `ProviderSemaphore.acquire()`/`agent.invoke()`を直接呼ぶ
+   `LLMReviewAgent.review()`(および同一契約に従う`PRInfoCollector`・`LeadEngineerAgent`の
+   各メソッド)が、`acquire()`の拒否結果・`agent.invoke()`の`stopReason: 'cancelled'`を
+   それぞれ`ReviewerRejectedError`・`ReviewerCancelledError`へ変換して投げる責務を持つ。
+   **`ReviewOrchestrator`側のマッピング**: 呼び出し元の`ReviewOrchestrator`は、これら2種の
+   エラー型を(既存の`review-orchestrator.ts`の「timeoutで`outcomes`に未登録のまま
+   `Reviewer timed out after ${timeoutSeconds}s`という`ReviewError`を積む」経路と同様に)
+   人間が読んで区別できる別々のメッセージを持つ`ReviewError`としてレポートする(例:
+   `Reviewer rejected (shutdown in progress)`と`Reviewer cancelled (shutdown drain /
+   user cancel / job deadline)`)。`StructuredOutputMissingError`(現状「turn limitを
+   満たせなかった」という誤解を招くメッセージを持つ)はいずれの判定にも再利用しない。
 6. `cancelSignal`が機能しない異常系(モデルサーバーの無応答等、チェックポイントに到達しない
    ハング)への備えとして、ADR-0007が確立したWorkerのコンテナ境界を用いた強制終了を
    **最終手段のフォールバック**として残す。この監視・強制終了は**有界(bounded)な待機時間で
