@@ -346,11 +346,23 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
    semaphoreを作ってしまうと、実効的な同時実行数が経路数倍に膨れ上がり合意事項2の既定値が
    意味を失うため、この共有を必須の契約とする。
 2. 粒度はprovider/endpoint単位を基本とし、job全体・reviewer fan-outはこのsemaphoreへの
-   待機を通じて間接的に絞る(別途の明示的なカウンタは持たない)。**この上限は各Workerプロセス
-   内でのみ有効なローカルな上限である。** 現状の想定運用形態(ADR-0007が前提とする、水平
-   スケールしていない単一Workerインスタンスでの運用)では、Workerローカルの上限がそのまま
-   システム全体の上限と一致するため、論点1が求める「システム全体同時実行上限」を満たす。
-   Workerが複数レプリカへ水平スケールした場合は、この一致が崩れ複数レプリカにまたがる
+   待機を通じて間接的に絞る(別途の明示的なカウンタは持たない)。**この間接的な制限効果が
+   「job全体・fan-outの上限」として機能するのは、1つのjobが持つ全LLM呼び出し(PR情報収集・
+   並列レビュー・最終判定)が同一のprovider/endpointキーへ集中する場合に限る**:
+   現行の`orchestrator.service.ts`の`runTask()`は1job内で単一の`ReviewerConfig`
+   (単一の`providerType`/`llmBaseUrl`)を`PRInfoCollector`・`ReviewOrchestrator`・
+   `LeadEngineerAgent`へ共通して渡すため、現状のアーキテクチャではこの前提が常に成立する。
+   ただし`FullReviewInputSchema`はリクエストごとの`modelId`上書きを許容しており、将来
+   reviewerや呼び出し元ごとに異なる`llmBaseUrl`(=異なるprovider/endpointキー)を指定できる
+   ようになった場合、job全体・fan-outの制限は**そのjobが実際に使うキーの数だけ独立した
+   permit poolに分散**し、単一のsemaphoreによる集約的な上限ではなくなる(合意事項1の
+   共有レジストリはキーごとに独立しており、キーをまたぐ上位の集約semaphoreは持たない)。
+   **この上限は各Workerプロセス内・各provider/endpointキー内でのみ有効なローカルな上限で
+   ある。** 現状の想定運用形態(ADR-0007が前提とする、水平スケールしていない単一Worker
+   インスタンス・単一provider/endpointキーでの運用)では、Workerローカルかつキーローカルな
+   上限がそのままシステム全体の上限と一致するため、論点1が求める「システム全体同時実行上限」
+   を満たす。Workerが複数レプリカへ水平スケールした場合、または1job内で複数の異なる
+   provider/endpointキーが使われる場合は、この一致が崩れ複数レプリカ・複数キーにまたがる
    分散的な保証ではなくなる(その場合の扱いは[Consequences](#consequences)参照)。既定値は`1`とし、
    `packages/a2a-server/src/config.ts`の既存パターンに`CODE_REVIEW_MAX_CONCURRENT_LLM_CALLS`
    環境変数を追加して上書き可能にする(`loadServerSettingsFromEnv()`→`ServerSettings`→
@@ -367,15 +379,40 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
      新規`enqueue`、および`ProviderSemaphore.acquire()`への新規の待機開始を拒否する
      (=まだ`acquire()`を呼んでいないジョブ・reviewerは、この時点で新規に受け付けられない)。
      この合図自体は`cancelSignal`ではなく、実行中・待機中の呼び出しには何も伝播しない。
+     **実装契約**: `ProviderSemaphore`はレジストリ全体で共有する単一の`accepting`
+     真偽値状態を持ち、`acquire()`はこの状態の確認と待機キューへの登録を1つの原子的な
+     操作として行う(確認と登録の間に他の処理が割り込む余地を作らない)。これにより
+     shutdown開始と`acquire()`呼び出しが競合した場合の結果は一意に定まる:
+     `accepting`が`false`へ遷移する操作より前に順序付けられた`acquire()`は通常どおり
+     待機キューへ登録され、後に順序付けられた`acquire()`は待機キューへ入る前に
+     即座に拒否される(permitを得ないまま、`cancelled`とは異なる**専用の`rejected`
+     結果**としてsettleする——まだ試みてすらいない受付を「キャンセルされた」と表現しない
+     ための区別。この`rejected`結果の`ReviewOrchestrator`側の扱いは合意事項5の
+     非infra扱いの結果契約に準ずる)。
    - **cancel(`cancelSignal`)**: job deadline(既存の`reviewerTimeoutSeconds`)またはユーザー
      cancelが発火した場合は**即座に**該当jobの`cancelSignal`を発火させる。shutdown drainの
-     場合は、新規受付停止から始まる猶予期間(grace period、具体的な長さは実装時に決定)の間は
-     実行中・待機中の呼び出しを妨げず、**猶予期間が終了してもsettleしていない呼び出しに
-     対してのみ**、job deadline/ユーザーcancelと同じ`cancelSignal`を発火させる。
+     場合は、新規受付停止(上記)が発火した時刻を起点とする**秒単位・有界(bounded)の
+     grace period**の間は実行中・待機中の呼び出しを妨げず、**grace periodが終了しても
+     settleしていない呼び出しに対してのみ**、job deadline/ユーザーcancelと同じ
+     `cancelSignal`を発火させる(無期限に待ち続ける選択肢は持たない)。grace periodの
+     具体的な長さ(既定値)は実装時に決定するが、既存の`CODE_REVIEW_`プレフィックス環境変数
+     パターン(`config.ts`)に`CODE_REVIEW_SHUTDOWN_GRACE_PERIOD_SECONDS`のような専用の
+     設定項目を追加し、合意事項2の`CODE_REVIEW_MAX_CONCURRENT_LLM_CALLS`と同じ伝播経路
+     (`loadServerSettingsFromEnv()`→`ServerSettings`)に乗せることをADRレベルの要件とする。
    - この`cancelSignal`は`review-orchestrator.ts`から`base-reviewer.ts`の`agent.invoke(prompt,
      { ..., cancelSignal })`まで伝播する。`cancelSignal`が発火してもSDKは「次のキャンセル
      チェックポイント(ターン境界)」まで停止しないため、即時打ち切りではないことを利用側の
-     前提とする。
+     前提とする。**この`cancelSignal`受け取り・`acquire()`/`agent.invoke()`への伝播という
+     契約は、合意事項1で共有semaphoreの対象とした3経路すべて(`LLMReviewAgent.review()`、
+     `PRInfoCollector`、`LeadEngineerAgent`)に一律で及ぶ**——同じ共有permit poolを奪い合う
+     以上、いずれの経路が発行したpermit待機も、対応するcancelSignalなしに無期限に取り残さ
+     れることを許さないため。ただし発火源には経路ごとの違いがある: shutdown drainと
+     ユーザーcancelはjob/Workerプロセス全体に及ぶ合図のため3経路すべてに等しく適用する。
+     一方job deadline(`reviewerTimeoutSeconds`)は並列レビュー段のreviewer群にのみ定義された
+     既存の設定であり、`PRInfoCollector`(PR情報収集段)・`LeadEngineerAgent`(最終判定段)には
+     現状これに相当する段階別timeoutが存在しない。この2経路にjob deadline相当の専用timeoutを
+     新設するかどうかは本ADRの決定粒度を超えるため、当面はshutdown drain/ユーザーcancelの
+     `cancelSignal`のみを受け取る経路として扱い、段階別timeoutの要否は実装Issueで判断する。
    - **3つの局面それぞれの扱い**: (a) 新規受付停止の時点で`ProviderSemaphore.acquire()`の
      permit払い出し待ちだったジョブは、新規受付停止そのものでは中断されず、猶予期間中は
      通常どおりpermit払い出しを待ち続けられる(猶予期間終了後は上記の通りcancelSignalが
@@ -394,6 +431,22 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
    実際にpermitを取得できた場合にのみ実行する**契約とし、`acquire()`がpermit未払い出しの
    まま拒否・settleした経路では解放処理を呼ばない(何も取得していないものを解放しようとして
    カウントを狂わせない)。
+   **permit解放とcancelSignal発火が競合する場合の決定的な扱い**: あるpermitが解放されて
+   次の待機者へ払い出されるタイミングと、その待機者の`cancelSignal`が発火するタイミングが
+   競合した場合、**「解放される1個のpermitに対して、次にキューへ払い出すか、誰にも渡さず
+   即座に解放済みのまま次の待機者へ回すかを決定する処理」自体を、合意事項1の共有レジストリが
+   単一の直列化されたキュー操作として扱う**(2つの事象が同時に扱われることはなく、必ず
+   どちらかが先に確定する): 払い出し決定が先に確定した場合、その待機者はキャンセル済みで
+   あっても一旦permitを取得したものとして扱い、直後に(通常のcancel後permit解放の経路と
+   同じく)即座に解放してキューの次へ回す。キャンセルによる待機列からの除去が先に確定した
+   場合、その待機者はpermitを取得しないまま`cancelled`としてsettleし、解放されたpermitは
+   キューの次の待機者(いなければ空きpermitのまま)へ回る。**待機列からの除去**:
+   `cancelSignal`により`cancelled`としてsettleした待機者は、待機キューから直ちに除去し、
+   以後のpermit払い出し候補に含めない(キャンセル済みの待機者へ誤ってpermitを払い出す
+   ことを防ぐ)。**厳密に一度だけの解放**: 1つの`acquire()`呼び出しに対応するpermitの解放
+   処理は、そのライフサイクル中ちょうど1回だけ実行される(通常完了・`cancelled`完了の
+   いずれの経路でも、二重解放によってpermitカウントを不正に増やすことがないよう、
+   解放処理自体を冪等または一度きりの操作として実装する)。
    `acquire()`のキャンセルによる拒否、および`agent.invoke()`の`stopReason: 'cancelled'`は、
    いずれも`ReviewOrchestrator`から見て**専用の、非infra扱いの結果**として扱う。
    `packages/agent-core/src/agents/exceptions.ts`の`isInfraError()`は
