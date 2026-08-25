@@ -20227,7 +20227,7 @@
       "label": "\u691c\u8a0e\u4e8b\u9805B: \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u306eLLM\u540c\u6642\u5b9f\u884c\u4e0a\u9650\uff08#367\u3001\u5f8c\u7d9a\uff09",
       "file_type": "document",
       "source_file": "docs/adr/0009-localllm-review-flow-control.md",
-      "source_location": "L378",
+      "source_location": "L379",
       "_origin": "ast",
       "id": "docs_adr_0009_localllm_review_flow_control_\u691c\u8a0e\u4e8b\u9805b_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u306ellm\u540c\u6642\u5b9f\u884c\u4e0a\u9650_367_\u5f8c\u7d9a",
       "community": 2,
@@ -20238,7 +20238,7 @@
       "label": "\u691c\u8a0e\u4e8b\u9805C: \u969c\u5bb3\u6642\u306e\u914d\u4fe1\u5951\u7d04\u3068\u518d\u8d77\u52d5\u30fb\u72b6\u614b\u5206\u96e2\uff08#368\u3001\u5f8c\u7d9a\uff09",
       "file_type": "document",
       "source_file": "docs/adr/0009-localllm-review-flow-control.md",
-      "source_location": "L389",
+      "source_location": "L390",
       "_origin": "ast",
       "id": "docs_adr_0009_localllm_review_flow_control_\u691c\u8a0e\u4e8b\u9805c_\u969c\u5bb3\u6642\u306e\u914d\u4fe1\u5951\u7d04\u3068\u518d\u8d77\u52d5_\u72b6\u614b\u5206\u96e2_368_\u5f8c\u7d9a",
       "community": 2,
@@ -20249,7 +20249,7 @@
       "label": "\u5f71\u97ff\u30fb\u30d5\u30a9\u30ed\u30fc\u30a2\u30c3\u30d7",
       "file_type": "document",
       "source_file": "docs/adr/0009-localllm-review-flow-control.md",
-      "source_location": "L402",
+      "source_location": "L403",
       "_origin": "ast",
       "id": "docs_adr_0009_localllm_review_flow_control_\u5f71\u97ff_\u30d5\u30a9\u30ed\u30fc\u30a2\u30c3\u30d7",
       "community": 2,
@@ -34266,8 +34266,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_skills_reviewing_universal_references_test_quality",
-      "community": 149,
-      "community_name": "reviewing-universal/SKILL.md",
+      "community": 204,
+      "community_name": "Test quality checks",
       "norm_label": "test-quality.md"
     },
     {
@@ -78908,7 +78908,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/adr/0009-localllm-review-flow-control.md",
-      "source_location": "L402",
+      "source_location": "L403",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_adr_0009_localllm_review_flow_control_0009_localllm\u6d41\u91cf\u5236\u5fa1_queue\u5b9f\u88c5\u65b9\u5f0f_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650_\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
@@ -78930,7 +78930,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/adr/0009-localllm-review-flow-control.md",
-      "source_location": "L378",
+      "source_location": "L379",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_adr_0009_localllm_review_flow_control_0009_localllm\u6d41\u91cf\u5236\u5fa1_queue\u5b9f\u88c5\u65b9\u5f0f_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650_\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
@@ -78941,7 +78941,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/adr/0009-localllm-review-flow-control.md",
-      "source_location": "L389",
+      "source_location": "L390",
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_adr_0009_localllm_review_flow_control_0009_localllm\u6d41\u91cf\u5236\u5fa1_queue\u5b9f\u88c5\u65b9\u5f0f_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650_\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
@@ -98706,5 +98706,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "fec5ea249c057386b4cb831c0a2c1f6645dab18f"
+  "built_at_commit": "afb3e84bb16048de22cd42fa78f4a2777b392b61"
 }

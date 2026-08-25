@@ -3543,8 +3543,7 @@
       "packages_agent_core_skills_reviewing_universal_references_correctness",
       "packages_agent_core_skills_reviewing_universal_references_dependencies",
       "packages_agent_core_skills_reviewing_universal_references_performance",
-      "packages_agent_core_skills_reviewing_universal_references_security",
-      "packages_agent_core_skills_reviewing_universal_references_test_quality"
+      "packages_agent_core_skills_reviewing_universal_references_security"
     ],
     "169": [
       "packages_agent_core_skills_reviewing_universal_references_accessibility_accessibility_checks",
@@ -3598,6 +3597,7 @@
       "packages_agent_core_skills_reviewing_universal_references_security_issue_format"
     ],
     "204": [
+      "packages_agent_core_skills_reviewing_universal_references_test_quality",
       "packages_agent_core_skills_reviewing_universal_references_test_quality_test_quality_checks",
       "packages_agent_core_skills_reviewing_universal_references_test_quality_contents",
       "packages_agent_core_skills_reviewing_universal_references_test_quality_behavior_vs_implementation_detail",
@@ -4653,13 +4653,13 @@
     "144": 0.2,
     "31": 0.1,
     "6": 0.045454545454545456,
-    "149": 0.2222222222222222,
+    "149": 0.25,
     "169": 0.2222222222222222,
     "185": 0.25,
     "194": 0.25,
     "203": 0.2857142857142857,
     "175": 0.2222222222222222,
-    "204": 0.2857142857142857,
+    "204": 0.25,
     "111": 0.15384615384615385,
     "133": 0.16666666666666666,
     "29": 0.09523809523809523,

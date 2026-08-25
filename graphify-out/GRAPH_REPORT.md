@@ -1,7 +1,7 @@
 # Graph Report - issue--366--queue--adr  (2026-08-25)
 
 ## Corpus Check
-- 474 files · ~308,413 words
+- 474 files · ~308,418 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `fec5ea24`
+- Built from commit: `afb3e84b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -967,7 +967,7 @@ Cohesion: 0.14
 Nodes (13): $id, file_changes, id, pr_number, repository, stack, required, $schema (+5 more)
 
 ### Community 149 - "reviewing-universal/SKILL.md"
-Cohesion: 0.22
+Cohesion: 0.25
 Nodes (3): Quick triage, Reference files, Reviewing universal concerns
 
 ### Community 150 - "React Composition Patterns"
@@ -1147,7 +1147,7 @@ Cohesion: 0.29
 Nodes (7): Bundle size, Contents, Image optimization, Issue format, List virtualization, Memoization opportunity, Performance checks
 
 ### Community 204 - "Test quality checks"
-Cohesion: 0.29
+Cohesion: 0.25
 Nodes (7): Assertion presence, Behavior vs implementation detail, Contents, Coverage of changed paths, Issue format, Test isolation, Test quality checks
 
 ### Community 205 - "1. Eliminating Waterfalls"
