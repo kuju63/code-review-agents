@@ -342,10 +342,10 @@ sequenceDiagram
         GW-->>Client: 202 Accepted + taskId (状態=submitted)
     else 上限到達
         DB-->>GW: 挿入せず終了
-        GW-->>Client: 503 + Retry-After
+        GW-->>Client: 503 + Retry-After: 1
     else ロック競合(SQLITE_BUSY)/commit失敗
         DB-->>GW: ROLLBACK / error
-        GW-->>Client: 503 + Retry-After (または500)
+        GW-->>Client: 503 + Retry-After: 1 (または500)
     end
     Worker->>DB: leaseで取得 (queued→working)
     Worker->>A2A: 実行要求
