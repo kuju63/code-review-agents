@@ -265,11 +265,12 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
     payloadを変えると`409`、別principalの同じkeyは独立受付になること、(4) terminal後24時間内は
     既存結果を返し、期限後は新規受付可能であることを検証する。
   - **受入テスト（実装時に満たすべき観測可能な条件）**:
-    1. **容量上限**: Workerを停止し、各要求に相互に異なる `ownerPrincipalId` と
-       `Idempotency-Key` を割り当て、DBロックを意図的に保持しない条件で `N_queue + 1` 件を
-       同時投入する。commit済みの `queued` ジョブ件数が `N_queue` を超えず、容量上限で拒否
-       された1件だけが `503` + delta-seconds形式の `Retry-After: 1` を受け、他の `N_queue` 件は
-       `202` を受けること。
+    1. **容量上限**: テスト専用DBでWorkerを停止し、正規ジョブテーブルを初期化したうえで、
+       開始時のcommit済み `queued` ジョブ件数が**0**であることを事前assertする。各要求に相互に
+       異なる `ownerPrincipalId` と `Idempotency-Key` を割り当て、DBロックを意図的に保持しない
+       条件で `N_queue + 1` 件を同時投入する。commit済みの `queued` ジョブ件数が `N_queue` を
+       超えず、容量上限で拒否された1件だけが `503` + delta-seconds形式の `Retry-After: 1` を
+       受け、他の `N_queue` 件は `202` を受けること。
     2. **一時的ロック競合**: 容量に余裕を残した状態で別接続が書き込みロックをbusy timeoutの
        5秒を超えて保持し、対象要求の `BEGIN IMMEDIATE` またはcommitに `SQLITE_BUSY` /
        `SQLITE_LOCKED` を発生させる。その要求だけがジョブを永続化せず `503` + delta-seconds形式
