@@ -823,11 +823,9 @@
       "packages_agent_core_src_agents_base_reviewer_review_test_makecontext",
       "packages_agent_core_src_agents_base_reviewer_review_test_baseconfig"
     ],
-    "16": [
+    "273": [
       "packages_agent_core_src_agents_base_reviewer_test",
       "packages_agent_core_src_agents_base_reviewer_test_makeprinfo",
-      "packages_agent_core_src_agents_base_reviewer_test_plainfakereviewer",
-      "packages_agent_core_src_agents_base_reviewer_test_plainfakereviewer_review",
       "packages_agent_core_src_agents_base_reviewer_test_defaultllmfakereviewer",
       "packages_agent_core_src_agents_base_reviewer_test_nomcpllmfakereviewer",
       "packages_agent_core_src_agents_base_reviewer_test_context",
@@ -836,12 +834,41 @@
       "packages_agent_core_src_agents_base_reviewer_splitpatchlines",
       "packages_agent_core_src_agents_base_reviewer_annotatepatch",
       "packages_agent_core_src_agents_base_reviewer_buildprompt",
+      "packages_agent_core_src_agents_base_reviewer_llmreviewagent",
+      "packages_agent_core_src_agents_base_reviewer_llmreviewagent_needsgithubmcp",
+      "packages_agent_core_src_agents_base_reviewer_llmreviewagent_review",
+      "packages_agent_core_src_agents_registry_registerreviewer",
+      "packages_agent_core_src_agents_reviewers_angular",
+      "packages_agent_core_src_agents_reviewers_angular_angularreviewer",
+      "packages_agent_core_src_agents_reviewers_index_test",
+      "packages_agent_core_src_agents_reviewers_index",
+      "packages_agent_core_src_agents_reviewers_react",
+      "packages_agent_core_src_agents_reviewers_react_reactreviewer",
+      "packages_agent_core_src_agents_reviewers_reviewers_test",
+      "packages_agent_core_src_agents_reviewers_reviewers_test_reviewers",
+      "packages_agent_core_src_agents_reviewers_security",
+      "packages_agent_core_src_agents_reviewers_security_securityreviewer",
+      "packages_agent_core_src_agents_reviewers_svelte_test",
+      "packages_agent_core_src_agents_reviewers_svelte_test_makecontext",
+      "packages_agent_core_src_agents_reviewers_svelte",
+      "packages_agent_core_src_agents_reviewers_svelte_sveltereviewer",
+      "packages_agent_core_src_agents_reviewers_svelte_sveltereviewer_review",
+      "packages_agent_core_src_agents_reviewers_vue",
+      "packages_agent_core_src_agents_reviewers_vue_vuereviewer",
+      "packages_agent_core_src_models_review_projecttype",
+      "packages_agent_core_src_models_review_reviewperspective",
+      "packages_agent_core_src_models_review_reviewcontext",
+      "packages_agent_core_src_models_review_reviewresult",
+      "packages_agent_core_src_skills_agent_skills_factory_agentskilltype"
+    ],
+    "16": [
+      "packages_agent_core_src_agents_base_reviewer_test_plainfakereviewer",
+      "packages_agent_core_src_agents_base_reviewer_test_plainfakereviewer_review",
       "packages_agent_core_src_agents_base_reviewer_reviewerclass",
       "packages_agent_core_src_agents_base_reviewer_reviewagent",
       "packages_agent_core_src_agents_base_reviewer_reviewagent_constructor",
       "packages_agent_core_src_agents_base_reviewer_reviewagent_reviewerclass",
       "packages_agent_core_src_agents_base_reviewer_reviewagent_needsgithubmcp",
-      "packages_agent_core_src_agents_base_reviewer_llmreviewagent_review",
       "packages_agent_core_src_agents_registry_test",
       "packages_agent_core_src_agents_registry_test_fakereviewer",
       "packages_agent_core_src_agents_registry_test_fakereviewer_review",
@@ -855,15 +882,7 @@
       "packages_agent_core_src_agents_review_orchestrator_test_makeprinfo",
       "packages_agent_core_src_agents_review_orchestrator_test_makereviewerclass",
       "packages_agent_core_src_agents_review_orchestrator_test_config",
-      "packages_agent_core_src_agents_review_orchestrator_selectedreviewer",
-      "packages_agent_core_src_agents_reviewers_svelte_sveltereviewer_review",
-      "packages_agent_core_src_models_pr_info_prinforesult",
-      "packages_agent_core_src_models_review_reviewcontext",
-      "packages_agent_core_src_models_review_reviewresult",
-      "packages_agent_core_src_tools_file_read_tool_test",
-      "packages_agent_core_src_tools_file_read_tool",
-      "packages_agent_core_src_tools_file_read_tool_filereadtooloptions",
-      "packages_agent_core_src_tools_file_read_tool_createfilereadtool"
+      "packages_agent_core_src_agents_review_orchestrator_selectedreviewer"
     ],
     "77": [
       "packages_agent_core_src_agents_base_reviewer_reviewerconfig",
@@ -900,30 +919,6 @@
       "packages_agent_core_src_tools_shared_mcp_client_sharedmcpclient_mcpclient",
       "packages_agent_core_src_tools_shared_mcp_client_sharedmcpclient_addconsumer",
       "packages_agent_core_src_tools_shared_mcp_client_sharedmcpclient_removeconsumer"
-    ],
-    "273": [
-      "packages_agent_core_src_agents_base_reviewer_llmreviewagent",
-      "packages_agent_core_src_agents_base_reviewer_llmreviewagent_needsgithubmcp",
-      "packages_agent_core_src_agents_registry_registerreviewer",
-      "packages_agent_core_src_agents_reviewers_angular",
-      "packages_agent_core_src_agents_reviewers_angular_angularreviewer",
-      "packages_agent_core_src_agents_reviewers_index_test",
-      "packages_agent_core_src_agents_reviewers_index",
-      "packages_agent_core_src_agents_reviewers_react",
-      "packages_agent_core_src_agents_reviewers_react_reactreviewer",
-      "packages_agent_core_src_agents_reviewers_reviewers_test",
-      "packages_agent_core_src_agents_reviewers_reviewers_test_reviewers",
-      "packages_agent_core_src_agents_reviewers_security",
-      "packages_agent_core_src_agents_reviewers_security_securityreviewer",
-      "packages_agent_core_src_agents_reviewers_svelte_test",
-      "packages_agent_core_src_agents_reviewers_svelte_test_makecontext",
-      "packages_agent_core_src_agents_reviewers_svelte",
-      "packages_agent_core_src_agents_reviewers_svelte_sveltereviewer",
-      "packages_agent_core_src_agents_reviewers_vue",
-      "packages_agent_core_src_agents_reviewers_vue_vuereviewer",
-      "packages_agent_core_src_models_review_projecttype",
-      "packages_agent_core_src_models_review_reviewperspective",
-      "packages_agent_core_src_skills_agent_skills_factory_agentskilltype"
     ],
     "395": [
       "packages_agent_core_src_agents_lead_engineer_evaluate_test",
@@ -977,6 +972,7 @@
       "packages_agent_core_src_models_pr_info_prinfoschema",
       "packages_agent_core_src_models_pr_info_prinfo",
       "packages_agent_core_src_models_pr_info_prinforesultschema",
+      "packages_agent_core_src_models_pr_info_prinforesult",
       "packages_agent_core_src_models_review_test",
       "packages_agent_core_src_models_review_test_makeprinfo",
       "packages_agent_core_src_models_review",
@@ -1085,7 +1081,11 @@
       "packages_agent_core_src_skills_agent_skills_factory_buildsveltereviewskills",
       "packages_agent_core_src_skills_agent_skills_factory_buildvuereviewskills",
       "packages_agent_core_src_skills_agent_skills_factory_buildwebsecurityreviewskills",
-      "packages_agent_core_src_skills_agent_skills_factory_createagentskills"
+      "packages_agent_core_src_skills_agent_skills_factory_createagentskills",
+      "packages_agent_core_src_tools_file_read_tool_test",
+      "packages_agent_core_src_tools_file_read_tool",
+      "packages_agent_core_src_tools_file_read_tool_filereadtooloptions",
+      "packages_agent_core_src_tools_file_read_tool_createfilereadtool"
     ],
     "402": [
       "packages_agent_core_src_tools_github_mcp_test",
@@ -3543,7 +3543,8 @@
       "packages_agent_core_skills_reviewing_universal_references_correctness",
       "packages_agent_core_skills_reviewing_universal_references_dependencies",
       "packages_agent_core_skills_reviewing_universal_references_performance",
-      "packages_agent_core_skills_reviewing_universal_references_security"
+      "packages_agent_core_skills_reviewing_universal_references_security",
+      "packages_agent_core_skills_reviewing_universal_references_test_quality"
     ],
     "169": [
       "packages_agent_core_skills_reviewing_universal_references_accessibility_accessibility_checks",
@@ -3597,7 +3598,6 @@
       "packages_agent_core_skills_reviewing_universal_references_security_issue_format"
     ],
     "204": [
-      "packages_agent_core_skills_reviewing_universal_references_test_quality",
       "packages_agent_core_skills_reviewing_universal_references_test_quality_test_quality_checks",
       "packages_agent_core_skills_reviewing_universal_references_test_quality_contents",
       "packages_agent_core_skills_reviewing_universal_references_test_quality_behavior_vs_implementation_detail",
@@ -4461,17 +4461,17 @@
     "393": 0.18181818181818182,
     "382": 0.044444444444444446,
     "388": 0.2,
-    "16": 0.0858974358974359,
+    "273": 0.19206349206349208,
+    "16": 0.11428571428571428,
     "77": 0.09090909090909091,
-    "273": 0.3116883116883117,
     "395": 0.3333333333333333,
-    "8": 0.1090146750524109,
+    "8": 0.10707070707070707,
     "352": 0.19047619047619047,
     "433": 0.24444444444444444,
     "130": 0.28888888888888886,
     "114": 0.27472527472527475,
     "230": 0.25,
-    "385": 0.32051282051282054,
+    "385": 0.22794117647058823,
     "402": 1.0,
     "391": 0.39285714285714285,
     "389": 0.2222222222222222,
@@ -4653,13 +4653,13 @@
     "144": 0.2,
     "31": 0.1,
     "6": 0.045454545454545456,
-    "149": 0.25,
+    "149": 0.2222222222222222,
     "169": 0.2222222222222222,
     "185": 0.25,
     "194": 0.25,
     "203": 0.2857142857142857,
     "175": 0.2222222222222222,
-    "204": 0.25,
+    "204": 0.2857142857142857,
     "111": 0.15384615384615385,
     "133": 0.16666666666666666,
     "29": 0.09523809523809523,
@@ -4828,28 +4828,6 @@
   ],
   "surprises": [
     {
-      "source": "DefaultLLMFakeReviewer",
-      "target": "LLMReviewAgent",
-      "source_files": [
-        "packages/agent-core/src/agents/base-reviewer.test.ts",
-        "packages/agent-core/src/agents/base-reviewer.ts"
-      ],
-      "confidence": "EXTRACTED",
-      "relation": "inherits",
-      "why": "bridges separate communities; peripheral node `DefaultLLMFakeReviewer` unexpectedly reaches hub `LLMReviewAgent`"
-    },
-    {
-      "source": "NoMcpLLMFakeReviewer",
-      "target": "LLMReviewAgent",
-      "source_files": [
-        "packages/agent-core/src/agents/base-reviewer.test.ts",
-        "packages/agent-core/src/agents/base-reviewer.ts"
-      ],
-      "confidence": "EXTRACTED",
-      "relation": "inherits",
-      "why": "bridges separate communities; peripheral node `NoMcpLLMFakeReviewer` unexpectedly reaches hub `LLMReviewAgent`"
-    },
-    {
       "source": "DetectionRule",
       "target": "ProjectType",
       "source_files": [
@@ -4881,6 +4859,28 @@
       "confidence": "EXTRACTED",
       "relation": "calls",
       "why": "peripheral node `WorktreePlugin()` unexpectedly reaches hub `createToastNotifier()`"
+    },
+    {
+      "source": "hono",
+      "target": "createHealthRoute()",
+      "source_files": [
+        "packages/a2a-server/package.json",
+        "packages/a2a-server/src/modules/health/health.route.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "bridges separate communities"
+    },
+    {
+      "source": "hono",
+      "target": "createOrchestratorRoute()",
+      "source_files": [
+        "packages/a2a-server/package.json",
+        "packages/a2a-server/src/modules/orchestrator/orchestrator.route.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "bridges separate communities"
     }
   ],
   "questions": [
