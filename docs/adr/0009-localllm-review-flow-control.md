@@ -264,8 +264,8 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
     `N_queue + 1` 件を同時投入したとき、commit 済みの `queued` ジョブ件数が `N_queue` を超えず、
     超過分のリクエストのみが `503` とdelta-seconds形式の `Retry-After: 1` を受け取ること。(2) 容量に余裕があっても
     受付トランザクションが busy timeout を超えるロック競合（`SQLITE_BUSY`/`SQLITE_LOCKED`）や
-    commit 失敗に至ったリクエストは、ジョブを永続化せずに `Retry-After` 付き `503` を返すこと
-    （commit 済み件数が増えないことを併せて検証）。(3) 非一時的エラーは `500` として分類され
+    commit 失敗に至ったリクエストは、ジョブを永続化せずに `503` とdelta-seconds形式の
+    `Retry-After: 1` を返すこと（commit 済み件数が増えないことを併せて検証）。(3) 非一時的エラーは `500` として分類され
     `Retry-After` を付けないこと。これらの不変条件を実装PRの acceptance テストとして検証する。
   - **Queue と TaskStore の永続化境界・受付原子性**: 受付時点では Queue レコードと TaskStore
     レコードを別々に二重書きせず、**同一の永続ジョブレコードを Queue と TaskStore の共通の
