@@ -220,9 +220,13 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
     別RDBへ移行する場合は、同等の直列化（例: 該当行/カウンタへの排他ロック、または
     `SERIALIZABLE` 相当）と、一時的競合/恒久エラーの分類・待機上限を採用DBごとに定める。
     **トランザクションが commit に成功した後にのみ**、**受付レスポンス（HTTP `202 Accepted` と
-    taskId）** を返す。永続化・commit が失敗した場合は成功応答も永続的なジョブ参照も返さず、
-    上記分類に従って `503` または `500` として扱う。受付成功後、クライアントは taskId で
-    ポーリングして進捗を確認する（ADR-0007 が
+    taskId）** を返す。失敗時は次のように原因別に分類する。一時的な `SQLITE_BUSY` /
+    `SQLITE_LOCKED`（開始時・commit時を含む）は、挿入／commitが成立していないことを確認して
+    `503 Service Unavailable` + delta-seconds形式の `Retry-After: 1` とする。非一時的なI/O・DB破損・
+    予期しない制約違反・その他のcommit失敗は `500 Internal Server Error` とし、`Retry-After` を
+    付けない（冪等キーの一意制約競合は後述の再送契約として処理し、ここでいう予期しない制約
+    違反には含めない）。いずれも成功応答や新しいtaskIdを返さない。受付成功後、クライアントは
+    taskId でポーリングして進捗を確認する（ADR-0007 が
     受容済みの非同期化トレードオフに準拠。既存 A2A 契約との対応は後述の「A2A 契約との整合」
     参照）。**上限（`N_queue`）に達している場合はトランザクション内で挿入を行わず `503 Service
     Unavailable` とHTTP delta-seconds形式の `Retry-After: 1` を返す**（過負荷を上流へ明示的に
@@ -260,13 +264,19 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
     同時送信しても1件だけcommitされ全応答が同じtaskIdを指すこと、(3) 同一principal・keyで
     payloadを変えると`409`、別principalの同じkeyは独立受付になること、(4) terminal後24時間内は
     既存結果を返し、期限後は新規受付可能であることを検証する。
-  - **受入テスト（実装時に満たすべき観測可能な条件）**: (1) Worker を停止した状態で
-    `N_queue + 1` 件を同時投入したとき、commit 済みの `queued` ジョブ件数が `N_queue` を超えず、
-    超過分のリクエストのみが `503` とdelta-seconds形式の `Retry-After: 1` を受け取ること。(2) 容量に余裕があっても
-    受付トランザクションが busy timeout を超えるロック競合（`SQLITE_BUSY`/`SQLITE_LOCKED`）や
-    commit 失敗に至ったリクエストは、ジョブを永続化せずに `503` とdelta-seconds形式の
-    `Retry-After: 1` を返すこと（commit 済み件数が増えないことを併せて検証）。(3) 非一時的エラーは `500` として分類され
-    `Retry-After` を付けないこと。これらの不変条件を実装PRの acceptance テストとして検証する。
+  - **受入テスト（実装時に満たすべき観測可能な条件）**:
+    1. **容量上限**: Workerを停止し、各要求に相互に異なる `ownerPrincipalId` と
+       `Idempotency-Key` を割り当て、DBロックを意図的に保持しない条件で `N_queue + 1` 件を
+       同時投入する。commit済みの `queued` ジョブ件数が `N_queue` を超えず、容量上限で拒否
+       された1件だけが `503` + delta-seconds形式の `Retry-After: 1` を受け、他の `N_queue` 件は
+       `202` を受けること。
+    2. **一時的ロック競合**: 容量に余裕を残した状態で別接続が書き込みロックをbusy timeoutの
+       5秒を超えて保持し、対象要求の `BEGIN IMMEDIATE` またはcommitに `SQLITE_BUSY` /
+       `SQLITE_LOCKED` を発生させる。その要求だけがジョブを永続化せず `503` + delta-seconds形式
+       の `Retry-After: 1` を受け、commit済み件数が増えないこと。容量上限テストとは分離する。
+    3. **非一時的失敗**: I/Oエラー、DB破損、予期しない制約違反、その他の非一時的commit失敗を
+       個別に注入し、ジョブが永続化されず `500` を返し、`Retry-After`ヘッダーとtaskIdを返さない
+       こと。これらを一時的ロック競合の `503` と混同しないこと。
   - **Queue と TaskStore の永続化境界・受付原子性**: 受付時点では Queue レコードと TaskStore
     レコードを別々に二重書きせず、**同一の永続ジョブレコードを Queue と TaskStore の共通の
     正規レコード**として扱う。このレコードは最低限 `taskId`、`ownerPrincipalId`、
@@ -343,9 +353,12 @@ sequenceDiagram
     else 上限到達
         DB-->>GW: 挿入せず終了
         GW-->>Client: 503 + Retry-After: 1
-    else ロック競合(SQLITE_BUSY)/commit失敗
-        DB-->>GW: ROLLBACK / error
-        GW-->>Client: 503 + Retry-After: 1 (または500)
+    else 一時的ロック競合(SQLITE_BUSY/SQLITE_LOCKED)
+        DB-->>GW: ROLLBACK / 未commit
+        GW-->>Client: 503 + Retry-After: 1
+    else 非一時的I/O・破損・予期しない制約・commit失敗
+        DB-->>GW: ROLLBACK / 未commit
+        GW-->>Client: 500 (Retry-After/taskIdなし)
     end
     Worker->>DB: leaseで取得 (queued→working)
     Worker->>A2A: 実行要求
@@ -357,8 +370,9 @@ sequenceDiagram
 
 この図は、採用候補の案C において、`Idempotency-Key` による重複受付の抑止、容量確認と enqueue の
 原子性（`BEGIN IMMEDIATE` による直列化）、commit 成功後の非同期受付応答、永続バッファ、lease に
-よる実行を分離し、キュー上限超過やロック競合を `503` で backpressure として返す全体像を示して
-いる。同時実行上限の具体値・実現機構（#367）とWorker再配信の配信契約（#368）は本図の
+よる実行を分離し、容量上限と一時的ロック競合を `503`（`Retry-After: 1`）で backpressure として
+返し、非一時的失敗は `500` として区別する全体像を示している。同時実行上限の具体値・実現機構
+（#367）とWorker再配信の配信契約（#368）は本図の
 「Worker→A2A→LLM」区間および「永続Queue」の状態遷移として後続で肉付けする。
 
 ## 検討事項B: システム全体のLLM同時実行上限（#367、後続）
