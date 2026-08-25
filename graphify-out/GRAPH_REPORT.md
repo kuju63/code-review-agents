@@ -1,7 +1,7 @@
 # Graph Report - issue--366--queue--adr  (2026-08-25)
 
 ## Corpus Check
-- 474 files · ~308,362 words
+- 474 files · ~308,370 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `cfdd4481`
+- Built from commit: `2d039a6d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -31,7 +31,7 @@
 - required
 - 実装フロー（プロジェクト標準 TDD フロー準拠）
 - Seeded評価を`/orchestrator`単一呼び出しへ統合する 設計ドキュメント
-- review-orchestrator.test.ts
+- base-reviewer.ts
 - A2A API 実装計画・Python版設計の全文・検証手順
 - 9. fallback率30%未満の目標に対する構造的対応 (プロンプトのみでは不足)
 - GitHub MCP `streamable_http_client` 移行 設計ドキュメント
@@ -265,7 +265,7 @@
 - task_completion.md
 - tech_stack.md
 - enum
-- base-reviewer.ts
+- ProjectType
 - bundle-conditional.md
 - bundle-defer-third-party.md
 - bundle-dynamic-imports.md
@@ -374,16 +374,16 @@
 10. `run()` - 17 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `DefaultLLMFakeReviewer` --inherits--> `LLMReviewAgent`  [EXTRACTED]
+  packages/agent-core/src/agents/base-reviewer.test.ts → packages/agent-core/src/agents/base-reviewer.ts
+- `NoMcpLLMFakeReviewer` --inherits--> `LLMReviewAgent`  [EXTRACTED]
+  packages/agent-core/src/agents/base-reviewer.test.ts → packages/agent-core/src/agents/base-reviewer.ts
 - `DetectionRule` --references--> `ProjectType`  [EXTRACTED]
   packages/agent-core/src/agents/registry.ts → packages/agent-core/src/models/review.ts
 - `main()` --indirect_call--> `candidate()`  [INFERRED]
   packages/evaluation/src/discover-candidate-prs.ts → packages/evaluation/src/discover-candidate-prs.test.ts
 - `WorktreePlugin()` --calls--> `createToastNotifier()`  [EXTRACTED]
   .opencode/plugins/worktree.js → .opencode/shared/worktree-notifications.js
-- `createHealthRoute()` --references--> `hono`  [EXTRACTED]
-  packages/a2a-server/src/modules/health/health.route.ts → packages/a2a-server/package.json
-- `createOrchestratorRoute()` --references--> `hono`  [EXTRACTED]
-  packages/a2a-server/src/modules/orchestrator/orchestrator.route.ts → packages/a2a-server/package.json
 
 ## Import Cycles
 - None detected.
@@ -424,7 +424,7 @@ Nodes (8): MCP接続の安定化 実装計画 (Issue #115、Python版), テス�
 
 ### Community 8 - "models/index.ts"
 Cohesion: 0.11
-Nodes (42): buildPromptAndIndex(), IndexEntry, LeadEngineerAgent, resolveDecisions(), acceptedDecisions(), byVerdict(), DecisionVerdict, EvaluationFormat (+34 more)
+Nodes (41): buildPromptAndIndex(), IndexEntry, LeadEngineerAgent, resolveDecisions(), acceptedDecisions(), byVerdict(), DecisionVerdict, EvaluationFormat (+33 more)
 
 ### Community 9 - "評価パイプライン: 構造化ロギングへの移行 設計ドキュメント"
 Cohesion: 0.09
@@ -454,9 +454,9 @@ Nodes (12): Context, Cycle 1: モデル基本型（`DecisionVerdict`, `FindingDe
 Cohesion: 0.18
 Nodes (11): 1. 背景, 2. 決定, 3.1 `evaluation/tools/run_agent_evaluation.py`, 3.2 テスト — `tests/evaluation/tools/test_run_agent_evaluation.py`, 3. 実装, 4. ルーティング不一致の解消（Issue #238、旧・既知の逸脱）, 5. タイムアウト予算への影響, 6. テスト方針 (+3 more)
 
-### Community 16 - "review-orchestrator.test.ts"
-Cohesion: 0.11
-Nodes (9): ReviewAgent, ReviewerClass, PlainFakeReviewer, FakeReviewer, makePrInfo(), withFiles(), SelectedReviewer, CONFIG (+1 more)
+### Community 16 - "base-reviewer.ts"
+Cohesion: 0.09
+Nodes (22): annotatePatch(), buildPrompt(), composeSystemPrompt(), ReviewAgent, ReviewerClass, splitPatchLines(), context(), DefaultLLMFakeReviewer (+14 more)
 
 ### Community 17 - "A2A API 実装計画・Python版設計の全文・検証手順"
 Cohesion: 0.20
@@ -967,7 +967,7 @@ Cohesion: 0.14
 Nodes (13): $id, file_changes, id, pr_number, repository, stack, required, $schema (+5 more)
 
 ### Community 149 - "reviewing-universal/SKILL.md"
-Cohesion: 0.22
+Cohesion: 0.25
 Nodes (3): Quick triage, Reference files, Reviewing universal concerns
 
 ### Community 150 - "React Composition Patterns"
@@ -1147,7 +1147,7 @@ Cohesion: 0.29
 Nodes (7): Bundle size, Contents, Image optimization, Issue format, List virtualization, Memoization opportunity, Performance checks
 
 ### Community 204 - "Test quality checks"
-Cohesion: 0.29
+Cohesion: 0.25
 Nodes (7): Assertion presence, Behavior vs implementation detail, Contents, Coverage of changed paths, Issue format, Test isolation, Test quality checks
 
 ### Community 205 - "1. Eliminating Waterfalls"
@@ -1262,9 +1262,9 @@ Nodes (3): Agent Architecture, Layering, Reviewer plugin pattern (`packages/agen
 Cohesion: 0.29
 Nodes (7): angular, react, svelte, vue, stack, enum, type
 
-### Community 273 - "base-reviewer.ts"
-Cohesion: 0.19
-Nodes (21): annotatePatch(), buildPrompt(), composeSystemPrompt(), LLMReviewAgent, splitPatchLines(), context(), DefaultLLMFakeReviewer, makePrInfo() (+13 more)
+### Community 273 - "ProjectType"
+Cohesion: 0.31
+Nodes (11): LLMReviewAgent, registerReviewer(), AngularReviewer, ReactReviewer, reviewers, SecurityReviewer, SvelteReviewer, VueReviewer (+3 more)
 
 ### Community 352 - "registry.ts"
 Cohesion: 0.19
@@ -1327,8 +1327,8 @@ Cohesion: 0.13
 Nodes (13): `models/` TypeScript移行 コミット粒度・PRタイトル規約 (Issue #251), 1. 決定済み事項（本Issue着手前に確定していたもの）, 2.1 Zodのバージョン, 2.2 Enum表現, 2.3 フィールド命名（camelCase化）, 2.4 Nullable値の表現, 2.5 `ReviewContext.shared_mcp_client`の扱い, 2.6 `LeadEngineerReport`の振る舞い(accepted/rejected/to_markdown/to_evaluation_format) (+5 more)
 
 ### Community 385 - "agent-skills-factory.ts"
-Cohesion: 0.23
-Nodes (13): buildAngularReviewSkills(), buildReactReviewSkills(), buildSvelteReviewSkills(), buildVueReviewSkills(), buildWebSecurityReviewSkills(), createAgentSkills(), skillPath(), SKILLS_DIR (+5 more)
+Cohesion: 0.32
+Nodes (11): buildAngularReviewSkills(), buildReactReviewSkills(), buildSvelteReviewSkills(), buildVueReviewSkills(), buildWebSecurityReviewSkills(), createAgentSkills(), skillPath(), SKILLS_DIR (+3 more)
 
 ### Community 387 - "lead-engineer.service.ts"
 Cohesion: 0.13
