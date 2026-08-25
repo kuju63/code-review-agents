@@ -270,7 +270,11 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
        異なる `ownerPrincipalId` と `Idempotency-Key` を割り当て、DBロックを意図的に保持しない
        条件で `N_queue + 1` 件を同時投入する。commit済みの `queued` ジョブ件数が `N_queue` を
        超えず、容量上限で拒否された1件だけが `503` + delta-seconds形式の `Retry-After: 1` を
-       受け、他の `N_queue` 件は `202` を受けること。
+       受け、他の `N_queue` 件は `202` を受けること。さらに、このテスト中にdriverが
+       `SQLITE_BUSY` / `SQLITE_LOCKED` を1件も報告していないこと、`503`対象の
+       `(ownerPrincipalId, Idempotency-Key)` に対応する正規ジョブレコードがどの状態でも存在しない
+       こと、正規ジョブレコード総数が正確に `N_queue` 件であることをassertし、503の原因が
+       ロック競合ではなく容量上限であることを直接検証する。
     2. **一時的ロック競合**: 容量に余裕を残した状態で別接続が書き込みロックをbusy timeoutの
        5秒を超えて保持し、対象要求の `BEGIN IMMEDIATE` またはcommitに `SQLITE_BUSY` /
        `SQLITE_LOCKED` を発生させる。その要求だけがジョブを永続化せず `503` + delta-seconds形式
