@@ -3766,7 +3766,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_package_dependencies_hono",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "hono"
     },
     {
@@ -3777,7 +3777,7 @@
       "_origin": "ast",
       "id": "hono",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "hono"
     },
     {
@@ -3919,8 +3919,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_a2a_server_src_index",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "a2a-server/src/index.ts"
     },
     {
@@ -3930,8 +3930,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "packages_a2a_server_src_index_settings",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "settings"
     },
     {
@@ -3941,8 +3941,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "packages_a2a_server_src_index_app",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "app"
     },
     {
@@ -3953,7 +3953,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_a2a_auth_middleware_test",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "auth.middleware.test.ts"
     },
     {
@@ -3964,7 +3964,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_a2a_auth_middleware_test_callmiddleware",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "callmiddleware()"
     },
     {
@@ -3975,7 +3975,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_a2a_auth_middleware",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "auth.middleware.ts"
     },
     {
@@ -3986,7 +3986,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_a2a_auth_middleware_githubauthvariables",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "githubauthvariables"
     },
     {
@@ -3997,7 +3997,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_a2a_auth_middleware_githubauthenv",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "githubauthenv"
     },
     {
@@ -4008,7 +4008,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_a2a_auth_middleware_githubauthmiddlewareoptions",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "githubauthmiddlewareoptions"
     },
     {
@@ -4019,7 +4019,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_a2a_auth_middleware_creategithubauthmiddleware",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "creategithubauthmiddleware()"
     },
     {
@@ -4150,8 +4150,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_a2a_request_model_a2amessage",
-      "community": 126,
-      "community_name": "pr-info.service.ts",
+      "community": 71,
+      "community_name": "orchestrator.service.ts",
       "norm_label": "a2amessage"
     },
     {
@@ -4271,8 +4271,8 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_a2a_request_model_gettaskhttprequestschema",
-      "community": 74,
-      "community_name": "a2a/request.model.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "gettaskhttprequestschema"
     },
     {
@@ -4436,8 +4436,8 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_a2a_response_model_agentcard",
-      "community": 126,
-      "community_name": "pr-info.service.ts",
+      "community": 66,
+      "community_name": "a2a/index.ts",
       "norm_label": "agentcard"
     },
     {
@@ -4855,7 +4855,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_route_test",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "lead-engineer.route.test.ts"
     },
     {
@@ -4866,7 +4866,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_route_test_requestbody",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "requestbody"
     },
     {
@@ -4877,7 +4877,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_route_test_authmiddleware",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "authmiddleware()"
     },
     {
@@ -4888,7 +4888,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_route_test_createservice",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "createservice()"
     },
     {
@@ -4899,7 +4899,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_route",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "lead-engineer.route.ts"
     },
     {
@@ -4910,7 +4910,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_route_createleadengineerrouteoptions",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "createleadengineerrouteoptions"
     },
     {
@@ -4921,7 +4921,7 @@
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_route_createleadengineerroute",
       "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "createleadengineerroute()"
     },
     {
@@ -5217,8 +5217,8 @@
       "source_location": "L117",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_service_leadengineerservice",
-      "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community": 387,
+      "community_name": "lead-engineer.service.ts",
       "norm_label": "leadengineerservice"
     },
     {
@@ -5228,8 +5228,8 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_service_leadengineerservice_getagentcard",
-      "community": 126,
-      "community_name": "pr-info.service.ts",
+      "community": 387,
+      "community_name": "lead-engineer.service.ts",
       "norm_label": ".getagentcard()"
     },
     {
@@ -5250,8 +5250,8 @@
       "source_location": "L124",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_service_leadengineerservice_gettask",
-      "community": 118,
-      "community_name": "A2ATask",
+      "community": 387,
+      "community_name": "lead-engineer.service.ts",
       "norm_label": ".gettask()"
     },
     {
@@ -5261,8 +5261,8 @@
       "source_location": "L125",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_lead_engineer_lead_engineer_service_leadengineerservice_runpendingtasks",
-      "community": 106,
-      "community_name": "lead-engineer.route.ts",
+      "community": 387,
+      "community_name": "lead-engineer.service.ts",
       "norm_label": ".runpendingtasks()"
     },
     {
@@ -5415,8 +5415,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_route_test",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "orchestrator.route.test.ts"
     },
     {
@@ -5426,8 +5426,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_route_test_requestbody",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "requestbody"
     },
     {
@@ -5437,8 +5437,8 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_route_test_authmiddleware",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "authmiddleware()"
     },
     {
@@ -5448,8 +5448,8 @@
       "source_location": "L20",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_route_test_createservice",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "createservice()"
     },
     {
@@ -5459,8 +5459,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_route",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "orchestrator.route.ts"
     },
     {
@@ -5470,8 +5470,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_route_createorchestratorrouteoptions",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "createorchestratorrouteoptions"
     },
     {
@@ -5481,8 +5481,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_route_createorchestratorroute",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "createorchestratorroute()"
     },
     {
@@ -5822,8 +5822,8 @@
       "source_location": "L139",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_service_orchestratorservice",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": "orchestratorservice"
     },
     {
@@ -5833,8 +5833,8 @@
       "source_location": "L140",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_service_orchestratorservice_getagentcard",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": ".getagentcard()"
     },
     {
@@ -5855,8 +5855,8 @@
       "source_location": "L146",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_service_orchestratorservice_gettask",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": ".gettask()"
     },
     {
@@ -5866,8 +5866,8 @@
       "source_location": "L147",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_orchestrator_orchestrator_service_orchestratorservice_runpendingtasks",
-      "community": 71,
-      "community_name": "orchestrator.service.ts",
+      "community": 106,
+      "community_name": "a2a-server/src/index.ts",
       "norm_label": ".runpendingtasks()"
     },
     {
@@ -6900,8 +6900,8 @@
       "source_location": "L140",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_reviewers_reviewer_runtime_reviewerservice_getagentcard",
-      "community": 126,
-      "community_name": "pr-info.service.ts",
+      "community": 3,
+      "community_name": "reviewer-runtime.ts",
       "norm_label": ".getagentcard()"
     },
     {
@@ -6922,8 +6922,8 @@
       "source_location": "L146",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_reviewers_reviewer_runtime_reviewerservice_gettask",
-      "community": 3,
-      "community_name": "reviewer-runtime.ts",
+      "community": 118,
+      "community_name": "A2ATask",
       "norm_label": ".gettask()"
     },
     {
@@ -6977,8 +6977,8 @@
       "source_location": "L169",
       "_origin": "ast",
       "id": "packages_a2a_server_src_modules_reviewers_reviewer_runtime_sanitizeerror",
-      "community": 126,
-      "community_name": "pr-info.service.ts",
+      "community": 3,
+      "community_name": "reviewer-runtime.ts",
       "norm_label": "sanitizeerror()"
     },
     {
@@ -8077,7 +8077,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_test",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "base-reviewer.test.ts"
     },
@@ -8088,7 +8088,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_test_makeprinfo",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "makeprinfo()"
     },
@@ -8100,7 +8100,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_test_plainfakereviewer",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "plainfakereviewer"
     },
     {
@@ -8111,7 +8111,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_test_plainfakereviewer_review",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": ".review()"
     },
     {
@@ -8121,7 +8121,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_test_defaultllmfakereviewer",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "defaultllmfakereviewer"
     },
@@ -8132,7 +8132,7 @@
       "source_location": "L46",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_test_nomcpllmfakereviewer",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "nomcpllmfakereviewer"
     },
@@ -8143,7 +8143,7 @@
       "source_location": "L174",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_test_context",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "context()"
     },
@@ -8154,7 +8154,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "base-reviewer.ts"
     },
@@ -8165,7 +8165,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_composesystemprompt",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "composesystemprompt()"
     },
@@ -8176,7 +8176,7 @@
       "source_location": "L71",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_splitpatchlines",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "splitpatchlines()"
     },
@@ -8187,7 +8187,7 @@
       "source_location": "L98",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_annotatepatch",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "annotatepatch()"
     },
@@ -8198,7 +8198,7 @@
       "source_location": "L133",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_buildprompt",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "buildprompt()"
     },
@@ -8209,7 +8209,7 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_reviewerconfig",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": "reviewerconfig"
     },
@@ -8221,7 +8221,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_reviewerclass",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "reviewerclass"
     },
     {
@@ -8232,7 +8232,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_reviewagent",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "reviewagent"
     },
     {
@@ -8243,7 +8243,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_reviewagent_constructor",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": ".constructor()"
     },
     {
@@ -8254,7 +8254,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_reviewagent_reviewerclass",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": ".reviewerclass()"
     },
     {
@@ -8265,7 +8265,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_reviewagent_needsgithubmcp",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": ".needsgithubmcp()"
     },
     {
@@ -8276,7 +8276,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_llmreviewagent",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "llmreviewagent"
     },
     {
@@ -8287,7 +8287,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_llmreviewagent_needsgithubmcp",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": ".needsgithubmcp()"
     },
     {
@@ -8297,7 +8297,7 @@
       "source_location": "L287",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_base_reviewer_llmreviewagent_review",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": ".review()"
     },
@@ -8309,7 +8309,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_exceptions_test",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "exceptions.test.ts"
     },
     {
@@ -8320,7 +8320,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_exceptions",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "exceptions.ts"
     },
     {
@@ -8331,7 +8331,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_exceptions_structuredoutputmissingerror",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "structuredoutputmissingerror"
     },
     {
@@ -8342,7 +8342,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_exceptions_structuredoutputmissingerror_constructor",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": ".constructor()"
     },
     {
@@ -8353,7 +8353,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_exceptions_isinfraerror",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "isinfraerror()"
     },
     {
@@ -8517,7 +8517,7 @@
       "source_location": "L215",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_lead_engineer_leadengineeragent_constructor",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": ".constructor()"
     },
@@ -8650,7 +8650,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_model_provider_factory_test",
       "community": 433,
-      "community_name": "createModelProvider",
+      "community_name": "model-provider-factory.test.ts",
       "norm_label": "model-provider-factory.test.ts"
     },
     {
@@ -8661,7 +8661,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_model_provider_factory_test_mockedopenaimodel",
       "community": 433,
-      "community_name": "createModelProvider",
+      "community_name": "model-provider-factory.test.ts",
       "norm_label": "mockedopenaimodel"
     },
     {
@@ -8672,7 +8672,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_model_provider_factory_test_mockedvercelmodel",
       "community": 433,
-      "community_name": "createModelProvider",
+      "community_name": "model-provider-factory.test.ts",
       "norm_label": "mockedvercelmodel"
     },
     {
@@ -8683,7 +8683,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_model_provider_factory_test_mockedcreateollama",
       "community": 433,
-      "community_name": "createModelProvider",
+      "community_name": "model-provider-factory.test.ts",
       "norm_label": "mockedcreateollama"
     },
     {
@@ -8693,8 +8693,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_model_provider_factory",
-      "community": 433,
-      "community_name": "createModelProvider",
+      "community": 273,
+      "community_name": "base-reviewer.ts",
       "norm_label": "model-provider-factory.ts"
     },
     {
@@ -8704,8 +8704,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_model_provider_factory_providertype",
-      "community": 433,
-      "community_name": "createModelProvider",
+      "community": 73,
+      "community_name": "score-evaluation.ts",
       "norm_label": "providertype"
     },
     {
@@ -8715,8 +8715,8 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_model_provider_factory_createmodelprovideroptions",
-      "community": 433,
-      "community_name": "createModelProvider",
+      "community": 273,
+      "community_name": "base-reviewer.ts",
       "norm_label": "createmodelprovideroptions"
     },
     {
@@ -8726,8 +8726,8 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_model_provider_factory_createmodelprovider",
-      "community": 433,
-      "community_name": "createModelProvider",
+      "community": 273,
+      "community_name": "base-reviewer.ts",
       "norm_label": "createmodelprovider()"
     },
     {
@@ -8737,8 +8737,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_test",
-      "community": 130,
-      "community_name": "pr-info-collector.test.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "pr-info-collector.test.ts"
     },
     {
@@ -8748,8 +8748,8 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_test_mockagentctor_mockagentinvoke_mockcreategithubmcpclient_mockcreatemodelprovider",
-      "community": 130,
-      "community_name": "pr-info-collector.test.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "{ mockagentctor, mockagentinvoke, mockcreategithubmcpclient, mockcreatemodelprovider }"
     },
     {
@@ -8759,8 +8759,8 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_test_pr_details",
-      "community": 130,
-      "community_name": "pr-info-collector.test.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "pr_details"
     },
     {
@@ -8770,8 +8770,8 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_test_mcptextresult",
-      "community": 130,
-      "community_name": "pr-info-collector.test.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "mcptextresult()"
     },
     {
@@ -8781,8 +8781,8 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_test_mcpjsonresult",
-      "community": 130,
-      "community_name": "pr-info-collector.test.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "mcpjsonresult()"
     },
     {
@@ -8792,8 +8792,8 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_test_mcperrorresult",
-      "community": 130,
-      "community_name": "pr-info-collector.test.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "mcperrorresult()"
     },
     {
@@ -8803,8 +8803,8 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_test_dispatchconfig",
-      "community": 130,
-      "community_name": "pr-info-collector.test.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "dispatchconfig"
     },
     {
@@ -8814,8 +8814,8 @@
       "source_location": "L66",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_test_createdispatch",
-      "community": 130,
-      "community_name": "pr-info-collector.test.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "createdispatch()"
     },
     {
@@ -8825,8 +8825,8 @@
       "source_location": "L99",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_test_makemcpclient",
-      "community": 130,
-      "community_name": "pr-info-collector.test.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "makemcpclient()"
     },
     {
@@ -8836,8 +8836,8 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_test_base_config",
-      "community": 130,
-      "community_name": "pr-info-collector.test.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "base_config"
     },
     {
@@ -8847,7 +8847,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "pr-info-collector.ts"
     },
@@ -8858,7 +8858,7 @@
       "source_location": "L52",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_lockfile_content_names",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "lockfile_content_names"
     },
@@ -8869,8 +8869,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollectorconfig",
-      "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community": 230,
+      "community_name": "pr-info-collector.ts",
       "norm_label": "prinfocollectorconfig"
     },
     {
@@ -8881,7 +8881,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_isplainrecord",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": "isplainrecord()"
     },
     {
@@ -8892,7 +8892,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_extractlabelnames",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": "extractlabelnames()"
     },
     {
@@ -8903,7 +8903,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_extractheadref",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": "extractheadref()"
     },
     {
@@ -8913,7 +8913,7 @@
       "source_location": "L122",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_extracttooltextblocks",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "extracttooltextblocks()"
     },
@@ -8924,7 +8924,7 @@
       "source_location": "L137",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_mcptoolinstance",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "mcptoolinstance"
     },
@@ -8935,7 +8935,7 @@
       "source_location": "L138",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_callmcptool",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "callmcptool"
     },
@@ -8946,7 +8946,7 @@
       "source_location": "L149",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_createmcptoolcaller",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "createmcptoolcaller()"
     },
@@ -8958,7 +8958,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": "prinfocollector"
     },
     {
@@ -8969,7 +8969,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_constructor",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".constructor()"
     },
     {
@@ -8980,7 +8980,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_collect",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".collect()"
     },
     {
@@ -8991,7 +8991,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_writedebugresponsefile",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".writedebugresponsefile()"
     },
     {
@@ -9002,7 +9002,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readprdetails",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".readprdetails()"
     },
     {
@@ -9013,7 +9013,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readchangedfiles",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".readchangedfiles()"
     },
     {
@@ -9024,7 +9024,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_listdirectoryentries",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".listdirectoryentries()"
     },
     {
@@ -9035,7 +9035,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readdependencyfiles",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".readdependencyfiles()"
     },
     {
@@ -9046,7 +9046,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readfiletext",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".readfiletext()"
     },
     {
@@ -9057,7 +9057,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_resolveworkspacepackagejsonpaths",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".resolveworkspacepackagejsonpaths()"
     },
     {
@@ -9068,7 +9068,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readmanifestcontents",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".readmanifestcontents()"
     },
     {
@@ -9079,7 +9079,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_readreadme",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".readreadme()"
     },
     {
@@ -9090,7 +9090,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_buildmodel",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".buildmodel()"
     },
     {
@@ -9101,7 +9101,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_pr_info_collector_prinfocollector_summarizereadme",
       "community": 230,
-      "community_name": "PRInfoCollector",
+      "community_name": "pr-info-collector.ts",
       "norm_label": ".summarizereadme()"
     },
     {
@@ -9111,7 +9111,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "docref_adr_0004",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "adr-0004"
     },
@@ -9123,7 +9123,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_registry_test",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "registry.test.ts"
     },
     {
@@ -9134,7 +9134,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_registry_test_fakereviewer",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "fakereviewer"
     },
     {
@@ -9145,7 +9145,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_registry_test_fakereviewer_review",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": ".review()"
     },
     {
@@ -9156,7 +9156,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_registry_test_makereviewerclass",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "makereviewerclass()"
     },
     {
@@ -9167,7 +9167,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_registry_test_makeprinfo",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "makeprinfo()"
     },
     {
@@ -9178,7 +9178,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_registry_test_withfiles",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "withfiles()"
     },
     {
@@ -9288,7 +9288,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_registry_registerreviewer",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "registerreviewer()"
     },
     {
@@ -9332,7 +9332,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_test",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "review-orchestrator.test.ts"
     },
     {
@@ -9343,7 +9343,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_test_mockconnect_mockdisconnect_mockcreategithubmcpclient",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "{ mockconnect, mockdisconnect, mockcreategithubmcpclient }"
     },
     {
@@ -9354,7 +9354,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_test_sleep",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "sleep()"
     },
     {
@@ -9365,7 +9365,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_test_createdeferred",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "createdeferred()"
     },
     {
@@ -9376,7 +9376,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_test_makeprinfo",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "makeprinfo()"
     },
     {
@@ -9387,7 +9387,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_test_makereviewerclass",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "makereviewerclass()"
     },
     {
@@ -9397,7 +9397,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_test_loadmodules",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": "loadmodules()"
     },
@@ -9409,7 +9409,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_test_config",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "config"
     },
     {
@@ -9419,7 +9419,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": "review-orchestrator.ts"
     },
@@ -9431,7 +9431,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_selectedreviewer",
       "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community_name": "review-orchestrator.ts",
       "norm_label": "selectedreviewer"
     },
     {
@@ -9441,7 +9441,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_reviewoutcome",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": "reviewoutcome"
     },
@@ -9453,7 +9453,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_revieworchestrator",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "revieworchestrator"
     },
     {
@@ -9463,7 +9463,7 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_revieworchestrator_constructor",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": ".constructor()"
     },
@@ -9475,7 +9475,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_revieworchestrator_run",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": ".run()"
     },
     {
@@ -9486,7 +9486,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_review_orchestrator_revieworchestrator_selectreviewers",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": ".selectreviewers()"
     },
     {
@@ -9497,7 +9497,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_angular",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "angular.ts"
     },
     {
@@ -9508,7 +9508,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_angular_angularreviewer",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "angularreviewer"
     },
     {
@@ -9519,7 +9519,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_index_test",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "reviewers/index.test.ts"
     },
     {
@@ -9530,7 +9530,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_index",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "agents/reviewers/index.ts"
     },
     {
@@ -9541,7 +9541,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_react",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "react.ts"
     },
     {
@@ -9552,7 +9552,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_react_reactreviewer",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "reactreviewer"
     },
     {
@@ -9563,7 +9563,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_reviewers_test",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "reviewers.test.ts"
     },
     {
@@ -9574,7 +9574,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_reviewers_test_reviewers",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "reviewers"
     },
     {
@@ -9585,7 +9585,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_security",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "security.ts"
     },
     {
@@ -9596,7 +9596,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_security_securityreviewer",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "securityreviewer"
     },
     {
@@ -9607,7 +9607,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_svelte_test",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "svelte.test.ts"
     },
     {
@@ -9618,7 +9618,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_svelte_test_makecontext",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "makecontext()"
     },
     {
@@ -9629,7 +9629,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_svelte",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "svelte.ts"
     },
     {
@@ -9640,7 +9640,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_svelte_sveltereviewer",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "sveltereviewer"
     },
     {
@@ -9650,7 +9650,7 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_svelte_sveltereviewer_review",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": ".review()"
     },
@@ -9662,7 +9662,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_vue",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "vue.ts"
     },
     {
@@ -9673,7 +9673,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_reviewers_vue_vuereviewer",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "vuereviewer"
     },
     {
@@ -9683,7 +9683,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_target_file_test",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "target-file.test.ts"
     },
@@ -9694,7 +9694,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_target_file",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "target-file.ts"
     },
@@ -9705,7 +9705,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_target_file_target_extensions",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "target_extensions"
     },
@@ -9716,7 +9716,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_target_file_target_filenames",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "target_filenames"
     },
@@ -9727,7 +9727,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_target_file_dependency_filenames",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "dependency_filenames"
     },
@@ -9738,7 +9738,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_target_file_istargetfile",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "istargetfile()"
     },
@@ -9749,7 +9749,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "packages_agent_core_src_agents_target_file_isdependencyfile",
-      "community": 114,
+      "community": 230,
       "community_name": "pr-info-collector.ts",
       "norm_label": "isdependencyfile()"
     },
@@ -10145,8 +10145,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "packages_agent_core_src_models_pr_info_prinforesult",
-      "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community": 8,
+      "community_name": "models/index.ts",
       "norm_label": "prinforesult"
     },
     {
@@ -10190,7 +10190,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_models_review_projecttype",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "projecttype"
     },
     {
@@ -10201,7 +10201,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_models_review_reviewperspective",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "reviewperspective"
     },
     {
@@ -10266,7 +10266,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "packages_agent_core_src_models_review_reviewcontext",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "reviewcontext"
     },
@@ -10277,8 +10277,8 @@
       "source_location": "L86",
       "_origin": "ast",
       "id": "packages_agent_core_src_models_review_reviewresultschema",
-      "community": 74,
-      "community_name": "a2a/request.model.ts",
+      "community": 8,
+      "community_name": "models/index.ts",
       "norm_label": "reviewresultschema"
     },
     {
@@ -10288,7 +10288,7 @@
       "source_location": "L92",
       "_origin": "ast",
       "id": "packages_agent_core_src_models_review_reviewresult",
-      "community": 16,
+      "community": 273,
       "community_name": "base-reviewer.ts",
       "norm_label": "reviewresult"
     },
@@ -10310,7 +10310,7 @@
       "source_location": "L100",
       "_origin": "ast",
       "id": "packages_agent_core_src_models_review_reviewerror",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": "reviewerror"
     },
@@ -10421,7 +10421,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_skills_agent_skills_factory_agentskilltype",
       "community": 273,
-      "community_name": "ProjectType",
+      "community_name": "base-reviewer.ts",
       "norm_label": "agentskilltype"
     },
     {
@@ -10497,8 +10497,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_file_read_tool_test",
-      "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community": 385,
+      "community_name": "agent-skills-factory.ts",
       "norm_label": "file-read-tool.test.ts"
     },
     {
@@ -10508,8 +10508,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_file_read_tool",
-      "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community": 385,
+      "community_name": "agent-skills-factory.ts",
       "norm_label": "file-read-tool.ts"
     },
     {
@@ -10519,8 +10519,8 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_file_read_tool_filereadtooloptions",
-      "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community": 385,
+      "community_name": "agent-skills-factory.ts",
       "norm_label": "filereadtooloptions"
     },
     {
@@ -10530,8 +10530,8 @@
       "source_location": "L27",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_file_read_tool_createfilereadtool",
-      "community": 16,
-      "community_name": "base-reviewer.ts",
+      "community": 385,
+      "community_name": "agent-skills-factory.ts",
       "norm_label": "createfilereadtool()"
     },
     {
@@ -10564,7 +10564,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_github_mcp",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "github-mcp.ts"
     },
     {
@@ -10575,7 +10575,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_github_mcp_githubmcpconnectionerror",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "githubmcpconnectionerror"
     },
     {
@@ -10586,7 +10586,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_github_mcp_githubmcpconnectionerror_constructor",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": ".constructor()"
     },
     {
@@ -10597,7 +10597,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_github_mcp_creategithubmcpclientoptions",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "creategithubmcpclientoptions"
     },
     {
@@ -10607,8 +10607,8 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_github_mcp_creategithubmcpclient",
-      "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community": 273,
+      "community_name": "base-reviewer.ts",
       "norm_label": "creategithubmcpclient()"
     },
     {
@@ -10619,7 +10619,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_retry_test",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "retry.test.ts"
     },
     {
@@ -10630,7 +10630,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_retry",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "retry.ts"
     },
     {
@@ -10641,7 +10641,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_retry_retryoptions",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "retryoptions"
     },
     {
@@ -10652,7 +10652,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_retry_defaultsleep",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "defaultsleep()"
     },
     {
@@ -10663,7 +10663,7 @@
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_retry_withretry",
       "community": 77,
-      "community_name": "review-orchestrator.ts",
+      "community_name": "github-mcp.ts",
       "norm_label": "withretry()"
     },
     {
@@ -10673,7 +10673,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_shared_mcp_client_test",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": "shared-mcp-client.test.ts"
     },
@@ -10684,7 +10684,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_shared_mcp_client_test_fakemcpclient",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": "fakemcpclient()"
     },
@@ -10695,7 +10695,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_shared_mcp_client",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": "shared-mcp-client.ts"
     },
@@ -10706,7 +10706,7 @@
       "source_location": "L15",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_shared_mcp_client_sharedmcpclient",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": "sharedmcpclient"
     },
@@ -10717,7 +10717,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_shared_mcp_client_sharedmcpclient_constructor",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": ".constructor()"
     },
@@ -10728,7 +10728,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_shared_mcp_client_sharedmcpclient_mcpclient",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": ".mcpclient()"
     },
@@ -10739,7 +10739,7 @@
       "source_location": "L26",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_shared_mcp_client_sharedmcpclient_addconsumer",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": ".addconsumer()"
     },
@@ -10750,7 +10750,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "packages_agent_core_src_tools_shared_mcp_client_sharedmcpclient_removeconsumer",
-      "community": 77,
+      "community": 16,
       "community_name": "review-orchestrator.ts",
       "norm_label": ".removeconsumer()"
     },
@@ -13049,8 +13049,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_test",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "generate-evaluation-report.test.ts"
     },
     {
@@ -13060,8 +13060,8 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_test_row",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "row"
     },
     {
@@ -13071,8 +13071,8 @@
       "source_location": "L31",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_test_makescores",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "makescores()"
     },
     {
@@ -13082,8 +13082,8 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_test_makegolditemrow",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "makegolditemrow()"
     },
     {
@@ -13093,8 +13093,8 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_test_makerawfinding",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "makerawfinding()"
     },
     {
@@ -13104,8 +13104,8 @@
       "source_location": "L276",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_test_basekwargs",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "basekwargs()"
     },
     {
@@ -13115,8 +13115,8 @@
       "source_location": "L552",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_test_baseargs",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "baseargs()"
     },
     {
@@ -13225,8 +13225,8 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_evaluationscores",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "evaluationscores"
     },
     {
@@ -13258,8 +13258,8 @@
       "source_location": "L111",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_loadfailedids",
-      "community": 75,
-      "community_name": "generate-evaluation-report.ts",
+      "community": 378,
+      "community_name": "merge-predictions.ts",
       "norm_label": "loadfailedids()"
     },
     {
@@ -13269,8 +13269,8 @@
       "source_location": "L140",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_sanitizecell",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "sanitizecell()"
     },
     {
@@ -13280,8 +13280,8 @@
       "source_location": "L155",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_getor",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "getor()"
     },
     {
@@ -13291,8 +13291,8 @@
       "source_location": "L161",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_refcell",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "refcell()"
     },
     {
@@ -13302,8 +13302,8 @@
       "source_location": "L171",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_findingrow",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "findingrow()"
     },
     {
@@ -13313,8 +13313,8 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_renderitemdetail",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "renderitemdetail()"
     },
     {
@@ -13324,8 +13324,8 @@
       "source_location": "L209",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_truncatetitle",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "truncatetitle()"
     },
     {
@@ -13335,8 +13335,8 @@
       "source_location": "L213",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_goldheading",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "goldheading()"
     },
     {
@@ -13346,8 +13346,8 @@
       "source_location": "L218",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_seededheading",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "seededheading()"
     },
     {
@@ -13357,8 +13357,8 @@
       "source_location": "L233",
       "_origin": "ast",
       "id": "packages_evaluation_src_generate_evaluation_report_buildreport",
-      "community": 90,
-      "community_name": "generate-evaluation-report.test.ts",
+      "community": 75,
+      "community_name": "generate-evaluation-report.ts",
       "norm_label": "buildreport()"
     },
     {
@@ -14160,8 +14160,8 @@
       "source_location": "L25",
       "_origin": "ast",
       "id": "packages_evaluation_src_merge_predictions_test_freshmerge",
-      "community": 159,
-      "community_name": "logging.ts",
+      "community": 378,
+      "community_name": "merge-predictions.ts",
       "norm_label": "freshmerge()"
     },
     {
@@ -14776,8 +14776,8 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "packages_evaluation_src_score_evaluation_makellmsemanticjudge",
-      "community": 433,
-      "community_name": "createModelProvider",
+      "community": 73,
+      "community_name": "score-evaluation.ts",
       "norm_label": "makellmsemanticjudge()"
     },
     {
@@ -15007,8 +15007,8 @@
       "source_location": "L424",
       "_origin": "ast",
       "id": "packages_evaluation_src_score_evaluation_scoreevaluationoptions",
-      "community": 433,
-      "community_name": "createModelProvider",
+      "community": 73,
+      "community_name": "score-evaluation.ts",
       "norm_label": "scoreevaluationoptions"
     },
     {
@@ -16011,7 +16011,7 @@
       "norm_label": "vitest.config.ts"
     },
     {
-      "label": "CLAUDE.md",
+      "label": ".claude/CLAUDE.md",
       "file_type": "document",
       "source_file": ".claude/CLAUDE.md",
       "source_location": "L1",
@@ -16019,7 +16019,7 @@
       "id": "claude_claude",
       "community": 367,
       "community_name": ".claude/CLAUDE.md",
-      "norm_label": "claude.md"
+      "norm_label": ".claude/claude.md"
     },
     {
       "label": "graphify",
@@ -16699,8 +16699,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "claude_skills_run_evaluation_skill",
-      "community": 123,
-      "community_name": "EVALUATION_PLAN.md",
+      "community": 76,
+      "community_name": "2. \u8a2d\u8a08\u65b9\u91dd",
       "norm_label": "run-evaluation/skill.md"
     },
     {
@@ -17914,20 +17914,20 @@
       "norm_label": "tech stack"
     },
     {
-      "label": "AGENTS.md",
+      "label": "CLAUDE.md",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L1",
       "_origin": "ast",
       "id": "claude",
       "community": 123,
       "community_name": "EVALUATION_PLAN.md",
-      "norm_label": "agents.md"
+      "norm_label": "claude.md"
     },
     {
       "label": "Coding Agent Guide",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L1",
       "_origin": "ast",
       "id": "claude_coding_agent_guide",
@@ -17938,7 +17938,7 @@
     {
       "label": "Project Overview",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L3",
       "_origin": "ast",
       "id": "claude_project_overview",
@@ -17949,7 +17949,7 @@
     {
       "label": "Technology",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L19",
       "_origin": "ast",
       "id": "claude_technology",
@@ -17960,7 +17960,7 @@
     {
       "label": "Frequently Used Commands",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L31",
       "_origin": "ast",
       "id": "claude_frequently_used_commands",
@@ -17971,7 +17971,7 @@
     {
       "label": "Setup",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L35",
       "_origin": "ast",
       "id": "claude_setup",
@@ -17982,7 +17982,7 @@
     {
       "label": "Run Application",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L39",
       "_origin": "ast",
       "id": "claude_run_application",
@@ -17993,7 +17993,7 @@
     {
       "label": "TypeScript Toolchain (Issue #250)",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L49",
       "_origin": "ast",
       "id": "claude_typescript_toolchain_issue_250",
@@ -18004,7 +18004,7 @@
     {
       "label": "Evaluation Pipeline",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L72",
       "_origin": "ast",
       "id": "claude_evaluation_pipeline",
@@ -18015,7 +18015,7 @@
     {
       "label": "Coding Rules",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L91",
       "_origin": "ast",
       "id": "claude_coding_rules",
@@ -18026,7 +18026,7 @@
     {
       "label": "Quality / Feature Requirements",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L101",
       "_origin": "ast",
       "id": "claude_quality_feature_requirements",
@@ -18037,7 +18037,7 @@
     {
       "label": "Development Process",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L116",
       "_origin": "ast",
       "id": "claude_development_process",
@@ -18048,7 +18048,7 @@
     {
       "label": "Required Execution Checklist for Coding Agent",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L130",
       "_origin": "ast",
       "id": "claude_required_execution_checklist_for_coding_agent",
@@ -18059,7 +18059,7 @@
     {
       "label": "graphify",
       "file_type": "document",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L218",
       "_origin": "ast",
       "id": "claude_graphify",
@@ -18239,8 +18239,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "contributing",
-      "community": 140,
-      "community_name": "React/Angular Agent Skills Review Accuracy Spec",
+      "community": 131,
+      "community_name": "3. Target Behavior",
       "norm_label": "contributing.md"
     },
     {
@@ -18635,8 +18635,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_a2a_api_design",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 123,
+      "community_name": "EVALUATION_PLAN.md",
       "norm_label": "docs/a2a-api-design.md"
     },
     {
@@ -18877,8 +18877,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_adr_0001_large_diff_review_scope_policy",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 123,
+      "community_name": "EVALUATION_PLAN.md",
       "norm_label": "0001-large-diff-review-scope-policy.md"
     },
     {
@@ -18998,8 +18998,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_adr_0002_workflow_externalization_langflow_dify",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 123,
+      "community_name": "EVALUATION_PLAN.md",
       "norm_label": "0002-workflow-externalization-langflow-dify.md"
     },
     {
@@ -19207,8 +19207,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing",
-      "community": 7,
-      "community_name": "docs/mcp-connection-stabilization-spec.md",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "0004-mcp-client-session-sharing.md"
     },
     {
@@ -19218,8 +19218,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_adr_0004_mcp\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709_\u30ec\u30d3\u30e5\u30a2\u30fc\u9593",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "adr-0004: mcp\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d2\u30e5\u30a2\u30fc\u9593)"
     },
     {
@@ -19229,8 +19229,8 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_context",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "context"
     },
     {
@@ -19240,8 +19240,8 @@
       "source_location": "L42",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_\u691c\u8a0e\u4e8b\u9805",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "\u691c\u8a0e\u4e8b\u9805"
     },
     {
@@ -19251,8 +19251,8 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_\u691c\u8a0e\u5185\u5bb9",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "\u691c\u8a0e\u5185\u5bb9"
     },
     {
@@ -19262,8 +19262,8 @@
       "source_location": "L51",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_\u691c\u8a0e\u4e8b\u98051_\u5171\u6709\u7bc4\u56f2_\u5171\u6709\u5358\u4f4d",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "\u691c\u8a0e\u4e8b\u98051: \u5171\u6709\u7bc4\u56f2(\u5171\u6709\u5358\u4f4d)"
     },
     {
@@ -19273,8 +19273,8 @@
       "source_location": "L59",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_\u691c\u8a0e\u4e8b\u98052_\u5171\u6709\u30bb\u30c3\u30b7\u30e7\u30f3\u306e\u30e9\u30a4\u30d5\u30b5\u30a4\u30af\u30eb\u7ba1\u7406",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "\u691c\u8a0e\u4e8b\u98052: \u5171\u6709\u30bb\u30c3\u30b7\u30e7\u30f3\u306e\u30e9\u30a4\u30d5\u30b5\u30a4\u30af\u30eb\u7ba1\u7406"
     },
     {
@@ -19284,8 +19284,8 @@
       "source_location": "L67",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_\u691c\u8a0e\u7d50\u679c",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "\u691c\u8a0e\u7d50\u679c"
     },
     {
@@ -19295,8 +19295,8 @@
       "source_location": "L69",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_\u691c\u8a0e\u4e8b\u98051_\u5171\u6709\u7bc4\u56f2_a_\u4e26\u5217\u30ec\u30d3\u30e5\u30fc\u5b9f\u884c\u306e\u5185\u90e8\u3067\u306e\u307f\u5171\u6709_\u3092\u63a1\u7528",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "\u691c\u8a0e\u4e8b\u98051: \u5171\u6709\u7bc4\u56f2 \u2192 a(\u4e26\u5217\u30ec\u30d2\u30e5\u30fc\u5b9f\u884c\u306e\u5185\u90e8\u3066\u306e\u307f\u5171\u6709)\u3092\u63a1\u7528"
     },
     {
@@ -19306,8 +19306,8 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_\u691c\u8a0e\u4e8b\u98052_\u5171\u6709\u30bb\u30c3\u30b7\u30e7\u30f3\u306e\u30e9\u30a4\u30d5\u30b5\u30a4\u30af\u30eb\u7ba1\u7406_a_\u53c2\u7167\u30ab\u30a6\u30f3\u30c8\u65b9\u5f0f_\u3092\u63a1\u7528",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "\u691c\u8a0e\u4e8b\u98052: \u5171\u6709\u30bb\u30c3\u30b7\u30e7\u30f3\u306e\u30e9\u30a4\u30d5\u30b5\u30a4\u30af\u30eb\u7ba1\u7406 \u2192 a(\u53c2\u7167\u30ab\u30a6\u30f3\u30c8\u65b9\u5f0f)\u3092\u63a1\u7528"
     },
     {
@@ -19317,8 +19317,8 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_decision",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "decision"
     },
     {
@@ -19328,8 +19328,8 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "docs_adr_0004_mcp_client_session_sharing_consequences",
-      "community": 160,
-      "community_name": "ADR-0004: MCP\u30af\u30e9\u30a4\u30a2\u30f3\u30c8\u306e\u30bb\u30c3\u30b7\u30e7\u30f3\u5171\u6709(\u30ec\u30d3\u30e5\u30a2\u30fc\u9593)",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "consequences"
     },
     {
@@ -19768,8 +19768,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_adr_0007_multi_container_architecture_for_scalability",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "0007-multi-container-architecture-for-scalability.md"
     },
     {
@@ -19779,8 +19779,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_adr_0007_multi_container_architecture_for_scalability_0007_multi_container_architecture_for_scalability",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "0007-multi-container-architecture-for-scalability"
     },
     {
@@ -19790,8 +19790,8 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "docs_adr_0007_multi_container_architecture_for_scalability_\u8ab2\u984c\u306e\u5185\u5bb9_\u80cc\u666f",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "\u8ab2\u984c\u306e\u5185\u5bb9\u30fb\u80cc\u666f"
     },
     {
@@ -19801,8 +19801,8 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "docs_adr_0007_multi_container_architecture_for_scalability_\u691c\u8a0e\u4e8b\u9805",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "\u691c\u8a0e\u4e8b\u9805"
     },
     {
@@ -19812,8 +19812,8 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "docs_adr_0007_multi_container_architecture_for_scalability_\u691c\u8a0e\u5185\u5bb9",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "\u691c\u8a0e\u5185\u5bb9"
     },
     {
@@ -19823,8 +19823,8 @@
       "source_location": "L30",
       "_origin": "ast",
       "id": "docs_adr_0007_multi_container_architecture_for_scalability_\u6848a_\u5358\u7d14\u306a\u30b3\u30f3\u30c6\u30ca_\u30ec\u30d7\u30ea\u30ab\u69cb\u6210_monolithic_container_scale_out",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "\u6848a: \u5358\u7d14\u306a\u30b3\u30f3\u30c6\u30ca\u30fb\u30ec\u30d5\u30ea\u30ab\u69cb\u6210 (monolithic container scale-out)"
     },
     {
@@ -19834,8 +19834,8 @@
       "source_location": "L55",
       "_origin": "ast",
       "id": "docs_adr_0007_multi_container_architecture_for_scalability_\u6848b_api_gateway_worker_queue_\u69cb\u6210_asynchronous_task_processing",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "\u6848b: api gateway + worker queue \u69cb\u6210 (asynchronous task processing)"
     },
     {
@@ -19845,8 +19845,8 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "docs_adr_0007_multi_container_architecture_for_scalability_\u6848c_\u5206\u96e2\u3055\u308c\u305f\u30de\u30a4\u30af\u30ed\u30b5\u30fc\u30d3\u30b9\u69cb\u6210_microservices_with_shared_state",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "\u6848c: \u5206\u96e2\u3055\u308c\u305f\u30de\u30a4\u30af\u30ed\u30b5\u30fc\u30d2\u30b9\u69cb\u6210 (microservices with shared state)"
     },
     {
@@ -19856,8 +19856,8 @@
       "source_location": "L110",
       "_origin": "ast",
       "id": "docs_adr_0007_multi_container_architecture_for_scalability_\u691c\u8a0e\u7d50\u679c",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "\u691c\u8a0e\u7d50\u679c"
     },
     {
@@ -19867,8 +19867,8 @@
       "source_location": "L123",
       "_origin": "ast",
       "id": "docs_adr_0007_multi_container_architecture_for_scalability_\u5f71\u97ff_\u30d5\u30a9\u30ed\u30fc\u30a2\u30c3\u30d7",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "\u5f71\u97ff\u30fb\u30d5\u30a9\u30ed\u30fc\u30a2\u30c3\u30d5"
     },
     {
@@ -19878,8 +19878,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_adr_0008_core_extension_boundaries",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "0008-core-extension-boundaries.md"
     },
     {
@@ -20120,8 +20120,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_adr_0009_localllm_review_flow_control",
-      "community": 2,
-      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
       "norm_label": "0009-localllm-review-flow-control.md"
     },
     {
@@ -20255,6 +20255,468 @@
       "community": 2,
       "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
       "norm_label": "\u5f71\u97ff\u30fb\u30d5\u30a9\u30ed\u30fc\u30a2\u30c3\u30d5"
+    },
+    {
+      "label": "0010-localllm-concurrency-limit-and-cancellation.md",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
+      "norm_label": "0010-localllm-concurrency-limit-and-cancellation.md"
+    },
+    {
+      "label": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_adr_0010_localllm\u6d41\u91cf\u5236\u5fa1_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout_cancellation_straggler\u51e6\u7406",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "adr-0010: localllm\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406"
+    },
+    {
+      "label": "Context",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L12",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_context",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "context"
+    },
+    {
+      "label": "\u756a\u53f7\u306e\u6271\u3044\u306b\u3064\u3044\u3066",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L35",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u756a\u53f7\u306e\u6271\u3044\u306b\u3064\u3044\u3066",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u756a\u53f7\u306e\u6271\u3044\u306b\u3064\u3044\u3066"
+    },
+    {
+      "label": "\u73fe\u72b6\u306e\u30b3\u30fc\u30c9\u306e\u6319\u52d5",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L45",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u73fe\u72b6\u306e\u30b3\u30fc\u30c9\u306e\u6319\u52d5",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u73fe\u72b6\u306e\u30b3\u30fc\u30c8\u306e\u6319\u52d5"
+    },
+    {
+      "label": "\u904e\u53bb\u306e\u610f\u601d\u6c7a\u5b9a\u3068\u306e\u6574\u5408",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L94",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u904e\u53bb\u306e\u610f\u601d\u6c7a\u5b9a\u3068\u306e\u6574\u5408",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u904e\u53bb\u306e\u610f\u601d\u6c7a\u5b9a\u3068\u306e\u6574\u5408"
+    },
+    {
+      "label": "\u30b9\u30b3\u30fc\u30d7\u5883\u754c",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L103",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u30b9\u30b3\u30fc\u30d7\u5883\u754c",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u30b9\u30b3\u30fc\u30d5\u5883\u754c"
+    },
+    {
+      "label": "\u691c\u8a0e\u4e8b\u9805",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L118",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u4e8b\u9805",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u691c\u8a0e\u4e8b\u9805"
+    },
+    {
+      "label": "\u8ad6\u70b91: \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L123",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b91_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u8ad6\u70b91: \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb"
+    },
+    {
+      "label": "\u8ad6\u70b92: \u4e0a\u9650\u306e\u9069\u7528\u7c92\u5ea6\u30fb\u65e2\u5b9a\u5024\u30fb\u8a2d\u5b9a\u65b9\u6cd5",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L129",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b92_\u4e0a\u9650\u306e\u9069\u7528\u7c92\u5ea6_\u65e2\u5b9a\u5024_\u8a2d\u5b9a\u65b9\u6cd5",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u8ad6\u70b92: \u4e0a\u9650\u306e\u9069\u7528\u7c92\u5ea6\u30fb\u65e2\u5b9a\u5024\u30fb\u8a2d\u5b9a\u65b9\u6cd5"
+    },
+    {
+      "label": "\u8ad6\u70b93: \u5168caller\u306e\u5236\u5fa1\u9762\u7d71\u4e00\u3068I/O\u5206\u96e2",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L135",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b93_\u5168caller\u306e\u5236\u5fa1\u9762\u7d71\u4e00\u3068i_o\u5206\u96e2",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u8ad6\u70b93: \u5168caller\u306e\u5236\u5fa1\u9762\u7d71\u4e00\u3068i/o\u5206\u96e2"
+    },
+    {
+      "label": "\u8ad6\u70b94: timeout\u30fbcancellation\u30fbstraggler\u306e\u6271\u3044",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L141",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b94_timeout_cancellation_straggler\u306e\u6271\u3044",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u8ad6\u70b94: timeout\u30fbcancellation\u30fbstraggler\u306e\u6271\u3044"
+    },
+    {
+      "label": "\u8ad6\u70b95: \u30b9\u30ed\u30c3\u30c8\u89e3\u653e\u6761\u4ef6(\u8ad6\u70b91\u30fb4\u306e\u5e30\u7d50\u3068\u3057\u3066\u5f93\u5c5e\u7684\u306b\u6271\u3046)",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L147",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b95_\u30b9\u30ed\u30c3\u30c8\u89e3\u653e\u6761\u4ef6_\u8ad6\u70b91_4\u306e\u5e30\u7d50\u3068\u3057\u3066\u5f93\u5c5e\u7684\u306b\u6271\u3046",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u8ad6\u70b95: \u30b9\u30ed\u30c3\u30c8\u89e3\u653e\u6761\u4ef6(\u8ad6\u70b91\u30fb4\u306e\u5e30\u7d50\u3068\u3057\u3066\u5f93\u5c5e\u7684\u306b\u6271\u3046)"
+    },
+    {
+      "label": "\u691c\u8a0e\u5185\u5bb9",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L154",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u5185\u5bb9",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u691c\u8a0e\u5185\u5bb9"
+    },
+    {
+      "label": "\u68481: \u6700\u5c0f\u5b9f\u88c5\u30fb\u73fe\u72b6\u8e0f\u8972",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L171",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u68481_\u6700\u5c0f\u5b9f\u88c5_\u73fe\u72b6\u8e0f\u8972",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u68481: \u6700\u5c0f\u5b9f\u88c5\u30fb\u73fe\u72b6\u8e0f\u8972"
+    },
+    {
+      "label": "\u68482: \u5354\u8abf\u30ad\u30e3\u30f3\u30bb\u30eb\u5c0e\u5165",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L197",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u68482_\u5354\u8abf\u30ad\u30e3\u30f3\u30bb\u30eb\u5c0e\u5165",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u68482: \u5354\u8abf\u30ad\u30e3\u30f3\u30bb\u30eb\u5c0e\u5165"
+    },
+    {
+      "label": "\u68483: \u30a4\u30f3\u30d5\u30e9\u5c64\u3078\u306e\u59d4\u8b72",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L242",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u68483_\u30a4\u30f3\u30d5\u30e9\u5c64\u3078\u306e\u59d4\u8b72",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u68483: \u30a4\u30f3\u30d5\u30e9\u5c64\u3078\u306e\u59d4\u8b72"
+    },
+    {
+      "label": "\u89b3\u70b9\u3054\u3068\u306e\u691c\u8a0e\u7d50\u679c",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L275",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u89b3\u70b9\u3054\u3068\u306e\u691c\u8a0e\u7d50\u679c",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u89b3\u70b9\u3053\u3068\u306e\u691c\u8a0e\u7d50\u679c"
+    },
+    {
+      "label": "\u8ad6\u70b91: \u5b9f\u73fe\u6a5f\u69cb",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L277",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b91_\u5b9f\u73fe\u6a5f\u69cb",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u8ad6\u70b91: \u5b9f\u73fe\u6a5f\u69cb"
+    },
+    {
+      "label": "\u8ad6\u70b92: \u9069\u7528\u7c92\u5ea6\u30fb\u65e2\u5b9a\u5024\u30fb\u8a2d\u5b9a\u65b9\u6cd5",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L286",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b92_\u9069\u7528\u7c92\u5ea6_\u65e2\u5b9a\u5024_\u8a2d\u5b9a\u65b9\u6cd5",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u8ad6\u70b92: \u9069\u7528\u7c92\u5ea6\u30fb\u65e2\u5b9a\u5024\u30fb\u8a2d\u5b9a\u65b9\u6cd5"
+    },
+    {
+      "label": "\u8ad6\u70b93: \u5168caller\u5171\u901a\u5316\u30fbI/O\u5206\u96e2",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L294",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b93_\u5168caller\u5171\u901a\u5316_i_o\u5206\u96e2",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u8ad6\u70b93: \u5168caller\u5171\u901a\u5316\u30fbi/o\u5206\u96e2"
+    },
+    {
+      "label": "\u8ad6\u70b94: timeout\u30fbcancellation\u30fbstraggler",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L306",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b94_timeout_cancellation_straggler",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "\u8ad6\u70b94: timeout\u30fbcancellation\u30fbstraggler"
+    },
+    {
+      "label": "Decision",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L320",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_decision",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "decision"
+    },
+    {
+      "label": "Consequences",
+      "file_type": "document",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L496",
+      "_origin": "ast",
+      "id": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_consequences",
+      "community": 90,
+      "community_name": "ADR-0010: LocalLLM\u6d41\u91cf\u5236\u5fa1 \u2014 \u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout/cancellation/straggler\u51e6\u7406",
+      "norm_label": "consequences"
+    },
+    {
+      "label": "0012-shared-invocation-boundary.md",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary",
+      "community": 130,
+      "community_name": "0008-core-extension-boundaries.md",
+      "norm_label": "0012-shared-invocation-boundary.md"
+    },
+    {
+      "label": "ADR-0012: \u547c\u3073\u51fa\u3057\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9\u62bd\u8c61\u5316\uff08Web/CLI/A2A\u5171\u6709\uff09\u65b9\u91dd\u306e\u6c7a\u5b9a",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_adr_0012_\u547c\u3073\u51fa\u3057\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9\u62bd\u8c61\u5316_web_cli_a2a\u5171\u6709_\u65b9\u91dd\u306e\u6c7a\u5b9a",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "adr-0012: \u547c\u3072\u51fa\u3057\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9\u62bd\u8c61\u5316(web/cli/a2a\u5171\u6709)\u65b9\u91dd\u306e\u6c7a\u5b9a"
+    },
+    {
+      "label": "Context",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_context",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "context"
+    },
+    {
+      "label": "\u691c\u8a0e\u4e8b\u9805",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L46",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u4e8b\u9805",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u691c\u8a0e\u4e8b\u9805"
+    },
+    {
+      "label": "\u8ad6\u70b91: \u547c\u3073\u51fa\u3057\u5883\u754c\u306e\u6b8b\u5dee\uff08canonical\u5951\u7d04\u306e\u6240\u5728\u3001query/command\u306e\u5206\u96e2\uff09",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L48",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b91_\u547c\u3073\u51fa\u3057\u5883\u754c\u306e\u6b8b\u5dee_canonical\u5951\u7d04\u306e\u6240\u5728_query_command\u306e\u5206\u96e2",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u8ad6\u70b91: \u547c\u3072\u51fa\u3057\u5883\u754c\u306e\u6b8b\u5dee(canonical\u5951\u7d04\u306e\u6240\u5728\u3001query/command\u306e\u5206\u96e2)"
+    },
+    {
+      "label": "\u8ad6\u70b92: domain resource\u3068A2A task\u306e\u95a2\u4fc2\uff08identity\u30fblifecycle\uff09",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L52",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b92_domain_resource\u3068a2a_task\u306e\u95a2\u4fc2_identity_lifecycle",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u8ad6\u70b92: domain resource\u3068a2a task\u306e\u95a2\u4fc2(identity\u30fblifecycle)"
+    },
+    {
+      "label": "\u8ad6\u70b93: \u5171\u6709contracts/client\u30d1\u30c3\u30b1\u30fc\u30b8\u306e\u7bc4\u56f2",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L56",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b93_\u5171\u6709contracts_client\u30d1\u30c3\u30b1\u30fc\u30b8\u306e\u7bc4\u56f2",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u8ad6\u70b93: \u5171\u6709contracts/client\u30cf\u30c3\u30b1\u30fc\u30b7\u306e\u7bc4\u56f2"
+    },
+    {
+      "label": "\u8ad6\u70b94: model provider/runtime\u306e\u547c\u3073\u51fa\u3057port",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L60",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b94_model_provider_runtime\u306e\u547c\u3073\u51fa\u3057port",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u8ad6\u70b94: model provider/runtime\u306e\u547c\u3072\u51fa\u3057port"
+    },
+    {
+      "label": "\u8ad6\u70b95: \u30a8\u30e9\u30fc\u30fb\u9032\u6357\u30fbcancel\u5951\u7d04",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L64",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b95_\u30a8\u30e9\u30fc_\u9032\u6357_cancel\u5951\u7d04",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u8ad6\u70b95: \u30a8\u30e9\u30fc\u30fb\u9032\u6357\u30fbcancel\u5951\u7d04"
+    },
+    {
+      "label": "\u8ad6\u70b96: \u4e92\u63db\u6027\u3068\u6bb5\u968e\u79fb\u884c\uff08\u4ed6\u8ad6\u70b9\u306e\u5e30\u7d50\uff09",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L68",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b96_\u4e92\u63db\u6027\u3068\u6bb5\u968e\u79fb\u884c_\u4ed6\u8ad6\u70b9\u306e\u5e30\u7d50",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u8ad6\u70b96: \u4e92\u63db\u6027\u3068\u6bb5\u968e\u79fb\u884c(\u4ed6\u8ad6\u70b9\u306e\u5e30\u7d50)"
+    },
+    {
+      "label": "\u8ad6\u70b97: Gateway/\u30a4\u30d9\u30f3\u30c8\u53d7\u4fe1\u5c64\u306e\u5b9f\u88c5\u624b\u6bb5",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L72",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b97_gateway_\u30a4\u30d9\u30f3\u30c8\u53d7\u4fe1\u5c64\u306e\u5b9f\u88c5\u624b\u6bb5",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u8ad6\u70b97: gateway/\u30a4\u30d8\u30f3\u30c8\u53d7\u4fe1\u5c64\u306e\u5b9f\u88c5\u624b\u6bb5"
+    },
+    {
+      "label": "\u691c\u8a0e\u5185\u5bb9",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L76",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u5185\u5bb9",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u691c\u8a0e\u5185\u5bb9"
+    },
+    {
+      "label": "\u68481: \u81ea\u524dGateway\u5b9f\u88c5",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L80",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u68481_\u81ea\u524dgateway\u5b9f\u88c5",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u68481: \u81ea\u524dgateway\u5b9f\u88c5"
+    },
+    {
+      "label": "\u68482: Langflow/Dify\u3092\u53d7\u4fe1/\u5909\u63db\u5c64\u3068\u3057\u305fGateway\uff08\u63a1\u7528\uff09",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L111",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u68482_langflow_dify\u3092\u53d7\u4fe1_\u5909\u63db\u5c64\u3068\u3057\u305fgateway_\u63a1\u7528",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u68482: langflow/dify\u3092\u53d7\u4fe1/\u5909\u63db\u5c64\u3068\u3057\u305fgateway(\u63a1\u7528)"
+    },
+    {
+      "label": "\u68483: Contract-First\uff08OpenAPI/codegen canonical\uff09",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L170",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u68483_contract_first_openapi_codegen_canonical",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u68483: contract-first(openapi/codegen canonical)"
+    },
+    {
+      "label": "\u8ad6\u70b9\u3054\u3068\u306e\u6bd4\u8f03\u8868",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L191",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b9\u3054\u3068\u306e\u6bd4\u8f03\u8868",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "\u8ad6\u70b9\u3053\u3068\u306e\u6bd4\u8f03\u8868"
+    },
+    {
+      "label": "Decision",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L206",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_decision",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "decision"
+    },
+    {
+      "label": "Consequences",
+      "file_type": "document",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L264",
+      "_origin": "ast",
+      "id": "docs_adr_0012_shared_invocation_boundary_consequences",
+      "community": 2,
+      "community_name": "0009. LocalLLM\u6d41\u91cf\u5236\u5fa1: Queue\u5b9f\u88c5\u65b9\u5f0f\u30fb\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u30fb\u969c\u5bb3\u6642\u914d\u4fe1\u5951\u7d04",
+      "norm_label": "consequences"
     },
     {
       "label": "docs/eval-a2a-container-runtime-spec.md",
@@ -20945,8 +21407,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_finding_location_silent_drop_spec",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 108,
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "docs/finding-location-silent-drop-spec.md"
     },
     {
@@ -21209,8 +21671,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_granite_structured_output_failure_spec",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 108,
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "docs/granite-structured-output-failure-spec.md"
     },
     {
@@ -21341,8 +21803,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_lead_engineer_agent_design",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 123,
+      "community_name": "EVALUATION_PLAN.md",
       "norm_label": "lead-engineer-agent-design.md"
     },
     {
@@ -21891,8 +22353,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_model_provider_factory_spec",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 123,
+      "community_name": "EVALUATION_PLAN.md",
       "norm_label": "docs/model-provider-factory-spec.md"
     },
     {
@@ -22199,8 +22661,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_plan_a2a_api_design",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 123,
+      "community_name": "EVALUATION_PLAN.md",
       "norm_label": "plan/a2a-api-design.md"
     },
     {
@@ -22793,8 +23255,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_plan_a2a_api_implementation",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 123,
+      "community_name": "EVALUATION_PLAN.md",
       "norm_label": "a2a-api-implementation.md"
     },
     {
@@ -24278,8 +24740,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_plan_finding_location_silent_drop_spec",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 108,
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "plan/finding-location-silent-drop-spec.md"
     },
     {
@@ -24289,8 +24751,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_plan_finding_location_silent_drop_spec_\u4f4d\u7f6e\u60c5\u5831\u6b20\u843d\u306b\u3088\u308bfinding_decision\u306e\u30b5\u30a4\u30ec\u30f3\u30c8\u30c9\u30ed\u30c3\u30d7_\u5b9f\u88c5\u8a08\u753b",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 108,
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "\u4f4d\u7f6e\u60c5\u5831\u6b20\u843d\u306b\u3088\u308bfinding/decision\u306e\u30b5\u30a4\u30ec\u30f3\u30c8\u30c8\u30ed\u30c3\u30d5: \u5b9f\u88c5\u8a08\u753b"
     },
     {
@@ -24300,8 +24762,8 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "docs_plan_finding_location_silent_drop_spec_\u691c\u8a3c1_\u6b20\u843d\u306e\u53ef\u8996\u5316",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 108,
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "\u691c\u8a3c1: \u6b20\u843d\u306e\u53ef\u8996\u5316"
     },
     {
@@ -24311,8 +24773,8 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "docs_plan_finding_location_silent_drop_spec_\u691c\u8a3c2_\u4f4d\u7f6e\u60c5\u5831\u306e\u8ee2\u8a18\u3092\u660e\u793a\u7684\u306b\u6307\u793a",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 108,
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "\u691c\u8a3c2: \u4f4d\u7f6e\u60c5\u5831\u306e\u8ee2\u8a18\u3092\u660e\u793a\u7684\u306b\u6307\u793a"
     },
     {
@@ -24443,8 +24905,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_plan_granite_structured_output_failure_spec",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 108,
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "plan/granite-structured-output-failure-spec.md"
     },
     {
@@ -24455,7 +24917,7 @@
       "_origin": "ast",
       "id": "docs_plan_granite_structured_output_failure_spec_granite_\u69cb\u9020\u5316\u51fa\u529b\u5931\u6557_\u30c6\u30b9\u30c8_\u691c\u8a3c\u7d50\u679c_python\u7248",
       "community": 108,
-      "community_name": "granite \u69cb\u9020\u5316\u51fa\u529b\u5931\u6557: \u30c6\u30b9\u30c8\u30fb\u691c\u8a3c\u7d50\u679c (Python\u7248)",
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "granite \u69cb\u9020\u5316\u51fa\u529b\u5931\u6557: \u30c6\u30b9\u30c8\u30fb\u691c\u8a3c\u7d50\u679c (python\u7248)"
     },
     {
@@ -24466,7 +24928,7 @@
       "_origin": "ast",
       "id": "docs_plan_granite_structured_output_failure_spec_\u5909\u66f4_4_\u53ef\u8996\u5316_\u306e\u30c6\u30b9\u30c8",
       "community": 108,
-      "community_name": "granite \u69cb\u9020\u5316\u51fa\u529b\u5931\u6557: \u30c6\u30b9\u30c8\u30fb\u691c\u8a3c\u7d50\u679c (Python\u7248)",
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "\u5909\u66f4#4(\u53ef\u8996\u5316)\u306e\u30c6\u30b9\u30c8"
     },
     {
@@ -24477,7 +24939,7 @@
       "_origin": "ast",
       "id": "docs_plan_granite_structured_output_failure_spec_\u5909\u66f4_2_\u7de9\u548c_\u306e\u30c6\u30b9\u30c8",
       "community": 108,
-      "community_name": "granite \u69cb\u9020\u5316\u51fa\u529b\u5931\u6557: \u30c6\u30b9\u30c8\u30fb\u691c\u8a3c\u7d50\u679c (Python\u7248)",
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "\u5909\u66f4#2(\u7de9\u548c)\u306e\u30c6\u30b9\u30c8"
     },
     {
@@ -24488,7 +24950,7 @@
       "_origin": "ast",
       "id": "docs_plan_granite_structured_output_failure_spec_\u691c\u8a3c\u7d50\u679c_granite4_1_8b_gold_5_seeded_10_concurrency_2",
       "community": 108,
-      "community_name": "granite \u69cb\u9020\u5316\u51fa\u529b\u5931\u6557: \u30c6\u30b9\u30c8\u30fb\u691c\u8a3c\u7d50\u679c (Python\u7248)",
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "\u691c\u8a3c\u7d50\u679c(granite4.1:8b, gold 5 + seeded 10, `--concurrency 2`)"
     },
     {
@@ -24499,7 +24961,7 @@
       "_origin": "ast",
       "id": "docs_plan_granite_structured_output_failure_spec_\u5b9f\u969b\u306e\u5931\u6557\u6587\u8a00_4_\u306e\u30ed\u30b0\u304c\u6355\u6349",
       "community": 108,
-      "community_name": "granite \u69cb\u9020\u5316\u51fa\u529b\u5931\u6557: \u30c6\u30b9\u30c8\u30fb\u691c\u8a3c\u7d50\u679c (Python\u7248)",
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "\u5b9f\u969b\u306e\u5931\u6557\u6587\u8a00(#4 \u306e\u30ed\u30af\u304b\u6355\u6349)"
     },
     {
@@ -24510,7 +24972,7 @@
       "_origin": "ast",
       "id": "docs_plan_granite_structured_output_failure_spec_\u7d50\u8ad6",
       "community": 108,
-      "community_name": "granite \u69cb\u9020\u5316\u51fa\u529b\u5931\u6557: \u30c6\u30b9\u30c8\u30fb\u691c\u8a3c\u7d50\u679c (Python\u7248)",
+      "community_name": "docs/finding-location-silent-drop-spec.md",
       "norm_label": "\u7d50\u8ad6"
     },
     {
@@ -25906,8 +26368,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_review_agent_workflow_spec",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 123,
+      "community_name": "EVALUATION_PLAN.md",
       "norm_label": "review-agent-workflow-spec.md"
     },
     {
@@ -26159,8 +26621,8 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "docs_review_agents_design",
-      "community": 224,
-      "community_name": "review-agents-design.md",
+      "community": 123,
+      "community_name": "EVALUATION_PLAN.md",
       "norm_label": "review-agents-design.md"
     },
     {
@@ -76432,7 +76894,7 @@
     {
       "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L37",
       "weight": 1.0,
       "_origin": "ast",
@@ -76443,7 +76905,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L1",
       "weight": 1.0,
       "_origin": "ast",
@@ -76454,7 +76916,7 @@
     {
       "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L33",
       "weight": 1.0,
       "_origin": "ast",
@@ -76465,7 +76927,7 @@
     {
       "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L62",
       "weight": 1.0,
       "_origin": "ast",
@@ -76476,7 +76938,7 @@
     {
       "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L107",
       "weight": 1.0,
       "_origin": "ast",
@@ -76487,7 +76949,7 @@
     {
       "relation": "references",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L113",
       "weight": 1.0,
       "_origin": "ast",
@@ -76498,7 +76960,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L91",
       "weight": 1.0,
       "_origin": "ast",
@@ -76509,7 +76971,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L116",
       "weight": 1.0,
       "_origin": "ast",
@@ -76520,7 +76982,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L31",
       "weight": 1.0,
       "_origin": "ast",
@@ -76531,7 +76993,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L218",
       "weight": 1.0,
       "_origin": "ast",
@@ -76542,7 +77004,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L3",
       "weight": 1.0,
       "_origin": "ast",
@@ -76553,7 +77015,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L101",
       "weight": 1.0,
       "_origin": "ast",
@@ -76564,7 +77026,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L19",
       "weight": 1.0,
       "_origin": "ast",
@@ -76575,7 +77037,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L72",
       "weight": 1.0,
       "_origin": "ast",
@@ -76586,7 +77048,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L39",
       "weight": 1.0,
       "_origin": "ast",
@@ -76597,7 +77059,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L35",
       "weight": 1.0,
       "_origin": "ast",
@@ -76608,7 +77070,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L49",
       "weight": 1.0,
       "_origin": "ast",
@@ -76619,7 +77081,7 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "AGENTS.md",
+      "source_file": "CLAUDE.md",
       "source_location": "L130",
       "weight": 1.0,
       "_origin": "ast",
@@ -77301,6 +77763,17 @@
     {
       "relation": "references",
       "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L13",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary",
+      "target": "docs_a2a_api_design",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
       "source_file": "docs/plan/a2a-api-implementation.md",
       "source_location": "L9",
       "weight": 1.0,
@@ -77717,6 +78190,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary",
+      "target": "docs_adr_0002_workflow_externalization_langflow_dify",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/adr/0002-workflow-externalization-langflow-dify.md",
@@ -77955,6 +78439,17 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_adr_0008_core_extension_boundaries",
+      "target": "docs_adr_0004_mcp_client_session_sharing",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L8",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation",
       "target": "docs_adr_0004_mcp_client_session_sharing",
       "confidence_score": 1.0
     },
@@ -78553,6 +79048,28 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation",
+      "target": "docs_adr_0007_multi_container_architecture_for_scalability",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L8",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary",
+      "target": "docs_adr_0007_multi_container_architecture_for_scalability",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/adr/0007-Multi-Container-Architecture-for-Scalability.md",
@@ -78670,6 +79187,28 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "docs_adr_0009_localllm_review_flow_control",
+      "target": "docs_adr_0008_core_extension_boundaries",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation",
+      "target": "docs_adr_0008_core_extension_boundaries",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L9",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary",
       "target": "docs_adr_0008_core_extension_boundaries",
       "confidence_score": 1.0
     },
@@ -78905,6 +79444,17 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary",
+      "target": "docs_adr_0009_localllm_review_flow_control",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "docs/adr/0009-localllm-review-flow-control.md",
@@ -79023,6 +79573,457 @@
       "_origin": "ast",
       "source": "docs_adr_0009_localllm_review_flow_control_\u691c\u8a0e\u5185\u5bb9",
       "target": "docs_adr_0009_localllm_review_flow_control_\u6848d_\u5916\u90e8_message_broker_redis_rabbitmq_\u7b49",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_adr_0010_localllm\u6d41\u91cf\u5236\u5fa1_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout_cancellation_straggler\u51e6\u7406",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L496",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_adr_0010_localllm\u6d41\u91cf\u5236\u5fa1_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout_cancellation_straggler\u51e6\u7406",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_consequences",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L12",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_adr_0010_localllm\u6d41\u91cf\u5236\u5fa1_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout_cancellation_straggler\u51e6\u7406",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_context",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L320",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_adr_0010_localllm\u6d41\u91cf\u5236\u5fa1_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout_cancellation_straggler\u51e6\u7406",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_decision",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L118",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_adr_0010_localllm\u6d41\u91cf\u5236\u5fa1_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout_cancellation_straggler\u51e6\u7406",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u4e8b\u9805",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L154",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_adr_0010_localllm\u6d41\u91cf\u5236\u5fa1_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb\u3068timeout_cancellation_straggler\u51e6\u7406",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u5185\u5bb9",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L103",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_context",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u30b9\u30b3\u30fc\u30d7\u5883\u754c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L45",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_context",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u73fe\u72b6\u306e\u30b3\u30fc\u30c9\u306e\u6319\u52d5",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L35",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_context",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u756a\u53f7\u306e\u6271\u3044\u306b\u3064\u3044\u3066",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L94",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_context",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u904e\u53bb\u306e\u610f\u601d\u6c7a\u5b9a\u3068\u306e\u6574\u5408",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L123",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b91_\u30b7\u30b9\u30c6\u30e0\u5168\u4f53\u540c\u6642\u5b9f\u884c\u4e0a\u9650\u306e\u5b9f\u73fe\u6a5f\u69cb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L129",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b92_\u4e0a\u9650\u306e\u9069\u7528\u7c92\u5ea6_\u65e2\u5b9a\u5024_\u8a2d\u5b9a\u65b9\u6cd5",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L135",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b93_\u5168caller\u306e\u5236\u5fa1\u9762\u7d71\u4e00\u3068i_o\u5206\u96e2",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L141",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b94_timeout_cancellation_straggler\u306e\u6271\u3044",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L147",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b95_\u30b9\u30ed\u30c3\u30c8\u89e3\u653e\u6761\u4ef6_\u8ad6\u70b91_4\u306e\u5e30\u7d50\u3068\u3057\u3066\u5f93\u5c5e\u7684\u306b\u6271\u3046",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L171",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u5185\u5bb9",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u68481_\u6700\u5c0f\u5b9f\u88c5_\u73fe\u72b6\u8e0f\u8972",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L197",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u5185\u5bb9",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u68482_\u5354\u8abf\u30ad\u30e3\u30f3\u30bb\u30eb\u5c0e\u5165",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L242",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u5185\u5bb9",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u68483_\u30a4\u30f3\u30d5\u30e9\u5c64\u3078\u306e\u59d4\u8b72",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L275",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u691c\u8a0e\u5185\u5bb9",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u89b3\u70b9\u3054\u3068\u306e\u691c\u8a0e\u7d50\u679c",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L277",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u89b3\u70b9\u3054\u3068\u306e\u691c\u8a0e\u7d50\u679c",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b91_\u5b9f\u73fe\u6a5f\u69cb",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L286",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u89b3\u70b9\u3054\u3068\u306e\u691c\u8a0e\u7d50\u679c",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b92_\u9069\u7528\u7c92\u5ea6_\u65e2\u5b9a\u5024_\u8a2d\u5b9a\u65b9\u6cd5",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L294",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u89b3\u70b9\u3054\u3068\u306e\u691c\u8a0e\u7d50\u679c",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b93_\u5168caller\u5171\u901a\u5316_i_o\u5206\u96e2",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0010-localllm-concurrency-limit-and-cancellation.md",
+      "source_location": "L306",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u89b3\u70b9\u3054\u3068\u306e\u691c\u8a0e\u7d50\u679c",
+      "target": "docs_adr_0010_localllm_concurrency_limit_and_cancellation_\u8ad6\u70b94_timeout_cancellation_straggler",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary",
+      "target": "docs_adr_0012_shared_invocation_boundary_adr_0012_\u547c\u3073\u51fa\u3057\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9\u62bd\u8c61\u5316_web_cli_a2a\u5171\u6709_\u65b9\u91dd\u306e\u6c7a\u5b9a",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L264",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_adr_0012_\u547c\u3073\u51fa\u3057\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9\u62bd\u8c61\u5316_web_cli_a2a\u5171\u6709_\u65b9\u91dd\u306e\u6c7a\u5b9a",
+      "target": "docs_adr_0012_shared_invocation_boundary_consequences",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L17",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_adr_0012_\u547c\u3073\u51fa\u3057\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9\u62bd\u8c61\u5316_web_cli_a2a\u5171\u6709_\u65b9\u91dd\u306e\u6c7a\u5b9a",
+      "target": "docs_adr_0012_shared_invocation_boundary_context",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L206",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_adr_0012_\u547c\u3073\u51fa\u3057\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9\u62bd\u8c61\u5316_web_cli_a2a\u5171\u6709_\u65b9\u91dd\u306e\u6c7a\u5b9a",
+      "target": "docs_adr_0012_shared_invocation_boundary_decision",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L46",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_adr_0012_\u547c\u3073\u51fa\u3057\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9\u62bd\u8c61\u5316_web_cli_a2a\u5171\u6709_\u65b9\u91dd\u306e\u6c7a\u5b9a",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u4e8b\u9805",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L76",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_adr_0012_\u547c\u3073\u51fa\u3057\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9\u62bd\u8c61\u5316_web_cli_a2a\u5171\u6709_\u65b9\u91dd\u306e\u6c7a\u5b9a",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u5185\u5bb9",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L48",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b91_\u547c\u3073\u51fa\u3057\u5883\u754c\u306e\u6b8b\u5dee_canonical\u5951\u7d04\u306e\u6240\u5728_query_command\u306e\u5206\u96e2",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L52",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b92_domain_resource\u3068a2a_task\u306e\u95a2\u4fc2_identity_lifecycle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L56",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b93_\u5171\u6709contracts_client\u30d1\u30c3\u30b1\u30fc\u30b8\u306e\u7bc4\u56f2",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L60",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b94_model_provider_runtime\u306e\u547c\u3073\u51fa\u3057port",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L64",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b95_\u30a8\u30e9\u30fc_\u9032\u6357_cancel\u5951\u7d04",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L68",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b96_\u4e92\u63db\u6027\u3068\u6bb5\u968e\u79fb\u884c_\u4ed6\u8ad6\u70b9\u306e\u5e30\u7d50",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L72",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u4e8b\u9805",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b97_gateway_\u30a4\u30d9\u30f3\u30c8\u53d7\u4fe1\u5c64\u306e\u5b9f\u88c5\u624b\u6bb5",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L80",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u5185\u5bb9",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u68481_\u81ea\u524dgateway\u5b9f\u88c5",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L111",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u5185\u5bb9",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u68482_langflow_dify\u3092\u53d7\u4fe1_\u5909\u63db\u5c64\u3068\u3057\u305fgateway_\u63a1\u7528",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L170",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u5185\u5bb9",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u68483_contract_first_openapi_codegen_canonical",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "docs/adr/0012-shared-invocation-boundary.md",
+      "source_location": "L191",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "docs_adr_0012_shared_invocation_boundary_\u691c\u8a0e\u5185\u5bb9",
+      "target": "docs_adr_0012_shared_invocation_boundary_\u8ad6\u70b9\u3054\u3068\u306e\u6bd4\u8f03\u8868",
       "confidence_score": 1.0
     },
     {
@@ -98706,5 +99707,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "c268bd9c2ca78c22658ca26dbce9f01e530dfd68"
+  "built_at_commit": "5681f6ed4fe4fbf8a340a6a11b12e5092a82a843"
 }
