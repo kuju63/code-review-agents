@@ -6,19 +6,22 @@
 - 関連: Issue #366（本ADRの「検討事項A: Queue実装方式」が決定する課題）,
   Issue #365（本ファイルへ3件の決定を統合する親Issue）, Issue #345（上位）,
   Issue #367（同時実行上限・timeout/cancellation、後続で追記）,
-  Issue #368（配信契約・再起動時回復、後続で追記）, Issue #243（Epic）,
+  Issue #368（配信契約・再起動時回復、[ADR-0011](0011-localllm-delivery-contract-and-recovery.md) として独立採番）, Issue #243（Epic）,
   [docs/adr/0007-Multi-Container-Architecture-for-Scalability.md](0007-Multi-Container-Architecture-for-Scalability.md),
-  [docs/adr/0008-core-extension-boundaries.md](0008-core-extension-boundaries.md)
+  [docs/adr/0008-core-extension-boundaries.md](0008-core-extension-boundaries.md),
+  [docs/adr/0010-localllm-concurrency-limit-and-cancellation.md](0010-localllm-concurrency-limit-and-cancellation.md),
+  [docs/adr/0011-localllm-delivery-contract-and-recovery.md](0011-localllm-delivery-contract-and-recovery.md)
 
-> **本ADRの記載範囲（2026-08-25時点、ステータス: 提案中）**
-> 本ファイルは Issue #365 が最終的に「Queue実装方式（#366）」「システム全体の
-> LLM同時実行上限とtimeout/cancellation/straggler（#367）」「Workerクラッシュ後
-> の配信契約と再起動・状態分離（#368）」の3決定を統合する器である。本提案では
-> **#366（Queue実装方式）の検討・採用候補の提示までを記載**し、#367・#368 は後続Issueで
-> 追記するためのプレースホルダ節（[検討事項B](#検討事項b-システム全体のllm同時実行上限367後続) /
-> [検討事項C](#検討事項c-障害時の配信契約と再起動状態分離368後続)）を確保している。
+> **本ADRの記載範囲（2026-08-26時点、ステータス: 提案中）**
+> Issue #365 は当初「Queue実装方式（#366）」「システム全体のLLM同時実行上限と
+> timeout/cancellation/straggler（#367）」「Workerクラッシュ後の配信契約と再起動・状態分離
+> （#368）」の3決定を本ファイルへ統合する想定だった。その後「ADR = 1つの独立した意思決定」の
+> 原則を優先し、本ADRは **#366（Queue実装方式）** に限定し、#367は
+> [ADR-0010](0010-localllm-concurrency-limit-and-cancellation.md)、#368は
+> [ADR-0011](0011-localllm-delivery-contract-and-recovery.md)として独立採番した。
+> [検討事項B](#検討事項b-システム全体のllm同時実行上限367)と
+> [検討事項C](#検討事項c-障害時の配信契約と再起動状態分離368)は各ADRへの参照を示す。
 > 本ADRはレビュー・承認を経て確定するものであり、下記の「採用候補」はレビューで覆りうる。
-> #366 の Queue実装方式は #367・#368 の前提となるため、本ADRでは #366 を先に扱う。
 
 ## 課題の内容・背景
 
@@ -203,10 +206,15 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
      運用コストを負わずに再起動耐性・可観測性（SQL によるキュー観測）を得られる。現状の
      同時実行は少数のため、SQLite の書き込みロック特性が実害になる可能性は低い。
 - Queue上限・backpressure・過負荷時のAPIレスポンス（#366 受け入れ条件に対応）:
-  - **Queue上限**: 未処理（`queued`）ジョブ件数に上限 `N_queue` を設ける（既定値は #367 で
-    定める同時実行上限とあわせて調整し、本提案では「有限の上限を持つ」方針を採用候補とする）。
-  - **backpressure / 過負荷時応答**: 受付処理は「未処理件数が `N_queue` 未満であることの
-    確認」と「ジョブレコードの挿入」を**単一トランザクション内で原子的に**行い、同時到来した
+  - **Queue上限**: 受付済みかつ非terminalのジョブ件数（`queued` と、Worker が取得中の `leased`
+    の合計。`completed` / `failed` / `dead_letter` は含めない）に上限 `N_queue` を設ける（既定値は
+    #367 で定める同時実行上限とあわせて調整し、本提案では「有限の上限を持つ」方針を採用候補と
+    する）。この上限を「未処理」ではなく「受付済み非terminal総数」に対して定義するのは、#368
+    （ADR-0011）が `leased` から `queued` への retry 往復を伴うためであり、状態遷移だけで上限
+    判定が揺れないようにする意図である（[ADR-0011](0011-localllm-delivery-contract-and-recovery.md)
+    の「Queue上限との関係」と整合）。
+  - **backpressure / 過負荷時応答**: 受付処理は「受付済み非terminal件数が `N_queue` 未満である
+    ことの確認」と「ジョブレコードの挿入」を**単一トランザクション内で原子的に**行い、同時到来した
     複数リクエストが上限を超えて enqueue されることを防ぐ（容量チェックと挿入の間に競合窓を
     作らない）。**DBレベルの直列化方式**: 初期サポートDBである SQLite では既定の遅延
     （DEFERRED）トランザクションだと両者が同一の件数を観測して上限を超過しうるため、受付
@@ -266,19 +274,23 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
     既存結果を返し、期限後は新規受付可能であることを検証する。
   - **受入テスト（実装時に満たすべき観測可能な条件）**:
     1. **容量上限**: テスト専用DBでWorkerを停止し、正規ジョブテーブルを初期化したうえで、
-       開始時のcommit済み `queued` ジョブ件数が**0**であることを事前assertする。各要求に相互に
-       異なる `ownerPrincipalId` と `Idempotency-Key` を割り当て、DBロックを意図的に保持しない
-       条件で `N_queue + 1` 件を同時投入する。commit済みの `queued` ジョブ件数が `N_queue` を
-       超えず、容量上限で拒否された1件だけが `503` + delta-seconds形式の `Retry-After: 1` を
-       受け、他の `N_queue` 件は `202` を受けること。さらに、このテスト中にdriverが
-       `SQLITE_BUSY` / `SQLITE_LOCKED` を1件も報告していないこと、`503`対象の
+       開始時のcommit済み非terminal（`queued` + `leased`）ジョブ件数が**0**であることを事前assert
+       する。各要求に相互に異なる `ownerPrincipalId` と `Idempotency-Key` を割り当て、DBロックを
+       意図的に保持しない条件で `N_queue + 1` 件を同時投入する。commit済みの非terminalジョブ件数が
+       `N_queue` を超えず、容量上限で拒否された1件だけが `503` + delta-seconds形式の
+       `Retry-After: 1` を       受け、他の `N_queue` 件は `202` を受けること。さらに、このテスト中に受付処理が一時的
+       ロック競合（バックエンド非依存の分類。SQLite採用時は `SQLITE_BUSY` / `SQLITE_LOCKED`）を
+       1件も報告していないこと、`503`対象の
        `(ownerPrincipalId, Idempotency-Key)` に対応する正規ジョブレコードがどの状態でも存在しない
-       こと、正規ジョブレコード総数が正確に `N_queue` 件であることをassertし、503の原因が
-       ロック競合ではなく容量上限であることを直接検証する。
+       こと、正規ジョブレコード総数と非terminal件数が正確に `N_queue` 件であることをassertし、
+       503の原因がロック競合ではなく容量上限であることを直接検証する。
     2. **一時的ロック競合**: 容量に余裕を残した状態で別接続が書き込みロックをbusy timeoutの
-       5秒を超えて保持し、対象要求の `BEGIN IMMEDIATE` またはcommitに `SQLITE_BUSY` /
-       `SQLITE_LOCKED` を発生させる。その要求だけがジョブを永続化せず `503` + delta-seconds形式
-       の `Retry-After: 1` を受け、commit済み件数が増えないこと。容量上限テストとは分離する。
+       5秒を超えて保持し、対象要求の受付トランザクション開始またはcommitで一時的ロック競合を
+       発生させる。SQLiteを採用する場合はこれを `SQLITE_BUSY` / `SQLITE_LOCKED` として観測する
+       が、テストの合否条件はDB固有コードではなく、受付処理が公開する**バックエンド非依存の
+       分類**（例: `transient_lock` を表すエラー種別／メトリクス）で判定する。その要求だけが
+       ジョブを永続化せず `503` + delta-seconds形式の `Retry-After: 1` を受け、commit済み件数が
+       増えないこと。容量上限テストとは分離する。
     3. **非一時的失敗**: I/Oエラー、DB破損、予期しない制約違反、その他の非一時的commit失敗を
        個別に注入し、ジョブが永続化されず `500` を返し、`Retry-After`ヘッダーとtaskIdを返さない
        こと。これらを一時的ロック競合の `503` と混同しないこと。
@@ -289,17 +301,22 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
     持つ。前述の SQLite `BEGIN IMMEDIATE` トランザクション
     内で容量確認とこの正規レコードの挿入を行い、commit 後は同じストアに対する
     `TaskStore.get(taskId, ownerPrincipalId)` で直ちに取得可能であることを確認してから `202` を返す。
-    したがって「Queueだけcommit済み／TaskStoreには未登録」という中間状態は作らない。#368は
+    したがって「Queueだけcommit済み／TaskStoreには未登録」という中間状態は作らない。ADR-0011は
     この共通レコードを前提に、lease/retry/dead-letter等の後続状態遷移とworkflow stateの分離を
-    決める（受付時の正規レコードを別ストアへ分割する決定は本契約を上書きする後継ADRを要する）。
+    決めている（受付時の正規レコードを別ストアへ分割する決定は本契約を上書きする後継ADRを要する）。
   - **A2A 契約との整合と所有者境界**: 既存の A2A `TaskStore` は状態 enum を `submitted /
     working / completed / failed`（`packages/a2a-server/src/modules/a2a/response.model.ts`）で持ち、
     受付時に `submitted` のタスクを生成、`get(taskId, ownerPrincipalId)` で所有者を検証する。
     本ADRの「`queued`」は**Queue 内部のジョブ状態**を指す用語であり、外部 A2A レスポンスの
     状態スキーマへ新たな `queued` 値を追加することは意図しない。外部契約としては、受付は
-    既存の `submitted` を返し、Queue 内部状態 `queued` を A2A の `submitted` に対応付ける
-    （Worker が lease で実行を開始したら `working` へ遷移）。ジョブ識別子は既存の `taskId` を
-    そのまま用い、本文中の「jobId」は taskId の別名として扱う（新規識別子は導入しない）。
+    既存の `submitted` を返す。提案中の[ADR-0011](0011-localllm-delivery-contract-and-recovery.md)は、
+    **非terminal状態の写像**について永続`deliveryPhase`を唯一の根拠とし、初回受付の`accepted`を
+    `submitted`、初回lease取得で単調遷移する`running`をretry待機中も含め`working`へ対応付ける。
+    したがってQueue内部状態がretryで`queued`へ戻っても、外部状態を`working`から`submitted`へ
+    戻さない。**terminal状態の写像**はQueue terminal状態を根拠とし、`completed`はA2A `completed`、
+    `failed`と`dead_letter`はA2A `failed`へ対応付ける。fencingで拒否された古い試行は状態を
+    変更しない。ジョブ識別子は既存の`taskId`をそのまま用い、本文中の「jobId」はtaskIdの別名として
+    扱う（新規識別子は導入しない）。
     Gateway と取得エンドポイントは、`ownerPrincipalId` を**認証middlewareが検証済みリクエスト
     コンテキストへ設定したprincipalからのみ**取得する。リクエストbody/query、クライアント指定
     headerの値をownerとして採用・上書きしてはならない。クライアントは既存の取得エンドポイント
@@ -380,46 +397,54 @@ sequenceDiagram
 （#367）とWorker再配信の配信契約（#368）は本図の
 「Worker→A2A→LLM」区間および「永続Queue」の状態遷移として後続で肉付けする。
 
-## 検討事項B: システム全体のLLM同時実行上限（#367、後続）
+## 検討事項B: システム全体のLLM同時実行上限（#367）
 
-> **未決（Issue #367 で追記）**。本節は検討事項A の採用候補（永続Queue + lease）が承認される
-> ことを前提に、以下を決定するプレースホルダである。ここが埋まるまで本項目は「未決」とする。
->
-> - システム全体の LLM 同時実行上限の**実現機構**（lease 同時取得数 / semaphore / 共有ロック等）
-> - ジョブ単位 / reviewer fan-out 単位 / provider 単位の上限と既定値
-> - スロット（lease）解放条件、timeout / cancellation / straggler の扱い
->
-> 依存関係: 検討事項A の「lease 同時数の制御として接続できる」という接続点を実際の機構へ具体化する。
+> **[ADR-0010](0010-localllm-concurrency-limit-and-cancellation.md) として独立採番済み**。
+> provider/endpoint単位のWorker内共有semaphore、協調キャンセル、slot解放条件、shutdown drain、
+> Worker強制終了のフォールバックはADR-0010で決定している。本ADRの永続Queueは、将来job全体の
+> 上限をlease同時取得数で制御する追加レイヤへ発展できる接続点を提供する。
 
-## 検討事項C: 障害時の配信契約と再起動・状態分離（#368、後続）
+## 検討事項C: 障害時の配信契約と再起動・状態分離（#368）
 
-> **未決（Issue #368 で追記）**。本節は検討事項A の採用候補（永続Queue）が承認されることを
-> 土台に、以下を決定するプレースホルダである。ここが埋まるまで本項目は「未決」とする。
+> **[ADR-0011](0011-localllm-delivery-contract-and-recovery.md) として独立採番済み（ステータス:
+> 提案中）**。当初は本ファイル `0009` の一節として追記する想定だったが、`0010`（#367）が
+> 「ADR = 1つの独立した意思決定」の原則で独立採番した先例に合わせ、#368 の決定も
+> `docs/adr/0011-localllm-delivery-contract-and-recovery.md` として独立採番した。以下の論点は
+> すべて ADR-0011 が**提案**しており（本節はプレースホルダから参照へ置き換えた）、ADR-0011 が
+> 承認されるまでは確定仕様ではない。
 >
-> - delivery semantics（at-least-once 等）、ACK / lease / retry / dead-letter
-> - Worker再配信・重複実行時のレビュー結果／外部副作用の冪等性（enqueue受付の冪等キー契約は
->   検討事項Aで決定済み）
-> - Worker クラッシュ後のジョブ回復、再起動時のリカバリ
-> - queue/runtime state と review workflow state の分離
+> - delivery semantics（提案: 配送は at-least-once、外部 terminal 結果は fencing により
+>   effectively-once）、ACK（terminal commit 時点）/ lease + heartbeat / bounded retry /
+>   dead-letter
+> - Worker再配信・重複実行時のレビュー結果の冪等性（fencing token による terminal commit の
+>   条件付き確定。enqueue受付の冪等キー契約は検討事項Aで決定済み）
+> - Worker クラッシュ後のジョブ回復、再起動時のリカバリ（起動時 recovery 契約）
+> - queue/runtime state と外部A2A state と review workflow state の分離
 >
-> 依存関係: 検討事項A が永続ストアを採用したことで、これらの保証を載せる土台が確保されている。
+> 依存関係: 検討事項A が永続ストアを採用したことで、ADR-0011 がこれらの保証を載せる土台が
+> 確保されている。
 
 ## 影響・フォローアップ
 
 - **ADR-0007 のフォローアップ項目への対応**: ADR-0007 が「Issue #365 で決定する」とした
   「Queue実装方式の比較／システム全体のLLM同時実行上限の実現方式／timeout・cancellation・
   straggler／配信契約／再起動時のジョブ回復」のうち、**Queue実装方式**を本ADRで扱う（提案中）。
-  残りは検討事項B・Cとして本ファイルに追記される。
+  残りはADR-0010・ADR-0011として独立採番し、検討事項B・Cから参照する。
+- **実装開始ゲート**: 本ADRのQueue/TaskStore正規レコードは、ADR-0011が提案する`deliveryPhase`、
+  terminal写像、lease/retry状態を格納する基盤になる。両ADRの片方だけを実装すると状態契約が
+  不完全になるため、Queueのproduction実装は**本ADRとADR-0011の両方が承認された後**に開始する。
+  ADR-0011がレビューで変更された場合は、本ADRのA2A写像・容量上限・受入テストも同じPRまたは
+  後継ADRで同期してから実装する。
 - **短期的な実装影響**:
   - ADR-0007 の「`a2a-server` を受付役と実行役に分離」に対し、受付役（Gateway/中間サービス）
     が案C の永続キューへ enqueue し、commit成功後に既存A2A契約の `202` + `submitted` +
     taskId を返す構成にする。
   - ADR-0008 が指摘する `InMemory*TaskStore` を、案C の永続Queue へ移行する設計余地が生じる
-    （状態管理の永続化は #368 の「state 分離」と整合させる）。ただし ADR-0008 は
+    （状態管理の永続化は ADR-0011 の「state 分離」と整合させる）。ただし ADR-0008 は
     `ReviewJobStore`（review workflow state = Issue #243 の登録/結果保存）を **queue/runtime
     state とは別の関心事**として整理している。本ADRが永続化するのは**キューのジョブ状態**で
-    あり、両者を同一ストアに載せるか分離するかは #368 の「state 分離」で決める（本ADRは前者の
-    永続化のみを決定する）。
+    あり、両者を同一ストアに載せるか分離するかは ADR-0011 の「state 分離」が分離案を提案している
+    （本ADRは前者の永続化のみを決定する）。
   - `deploy/` の pod 構成に、永続DBファイル用のローカルボリューム（emptyDir ではなく再起動を
     またぐ永続ボリューム）を追加する必要がある。
 - **再検討トリガー（前提が変われば本ADRを更新/廃止してよい）**:

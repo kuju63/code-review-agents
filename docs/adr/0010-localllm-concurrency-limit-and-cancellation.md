@@ -3,8 +3,8 @@
 - Status: Proposed(未実装・レビュー待ち)
 - Date: 2026-08-25
 - Related: Issue #367(本ADRが扱う課題), Issue #345(上位), Issue #365(#366/#367/#368への分割元),
-  Issue #366(Queue実装方式。本ADR作成時点で`docs/adr/0009-localllm-review-flow-control.md`として
-  別ブランチで作業中・未マージ), Issue #368(配信契約・再起動時回復、本ADRのスコープ外),
+  Issue #366(Queue実装方式。[ADR-0009](0009-localllm-review-flow-control.md)),
+  Issue #368(配信契約・再起動時回復。[ADR-0011](0011-localllm-delivery-contract-and-recovery.md)),
   [docs/adr/0004-mcp-client-session-sharing.md](0004-mcp-client-session-sharing.md),
   [docs/adr/0007-Multi-Container-Architecture-for-Scalability.md](0007-Multi-Container-Architecture-for-Scalability.md),
   [docs/adr/0008-core-extension-boundaries.md](0008-core-extension-boundaries.md)
@@ -487,11 +487,11 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
    され、他のWorkerプロセスで実行中の並行ジョブには影響しない**(同一Worker上で並行実行中の
    他ジョブは巻き込まれ再試行対象になる、という副作用は許容する)。具体的なトリガー条件
    (ヘルスチェック閾値・有界時間の具体値等)・オーケストレーション手順・強制終了後の
-   ジョブ再試行の扱いは、本ADRの決定粒度を超えるため、Issue #368(配信契約・再起動時回復)の
-   スコープとして扱う。本ADRは、上記の性質(有界性・単一Worker限定・同一Worker上ジョブの
-   再試行対象化)を**Issue #368の受け入れ条件に追加すべき実行可能な制約**として明示的に
-   引き継ぐ([Consequences](#consequences)に記載の、#368が設計する delivery semanticsとの
-   接続点を参照)。
+   ジョブ再試行の扱いは、本ADRの決定粒度を超えるため、
+   [ADR-0011](0011-localllm-delivery-contract-and-recovery.md)のスコープとして扱う。本ADRは、
+   上記の性質(有界性・単一Worker限定・同一Worker上ジョブの再試行対象化)をADR-0011へ
+   引き継ぎ、提案中のADR-0011はat-least-onceのretry・shutdown契約として具体化している
+   ([Consequences](#consequences)参照)。
 
 ## Consequences
 
@@ -509,13 +509,12 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
   存在する。本ADRのマージ後、#366の担当者はこのプレースホルダを削除し、本ADR
   (`docs/adr/0010-localllm-concurrency-limit-and-cancellation.md`)へのリンクに置き換える
   必要がある。
-- Issue #368は、本ADRが合意事項6で決定した「Workerプロセス強制終了」というslot回収の最終
-  手段を前提として、その際のジョブの delivery semantics(再試行するか、失敗として扱うか等)
-  を設計する必要がある。#368の受け入れ条件には、本ADRが要件として定めた以下3点を実行可能な
-  形で含めること: (1) 強制終了トリガーの監視は有界(bounded)な待機時間で必ず判定が確定する
-  こと、(2) 強制終了は当該Workerプロセス単位に限定され他のWorkerで実行中の並行ジョブに
-  影響しないこと、(3) 強制終了で巻き込まれた同一Worker上の他ジョブは再試行対象として扱う
-  delivery semanticsを定義すること。
+- 提案中の[ADR-0011](0011-localllm-delivery-contract-and-recovery.md)は、本ADRが合意事項6で決定した
+  「Workerプロセス強制終了」というslot回収の最終手段を前提に、その際のdelivery semanticsを
+  at-least-onceとして具体化する。ADR-0011の提案では、本ADRから引き継いだ以下3点をretry・
+  shutdown契約に反映する: (1) 強制終了トリガーの監視は有界(bounded)な待機時間で必ず判定が確定すること、
+  (2) 強制終了は当該Workerプロセス単位に限定され他のWorkerで実行中の並行ジョブに影響しないこと、
+  (3) 強制終了で巻き込まれた同一Worker上の他ジョブを再試行対象として扱うこと。
 - ADR-0004(MCPクライアントのセッション共有)の決定は変更しない。GitHub MCPの輻輳対策と
   LocalLLMの並列上限は引き続き別々の仕組みとして扱う。
 - ADR-0008が定める`ModelProvider` Portの段階移行が完了するまでの間、本ADRの`ProviderSemaphore`
