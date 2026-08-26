@@ -214,6 +214,8 @@ model provider port（差が出ない論点）: ADR-0008が`ModelProvider` Port�
 
 2. Gatewayを受信/変換層（Langflow/Dify、GitHub/GitLab Webhook・Web画面からのイベントを受ける）と受付制御層（自前実装、ADR-0009準拠のSQLite永続Queue・Idempotency-Key判定を変更せず踏襲）の二層で構成する。**CLIはADR-0008決定4によりin-process直結のまま、この二層の対象外とする。**
 
+   > **CLIのflow-control前提**: CLIはa2a-serverとは別プロセスで動作するため、Worker内`ProviderSemaphore`（ADR-0010、provider/endpoint単位のプロセス内共有レジストリ）による同時実行上限にも、Gatewayの`Idempotency-Key`重複排除にも掛からない（ADR-0010が指摘する通り、`run-agent-evaluation.ts`の並列数オプションと同様に「呼び出し側の並列数を絞るだけで、サーバー側の全体制御にはならず、Web UIやCLIなど他のcallerからは制御できない」構造がCLIにもそのまま当てはまる）。したがって単一ユーザーがCLIを逐次実行する運用を前提とし、CLIから同時に複数の`startReview`/`retryReview`を実行しないことを利用者側の運用条件とする。この条件をCLI自体で強制する仕組み（ロックファイル等、queue-aware化）を設けるかどうかは、CLI thin adapter実装Sub-Issue（後述Consequences項番6）で決定する。
+
 3. identity階層は次の通りとする。
 
    - `Review`（永続、ユーザー管理対象、id=`reviewId`）: 1つのPR/対象に対応する登録単位。1..N個の`ReviewAttempt`を持つ。
@@ -225,14 +227,14 @@ model provider port（差が出ない論点）: ADR-0008が`ModelProvider` Port�
 
    | A2A `status` | Queue内部状態(ADR-0009) | `ReviewAttempt.status` | 備考 |
    |---|---|---|---|
-   | （enqueue前） | `queued`（lease未取得） | `queued` | Gatewayが`202`を返した直後 |
+   | （enqueue後・lease前） | `queued`（lease未取得） | `queued` | Gatewayが`202`を返した直後 |
    | `submitted` | `queued`→lease取得後`working`へ遷移 | `queued`→`running` | ADR-0009の遷移をそのまま反映 |
    | `working` | `working` | `running` | |
    | `completed` | （worker側で完了） | `succeeded` | reportは`ReviewJobStore`へ永続化 |
    | `failed` | （worker側で失敗） | `failed` | error taxonomy（後述）のcodeを付与 |
-   | （cancelSignal発火, ADR-0010） | — | `canceled` | A2Aの4状態には存在しない追加状態。REST/CLI向けにのみ表現し、外部A2A statusは変更しない |
+   | （cancelSignal発火, ADR-0010） | — | `canceled` | A2Aの4状態には存在しない追加状態。REST/CLI向けにのみ`canceled`として表現し、外部A2A statusは変更しない——既存A2Aクライアント（`packages/evaluation/src/run-agent-evaluation.ts`の`pollTask`を含む）はcancelを示す専用状態を持たないため、cancel後も直前のA2A `status`（多くは`working`）を観測し続け、既存のdeadlineベースのtimeoutで初めてpollingを終了する。この挙動は項番7の「既存A2Aエンドポイントと評価パイプラインは無変更」という決定から導かれる帰結であり、変更しない。cancelを既存4状態のいずれかに投影して即時に終端化するかどうかは、互換性への影響が大きいため本ADRでは決めず実装Sub-Issueに委ねる |
 
-   `Review.status`は最新`ReviewAttempt.status`から導出する派生状態（`draft`/`reviewing`/`reviewed`/`failed`/`closed`）とし、`closeReview`によるworkflow close状態は`ReviewAttempt`のstatusとは独立に`Review`側で管理する。comment dispositionは`ReviewAttempt`の結果（finding単位）に対する別軸の属性であり、status machineの一部にはしない。
+   `Review.status`は最新`ReviewAttempt.status`から導出する派生状態（`draft`/`reviewing`/`reviewed`/`failed`/`closed`/`canceled`）とし、`ReviewAttempt.status = canceled`の場合は`Review.status`にも`canceled`を投影する。`closeReview`による`closed`（Review側の管理操作）と`canceled`（Attempt側の実行結果）は独立した軸であり優先順位の問題ではない——同一`Review`が`closed`かつ最新`ReviewAttempt`が`canceled`という組み合わせも許容する。comment dispositionは`ReviewAttempt`の結果（finding単位）に対する別軸の属性であり、status machineの一部にはしない。
 
    **Queueレコードと`ReviewJobStore`のストア統合可否は#368の検討事項として明示的に残し、本ADRでは決めない**（ADR-0009が既に切り出した論点であるため先取りしない）。
 
@@ -247,16 +249,16 @@ model provider port（差が出ない論点）: ADR-0008が`ModelProvider` Port�
    | `validation_error` | 入力検証失敗 | 400/422 | 422（既存`{detail:...}`形状を維持） | 1 |
    | `webhook_validation_error` | Langflow/Dify受信層での署名検証失敗等 | 400（Langflow/Dify側でハンドリング、a2a-serverには到達しない） | 対応なし | 対応なし（Gateway段階のためCLI無関係） |
    | `not_found` | Review/Attempt不存在、TTL失効後のtaskId等 | 404 | 404 | 2 |
-   | `conflict` | Idempotency-Key重複、close済みへのstart等 | 409 | （A2Aには対応なし、REST/CLI固有） | 3 |
+   | `conflict` | 同一Idempotency-Keyで異なるpayload、close済みへのstart等 | 409 | （A2Aには対応なし、REST/CLI固有） | 3 |
    | `queue_overload` | Gateway受付超過(ADR-0009) | 503 + Retry-After | 503（既存） | 4 |
    | `upstream_github_failure` | GitHub MCP/REST失敗 | 502 | `failed`終端状態＋detail | 5 |
    | `upstream_model_failure` | LLM呼び出し失敗 | 502 | `failed`終端状態＋detail | 5 |
-   | `timeout` | job deadline到達 | 504 or `failed` | `failed`終端状態 | 6 |
+   | `timeout` | job deadline到達 | `failed`終端状態（pollingで返却、`GET`応答自体は200）。項番6が定める通り本ADRの契約は常にsync受付(202)+async追跡(polling)のため`504`は使用しない | `failed`終端状態 | 6 |
    | `canceled` | cancelSignal発火(ADR-0010) | 200（terminal, エラー扱いしない） | A2Aの4値には存在しないためREST/CLI限定の終端状態として表現 | 0（意図的キャンセルは失敗ではない） |
 
-   sync受付+async追跡は既存のADR-0009 Gateway 202契約をそのまま踏襲し、pollingを基準とする。SSE/streamingは将来拡張として予約し今回は実装しない。idempotencyはコマンドレベル（`registerReview`/`retryReview`の呼び出し）に適用し、同一Idempotency-Keyなら既存`ReviewAttempt`を返す。
+   sync受付+async追跡は既存のADR-0009 Gateway 202契約をそのまま踏襲し、pollingを基準とする。SSE/streamingは将来拡張として予約し今回は実装しない。idempotencyはコマンドレベル（`registerReview`/`retryReview`の呼び出し）に適用し、**同一Idempotency-Keyかつ同一payloadでの再送は新規作成せず既存`ReviewAttempt`（元のstart応答と同じ内容）を返す。同一Idempotency-Keyで異なるpayloadを送った場合のみ上記`conflict`（409）とする**。
 
-7. 移行順序: 既存A2Aエンドポイントと評価パイプラインは無変更、REST surfaceは追加のみとする。ADR-0008 Stage4（`ReviewPipeline` Port導入）完了前は、REST command handlerの一部が`agents/application/`ではなく現行`orchestrator.service.ts`への直接呼び出しに暫定フォールバックする過渡期間が生じることを明示する（隠さず、経過状態として扱う）。Langflow/Dify受信層の導入自体は既存経路に影響しない追加レイヤであるため、他の移行と独立して段階導入できる。
+7. 移行順序: 既存A2Aエンドポイントと評価パイプラインは無変更、REST surfaceは追加のみとする。ADR-0008 Stage4（`ReviewPipeline` Port導入）完了前は、REST command handlerの一部が`agents/application/`ではなく現行`orchestrator.service.ts`への直接呼び出しに暫定フォールバックする過渡期間が生じることを明示する（隠さず、経過状態として扱う）。**この暫定フォールバック期間中、`orchestrator.service.ts`は独自に`crypto.randomUUID()`でtaskIdを生成する（Context節参照）ため、項番3が定める`taskId := attemptId`の不変条件をこの経路だけは満たせない。**この不整合の解消方法（`attemptId`を`orchestrator.service.ts`へ引き渡すshimを追加する、または新設REST commandをフォールバック対象から除外する、のいずれか）は本ADRでは決めず、実装Sub-Issue（後述Consequences項番2）で決定する。Langflow/Dify受信層の導入自体は既存経路に影響しない追加レイヤであるため、他の移行と独立して段階導入できる。
 
 ## Consequences
 
