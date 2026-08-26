@@ -391,10 +391,16 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
      `accepting`が`false`へ遷移する操作より前に順序付けられた`acquire()`は通常どおり
      待機キューへ登録され、後に順序付けられた`acquire()`は待機キューへ入る前に
      即座に拒否される(permitを得ないまま、`cancelled`とは異なる**専用の`rejected`
-     結果**としてsettleする——まだ試みてすらいない受付を「キャンセルされた」と表現しない
-     ための区別。この`rejected`結果は合意事項5で定義する専用の独立したエラー型
-     `ReviewerRejectedError`として`ReviewOrchestrator`へ伝わり、`ReviewerCancelledError`
-     とは別のメッセージを持つ`ReviewError`としてレポートされる)。
+     結果**としてsettleする——まだLLM呼び出しを試みていないことを表す。この`rejected`結果は
+     合意事項5で定義する専用の独立したエラー型`ReviewerRejectedError`として
+     `ReviewOrchestrator`へ伝わり、`ReviewerCancelledError`とは別のメッセージを持つ`ReviewError`
+     としてレポートされる)。**Queue leaseとの関係**: Queue lease取得前の`rejected`はジョブを
+     Workerへ割り当てていない新規受付拒否として配送attemptに含めない。一方、Queue lease取得後に
+     終了対象Workerが初めて`ProviderSemaphore.acquire()`を呼び、shutdown中の`accepting=false`で
+     `rejected`となった場合は、既に配送attemptが開始済みである。この場合もエラー型は
+     `ReviewerRejectedError`のまま維持するが、配送層は現在の`leaseOwner / fencingToken`を条件に
+     `cancelOrigin = shutdown`を永続化し、ADR-0011のshutdown retryへ遷移させる。lease後の
+     `rejected`をterminal失敗または配送attempt外として扱ってはならない。
    - **cancel(`cancelSignal`)**: job deadline(既存の`reviewerTimeoutSeconds`)またはユーザー
      cancelが発火した場合は**即座に**該当jobの`cancelSignal`を発火させる。shutdown drainの
      場合は、新規受付停止(上記)が発火した時刻を起点とする**秒単位・有界(bounded)の

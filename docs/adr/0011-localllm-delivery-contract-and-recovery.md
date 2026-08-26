@@ -201,12 +201,20 @@ stateDiagram-v2
      強制終了、shutdown grace period後の運用中断、一時的なLocalLLM・ネットワーク・I/O障害とする。
    - 同じWorkerの強制終了に巻き込まれた他ジョブも、他Workerのジョブを変更せずretry対象にする。
    - 入力・認可不正、設定不正、決定的なworkflow失敗は自動retryせず`failed`にする。
-     ADR-0010の`rejected`は新規受付前の拒否であり、配送attemptとして記録しない。
+     ADR-0010の`rejected`のうち、**Queue lease取得前**の拒否は新規受付前の拒否であり、配送attempt
+     として記録しない。一方、**Queue lease取得後**にshutdownで発生する`rejected`
+     （`ReviewerRejectedError`）は配送attempt開始後の中断であり、下記の`cancelOrigin = shutdown`
+     経路でretry対象とする。
    - **キャンセル原因の永続化**: ADR-0010の`ReviewerCancelledError`と`stopReason: 'cancelled'`は
      ユーザーcancelとshutdown中断を同一結果として扱うため、Workerだけでは両者を判別できない。
      そこでキャンセル遷移時に、正規ジョブレコードへ有限の`cancelOrigin`（`user` /
      `shutdown`）を永続化する。`cancelOrigin = user`はretryせず`failed`にし、
-     `cancelOrigin = shutdown`は運用中断としてretry対象にする。`cancelOrigin`はキャンセルから
+     `cancelOrigin = shutdown`は運用中断としてretry対象にする。**shutdown起因のretry遷移は
+     `ReviewerCancelledError(shutdown)`だけでなく、lease取得後の`ReviewerRejectedError(shutdown)`
+     も含む**。いずれの場合も、現在の`leaseOwner / fencingToken`を条件に`cancelOrigin = shutdown`を
+     永続化してから同一のretry経路へ合流させる（Workerローカルの`accepting=false`による拒否か、
+     `cancelSignal`によるキャンセルかを配送層で区別せず、lease後shutdown中断として一様に扱う）。
+     `cancelOrigin`はキャンセル・拒否から
      retryまたはterminal遷移が確定するまで同じ値を保持し、Workerはこの永続値だけを根拠に
      retry判定する（キャンセル発火時の揮発的な文脈に依存しない）。
    - 最大3 attempt（初回1回 + retry最大2回）とする。retryは1秒を起点に2倍する指数backoff、
@@ -372,7 +380,10 @@ sequenceDiagram
      retry対象にし、他Workerのleaseへ影響しない。
   7. retryや再起動でreview workflowのユーザー管理状態が変わらない。
   8. 同じ`ReviewerCancelledError`でも、永続`cancelOrigin = user`はterminal `failed`、
-     `cancelOrigin = shutdown`はretryとなり、遷移完了まで原因値が変わらない。
+     `cancelOrigin = shutdown`はretryとなり、遷移完了まで原因値が変わらない。Queue lease取得後に
+     終了対象Workerの`ProviderSemaphore.acquire()`がshutdownで`ReviewerRejectedError`を返す場合も
+     `cancelOrigin = shutdown`を永続化してretryへ遷移し、lease取得前の`rejected`は配送attemptに
+     ならず新規受付拒否のままであることを区別して検証する。
   9. 初回受付はA2A `submitted`、初回lease後はretry待機中も`working`のままで、外部状態が
      `working`から`submitted`へ逆行しない。
   10. `N_queue`件の非terminalジョブに`queued`と`leased`を混在させても新規受付は`503`となり、
