@@ -111,6 +111,7 @@ stateDiagram-v2
     leased --> queued: retryable failure / lease期限切れ
     leased --> queued: cancelOrigin=shutdown
     leased --> failed: cancelOrigin=user
+    leased --> failed: cancelOrigin=deadline
     leased --> dead_letter: retry上限到達
     queued --> failed: cancelOrigin=user
     completed --> [*]
@@ -126,7 +127,7 @@ stateDiagram-v2
 | --- | --- |
 | delivery / ACK | 少なくとも1回の実行を保証する。結果とterminal状態を同一transactionでcommitした時点をACKとし、取得時やLLM完了時にはACKしない。 |
 | lease / heartbeat | 有限のvisibility timeoutを持つleaseと定期heartbeatを必須にする。期限切れleaseだけを再取得可能にし、生存中Workerのジョブを起動時に奪わない。 |
-| retry / dead-letter | Worker消失、lease更新不能、ADR-0010の強制終了、shutdown grace period後の中断、一時的なLLM・I/O障害だけを自動retryする。入力不正、認可拒否、ユーザーcancel、決定的なworkflow失敗はretryしない。自動実行は初回を含む最大3 attempt、retry間隔は1秒を起点とする指数backoff（1秒、2秒、上限30秒）にjitterを加える。3回目も失敗したジョブは`dead_letter`とする。 |
+| retry / dead-letter | Worker消失、lease更新不能、ADR-0010の強制終了、shutdown grace period後の中断、一時的なLLM・I/O障害だけを自動retryする。入力不正、認可拒否、ユーザーcancel、job deadline、決定的なworkflow失敗はretryしない。自動実行は初回を含む最大3 attempt、retry間隔は1秒を起点とする指数backoff（1秒、2秒、上限30秒）にjitterを加える。3回目も失敗したジョブは`dead_letter`とする。 |
 | 重複実行 | 各leaseに単調増加するfencing tokenを付け、現在のtokenを持つWorkerだけがheartbeatと結果commitを行える。terminal結果のcommitは条件付きで1回だけ成功し、期限切れ試行の遅延結果は破棄する。 |
 | 再起動回復 | `queued`はそのまま実行対象とする。有効期限内のleaseは待ち、期限切れ後にretry対象へ戻す。起動したプロセスが全レコードを一律`queued`へ戻す処理は行わない。 |
 | 状態分離 | QueueとA2A TaskStoreはADR-0009の単一正規レコードを共有する。一方、delivery runtime状態とユーザー管理review workflow状態は別の論理レコード・別Portとし、retryで`closed`等を変更しない。 |
@@ -206,17 +207,20 @@ stateDiagram-v2
      （`ReviewerRejectedError`）は配送attempt開始後の中断であり、下記の`cancelOrigin = shutdown`
      経路でretry対象とする。
    - **キャンセル原因の永続化**: ADR-0010の`ReviewerCancelledError`と`stopReason: 'cancelled'`は
-     ユーザーcancelとshutdown中断を同一結果として扱うため、Workerだけでは両者を判別できない。
-     そこでキャンセル遷移時に、正規ジョブレコードへ有限の`cancelOrigin`（`user` /
-     `shutdown`）を永続化する。`cancelOrigin = user`はretryせず`failed`にし、
-     `cancelOrigin = shutdown`は運用中断としてretry対象にする。**shutdown起因のretry遷移は
-     `ReviewerCancelledError(shutdown)`だけでなく、lease取得後の`ReviewerRejectedError(shutdown)`
-     も含む**。いずれの場合も、現在の`leaseOwner / fencingToken`を条件に`cancelOrigin = shutdown`を
-     永続化してから同一のretry経路へ合流させる（Workerローカルの`accepting=false`による拒否か、
-     `cancelSignal`によるキャンセルかを配送層で区別せず、lease後shutdown中断として一様に扱う）。
-     `cancelOrigin`はキャンセル・拒否から
-     retryまたはterminal遷移が確定するまで同じ値を保持し、Workerはこの永続値だけを根拠に
-     retry判定する（キャンセル発火時の揮発的な文脈に依存しない）。
+     ユーザーcancel、job deadline、shutdown中断を同一結果として扱うため、Workerだけでは原因を
+     判別できない。そこで`cancelSignal`の発火前に、正規ジョブレコードへ有限の`cancelOrigin`
+     （`user` / `deadline` / `shutdown`）を永続化する。`cancelOrigin = user`と
+     `cancelOrigin = deadline`はretryせず`failed`にし、`cancelOrigin = shutdown`は運用中断として
+     retry対象にする。job deadlineでは、現在の`leaseOwner / fencingToken`を条件に
+     `cancelOrigin = deadline`を永続化してから`cancelSignal`を発火し、その伝播先で
+     `ReviewerCancelledError`へ変換された後も永続値に基づいて`failed`へ遷移する。
+     **shutdown起因のretry遷移は`ReviewerCancelledError(shutdown)`だけでなく、lease取得後の
+     `ReviewerRejectedError(shutdown)`も含む**。いずれの場合も、現在の`leaseOwner / fencingToken`を
+     条件に`cancelOrigin = shutdown`を永続化してから同一のretry経路へ合流させる（Workerローカルの
+     `accepting=false`による拒否か、`cancelSignal`によるキャンセルかを配送層で区別せず、lease後
+     shutdown中断として一様に扱う）。`cancelOrigin`はキャンセル・拒否からretryまたはterminal遷移が
+     確定するまで同じ値を保持し、Workerはこの永続値だけを根拠にretry判定する（キャンセル発火時の
+     揮発的な文脈に依存しない）。
    - 最大3 attempt（初回1回 + retry最大2回）とする。retryは1秒を起点に2倍する指数backoff、
      上限30秒、jitter付きで`availableAt`を設定する。上限到達時は`dead_letter`へ遷移し、外部A2A
      状態はサニタイズ済み理由を持つ`failed`とする。
@@ -238,8 +242,9 @@ stateDiagram-v2
    - **cancelとの競合順序**: retry遷移・terminal commit・期限切れ回収はいずれも、`taskId`、現在の
      状態、`fencingToken`、`cancelOrigin`を条件に含む単一の原子transactionで勝者を1つに確定する。
      通常の成功・失敗terminal commitは`cancelOrigin IS NULL`の場合だけ許可する。
-     `cancelOrigin = user`が永続化されている場合は、その後にWorkerが停止して期限切れ回収が走っても
-     retryせずterminal `failed`を優先する。`cancelOrigin = shutdown`が永続化された後にLLM結果が
+     `cancelOrigin = user`または`cancelOrigin = deadline`が永続化されている場合は、その後にWorkerが
+     停止して期限切れ回収が走ってもretryせずterminal `failed`を優先する。
+     `cancelOrigin = shutdown`が永続化された後にLLM結果が
      到着しても通常terminal commitを拒否し、運用中断として`queued`へのretry遷移またはlease期限
      切れ回収だけを許可する。retryを実際に開始（再lease）する時点で`cancelOrigin`をクリアし、
      次のattemptへ持ち越さない。
@@ -379,11 +384,13 @@ sequenceDiagram
   6. shutdown grace period中の自然完了を保存し、強制終了で巻き込まれた同一Worker上ジョブだけを
      retry対象にし、他Workerのleaseへ影響しない。
   7. retryや再起動でreview workflowのユーザー管理状態が変わらない。
-  8. 同じ`ReviewerCancelledError`でも、永続`cancelOrigin = user`はterminal `failed`、
-     `cancelOrigin = shutdown`はretryとなり、遷移完了まで原因値が変わらない。Queue lease取得後に
-     終了対象Workerの`ProviderSemaphore.acquire()`がshutdownで`ReviewerRejectedError`を返す場合も
-     `cancelOrigin = shutdown`を永続化してretryへ遷移し、lease取得前の`rejected`は配送attemptに
-     ならず新規受付拒否のままであることを区別して検証する。
+   8. 同じ`ReviewerCancelledError`でも、永続`cancelOrigin = user`と`cancelOrigin = deadline`は
+      terminal `failed`、`cancelOrigin = shutdown`はretryとなり、遷移完了まで原因値が変わらない。
+      job deadlineでは、現在の`leaseOwner / fencingToken`を条件に`cancelOrigin = deadline`を永続化して
+      から`cancelSignal`を発火し、`ReviewerCancelledError`へ変換された後も永続値だけに基づいて
+      `failed`へ遷移する。Queue lease取得後に終了対象Workerの`ProviderSemaphore.acquire()`がshutdownで
+      `ReviewerRejectedError`を返す場合も`cancelOrigin = shutdown`を永続化してretryへ遷移し、lease
+      取得前の`rejected`は配送attemptにならず新規受付拒否のままであることを区別して検証する。
   9. 初回受付はA2A `submitted`、初回lease後はretry待機中も`working`のままで、外部状態が
      `working`から`submitted`へ逆行しない。
   10. `N_queue`件の非terminalジョブに`queued`と`leased`を混在させても新規受付は`503`となり、
