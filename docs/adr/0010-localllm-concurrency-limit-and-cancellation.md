@@ -375,12 +375,17 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
    しない。
 4. **新規受付停止シグナルとcancelシグナルは別個の合図として扱う**(合意事項の冒頭で述べた
    区別の具体化):
-   - **新規受付停止**: shutdown drain開始時にのみ発火する。以後、`orchestrator.service.ts`の
-     新規`enqueue`、および`ProviderSemaphore.acquire()`への新規の待機開始を拒否する
-     (=まだ`acquire()`を呼んでいないジョブ・reviewerは、この時点で新規に受け付けられない)。
-     この合図自体は`cancelSignal`ではなく、実行中・待機中の呼び出しには何も伝播しない。
-     **実装契約**: `ProviderSemaphore`はレジストリ全体で共有する単一の`accepting`
-     真偽値状態を持ち、`acquire()`はこの状態の確認と待機キューへの登録を1つの原子的な
+   - **新規受付停止**: shutdown drain開始時にのみ発火するが、停止範囲はshutdownの種類で分ける。
+     **全体shutdown**ではGatewayの新規`enqueue`、全Workerの新規lease取得、各Workerの
+     `ProviderSemaphore.acquire()`への新規待機開始を拒否する。**Worker単位のrolling restart**では
+     Gatewayの`enqueue`と他Workerのlease取得を継続し、終了対象Workerだけが新規lease取得と
+     `ProviderSemaphore.acquire()`への新規待機開始を拒否する。Queueに受付済みのジョブを終了対象
+     Workerへ新たに割り当ててはならない。この合図自体は`cancelSignal`ではなく、当該範囲で既に
+     実行中・待機中の呼び出しには何も伝播しない。
+     **実装契約**: `ProviderSemaphore`は**各Workerプロセス内**のレジストリ全体で共有する単一の
+     `accepting`真偽値状態を持つ。rolling restartでは終了対象Workerの`accepting`だけを`false`へ
+     遷移させ、他Workerのレジストリへ伝播しない。全体shutdownでは全Workerがそれぞれ`false`へ
+     遷移する。`acquire()`はこの状態の確認と待機キューへの登録を1つの原子的な
      操作として行う(確認と登録の間に他の処理が割り込む余地を作らない)。これにより
      shutdown開始と`acquire()`呼び出しが競合した場合の結果は一意に定まる:
      `accepting`が`false`へ遷移する操作より前に順序付けられた`acquire()`は通常どおり
@@ -514,7 +519,10 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
   at-least-onceとして具体化する。ADR-0011の提案では、本ADRから引き継いだ以下3点をretry・
   shutdown契約に反映する: (1) 強制終了トリガーの監視は有界(bounded)な待機時間で必ず判定が確定すること、
   (2) 強制終了は当該Workerプロセス単位に限定され他のWorkerで実行中の並行ジョブに影響しないこと、
-  (3) 強制終了で巻き込まれた同一Worker上の他ジョブを再試行対象として扱うこと。
+  (3) 強制終了で巻き込まれた同一Worker上の他ジョブを再試行対象として扱うこと。さらに信号範囲は
+  本ADRの合意事項4とADR-0011で統一し、全体shutdownではGateway enqueue・全Workerの新規lease・
+  全Workerの新規`ProviderSemaphore.acquire()`を停止し、Worker rolling restartではGateway enqueueを
+  継続して終了対象Workerの新規lease・新規`acquire()`だけを停止する。
 - ADR-0004(MCPクライアントのセッション共有)の決定は変更しない。GitHub MCPの輻輳対策と
   LocalLLMの並列上限は引き続き別々の仕組みとして扱う。
 - ADR-0008が定める`ModelProvider` Portの段階移行が完了するまでの間、本ADRの`ProviderSemaphore`

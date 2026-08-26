@@ -322,6 +322,28 @@ sequenceDiagram
 このシーケンスはat-least-onceにより計算が重複しても、現行leaseのtokenを持つ試行だけが結果を
 確定し、クライアントから見えるterminal結果を1つに保つ流れを示す。
 
+### Queueと実行アダプタの所有境界
+
+- **永続状態の所有者**: ADR-0009に従い、QueueとA2A TaskStoreの単一正規ジョブレコード、および
+  そのSQLite接続・schemaは、A2Aサーバー外のGatewayまたは専用中間サービス（以下、Queue owner）
+  が所有する。`packages/a2a-server`の実行プロセス内へQueue durability境界を複製しない。
+- **実行アダプタ**: `packages/a2a-server`のWorkerロールは、Queue ownerが公開するPortを介して
+  lease取得、heartbeat、cancel origin記録、retry/期限切れ回収、terminal commitを要求し、
+  LocalLLMレビューを実行するアダプタである。Workerは正規レコードを独自に保持・直接二重書きせず、
+  状態遷移の成否と最新fencing tokenをQueue ownerの応答から判断する。
+- **状態遷移の責任**: Gatewayはenqueue、所有者検証、ポーリング読取を担う。Queue ownerは容量判定、
+  lease・heartbeat・fencing条件、attempt/cancel判定、retry/dead-letter、A2A状態写像、terminal状態の
+  不変性を原子的に強制する。Workerは現在の`leaseOwner / fencingToken`を添えて遷移を要求し、
+  条件不一致時は実行・cancel・結果commitを継続しない。
+- **transactionとatomic ACKの境界**: lease取得、heartbeat、期限切れ回収、cancel記録、retry遷移は
+  それぞれQueue ownerの単一DB transaction内で完結する。terminal ACKは、レビュー結果、Queue
+  terminal状態、外部A2A terminal状態、lease解放を**同じQueue ownerの単一transaction**でcommit
+  した場合だけ成立する。Gateway・Worker・A2A実行アダプタをまたぐ分散transactionや、Queueと
+  TaskStoreへの二重commitを導入しない。
+
+この境界により、ADR-0009の「A2Aサーバー外配置」と単一正規レコードを維持しつつ、Workerの役割を
+実行と条件付き状態遷移要求に限定し、atomic ACKとfencingを複数サービスへ分割しない。
+
 ### 可観測性
 
 - 最低限、queued件数、最古の待機秒数、有効lease数、lease期限切れ総数、retry総数と理由、
@@ -335,9 +357,9 @@ sequenceDiagram
 
 ## 影響・フォローアップ
 
-- `packages/a2a-server`の受付役とWorker役は、ADR-0009の正規ジョブレコードにlease、heartbeat、
-  attempt、fencing、terminal commitを実装する必要がある。現行の`InMemory*TaskStore`をそのまま
-  durability境界として使うことはできない。
+- A2Aサーバー外のQueue ownerは、ADR-0009の正規ジョブレコードにlease、heartbeat、attempt、
+  fencing、terminal commitの原子性を実装する。`packages/a2a-server`のWorkerロールはそのPortを呼ぶ
+  実行アダプタとして実装し、現行の`InMemory*TaskStore`をdurability境界として使わない。
 - 正規ジョブレコードを含むSQLiteファイルには、コンテナ再起動をまたぐ永続volume、schema migration、
   backup / corruption検知が必要になる。`emptyDir`だけでは本ADRの再起動回復を満たさない。
 - 実装時の受入テストには、少なくとも次を含める。

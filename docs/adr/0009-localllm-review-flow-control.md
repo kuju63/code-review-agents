@@ -282,8 +282,12 @@ Worker が subscribe/consume する。ADR-0007 の案B説明図が例示した R
        ロック競合（バックエンド非依存の分類。SQLite採用時は `SQLITE_BUSY` / `SQLITE_LOCKED`）を
        1件も報告していないこと、`503`対象の
        `(ownerPrincipalId, Idempotency-Key)` に対応する正規ジョブレコードがどの状態でも存在しない
-       こと、正規ジョブレコード総数と非terminal件数が正確に `N_queue` 件であることをassertし、
-       503の原因がロック競合ではなく容量上限であることを直接検証する。
+        こと、正規ジョブレコード総数と非terminal件数が正確に `N_queue` 件であることをassertし、
+       503の原因がロック競合ではなく容量上限であることを直接検証する。加えて、`queued` を
+       `N_queue - 1` 件・`leased` を1件（Workerが取得中）事前作成した状態で次のenqueueが `503` を
+       返し正規ジョブレコードを作成しないこと、その `leased` を `queued` へretry遷移させても
+       非terminalジョブ総数が `N_queue` のまま変わらず、`leased` が容量を占有し続けることを検証
+       する（`leased` が容量から漏れないことの回帰）。
     2. **一時的ロック競合**: 容量に余裕を残した状態で別接続が書き込みロックをbusy timeoutの
        5秒を超えて保持し、対象要求の受付トランザクション開始またはcommitで一時的ロック競合を
        発生させる。SQLiteを採用する場合はこれを `SQLITE_BUSY` / `SQLITE_LOCKED` として観測する
