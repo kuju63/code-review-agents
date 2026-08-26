@@ -7,7 +7,7 @@
 # - corepack は同梱されていないため pnpm は npm 経由で直接インストールする
 # - multi-arch index ダイジェスト固定: amd64 / arm64 を同一参照で提供
 ###############################################################################
-FROM registry.access.redhat.com/hi/nodejs:26-builder@sha256:1ff25e42626619b7d33134aeda76b14341415bbcdfc56dcc554e371838dea035 AS node-builder
+FROM registry.access.redhat.com/hi/nodejs:26-builder@sha256:e9f139b703346047417f912453156cd49798fc218e43cec0a899e7b3348f503a AS node-builder
 
 USER root
 
