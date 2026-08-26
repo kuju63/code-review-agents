@@ -3,8 +3,8 @@
 - Status: Proposed(未実装・レビュー待ち)
 - Date: 2026-08-25
 - Related: Issue #367(本ADRが扱う課題), Issue #345(上位), Issue #365(#366/#367/#368への分割元),
-  Issue #366(Queue実装方式。本ADR作成時点で`docs/adr/0009-localllm-review-flow-control.md`として
-  別ブランチで作業中・未マージ), Issue #368(配信契約・再起動時回復、本ADRのスコープ外),
+  Issue #366(Queue実装方式。[ADR-0009](0009-localllm-review-flow-control.md)),
+  Issue #368(配信契約・再起動時回復。[ADR-0011](0011-localllm-delivery-contract-and-recovery.md)),
   [docs/adr/0004-mcp-client-session-sharing.md](0004-mcp-client-session-sharing.md),
   [docs/adr/0007-Multi-Container-Architecture-for-Scalability.md](0007-Multi-Container-Architecture-for-Scalability.md),
   [docs/adr/0008-core-extension-boundaries.md](0008-core-extension-boundaries.md)
@@ -375,21 +375,32 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
    しない。
 4. **新規受付停止シグナルとcancelシグナルは別個の合図として扱う**(合意事項の冒頭で述べた
    区別の具体化):
-   - **新規受付停止**: shutdown drain開始時にのみ発火する。以後、`orchestrator.service.ts`の
-     新規`enqueue`、および`ProviderSemaphore.acquire()`への新規の待機開始を拒否する
-     (=まだ`acquire()`を呼んでいないジョブ・reviewerは、この時点で新規に受け付けられない)。
-     この合図自体は`cancelSignal`ではなく、実行中・待機中の呼び出しには何も伝播しない。
-     **実装契約**: `ProviderSemaphore`はレジストリ全体で共有する単一の`accepting`
-     真偽値状態を持ち、`acquire()`はこの状態の確認と待機キューへの登録を1つの原子的な
+   - **新規受付停止**: shutdown drain開始時にのみ発火するが、停止範囲はshutdownの種類で分ける。
+     **全体shutdown**ではGatewayの新規`enqueue`、全Workerの新規lease取得、各Workerの
+     `ProviderSemaphore.acquire()`への新規待機開始を拒否する。**Worker単位のrolling restart**では
+     Gatewayの`enqueue`と他Workerのlease取得を継続し、終了対象Workerだけが新規lease取得と
+     `ProviderSemaphore.acquire()`への新規待機開始を拒否する。Queueに受付済みのジョブを終了対象
+     Workerへ新たに割り当ててはならない。この合図自体は`cancelSignal`ではなく、当該範囲で既に
+     実行中・待機中の呼び出しには何も伝播しない。
+     **実装契約**: `ProviderSemaphore`は**各Workerプロセス内**のレジストリ全体で共有する単一の
+     `accepting`真偽値状態を持つ。rolling restartでは終了対象Workerの`accepting`だけを`false`へ
+     遷移させ、他Workerのレジストリへ伝播しない。全体shutdownでは全Workerがそれぞれ`false`へ
+     遷移する。`acquire()`はこの状態の確認と待機キューへの登録を1つの原子的な
      操作として行う(確認と登録の間に他の処理が割り込む余地を作らない)。これにより
      shutdown開始と`acquire()`呼び出しが競合した場合の結果は一意に定まる:
      `accepting`が`false`へ遷移する操作より前に順序付けられた`acquire()`は通常どおり
      待機キューへ登録され、後に順序付けられた`acquire()`は待機キューへ入る前に
      即座に拒否される(permitを得ないまま、`cancelled`とは異なる**専用の`rejected`
-     結果**としてsettleする——まだ試みてすらいない受付を「キャンセルされた」と表現しない
-     ための区別。この`rejected`結果は合意事項5で定義する専用の独立したエラー型
-     `ReviewerRejectedError`として`ReviewOrchestrator`へ伝わり、`ReviewerCancelledError`
-     とは別のメッセージを持つ`ReviewError`としてレポートされる)。
+     結果**としてsettleする——まだLLM呼び出しを試みていないことを表す。この`rejected`結果は
+     合意事項5で定義する専用の独立したエラー型`ReviewerRejectedError`として
+     `ReviewOrchestrator`へ伝わり、`ReviewerCancelledError`とは別のメッセージを持つ`ReviewError`
+     としてレポートされる)。**Queue leaseとの関係**: Queue lease取得前の`rejected`はジョブを
+     Workerへ割り当てていない新規受付拒否として配送attemptに含めない。一方、Queue lease取得後に
+     終了対象Workerが初めて`ProviderSemaphore.acquire()`を呼び、shutdown中の`accepting=false`で
+     `rejected`となった場合は、既に配送attemptが開始済みである。この場合もエラー型は
+     `ReviewerRejectedError`のまま維持するが、配送層は現在の`leaseOwner / fencingToken`を条件に
+     `cancelOrigin = shutdown`を永続化し、ADR-0011のshutdown retryへ遷移させる。lease後の
+     `rejected`をterminal失敗または配送attempt外として扱ってはならない。
    - **cancel(`cancelSignal`)**: job deadline(既存の`reviewerTimeoutSeconds`)またはユーザー
      cancelが発火した場合は**即座に**該当jobの`cancelSignal`を発火させる。shutdown drainの
      場合は、新規受付停止(上記)が発火した時刻を起点とする**秒単位・有界(bounded)の
@@ -487,11 +498,11 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
    され、他のWorkerプロセスで実行中の並行ジョブには影響しない**(同一Worker上で並行実行中の
    他ジョブは巻き込まれ再試行対象になる、という副作用は許容する)。具体的なトリガー条件
    (ヘルスチェック閾値・有界時間の具体値等)・オーケストレーション手順・強制終了後の
-   ジョブ再試行の扱いは、本ADRの決定粒度を超えるため、Issue #368(配信契約・再起動時回復)の
-   スコープとして扱う。本ADRは、上記の性質(有界性・単一Worker限定・同一Worker上ジョブの
-   再試行対象化)を**Issue #368の受け入れ条件に追加すべき実行可能な制約**として明示的に
-   引き継ぐ([Consequences](#consequences)に記載の、#368が設計する delivery semanticsとの
-   接続点を参照)。
+   ジョブ再試行の扱いは、本ADRの決定粒度を超えるため、
+   [ADR-0011](0011-localllm-delivery-contract-and-recovery.md)のスコープとして扱う。本ADRは、
+   上記の性質(有界性・単一Worker限定・同一Worker上ジョブの再試行対象化)をADR-0011へ
+   引き継ぎ、提案中のADR-0011はat-least-onceのretry・shutdown契約として具体化している
+   ([Consequences](#consequences)参照)。
 
 ## Consequences
 
@@ -509,13 +520,15 @@ semaphore待機の受付を止めるだけの合図)と**cancel**(`agent.invoke(
   存在する。本ADRのマージ後、#366の担当者はこのプレースホルダを削除し、本ADR
   (`docs/adr/0010-localllm-concurrency-limit-and-cancellation.md`)へのリンクに置き換える
   必要がある。
-- Issue #368は、本ADRが合意事項6で決定した「Workerプロセス強制終了」というslot回収の最終
-  手段を前提として、その際のジョブの delivery semantics(再試行するか、失敗として扱うか等)
-  を設計する必要がある。#368の受け入れ条件には、本ADRが要件として定めた以下3点を実行可能な
-  形で含めること: (1) 強制終了トリガーの監視は有界(bounded)な待機時間で必ず判定が確定する
-  こと、(2) 強制終了は当該Workerプロセス単位に限定され他のWorkerで実行中の並行ジョブに
-  影響しないこと、(3) 強制終了で巻き込まれた同一Worker上の他ジョブは再試行対象として扱う
-  delivery semanticsを定義すること。
+- 提案中の[ADR-0011](0011-localllm-delivery-contract-and-recovery.md)は、本ADRが合意事項6で決定した
+  「Workerプロセス強制終了」というslot回収の最終手段を前提に、その際のdelivery semanticsを
+  at-least-onceとして具体化する。ADR-0011の提案では、本ADRから引き継いだ以下3点をretry・
+  shutdown契約に反映する: (1) 強制終了トリガーの監視は有界(bounded)な待機時間で必ず判定が確定すること、
+  (2) 強制終了は当該Workerプロセス単位に限定され他のWorkerで実行中の並行ジョブに影響しないこと、
+  (3) 強制終了で巻き込まれた同一Worker上の他ジョブを再試行対象として扱うこと。さらに信号範囲は
+  本ADRの合意事項4とADR-0011で統一し、全体shutdownではGateway enqueue・全Workerの新規lease・
+  全Workerの新規`ProviderSemaphore.acquire()`を停止し、Worker rolling restartではGateway enqueueを
+  継続して終了対象Workerの新規lease・新規`acquire()`だけを停止する。
 - ADR-0004(MCPクライアントのセッション共有)の決定は変更しない。GitHub MCPの輻輳対策と
   LocalLLMの並列上限は引き続き別々の仕組みとして扱う。
 - ADR-0008が定める`ModelProvider` Portの段階移行が完了するまでの間、本ADRの`ProviderSemaphore`
