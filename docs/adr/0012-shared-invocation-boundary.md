@@ -251,12 +251,14 @@ model provider port（差が出ない論点）: ADR-0008が`ModelProvider` Port�
    | `not_found` | Review/Attempt不存在、TTL失効後のtaskId等 | 404 | 404 | 2 |
    | `conflict` | 同一Idempotency-Keyで異なるpayload、close済みへのstart等 | 409 | （A2Aには対応なし、REST/CLI固有） | 3 |
    | `queue_overload` | Gateway受付超過(ADR-0009) | 503 + Retry-After | 503（既存） | 4 |
-   | `upstream_github_failure` | GitHub MCP/REST失敗 | 502 | `failed`終端状態＋detail | 5 |
-   | `upstream_model_failure` | LLM呼び出し失敗 | 502 | `failed`終端状態＋detail | 5 |
+   | `upstream_github_failure` | GitHub MCP/REST失敗 | 502（受付前の同期検証で失敗した場合のみ。ただし本ADRの契約は常にsync受付(202)+async追跡のため受付前検証自体を定義しておらず、通常は発生しない）。受付後(`202`)の失敗はpollingが返す終端`failed`状態（`GET`応答自体は200）+ error code/detailとして表現する | `failed`終端状態＋detail | 5 |
+   | `upstream_model_failure` | LLM呼び出し失敗 | 上記`upstream_github_failure`と同じ契約（502は受付前限定、受付後はpolling終端`failed`） | `failed`終端状態＋detail | 5 |
    | `timeout` | job deadline到達 | `failed`終端状態（pollingで返却、`GET`応答自体は200）。項番6が定める通り本ADRの契約は常にsync受付(202)+async追跡(polling)のため`504`は使用しない | `failed`終端状態 | 6 |
    | `canceled` | cancelSignal発火(ADR-0010) | 200（terminal, エラー扱いしない） | A2Aの4値には存在しないためREST/CLI限定の終端状態として表現 | 0（意図的キャンセルは失敗ではない） |
 
-   sync受付+async追跡は既存のADR-0009 Gateway 202契約をそのまま踏襲し、pollingを基準とする。SSE/streamingは将来拡張として予約し今回は実装しない。idempotencyはコマンドレベル（`registerReview`/`retryReview`の呼び出し）に適用し、**同一Idempotency-Keyかつ同一payloadでの再送は新規作成せず既存`ReviewAttempt`（元のstart応答と同じ内容）を返す。同一Idempotency-Keyで異なるpayloadを送った場合のみ上記`conflict`（409）とする**。
+   sync受付+async追跡は既存のADR-0009 Gateway 202契約をそのまま踏襲し、pollingを基準とする。SSE/streamingは将来拡張として予約し今回は実装しない。idempotencyはコマンドレベル（`registerReview`/`retryReview`の呼び出し）に適用し、**同一Idempotency-Keyかつ同一payloadでの再送は新規作成せず既存`ReviewAttempt`（元のstart応答と同じ内容）を返す。同一Idempotency-Keyで異なるpayloadを送った場合のみ上記`conflict`（409）とする**。この振る舞いは`upstream_github_failure`/`upstream_model_failure`/`timeout`いずれについても、クライアントが受付後の失敗をpollingで正しく終端`failed`として観測できる限り、コマンドを再送して`ReviewAttempt`を重複作成する必要がないことを意味する。
+
+   **idempotency replayとclose後startの優先順位**: `registerReview`/`retryReview`呼び出し後に対象`Review`が`closeReview`されてから、同一Idempotency-Keyかつ同一payloadで同じstartコマンドが再送された場合、**idempotency replayを状態競合より先に評価し、既存`ReviewAttempt`をそのまま返す（`closed`後であっても`conflict`の409にはしない）**。Idempotency-Keyはネットワーク再送等に対する「元の応答をそのまま返す」契約であり、キー発行後に生じた別操作（close）の結果によって応答内容が変わってはならないため。一方、**同一Idempotency-Keyで異なるpayload**を`closed`後に送った場合は、通常の`conflict`（409、close済みへのstartとして）を返す。REST/CLIとも同じ優先順位で統一する。
 
 7. 移行順序: 既存A2Aエンドポイントと評価パイプラインは無変更、REST surfaceは追加のみとする。ADR-0008 Stage4（`ReviewPipeline` Port導入）完了前は、REST command handlerの一部が`agents/application/`ではなく現行`orchestrator.service.ts`への直接呼び出しに暫定フォールバックする過渡期間が生じることを明示する（隠さず、経過状態として扱う）。**この暫定フォールバック期間中、`orchestrator.service.ts`は独自に`crypto.randomUUID()`でtaskIdを生成する（Context節参照）ため、項番3が定める`taskId := attemptId`の不変条件をこの経路だけは満たせない。**この不整合の解消方法（`attemptId`を`orchestrator.service.ts`へ引き渡すshimを追加する、または新設REST commandをフォールバック対象から除外する、のいずれか）は本ADRでは決めず、実装Sub-Issue（後述Consequences項番2）で決定する。Langflow/Dify受信層の導入自体は既存経路に影響しない追加レイヤであるため、他の移行と独立して段階導入できる。
 
