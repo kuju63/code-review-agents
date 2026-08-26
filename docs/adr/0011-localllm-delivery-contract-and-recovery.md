@@ -214,6 +214,14 @@ stateDiagram-v2
      retry対象にする。job deadlineでは、現在の`leaseOwner / fencingToken`を条件に
      `cancelOrigin = deadline`を永続化してから`cancelSignal`を発火し、その伝播先で
      `ReviewerCancelledError`へ変換された後も永続値に基づいて`failed`へ遷移する。
+     **job deadlineの起点はlease取得後（`leased`）のattemptに限る**。ADR-0010のjob
+     deadline（`reviewerTimeoutSeconds`または合意事項4のjob全体deadline）はLLM実行時間を
+     有界化する合図であり、`cancelSignal`は実行中の`agent.invoke()`へ伝播する。leaseを持たない
+     `queued`レコード（初回lease前・retry待機中のいずれも）はattempt実行中でないため
+     deadline判定の対象とせず、`cancelOrigin = deadline`を永続化しない。したがって
+     `queued --> failed: cancelOrigin=deadline`遷移は定義せず、待機時間の上限はADR-0009の
+     `N_queue` backpressureと最古待機時間alertで扱う。retryで`queued`へ戻ったジョブのdeadlineは、
+     次の再leaseで新しいattemptが`leased`になった時点から改めて起算する。
      **shutdown起因のretry遷移は`ReviewerCancelledError(shutdown)`だけでなく、lease取得後の
      `ReviewerRejectedError(shutdown)`も含む**。いずれの場合も、現在の`leaseOwner / fencingToken`を
      条件に`cancelOrigin = shutdown`を永続化してから同一のretry経路へ合流させる（Workerローカルの
@@ -384,13 +392,15 @@ sequenceDiagram
   6. shutdown grace period中の自然完了を保存し、強制終了で巻き込まれた同一Worker上ジョブだけを
      retry対象にし、他Workerのleaseへ影響しない。
   7. retryや再起動でreview workflowのユーザー管理状態が変わらない。
-   8. 同じ`ReviewerCancelledError`でも、永続`cancelOrigin = user`と`cancelOrigin = deadline`は
-      terminal `failed`、`cancelOrigin = shutdown`はretryとなり、遷移完了まで原因値が変わらない。
-      job deadlineでは、現在の`leaseOwner / fencingToken`を条件に`cancelOrigin = deadline`を永続化して
-      から`cancelSignal`を発火し、`ReviewerCancelledError`へ変換された後も永続値だけに基づいて
-      `failed`へ遷移する。Queue lease取得後に終了対象Workerの`ProviderSemaphore.acquire()`がshutdownで
-      `ReviewerRejectedError`を返す場合も`cancelOrigin = shutdown`を永続化してretryへ遷移し、lease
-      取得前の`rejected`は配送attemptにならず新規受付拒否のままであることを区別して検証する。
+  8. 同じ`ReviewerCancelledError`でも、永続`cancelOrigin = user`と`cancelOrigin = deadline`は
+     terminal `failed`、`cancelOrigin = shutdown`はretryとなり、遷移完了まで原因値が変わらない。
+     job deadlineはlease取得後のattempt開始時に起算し、初回lease前およびretry待機中の`queued`では
+     deadline判定も`cancelOrigin = deadline`の永続化も行わない。retry後の次回leaseでは新しい
+     attemptのdeadlineを再起算する。deadline到達時は現在の`leaseOwner / fencingToken`を条件に
+     `cancelOrigin = deadline`を永続化してから`cancelSignal`を発火し、`ReviewerCancelledError`へ
+     変換された後も永続値だけに基づいて`failed`へ遷移する。Queue lease取得後に終了対象Workerの`ProviderSemaphore.acquire()`がshutdownで
+     `ReviewerRejectedError`を返す場合も`cancelOrigin = shutdown`を永続化してretryへ遷移し、lease
+     取得前の`rejected`は配送attemptにならず新規受付拒否のままであることを区別して検証する。
   9. 初回受付はA2A `submitted`、初回lease後はretry待機中も`working`のままで、外部状態が
      `working`から`submitted`へ逆行しない。
   10. `N_queue`件の非terminalジョブに`queued`と`leased`を混在させても新規受付は`503`となり、
