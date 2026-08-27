@@ -218,8 +218,8 @@ model provider port（差が出ない論点）: ADR-0008が`ModelProvider` Port�
 
 3. identity階層は次の通りとする。
 
-   - `Review`（永続、ユーザー管理対象、id=`reviewId`）: 1つのPR/対象に対応する登録単位。1..N個の`ReviewAttempt`を持つ。
-   - `ReviewAttempt`（永続、id=`attemptId`）: 1回の実行（初回登録時のstartまたは各retry）に対応する。
+   - `Review`（永続、ユーザー管理対象、id=`reviewId`）: 1つのPR/対象に対応する登録単位。0..N個の`ReviewAttempt`を持つ（`registerReview`直後は`ReviewAttempt`を持たない）。
+   - `ReviewAttempt`（永続、id=`attemptId`）: 1回の実行に対応する。`startReview`/`retryReview`の呼び出し（Idempotency-Keyによるreplayを除く）は毎回新しい`ReviewAttempt`を作成し、既存の`ReviewAttempt`を再実行（同一`attemptId`のまま状態を巻き戻す等）することはない。
    - `A2ATask`（transport-level、`taskId`）: `taskId := attemptId`とし、新規識別子を導入しない。ADR-0009が定めるQueue job idも同じ`taskId`を流用する。
    - `ReviewJob`: 永続識別子としては導入しない。実行中の`ReviewAttempt`のruntime/queue側投影（`taskId`をキーにQueueとA2Aの現在状態を参照するための呼び名）として扱う。
 
@@ -234,7 +234,7 @@ model provider port（差が出ない論点）: ADR-0008が`ModelProvider` Port�
    | `failed` | （worker側で失敗） | `failed` | error taxonomy（後述）のcodeを付与 |
    | （cancelSignal発火, ADR-0010） | — | `canceled` | A2Aの4状態には存在しない追加状態。REST/CLI向けにのみ`canceled`として表現し、外部A2A statusは変更しない——既存A2Aクライアント（`packages/evaluation/src/run-agent-evaluation.ts`の`pollTask`を含む）はcancelを示す専用状態を持たないため、cancel後も直前のA2A `status`（多くは`working`）を観測し続け、既存のdeadlineベースのtimeoutで初めてpollingを終了する。この挙動は項番7の「既存A2Aエンドポイントと評価パイプラインは無変更」という決定から導かれる帰結であり、変更しない。cancelを既存4状態のいずれかに投影して即時に終端化するかどうかは、互換性への影響が大きいため本ADRでは決めず実装Sub-Issueに委ねる |
 
-   `Review.status`は最新`ReviewAttempt.status`から導出する派生状態（`draft`/`reviewing`/`reviewed`/`failed`/`closed`/`canceled`）とし、`ReviewAttempt.status = canceled`の場合は`Review.status`にも`canceled`を投影する。`closeReview`による`closed`（Review側の管理操作）と`canceled`（Attempt側の実行結果）は独立した軸であり優先順位の問題ではない——同一`Review`が`closed`かつ最新`ReviewAttempt`が`canceled`という組み合わせも許容する。comment dispositionは`ReviewAttempt`の結果（finding単位）に対する別軸の属性であり、status machineの一部にはしない。
+   `ReviewAttempt`が1件も存在しない場合（`registerReview`直後）、`Review.status`は`draft`とする。1件以上の`ReviewAttempt`が存在する場合は、最新`ReviewAttempt.status`から導出する派生状態（`reviewing`/`reviewed`/`failed`/`closed`/`canceled`）とし、`ReviewAttempt.status = canceled`の場合は`Review.status`にも`canceled`を投影する。この`draft`判定は初回`registerReview`応答・`GET /reviews`・idempotency replay応答のいずれでも同じ規則（attempt件数のみに基づく）を用いる。`closeReview`による`closed`（Review側の管理操作）と`canceled`（Attempt側の実行結果）は独立した軸であり優先順位の問題ではない——同一`Review`が`closed`かつ最新`ReviewAttempt`が`canceled`という組み合わせも許容する。comment dispositionは`ReviewAttempt`の結果（finding単位）に対する別軸の属性であり、status machineの一部にはしない。
 
    **Queueレコードと`ReviewJobStore`のストア統合可否は#368の検討事項として明示的に残し、本ADRでは決めない**（ADR-0009が既に切り出した論点であるため先取りしない）。
 
@@ -256,14 +256,16 @@ model provider port（差が出ない論点）: ADR-0008が`ModelProvider` Port�
    | `timeout` | job deadline到達 | `failed`終端状態（pollingで返却、`GET`応答自体は200）。項番6が定める通り本ADRの契約は常にsync受付(202)+async追跡(polling)のため`504`は使用しない | `failed`終端状態 | 6 |
    | `canceled` | cancelSignal発火(ADR-0010) | 200（terminal, エラー扱いしない） | A2Aの4値には存在しないためREST/CLI限定の終端状態として表現 | 0（意図的キャンセルは失敗ではない） |
 
-   sync受付+async追跡は既存のADR-0009 Gateway 202契約をそのまま踏襲し、pollingを基準とする。SSE/streamingは将来拡張として予約し今回は実装しない。idempotencyはコマンドレベル（`registerReview`/`startReview`/`retryReview`の呼び出し）に適用するが、**返却する識別子とstatusは対象コマンドが実際に作成するリソースに従う**（`registerReview`は`ReviewAttempt`/`taskId`を作らないため、replayでもそれらを返さない）。
+   sync受付+async追跡は既存のADR-0009 Gateway 202契約をそのまま踏襲し、pollingを基準とする。SSE/streamingは将来拡張として予約し今回は実装しない。idempotencyは**REST（Gateway経由）**でのコマンド呼び出し（`registerReview`/`startReview`/`retryReview`）に適用するが、**返却する識別子とstatusは対象コマンドが実際に作成するリソースに従う**（`registerReview`は`ReviewAttempt`/`taskId`を作らないため、replayでもそれらを返さない）。CLIは項番2で決定した通りGatewayの2層（受信/変換層・受付制御層）の対象外であり`Idempotency-Key`重複排除に掛からないため、このreplay契約の対象外とする（後述）。
 
    - `registerReview`（`POST /reviews`）: 同一Idempotency-Keyかつ同一payloadでの再送は新規`Review`を作成せず、既存の`reviewId`と現在の`Review.status`のみを返す。`ReviewAttempt`/`taskId`は生成しない。
-   - `startReview`/`retryReview`（`POST /reviews/{id}/attempts`。初回attempt作成なら`startReview`、既存attemptへのretryなら`retryReview`を指すが、どちらも同一エンドポイントであり同じidempotency契約に従う）: 同一Idempotency-Keyかつ同一payloadでの再送は新規`ReviewAttempt`を作成せず、同一`attemptId`（`taskId`も同じ）の既存`ReviewAttempt`を、その時点の現在の`ReviewAttempt.status`/A2A `status`とともに返す——ADR-0009（L248-249）が定める「同一taskIdと現在のA2A状態を返す」契約をそのまま踏襲し、開始時点のstatusを凍結して返すことはしない。
+   - `startReview`/`retryReview`（`POST /reviews/{id}/attempts`。同一`Review`に対する最初の`ReviewAttempt`作成なら`startReview`、2回目以降の新規`ReviewAttempt`作成なら`retryReview`を指すが、いずれも既存`ReviewAttempt`を対象に取らず新規`ReviewAttempt`を1件作成するという意味で同一エンドポイント・同一契約であり、URLに`attemptId`は含まない＝「どのattemptを対象にretryするか」という選択は発生しない）: 同一Idempotency-Keyかつ同一payloadでの再送は新規`ReviewAttempt`を作成せず、直前に作成済みの同一`attemptId`（`taskId`も同じ）の`ReviewAttempt`を、その時点の現在の`ReviewAttempt.status`/A2A `status`とともに返す——ADR-0009（L248-249）が定める「同一taskIdと現在のA2A状態を返す」契約をそのまま踏襲し、開始時点のstatusを凍結して返すことはしない。
 
    同一Idempotency-Keyで異なるpayloadを送った場合は、いずれのコマンドでも上記`conflict`（409）とする。この振る舞いは`upstream_github_failure`/`upstream_model_failure`/`timeout`いずれについても、クライアントが受付後の失敗をpollingで正しく終端`failed`として観測できる限り、コマンドを再送して`ReviewAttempt`を重複作成する必要がないことを意味する。
 
-   **idempotency replayとclose後startの優先順位**: `registerReview`/`startReview`/`retryReview`いずれの呼び出し後であっても、対象`Review`が`closeReview`された後に同一Idempotency-Keyかつ同一payloadで同じコマンドが再送された場合、**idempotency replayを状態競合より先に評価し、上記の対応するリソース（`registerReview`なら`Review`、`startReview`/`retryReview`なら`ReviewAttempt`）を同一identityのまま、その時点の現在のstatusで返す（`closed`後であっても`conflict`の409にはしない）**。Idempotency-Keyは同一論理リクエストの再送に対して同一リソース（同一`reviewId`、または同一`attemptId`/`taskId`）を返す契約であり、close自体を「再送だから拒否すべき状態変化」として扱わないため。一方、**同一Idempotency-Keyで異なるpayload**を`closed`後に送った場合は、通常の`conflict`（409、close済みへのstartとして）を返す。REST/CLIとも同じ優先順位で統一する。
+   **idempotency replayとclose後startの優先順位**: `registerReview`/`startReview`/`retryReview`いずれの呼び出し後であっても、対象`Review`が`closeReview`された後に同一Idempotency-Keyかつ同一payloadで同じコマンドが再送された場合、**idempotency replayを状態競合より先に評価し、上記の対応するリソース（`registerReview`なら`Review`、`startReview`/`retryReview`なら`ReviewAttempt`）を同一identityのまま、その時点の現在のstatusで返す（`closed`後であっても`conflict`の409にはしない）**。Idempotency-Keyは同一論理リクエストの再送に対して同一リソース（同一`reviewId`、または同一`attemptId`/`taskId`）を返す契約であり、close自体を「再送だから拒否すべき状態変化」として扱わないため。一方、**同一Idempotency-Keyで異なるpayload**を`closed`後に送った場合は、通常の`conflict`（409、close済みへのstartとして）を返す。この優先順位はIdempotency-Keyを伴うREST（Gateway経由）呼び出しに適用する。
+
+   **CLIのidempotency非対象について**: CLIはin-process直接呼び出しでありIdempotency-Keyを持たないため、上記replay契約の対象外である。CLIから`startReview`/`retryReview`を同一payloadで繰り返し実行しても、REST/Gatewayのようなreplayは行われず、その都度新しい`ReviewAttempt`が作成される（重複attemptの発生はCLI呼び出し側の責務）。これは項番2のCLI flow-control前提（`ProviderSemaphore`にも`Idempotency-Key`重複排除にも掛からず、単一ユーザーの逐次実行を運用条件とする）から導かれる帰結であり、重複作成を防ぐ仕組み（ロックファイル等）を設けるかは項番2と同じくCLI thin adapter実装Sub-Issueで決定する。一方、close済み`Review`へのCLIからの`startReview`/`retryReview`は、idempotency replayの有無に関わらず通常の状態不変条件チェックにより`conflict`（CLI exit code 3）となる——これはidempotency固有の挙動ではなく、REST/CLI双方に共通する`closeReview`後の状態制約である。
 
 7. 移行順序: 既存A2Aエンドポイントと評価パイプラインは無変更、REST surfaceは追加のみとする。ADR-0008 Stage4（`ReviewPipeline` Port導入）完了前は、REST command handlerの一部が`agents/application/`ではなく現行`orchestrator.service.ts`への直接呼び出しに暫定フォールバックする過渡期間が生じることを明示する（隠さず、経過状態として扱う）。**この暫定フォールバック期間中、`orchestrator.service.ts`は独自に`crypto.randomUUID()`でtaskIdを生成する（Context節参照）ため、項番3が定める`taskId := attemptId`の不変条件をこの経路だけは満たせない。**この不整合の解消方法（`attemptId`を`orchestrator.service.ts`へ引き渡すshimを追加する、または新設REST commandをフォールバック対象から除外する、のいずれか）は本ADRでは決めず、実装Sub-Issue（後述Consequences項番2）で決定する。Langflow/Dify受信層の導入自体は既存経路に影響しない追加レイヤであるため、他の移行と独立して段階導入できる。
 
