@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCR-02 レビュー依頼登録 — 画面外部設計書</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header><div class="header-inner"><h1>SCR-02 レビュー依頼登録</h1><p>画面外部設計書</p></div></header>
+<main>
+  <nav aria-label="設計書内ナビゲーション"><a href="index.html">画面一覧</a><a href="review-list.html">01 一覧</a><a href="review-request.html">02 依頼登録</a><a href="review-result.html">03 結果確認</a><a href="settings.html">04 GitHub連携設定</a></nav>
+
+<section id="design">
+<h2>1. 画面デザイン</h2>
+<p><a href="../mocks/review-request.html">レビュー依頼登録画面のモックアップを開く</a></p>
+<p class="meta">GitHub上のOrganizationまたはユーザー、リポジトリ、Pull Requestを選択し、レビューエージェントへレビューを依頼する。本書の対象範囲はレビュー依頼登録画面、および同画面に表示される共通シェルとする。</p>
+<p>関連画面：<a href="review-list.html">SCR-01 コードレビュー一覧</a>・<a href="settings.html">SCR-04 GitHub連携設定</a>・<a href="review-result.html">SCR-03 レビュー結果確認</a></p>
+<div class="note"><strong>確認方法</strong>モックアップはブラウザで直接開ける。GitHub Personal Access Tokenが未設定の場合は入力領域が表示されないため、画面上部またはサイドバーの「設定」からダミートークンを保存して確認する。</div>
+
+<h3>1.1 画面構成</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>領域</th><th>構成内容</th><th>区分</th></tr></thead>
+<tbody>
+<tr><td>アプリケーションヘッダー</td><td>ブランド、言語切替、設定導線</td><td>共通シェル</td></tr>
+<tr><td>サイドバー</td><td>コードレビュー一覧、レビュー依頼登録、設定、開閉操作</td><td>共通シェル</td></tr>
+<tr><td>パンくず</td><td>コードレビュー一覧 / レビュー依頼登録</td><td>共通シェル</td></tr>
+<tr><td>タイトル領域</td><td>画面名と依頼対象の説明</td><td>画面固有</td></tr>
+<tr><td>進捗表示</td><td>選択から送信までの3ステップ</td><td>画面固有</td></tr>
+<tr><td>対象選択領域</td><td>Organization / ユーザー、リポジトリ、Pull Request</td><td>画面固有</td></tr>
+<tr><td>送信確認領域</td><td>送信内容、送信、キャンセル</td><td>画面固有</td></tr>
+<tr><td>GitHub連携エラー領域</td><td>認証情報未設定の通知と設定画面への導線</td><td>共通ガード</td></tr>
+</tbody>
+</table></div>
+
+<h3>1.2 操作フロー</h3>
+<ol>
+<li>Organization / ユーザー選択</li>
+<li>リポジトリ選択</li>
+<li>PR選択</li>
+<li>内容確認・送信</li>
+<li>一覧へ遷移</li>
+</ol>
+<p>進捗表示は画面上では「Organization / リポジトリを選択」「PRを選択」「内容を確認して送信」の3ステップとする。Organization / ユーザーのみを選択した状態は第1ステップに含める。</p>
+
+<h3>1.3 画面状態</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>状態</th><th>表示内容</th><th>進捗</th></tr></thead>
+<tbody>
+<tr><td>ST-01</td><td>GitHub認証情報未設定</td><td>エラー通知と「設定画面を開く」を表示し、対象選択領域を非表示とする。</td><td>非表示</td></tr>
+<tr><td>ST-02</td><td>初期表示</td><td>Organization / ユーザー選択を有効、リポジトリ選択を無効とする。</td><td>第1ステップ</td></tr>
+<tr><td>ST-03</td><td>Organization / ユーザー選択済み</td><td>選択対象に属するリポジトリを取得し、リポジトリ選択を有効とする。</td><td>第1ステップ</td></tr>
+<tr><td>ST-04</td><td>リポジトリ選択済み</td><td>選択リポジトリのOpen状態のPRを一覧表示する。</td><td>第2ステップ</td></tr>
+<tr><td>ST-05</td><td>PR選択済み</td><td>選択カードを強調し、送信内容、送信ボタン、キャンセルを表示する。</td><td>第3ステップ</td></tr>
+<tr><td>ST-06</td><td>送信中</td><td>二重送信を防止するため送信ボタンを無効化し、処理中表示を行う。</td><td>第3ステップ</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="items">
+<h2>2. 画面項目の定義</h2>
+<h3>2.1 共通シェル</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>項目名</th><th>種別</th><th>内容</th><th>遷移先・備考</th></tr></thead>
+<tbody>
+<tr><td>CM-01</td><td>ブランド</td><td>リンク</td><td>「PR Review Agent」を表示する。</td><td><a href="review-list.html">コードレビュー一覧</a></td></tr>
+<tr><td>CM-02</td><td>言語切替</td><td>ボタン</td><td>JA / ENを表示し、現在の言語を選択状態で示す。</td><td>選択言語を保存し、同一画面を再表示する。本設計書自体は日本語のみを対象とする。</td></tr>
+<tr><td>CM-03</td><td>ヘッダー設定</td><td>リンク</td><td>設定アイコンを表示する。</td><td><a href="settings.html">GitHub連携設定</a></td></tr>
+<tr><td>CM-04</td><td>コードレビュー一覧</td><td>リンク</td><td>サイドバーの一覧導線。</td><td><a href="review-list.html">コードレビュー一覧</a></td></tr>
+<tr><td>CM-05</td><td>レビュー依頼登録</td><td>リンク</td><td>サイドバーの現在画面。選択状態で表示する。</td><td>本画面</td></tr>
+<tr><td>CM-06</td><td>設定</td><td>リンク</td><td>サイドバーの設定導線。</td><td><a href="settings.html">GitHub連携設定</a></td></tr>
+<tr><td>CM-07</td><td>サイドバー開閉</td><td>ボタン</td><td>サイドバーを展開または折りたたむ。</td><td>表示状態を利用者単位で保存する。</td></tr>
+<tr><td>CM-08</td><td>パンくず：コードレビュー一覧</td><td>リンク</td><td>上位画面名を表示する。</td><td><a href="review-list.html">コードレビュー一覧</a></td></tr>
+<tr><td>CM-09</td><td>パンくず：レビュー依頼登録</td><td>表示</td><td>現在画面名を表示する。</td><td>リンクなし</td></tr>
+</tbody>
+</table></div>
+
+<h3>2.2 画面固有項目</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>項目名</th><th>種別</th><th>必須</th><th>表示・入力内容</th><th>データソース</th></tr></thead>
+<tbody>
+<tr><td>RR-01</td><td>画面タイトル</td><td>表示</td><td>—</td><td>「レビュー依頼登録」</td><td>固定文言</td></tr>
+<tr><td>RR-02</td><td>画面説明</td><td>表示</td><td>—</td><td>依頼に必要な3項目、およびClosed状態のPRを選択できない旨を表示する。</td><td>固定文言</td></tr>
+<tr><td>RR-03</td><td>進捗表示</td><td>表示</td><td>—</td><td>3ステップの現在位置と完了済みステップを表示する。</td><td>画面内の選択状態</td></tr>
+<tr><td>RR-04</td><td>Organization / ユーザー</td><td>選択</td><td><span class="status-required">必須</span></td><td>認証利用者が参照可能なOrganizationおよびユーザーアカウントから1件を選択する。未選択値は「選択してください」とする。</td><td>GitHub連携API</td></tr>
+<tr><td>RR-05</td><td>リポジトリ</td><td>選択</td><td><span class="status-required">必須</span></td><td>RR-04で選択した所有者に属し、認証利用者が参照可能なリポジトリから1件を選択する。</td><td>GitHub連携API</td></tr>
+<tr><td>RR-06</td><td>PR一覧見出し</td><td>表示</td><td>—</td><td>「プルリクエストを選択」</td><td>固定文言</td></tr>
+<tr><td>RR-07</td><td>PR選択カード</td><td>選択</td><td><span class="status-required">必須</span></td><td>PR番号、タイトル、ブランチ、作成者、PR状態を表示し、1件を単一選択する。</td><td>GitHub連携API</td></tr>
+<tr><td>RR-08</td><td>PRなしメッセージ</td><td>表示</td><td>—</td><td>選択可能なPRが0件の場合、「レビューを依頼できるOpen状態のPRはありません。」と表示する。</td><td>PR取得結果</td></tr>
+<tr><td>RR-09</td><td>送信内容見出し</td><td>表示</td><td>—</td><td>「レビューエージェントへの送信内容」</td><td>固定文言</td></tr>
+<tr><td>RR-10</td><td>送信内容</td><td>表示</td><td>—</td><td><code>organization</code>、<code>repository</code>、<code>pull_request</code>の確定値を表示する。</td><td>RR-04、RR-05、RR-07</td></tr>
+<tr><td>RR-11</td><td>レビュー依頼を送信</td><td>ボタン</td><td>—</td><td>確定した3項目をレビューエージェントへ送信する。</td><td>PR選択後に表示</td></tr>
+<tr><td>RR-12</td><td>キャンセル</td><td>リンク</td><td>—</td><td>依頼を送信せずコードレビュー一覧へ戻る。</td><td>PR選択後に表示</td></tr>
+<tr><td>RR-13</td><td>GitHub認証情報未設定通知</td><td>表示</td><td>—</td><td>Personal Access Tokenが未設定であること、および設定が必要であることを表示する。</td><td>GitHub連携設定状態</td></tr>
+<tr><td>RR-14</td><td>設定画面を開く</td><td>リンク</td><td>—</td><td>GitHub連携設定を行う。</td><td><a href="settings.html">GitHub連携設定</a></td></tr>
+<tr><td>RR-15</td><td>エラー通知</td><td>表示</td><td>—</td><td>候補取得または送信に失敗した場合、原因と再操作の案内を表示する。</td><td>各APIの処理結果</td></tr>
+</tbody>
+</table></div>
+</section>
+
+<section id="behavior">
+<h2>3. 入力項目・操作項目の振る舞い</h2>
+<h3>3.1 入力チェック</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>対象</th><th>チェック契機</th><th>チェック内容</th><th>エラー時の振る舞い</th></tr></thead>
+<tbody>
+<tr><td>VL-01</td><td>GitHub認証情報</td><td>初期表示</td><td>GitHubアクセスに必要な認証情報が設定済みであること。</td><td>RR-13とRR-14を表示し、RR-03〜RR-12を表示しない。</td></tr>
+<tr><td>VL-02</td><td>Organization / ユーザー</td><td>リポジトリ取得前、送信時</td><td>候補一覧に存在し、かつ認証利用者が参照可能な値であること。</td><td>リポジトリおよびPRの選択状態をクリアし、項目付近にエラーを表示する。</td></tr>
+<tr><td>VL-03</td><td>リポジトリ</td><td>PR取得前、送信時</td><td>選択したOrganization / ユーザーに属し、かつ認証利用者が参照可能な値であること。</td><td>PRの選択状態をクリアし、項目付近にエラーを表示する。</td></tr>
+<tr><td>VL-04</td><td>Pull Request</td><td>一覧表示時、送信時</td><td>選択したリポジトリに属し、状態がOpenであること。Closed状態は候補から除外する。</td><td>送信を中止し、最新のPR一覧を再取得して、選択対象外になった旨を表示する。</td></tr>
+<tr><td>VL-05</td><td>送信内容全体</td><td>送信時</td><td>Organization / ユーザー、リポジトリ、PR番号の3項目がすべて確定していること。</td><td>送信を実行せず、不足項目を示す。通常操作では3項目確定前に送信ボタンを表示しない。</td></tr>
+<tr><td>VL-06</td><td>重複依頼</td><td>送信時</td><td>同一リポジトリ・同一PR・同一最新コミットに対する処理中または有効なレビュー依頼が存在しないこと。</td><td>新規依頼は作成せず、既存依頼が確認できるコードレビュー一覧またはレビュー結果への導線を表示する。</td></tr>
+</tbody>
+</table></div>
+
+<h3>3.2 操作定義</h3>
+<div class="table-wrap"><table>
+<thead><tr><th>ID</th><th>操作</th><th>前提条件</th><th>処理</th><th>処理後</th></tr></thead>
+<tbody>
+<tr><td>OP-01</td><td>Organization / ユーザーを選択</td><td>GitHub認証情報が設定済み。</td><td>配下の参照可能なリポジトリを取得する。変更前のリポジトリおよびPR選択は破棄する。</td><td>成功時はリポジトリ選択を有効化する。失敗時はRR-15を表示し、再選択または再取得を可能にする。</td></tr>
+<tr><td>OP-02</td><td>リポジトリを選択</td><td>Organization / ユーザーが選択済み。</td><td>選択リポジトリのPRを取得し、Open状態のみを候補として表示する。変更前のPR選択は破棄する。</td><td>候補があればST-04、なければRR-08を表示する。</td></tr>
+<tr><td>OP-03</td><td>PRカードを選択</td><td>Open状態のPR候補が1件以上ある。</td><td>選択中のPRを単一選択に更新し、選択カードを視覚的かつ支援技術上識別可能にする。</td><td>ST-05へ移行し、送信内容と操作ボタンを表示する。</td></tr>
+<tr><td>OP-04</td><td>別のPRカードを選択</td><td>PRが選択済み。</td><td>既存選択を解除し、新しいPRに選択を変更する。</td><td>送信内容の<code>pull_request</code>を即時更新する。</td></tr>
+<tr><td>OP-05</td><td>レビュー依頼を送信</td><td>VL-02〜VL-06を満たす。</td><td>ボタンを無効化してST-06とし、Organization / ユーザー、リポジトリ名、PR番号をサーバーへ送信する。クライアント側とサーバー側の双方で二重送信を防止する。</td><td>成功時は<a href="review-list.html">コードレビュー一覧</a>へ遷移し、対象PRを含む受付完了通知を表示する。失敗時は入力値を維持してRR-15を表示し、再送信を可能にする。</td></tr>
+<tr><td>OP-06</td><td>キャンセル</td><td>なし。</td><td>レビュー依頼を作成しない。</td><td><a href="review-list.html">コードレビュー一覧</a>へ遷移する。</td></tr>
+<tr><td>OP-07</td><td>設定画面を開く</td><td>GitHub認証情報が未設定。</td><td>入力中の依頼情報は存在しないため保存しない。</td><td><a href="settings.html">GitHub連携設定</a>へ遷移する。</td></tr>
+<tr><td>OP-08</td><td>言語を切り替える</td><td>なし。</td><td>選択言語を利用者設定として保存する。</td><td>現在URLを維持して画面を再表示する。未送信の選択状態は可能な限り維持する。</td></tr>
+<tr><td>OP-09</td><td>サイドバーを開閉する</td><td>なし。</td><td>サイドバーの幅とラベル表示を切り替える。</td><td>開閉状態を利用者設定として保存し、次回表示時に復元する。</td></tr>
+</tbody>
+</table></div>
+
+<h3>3.3 送信データ</h3>
+<p>レビューエージェントへ送信する業務データは次の3項目とする。画面表示用のPRタイトル、ブランチ、作成者は送信対象に含めない。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>項目</th><th>型</th><th>必須</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><code>organization</code></td><td>文字列</td><td>必須</td><td>OrganizationまたはユーザーのGitHubログイン名。</td></tr>
+<tr><td><code>repository</code></td><td>文字列</td><td>必須</td><td>リポジトリ名。所有者名を含めない。</td></tr>
+<tr><td><code>pull_request</code></td><td>正の整数</td><td>必須</td><td>対象リポジトリ内のPull Request番号。</td></tr>
+</tbody>
+</table></div>
+<pre><code>organization: acme-corp
+repository: web-frontend
+pull_request: 482</code></pre>
+</section>
+
+<section id="states">
+<h2>4. 画面状態と例外処理</h2>
+<div class="table-wrap"><table>
+<thead><tr><th>事象</th><th>利用者への表示</th><th>復旧操作</th><th>入力状態</th></tr></thead>
+<tbody>
+<tr><td>GitHub認証情報が未設定</td><td>設定が必要である旨をエラー通知として表示する。</td><td>GitHub連携設定へ遷移する。</td><td>選択領域を表示しない。</td></tr>
+<tr><td>認証情報が無効または期限切れ</td><td>GitHubへの認証に失敗した旨を表示する。認証情報そのものは表示しない。</td><td>GitHub連携設定へ遷移する。</td><td>既存候補を破棄する。</td></tr>
+<tr><td>候補取得に失敗</td><td>取得対象と再試行可能である旨を表示する。</td><td>再取得または上位項目の再選択。</td><td>確定済みの上位選択は維持する。</td></tr>
+<tr><td>選択可能なOpen PRが0件</td><td>RR-08を表示する。</td><td>別のリポジトリを選択する。</td><td>Organization / ユーザーとリポジトリは維持する。</td></tr>
+<tr><td>選択後にPRがClosedへ変更</td><td>現在の状態では依頼できない旨を表示する。</td><td>PR一覧を更新し、別のPRを選択する。</td><td>PR選択のみ解除する。</td></tr>
+<tr><td>同一対象の依頼が存在</td><td>重複依頼を作成しない旨と既存依頼への導線を表示する。</td><td>既存依頼を開く、または別のPRを選択する。</td><td>選択値は維持する。</td></tr>
+<tr><td>送信処理に失敗</td><td>依頼を登録できなかった旨と再試行案内を表示する。</td><td>再送信またはキャンセル。</td><td>3項目の選択値を維持する。</td></tr>
+</tbody>
+</table></div>
+<div class="warning"><strong>セキュリティ要件</strong>候補取得と送信の可否は画面上の活性制御だけに依存せず、サーバー側で認証、参照権限、所有関係、PR状態を再検証する。Personal Access Tokenを画面、URL、ログ、送信データへ出力しない。</div>
+</section>
+
+<section id="mock-differences">
+<h2>5. モックアップとの差異</h2>
+<p>本章はモックアップの再現仕様ではなく、本番実装で満たすべき仕様との差異を示す。外部設計としては「あるべき仕様」を優先する。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>項目</th><th>モックアップの振る舞い</th><th>本設計で定義する振る舞い</th></tr></thead>
+<tbody>
+<tr><td>候補データ</td><td>固定のモックデータを使用する。</td><td>認証利用者が参照可能な最新データをGitHub連携APIから取得する。</td></tr>
+<tr><td>依頼送信</td><td>依頼を作成せず、クエリパラメータ付きの一覧へ遷移する。</td><td>サーバーへ依頼を登録し、登録成功後にのみ一覧へ遷移する。</td></tr>
+<tr><td>送信失敗</td><td>失敗状態を持たない。</td><td>入力値を維持し、エラー内容と再試行手段を表示する。</td></tr>
+<tr><td>二重送信</td><td>ボタン無効化や冪等性制御を行わない。</td><td>画面側の連続操作防止とサーバー側の冪等性制御を行う。</td></tr>
+<tr><td>重複依頼</td><td>登録済みPRも選択・送信できる。</td><td>同一PR・同一最新コミットの有効な依頼を重複作成せず、既存依頼へ案内する。</td></tr>
+<tr><td>Open PRが0件</td><td>空のカード領域のみを表示する。</td><td>選択可能なPRがないことを明示する。</td></tr>
+<tr><td>選択値の再検証</td><td>画面内の固定データだけを確認する。</td><td>送信直前に権限、所有関係、PR状態をサーバー側で再検証する。</td></tr>
+<tr><td>送信中状態</td><td>定義しない。</td><td>処理中表示と送信操作の無効化を行う。</td></tr>
+<tr><td>キャンセル表示</td><td>PR選択後にのみ表示する。</td><td>モックの配置を踏襲し、PR選択後に表示する。共通シェルまたはパンくずからも一覧へ戻れる。</td></tr>
+</tbody>
+</table></div>
+<div class="note"><strong>モックアップ確認時の注意</strong>モックアップは画面構成と操作感の確認用であり、実API接続、永続的な依頼作成、権限検証、送信エラー、重複制御は実装していない。</div>
+</section>
+
+<footer><a href="index.html">画面一覧へ戻る</a> / 基準モックアップ: <a href="../mocks/review-request.html">docs/mocks/review-request.html</a></footer>
+</main>
+</body>
+</html>

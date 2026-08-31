@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCR-01 コードレビュー一覧 — 画面外部設計書</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header><div class="header-inner"><h1>SCR-01 コードレビュー一覧</h1><p>画面外部設計書</p></div></header>
+<main>
+  <nav aria-label="設計書内ナビゲーション"><a href="index.html">画面一覧</a><a href="review-list.html">01 一覧</a><a href="review-request.html">02 依頼登録</a><a href="review-result.html">03 結果確認</a><a href="settings.html">04 GitHub連携設定</a></nav>
+
+  <section>
+    <h2>1. 画面デザイン</h2>
+    <p><a href="../mocks/index.html">コードレビュー一覧モックアップを開く</a></p>
+    <p class="meta">本システムに登録済みのプルリクエスト（以下 PR）のレビュー状況をリポジトリ単位で一覧表示する。ユーザーはこの画面を起点に、レビュー依頼の登録、レビュー結果の確認、対応が完了したレビューのクローズを行う。本書は日本語画面を対象とする。</p>
+    <div class="note"><strong>前提</strong>GitHub連携設定（<a href="settings.html">SCR-04</a>）でPersonal Access Token（以下 PAT）が有効に設定済みであること。未設定の場合は一覧を表示せず設定への導線を提示する（<a href="#states">6. 画面状態</a>参照）。</div>
+  </section>
+
+  <section>
+    <h2>2. 画面項目の定義</h2>
+    <p>共通ヘッダー、サイドナビゲーション、サイドバー開閉およびパンくずは<a href="index.html">共通画面項目</a>に従う。以下は本画面固有の項目を示す。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>項目名</th><th>種別</th><th>表示条件</th><th>表示内容</th><th>備考</th></tr></thead>
+      <tbody>
+        <tr><td>LST-01</td><td>画面タイトル</td><td>表示</td><td>常時</td><td>「コードレビュー一覧」</td><td>固定文言。</td></tr>
+        <tr><td>LST-02</td><td>サブタイトル</td><td>表示</td><td>常時</td><td>「登録済みのプルリクエストのレビュー状況を確認できます。」</td><td>固定文言。</td></tr>
+        <tr><td>LST-03</td><td>レビュー依頼を登録</td><td>ボタン</td><td>PAT設定済み</td><td>「+ レビュー依頼を登録」</td><td>選択すると<a href="review-request.html">SCR-02 レビュー依頼登録</a>へ遷移する。</td></tr>
+        <tr><td>LST-04</td><td>登録完了通知</td><td>通知</td><td>依頼登録完了直後</td><td>受付対象（<code>org/repo #番号</code>）を含む受付完了メッセージ</td><td>閉じる操作で非表示にできる。詳細は<a href="#st-submitted">受付完了状態</a>。</td></tr>
+        <tr><td>LST-05</td><td>PAT未設定通知</td><td>通知</td><td>PAT未設定または無効</td><td>PATが未設定である旨と設定を促す案内</td><td>設定画面への導線（LST-06）を併せて表示する。</td></tr>
+        <tr><td>LST-06</td><td>設定画面を開く</td><td>ボタン</td><td>PAT未設定または無効</td><td>「設定画面を開く」</td><td>選択すると<a href="settings.html">SCR-04 GitHub連携設定</a>へ遷移する。</td></tr>
+        <tr><td>LST-07</td><td>リポジトリ絞り込み</td><td>選択</td><td>PAT設定済み</td><td>「すべて」＋登録済みリポジトリ（<code>org/repo</code>）</td><td>初期値は「すべて」。</td></tr>
+        <tr><td>LST-08</td><td>レビュー状態絞り込み</td><td>選択</td><td>PAT設定済み</td><td>「すべて」「未実施」「レビュー中」「対応待ち」「完了」「エラー」</td><td>初期値は「すべて」。</td></tr>
+        <tr><td>LST-09</td><td>検索</td><td>テキスト入力</td><td>PAT設定済み</td><td>プレースホルダー「PR番号やタイトルで検索」</td><td>PR番号・タイトル・ブランチ名を対象に部分一致検索する。</td></tr>
+        <tr><td>LST-10</td><td>リポジトリグループ見出し</td><td>ボタン</td><td>絞り込み後に該当行あり</td><td><code>org/repo</code> と絞り込み後の該当件数</td><td>選択で当該グループを展開／折りたたむ。初期状態は展開。</td></tr>
+        <tr><td>LST-11</td><td>列ヘッダー</td><td>表示</td><td>グループ展開中</td><td>PR／ブランチ／レビュー状態／PRステータス／コメント／更新日時／操作</td><td>グループ折りたたみ時は非表示。</td></tr>
+        <tr><td>LST-12</td><td>PR</td><td>リンク</td><td>明細行</td><td>「#&lt;番号&gt; &lt;タイトル&gt;」</td><td>選択すると<a href="review-result.html">SCR-03 レビュー結果確認</a>へ遷移する（レビューIDを引き渡す）。</td></tr>
+        <tr><td>LST-13</td><td>ブランチ</td><td>表示</td><td>明細行</td><td>対象PRのブランチ名</td><td>等幅フォントで表示する。</td></tr>
+        <tr><td>LST-14</td><td>レビュー状態</td><td>タグ</td><td>明細行</td><td>未実施／レビュー中／対応待ち／完了／エラー</td><td>状態別に色分けする。判定は<a href="#status-derivation">4. レビュー状態の判定</a>に従う。</td></tr>
+        <tr><td>LST-15</td><td>PRステータス</td><td>タグ</td><td>明細行</td><td>Open／Closed／Merged</td><td>GitHub上のPR状態を表示する。</td></tr>
+        <tr><td>LST-16</td><td>コメント</td><td>表示</td><td>明細行</td><td>エージェントが検出したコメント件数（「N件」）</td><td>コメントなしは「—」、エラー時は「エラー」を表示する。</td></tr>
+        <tr><td>LST-17</td><td>更新日時</td><td>表示</td><td>明細行</td><td>レビュー状態が最後に更新された日時（<code>YYYY-MM-DD HH:mm</code>）</td><td>—</td></tr>
+        <tr><td>LST-18</td><td>クローズ</td><td>ボタン</td><td>クローズ対象条件を満たす明細行</td><td>「クローズ」</td><td>表示条件と振る舞いは<a href="#op-close">LST-A08</a>に従う。</td></tr>
+        <tr><td>LST-19</td><td>結果なしメッセージ</td><td>表示</td><td>絞り込み後の該当行が0件</td><td>「条件に一致するPRがありません。」</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>3. 入力項目・操作項目の振る舞い</h2>
+    <h3>3.1 入力チェック</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>対象</th><th>チェック契機</th><th>チェック内容</th><th>不正時の振る舞い</th></tr></thead>
+      <tbody>
+        <tr><td>LST-V01</td><td>PAT設定状態</td><td>初期表示、一覧再取得時</td><td>GitHubアクセスに必要な認証情報が設定済みかつ有効であること。</td><td>一覧を非表示にし、LST-05とLST-06を表示する。PAT値は画面、URL、ログへ出力しない。</td></tr>
+        <tr><td>LST-V02</td><td>リポジトリ絞り込み（LST-07）</td><td>選択変更時、再表示時</td><td>取得済みの選択肢からの単一選択であり、「すべて」または参照可能なリポジトリであること。</td><td>「すべて」に戻し、一覧を再取得する。</td></tr>
+        <tr><td>LST-V03</td><td>レビュー状態絞り込み（LST-08）</td><td>選択変更時、再表示時</td><td>定義済み選択肢からの単一選択であること。</td><td>「すべて」に戻し、一覧を再表示する。</td></tr>
+        <tr><td>LST-V04</td><td>検索（LST-09）</td><td>入力時</td><td>任意の文字列を許容する。前後空白を除去し、大文字・小文字を区別しない。文字種・文字数による入力拒否は行わない。</td><td>入力は受け付け、正規化した文字列で照合する。</td></tr>
+        <tr><td>LST-V05</td><td>レビューID</td><td>結果画面遷移時、クローズ時</td><td>表示時に取得した一覧に存在し、利用者が参照可能なレビューであること。</td><td>操作を中止して一覧を再取得し、対象が更新または削除された旨を通知する。</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>3.2 操作</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>操作</th><th>前提条件</th><th>正常時の振る舞い</th><th>異常時の振る舞い</th></tr></thead>
+      <tbody>
+        <tr><td>LST-A01</td><td>レビュー依頼を登録する</td><td>PAT設定済み</td><td>LST-03を選択すると<a href="review-request.html">SCR-02</a>へ遷移する。</td><td>遷移できない場合は現在画面を維持する。</td></tr>
+        <tr><td>LST-A02</td><td>リポジトリで絞り込む</td><td>PAT設定済み</td><td>選択変更で即時に一覧を再描画し、選択リポジトリ（<code>org/repo</code>）に完全一致するレビューのみ表示する。「すべて」は全リポジトリを対象とする。</td><td>不正選択時はLST-V02に従う。</td></tr>
+        <tr><td>LST-A03</td><td>レビュー状態で絞り込む</td><td>PAT設定済み</td><td>選択変更で即時に一覧を再描画し、選択状態に一致するレビューのみ表示する。他の絞り込み条件とAND結合する。</td><td>不正選択時はLST-V03に従う。</td></tr>
+        <tr><td>LST-A04</td><td>キーワードで検索する</td><td>PAT設定済み</td><td>入力のたびに即時に再描画し、PR番号・タイトル・ブランチ名を対象に部分一致で照合する。再描画後も入力欄のフォーカスとカーソル位置を維持する。他の絞り込み条件とAND結合する。</td><td>—</td></tr>
+        <tr><td>LST-A05</td><td>絞り込み条件を保持する</td><td>なし</td><td>リポジトリ・レビュー状態・検索キーワードを利用者単位で保存し、再表示時に復元する。</td><td>保存済み値が選択肢に存在しない場合は当該条件を「すべて」に戻す。</td></tr>
+        <tr><td>LST-A06</td><td>グループを展開／折りたたむ</td><td>該当行あり</td><td>選択で当該リポジトリの表示／非表示を切り替える。折りたたみ時は列ヘッダーと明細行を非表示にし、見出しと件数のみ表示する。状態はリポジトリ単位で保存し、絞り込みや再表示をまたいで維持する。</td><td>状態を保存できない場合も当該表示中は切替を有効とする。</td></tr>
+        <tr><td>LST-A07</td><td>レビュー結果を開く</td><td>対象レビューを参照可能</td><td>LST-12を選択すると<a href="review-result.html">SCR-03</a>へ遷移し、レビューIDを引き渡す。結果画面でのコメント対応（対応済み／誤検知／未対応へ戻す）は、本画面のレビュー状態およびコメント件数へ反映する。</td><td>対象が参照不可の場合はLST-V05に従う。</td></tr>
+        <tr id="op-close"><td>LST-A08</td><td>レビューをクローズする</td><td>対象レビューへの対応が完了している（下記表示条件を満たす）</td><td>対応完了済みレビューを管理対象から終了し、一覧から除外する（GitHub上のPRをクローズする操作ではない）。クリック時に確認を求め、同意後にクローズ済みとして記録し、一覧から即時除外する。リポジトリグループの件数を更新し、該当行が0件になったグループは非表示にする。クローズ状態は保存し再表示時も維持する。操作直後に取り消し手段を提示する。</td><td>対象が既に更新・削除済みの場合はLST-V05に従う。</td></tr>
+        <tr><td>LST-A09</td><td>登録完了通知を閉じる</td><td>LST-04表示中</td><td>通知を非表示にする。</td><td>—</td></tr>
+        <tr><td>LST-A10</td><td>設定画面を開く</td><td>PAT未設定または無効</td><td>LST-06を選択すると<a href="settings.html">SCR-04</a>へ遷移する。</td><td>遷移できない場合は現在画面を維持する。</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>クローズの表示条件（LST-18／LST-A08）</strong>：レビューへの対応が完了しており一覧で追跡する必要がない行にのみ「クローズ」を表示する。具体的には、レビュー状態が「完了」（レビュー済みかつ未解決コメントなし）である行、またはPRステータスが Closed もしくは Merged の行を対象とする。</p>
+  </section>
+
+  <section id="status-derivation">
+    <h2>4. レビュー状態の判定</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>レビュー状態</th><th>色</th><th>判定条件</th></tr></thead>
+      <tbody>
+        <tr><td>未実施</td><td>グレー</td><td>レビュー解析が未開始である。</td></tr>
+        <tr><td>レビュー中</td><td>青</td><td>レビュー解析が処理中である。</td></tr>
+        <tr><td>対応待ち</td><td>紫</td><td>レビュー済みで、未解決コメントが1件以上存在する。</td></tr>
+        <tr><td>完了</td><td>緑</td><td>レビュー済みで、未解決コメントが存在しない（全コメントが対応済みまたは誤検知）。</td></tr>
+        <tr><td>エラー</td><td>赤</td><td>レビュー処理でエラーが発生した。</td></tr>
+      </tbody>
+    </table></div>
+    <p>コメント列（LST-16）は検出コメントの件数を表示する。未解決件数はレビュー状態の判定に用いる。PRステータス（LST-15）はレビュー状態とは独立に、GitHub上のPR状態（Open／Closed／Merged）を表示する。</p>
+  </section>
+
+  <section id="states">
+    <h2>5. 画面状態</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>状態</th><th>表示内容</th><th>非表示</th></tr></thead>
+      <tbody>
+        <tr id="st-token"><td>ST-01</td><td>PAT未設定</td><td>共通シェル、タイトル・サブタイトル、LST-05（PAT未設定通知）、LST-06（設定画面を開く）を表示する。</td><td>依頼登録ボタン、絞り込み、グループ、明細行、登録完了通知</td></tr>
+        <tr><td>ST-02</td><td>読み込み中</td><td>一覧取得中は二重取得を防ぎつつ読み込み中である旨を表示する。取得完了後にST-04またはST-05へ遷移する。</td><td>—</td></tr>
+        <tr><td>ST-03</td><td>取得失敗</td><td>取得失敗の旨と再試行手段を表示する。認証情報の失効が原因の場合はST-01に準じて設定画面への導線を表示する。</td><td>明細行</td></tr>
+        <tr><td>ST-04</td><td>通常</td><td>PAT設定済みで、絞り込み後の該当行が1件以上ある。見出し、依頼登録ボタン、絞り込み、リポジトリグループ、明細行を表示する。</td><td>—</td></tr>
+        <tr><td>ST-05</td><td>結果なし</td><td>PAT設定済みだが、絞り込み・検索・クローズにより該当行が0件になった。LST-19（結果なしメッセージ）を表示する。</td><td>リポジトリグループ、明細行</td></tr>
+        <tr id="st-submitted"><td>ST-06</td><td>受付完了</td><td>SCR-02から送信して本画面へ戻った直後、LST-04（受付対象を含む受付完了通知）を表示する。PAT設定済みの場合に表示する。</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note"><strong>エラーレビュー行</strong>レビュー処理でエラーになったレビューは、通常状態の一覧内でレビュー状態を「エラー」（赤）、コメント列を「エラー」で表示する。当該行にはクローズボタンを表示せず、再実行の導線を提供する。</div>
+  </section>
+
+  <section>
+    <h2>6. 画面遷移・関連画面</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>遷移元／操作</th><th>遷移先</th><th>受け渡し・補足</th></tr></thead>
+      <tbody>
+        <tr><td>「+ レビュー依頼を登録」（LST-03）</td><td><a href="review-request.html">SCR-02 レビュー依頼登録</a></td><td>—</td></tr>
+        <tr><td>PRリンク（LST-12）を選択</td><td><a href="review-result.html">SCR-03 レビュー結果確認</a></td><td>レビューIDをURLクエリパラメータ<code>id</code>で引き渡す。</td></tr>
+        <tr><td>「設定画面を開く」（LST-06）</td><td><a href="settings.html">SCR-04 GitHub連携設定</a></td><td>PAT未設定または無効時の導線。</td></tr>
+        <tr><td>SCR-02で依頼送信後に本画面へ戻る</td><td>SCR-01 コードレビュー一覧（本画面）</td><td>受付対象を受け取りLST-04を表示する（ST-06）。</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <footer><a href="index.html">画面一覧へ戻る</a> / 基準モックアップ: <a href="../mocks/index.html">docs/mocks/index.html</a></footer>
+</main>
+</body>
+</html>

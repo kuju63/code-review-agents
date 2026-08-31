@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>画面外部設計書 — PR Review Agent</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <h1>PR Review Agent 画面外部設計書</h1>
+    <p>画面一覧および共通仕様</p>
+  </div>
+</header>
+<main>
+  <nav aria-label="設計書内ナビゲーション">
+    <a href="index.html">画面一覧</a>
+    <a href="review-list.html">01 一覧</a>
+    <a href="review-request.html">02 依頼登録</a>
+    <a href="review-result.html">03 結果確認</a>
+    <a href="settings.html">04 GitHub連携設定</a>
+  </nav>
+
+  <section>
+    <h2>1. 文書の目的</h2>
+    <p>PR Review Agentの静的UIモックアップを基に、利用者から見える画面項目、入力条件、操作、画面遷移および状態変化を定義する。本書は日本語画面を対象とする。</p>
+    <div class="note">
+      <strong>設計上の位置づけ</strong>
+      モックアップは画面確認用の静的実装であり、本書には本番実装で必要となる入力チェックを追加している。モックアップと本書が異なる場合、入力チェックについては本書を優先する。
+    </div>
+  </section>
+
+  <section>
+    <h2>2. 画面一覧</h2>
+    <ul class="document-list">
+      <li><a href="review-list.html"><strong>SCR-01 コードレビュー一覧</strong><span>登録済みPRの状態確認、絞り込み、結果表示、クローズ</span></a></li>
+      <li><a href="review-request.html"><strong>SCR-02 レビュー依頼登録</strong><span>Organization、リポジトリ、PRの選択とレビュー依頼送信</span></a></li>
+      <li><a href="review-result.html"><strong>SCR-03 レビュー結果確認</strong><span>処理状態、変更差分、レビューコメントの確認と対応</span></a></li>
+      <li><a href="settings.html"><strong>SCR-04 GitHub連携設定</strong><span>GitHub URLおよびPersonal Access Tokenの登録</span></a></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. 共通画面項目</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>項目名</th><th>種別</th><th>表示内容</th><th>操作・振る舞い</th></tr></thead>
+        <tbody>
+          <tr><td>COM-01</td><td>ブランド</td><td>リンク</td><td>PR Review Agent</td><td>選択するとSCR-01へ遷移する。</td></tr>
+          <tr><td>COM-02</td><td>言語切替</td><td>ボタン</td><td>JA / EN</td><td>モックアップでは選択言語を保存して再表示する。本外部設計書の対象言語は日本語のみとする。</td></tr>
+          <tr><td>COM-03</td><td>設定アイコン</td><td>リンク</td><td>設定アイコン</td><td>選択するとSCR-04へ遷移する。</td></tr>
+          <tr><td>COM-04</td><td>サイドナビゲーション</td><td>リンク群</td><td>コードレビュー一覧、レビュー依頼登録、設定</td><td>選択した画面へ遷移し、現在画面を強調表示する。</td></tr>
+          <tr><td>COM-05</td><td>サイドバー表示切替</td><td>ボタン</td><td>折りたたむ／展開アイコン</td><td>サイドバーのラベル表示を切り替える。状態はブラウザ単位で保持する。</td></tr>
+          <tr><td>COM-06</td><td>パンくず</td><td>リンク／テキスト</td><td>現在画面までの階層</td><td>リンク部分を選択すると対応画面へ遷移する。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. 共通振る舞い</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>条件・操作</th><th>振る舞い</th></tr></thead>
+        <tbody>
+          <tr><td>CB-01</td><td>画面表示</td><td>処理中は同一操作の重複実行を防ぐ。取得失敗時は原因を利用者向けに表示し、再試行または戻り先を提示する。</td></tr>
+          <tr><td>CB-02</td><td>入力エラー</td><td>対象項目をエラー表示し、項目直下に日本語のエラーメッセージを表示する。最初のエラー項目へフォーカスし、保存または送信を行わない。</td></tr>
+          <tr><td>CB-03</td><td>外部リンク</td><td>GitHub上のブランチおよびコミットは新しいタブで開き、元画面を維持する。</td></tr>
+          <tr><td>CB-04</td><td>PAT未設定</td><td>SCR-01およびSCR-02の主要機能を表示せず、未設定通知とSCR-04への導線を表示する。</td></tr>
+          <tr><td>CB-05</td><td>状態保持</td><td>言語、サイドバー状態、画面表示設定等はブラウザ単位で保持できる。認証情報はブラウザの平文ストレージへ保存しない。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. 画面遷移図</h2>
+    <p>実線は通常操作、破線は条件付きまたは例外時の遷移を示す。各画面の枠は対応する外部設計書へのリンクである。</p>
+    <figure class="screen-flow">
+      <svg viewBox="0 0 1080 720" role="img" aria-labelledby="screen-flow-title screen-flow-desc" xmlns="http://www.w3.org/2000/svg">
+        <title id="screen-flow-title">PR Review Agentの全画面遷移図</title>
+        <desc id="screen-flow-desc">初期表示のコードレビュー一覧を起点に、レビュー依頼登録、レビュー結果確認、GitHub連携設定の4画面間に存在する通常遷移、共通ナビゲーション遷移、条件付き遷移を示す。</desc>
+        <defs>
+          <marker id="arrow-primary" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="arrow-primary-head"/>
+          </marker>
+          <marker id="arrow-common" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="arrow-common-head"/>
+          </marker>
+          <marker id="arrow-conditional" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="arrow-conditional-head"/>
+          </marker>
+        </defs>
+
+        <g class="flow-entry" aria-label="利用開始">
+          <rect x="18" y="322" width="106" height="48" rx="24"/>
+          <text x="71" y="352" text-anchor="middle">利用開始</text>
+          <path d="M 124 346 H 173" class="flow-edge primary" marker-end="url(#arrow-primary)"/>
+        </g>
+
+        <g class="flow-edges" aria-label="画面間の遷移">
+          <g aria-label="コードレビュー一覧からレビュー依頼登録">
+            <path d="M 335 292 C 350 218 393 180 438 161" class="flow-edge primary" marker-end="url(#arrow-primary)"/>
+            <text x="333" y="216" class="edge-label">依頼登録</text>
+          </g>
+          <g aria-label="レビュー依頼登録からコードレビュー一覧">
+            <path d="M 438 189 C 401 214 374 253 363 300" class="flow-edge primary" marker-end="url(#arrow-primary)"/>
+            <text x="404" y="247" class="edge-label"><tspan x="404">送信成功</tspan><tspan x="404" dy="18">キャンセル</tspan></text>
+          </g>
+          <g aria-label="コードレビュー一覧からレビュー結果確認">
+            <path d="M 430 330 C 510 302 581 302 650 330" class="flow-edge primary" marker-end="url(#arrow-primary)"/>
+            <text x="540" y="306" class="edge-label">PR選択（レビューID）</text>
+          </g>
+          <g aria-label="レビュー結果確認からコードレビュー一覧">
+            <path d="M 650 374 C 575 402 503 402 430 374" class="flow-edge common" marker-end="url(#arrow-common)"/>
+            <text x="540" y="418" class="edge-label">一覧へ戻る</text>
+          </g>
+          <g aria-label="コードレビュー一覧からGitHub連携設定">
+            <path d="M 350 412 C 368 482 402 519 438 540" class="flow-edge common" marker-end="url(#arrow-common)"/>
+            <text x="338" y="487" class="edge-label"><tspan x="338">設定ナビ／PAT未設定・無効</tspan><tspan x="338" dy="18">設定導線</tspan></text>
+          </g>
+          <g aria-label="GitHub連携設定からコードレビュー一覧">
+            <path d="M 438 571 C 390 551 350 503 324 412" class="flow-edge common" marker-end="url(#arrow-common)"/>
+            <text x="391" y="592" class="edge-label">一覧ナビ</text>
+          </g>
+          <g aria-label="レビュー依頼登録とGitHub連携設定">
+            <path d="M 499 200 V 523" class="flow-edge conditional" marker-end="url(#arrow-conditional)"/>
+            <text x="480" y="356" text-anchor="end" class="edge-label"><tspan x="480">PAT未設定・無効</tspan><tspan x="480" dy="18">設定導線</tspan></text>
+            <path d="M 556 523 V 200" class="flow-edge common" marker-end="url(#arrow-common)"/>
+            <text x="575" y="365" class="edge-label">依頼登録ナビ</text>
+          </g>
+          <g aria-label="レビュー結果確認からGitHub連携設定">
+            <path d="M 721 412 C 697 481 652 526 626 544" class="flow-edge common" marker-end="url(#arrow-common)"/>
+            <text x="733" y="483" class="edge-label"><tspan x="733">設定ナビ／GitHub URL</tspan><tspan x="733" dy="18">未設定・不正</tspan></text>
+          </g>
+          <g aria-label="レビュー依頼登録からレビュー結果確認">
+            <path d="M 620 125 C 735 127 824 183 797 292" class="flow-edge conditional" marker-end="url(#arrow-conditional)"/>
+            <text x="744" y="119" text-anchor="middle" class="edge-label"><tspan x="744">重複依頼時</tspan><tspan x="744" dy="18">既存レビューを開く</tspan></text>
+          </g>
+          <g aria-label="レビュー結果確認からレビュー依頼登録">
+            <path d="M 650 312 C 619 261 595 224 573 200" class="flow-edge common" marker-end="url(#arrow-common)"/>
+            <text x="633" y="245" class="edge-label">依頼登録ナビ</text>
+          </g>
+        </g>
+
+        <g class="flow-screens" aria-label="画面">
+          <a href="review-list.html" aria-label="SCR-01 コードレビュー一覧の設計書を開く">
+            <g class="screen-node primary-screen">
+              <rect x="175" y="292" width="255" height="120" rx="4"/>
+              <text x="302.5" y="326" text-anchor="middle" class="screen-id">SCR-01</text>
+              <text x="302.5" y="355" text-anchor="middle" class="screen-name">コードレビュー一覧</text>
+              <text x="302.5" y="383" text-anchor="middle" class="screen-role">初期表示・操作の起点</text>
+            </g>
+          </a>
+          <a href="review-request.html" aria-label="SCR-02 レビュー依頼登録の設計書を開く">
+            <g class="screen-node">
+              <rect x="438" y="80" width="182" height="120" rx="4"/>
+              <text x="529" y="114" text-anchor="middle" class="screen-id">SCR-02</text>
+              <text x="529" y="143" text-anchor="middle" class="screen-name">レビュー依頼登録</text>
+              <text x="529" y="171" text-anchor="middle" class="screen-role">対象選択・送信</text>
+            </g>
+          </a>
+          <a href="review-result.html" aria-label="SCR-03 レビュー結果確認の設計書を開く">
+            <g class="screen-node">
+              <rect x="650" y="292" width="255" height="120" rx="4"/>
+              <text x="777.5" y="326" text-anchor="middle" class="screen-id">SCR-03</text>
+              <text x="777.5" y="355" text-anchor="middle" class="screen-name">レビュー結果確認</text>
+              <text x="777.5" y="383" text-anchor="middle" class="screen-role">差分・コメント対応</text>
+            </g>
+          </a>
+          <a href="settings.html" aria-label="SCR-04 GitHub連携設定の設計書を開く">
+            <g class="screen-node">
+              <rect x="438" y="523" width="182" height="120" rx="4"/>
+              <text x="529" y="557" text-anchor="middle" class="screen-id">SCR-04</text>
+              <text x="529" y="586" text-anchor="middle" class="screen-name">GitHub連携設定</text>
+              <text x="529" y="614" text-anchor="middle" class="screen-role">URL・PAT保存</text>
+            </g>
+          </a>
+        </g>
+
+        <g class="flow-legend" aria-label="凡例">
+          <line x1="700" y1="562" x2="758" y2="562" class="flow-edge primary" marker-end="url(#arrow-primary)"/>
+          <text x="770" y="567">通常操作</text>
+          <line x1="700" y1="600" x2="758" y2="600" class="flow-edge common" marker-end="url(#arrow-common)"/>
+          <text x="770" y="605">共通ナビゲーション</text>
+          <line x1="700" y1="638" x2="758" y2="638" class="flow-edge conditional" marker-end="url(#arrow-conditional)"/>
+          <text x="770" y="643">条件付き・例外時</text>
+        </g>
+      </svg>
+      <figcaption>図1：全画面の遷移関係。言語切替とサイドバー開閉は同一画面内の状態変更のため省略する。</figcaption>
+    </figure>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>遷移元</th><th>操作・条件</th><th>遷移先</th><th>受け渡し・遷移後</th></tr></thead>
+        <tbody>
+          <tr><td>利用開始</td><td>アプリケーションを開く</td><td>SCR-01</td><td>一覧を初期表示する。</td></tr>
+          <tr><td>SCR-01</td><td>レビュー依頼を登録</td><td>SCR-02</td><td>—</td></tr>
+          <tr><td>SCR-01</td><td>PRを選択</td><td>SCR-03</td><td>レビューIDを<code>id</code>で引き渡す。</td></tr>
+          <tr><td>SCR-01</td><td>設定ナビゲーション／PAT未設定・無効時に設定画面を開く</td><td>SCR-04</td><td>—</td></tr>
+          <tr><td>SCR-02</td><td>送信成功／キャンセル／一覧ナビゲーション</td><td>SCR-01</td><td>送信成功時は受付対象を渡し、受付完了通知を表示する。</td></tr>
+          <tr><td>SCR-02</td><td>重複依頼で既存レビューを選択</td><td>SCR-03</td><td>既存レビューIDを引き渡す。</td></tr>
+          <tr><td>SCR-02</td><td>PAT未設定・無効／設定ナビゲーション</td><td>SCR-04</td><td>入力前のため依頼情報は保存しない。</td></tr>
+          <tr><td>SCR-03</td><td>一覧へ戻る／一覧ナビゲーション</td><td>SCR-01</td><td>更新済みのコメント状態を一覧へ反映する。</td></tr>
+          <tr><td>SCR-03</td><td>依頼登録ナビゲーション</td><td>SCR-02</td><td>—</td></tr>
+          <tr><td>SCR-03</td><td>GitHub URL未設定・不正／設定ナビゲーション</td><td>SCR-04</td><td>外部リンクを無効化する。</td></tr>
+          <tr><td>SCR-04</td><td>一覧ナビゲーション</td><td>SCR-01</td><td>保存済み設定を利用して一覧を取得する。</td></tr>
+          <tr><td>SCR-04</td><td>依頼登録ナビゲーション</td><td>SCR-02</td><td>保存済み設定を利用して候補を取得する。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>基準モックアップ: <a href="../mocks/index.html">docs/mocks/index.html</a></footer>
+</main>
+</body>
+</html>
