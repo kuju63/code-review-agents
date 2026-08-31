@@ -5,6 +5,12 @@ reviews:
   request_changes_workflow: true
   high_level_summary_in_walkthrough: true
   path_filters:
+    - "**/*.py"
+    - "**/*.js"
+    - "**/*.ts"
+    - "**/*.tsx"
+    - "**/*.jsx"
+    - "**/*.md"
     - "!/.serena/*"
     - "!/.venv/*"
     - "!/node_modules/*"
@@ -13,15 +19,9 @@ reviews:
     - "!/.claude/skills/graphify/*"
     - "!/.claude/.worktrees/*"
     - "!/graphify-out/*"
-    - "**/*.py"
-    - "**/*.js"
-    - "**/*.ts"
-    - "**/*.tsx"
-    - "**/*.jsx"
-    - "**/*.md"
   finishing_touches:
     docstrings:
-      enabled: true
+      enabled: false
     unit_tests:
       enabled: false
     simplify:
