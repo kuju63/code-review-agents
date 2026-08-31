@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCR-04 GitHub連携設定 — 画面外部設計書</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header><div class="header-inner"><h1>SCR-04 GitHub連携設定</h1><p>画面外部設計書</p></div></header>
+<main>
+  <nav aria-label="設計書内ナビゲーション"><a href="index.html">画面一覧</a><a href="review-list.html">01 一覧</a><a href="review-request.html">02 依頼登録</a><a href="review-result.html">03 結果確認</a><a href="settings.html">04 GitHub連携設定</a></nav>
+
+  <section>
+    <h2>1. 画面デザイン</h2>
+    <p><a href="../mocks/settings.html">GitHub連携設定モックアップを開く</a></p>
+    <p class="meta">レビューエージェントが接続するGitHubのURLとPersonal Access Tokenを登録する。Classic PATとFine-grained PATの両方を受け付ける。</p>
+  </section>
+
+  <section>
+    <h2>2. 画面項目の定義</h2>
+    <p>共通ヘッダー、サイドナビゲーションおよびパンくずは<a href="index.html">共通画面項目</a>に従う。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>項目名</th><th>種別</th><th>必須</th><th>初期値・表示内容</th><th>備考</th></tr></thead>
+      <tbody>
+        <tr><td>SET-01</td><td>画面タイトル</td><td>表示</td><td>—</td><td>GitHub連携設定</td><td>設定目的を説明する。</td></tr>
+        <tr><td>SET-02</td><td>保存完了通知</td><td>通知</td><td>—</td><td>設定を保存しました。</td><td>保存成功後に表示し、閉じる操作を提供する。</td></tr>
+        <tr><td>SET-03</td><td>GitHub URL</td><td>テキスト</td><td><span class="status-required">必須</span></td><td>未設定時は<code>https://github.com</code></td><td>GitHub Enterprise Server利用時はインスタンスのルートURLを入力する。最大2,048文字。</td></tr>
+        <tr><td>SET-04</td><td>Personal Access Token</td><td>パスワード</td><td><span class="status-required">初回必須</span></td><td>空欄。登録済みの場合はマスク済みプレースホルダー</td><td>入力値は画面へ再表示しない。最大4,096文字。</td></tr>
+        <tr><td>SET-05</td><td>保存</td><td>ボタン</td><td>—</td><td>保存</td><td>入力チェック成功時のみ保存する。処理中は無効化する。</td></tr>
+      </tbody>
+    </table></div>
+    <div class="warning"><strong>PATの取り扱い</strong>PATは秘密情報として扱い、ログ、URL、画面ソース、ブラウザのlocalStorageまたはsessionStorageへ保存しない。保存先では暗号化または秘密情報管理機構を使用する。</div>
+  </section>
+
+  <section>
+    <h2>3. 入力項目・操作項目の振る舞い</h2>
+    <h3>3.1 GitHub URLの入力チェック</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>チェック内容</th><th>エラーメッセージ</th></tr></thead>
+      <tbody>
+        <tr><td>SET-V01</td><td>前後空白を除去した後、1文字以上かつ2,048文字以内であること。</td><td>空欄:「GitHub URLを入力してください。」／超過:「GitHub URLは2,048文字以内で入力してください。」</td></tr>
+        <tr><td>SET-V02</td><td>URLとして解析可能な絶対URLであり、スキームが<code>https</code>であること。</td><td>「HTTPS形式のGitHub URLを入力してください。」</td></tr>
+        <tr><td>SET-V03</td><td>ホスト名が存在すること。ユーザー情報、クエリパラメータ、フラグメントを含まないこと。</td><td>「GitHubインスタンスのルートURLを入力してください。」</td></tr>
+        <tr><td>SET-V04</td><td>パスは空、<code>/</code>、またはGitHub Enterprise Serverがサブパス運用される場合の固定ベースパスであること。末尾の連続する<code>/</code>は保存時に除去する。</td><td>「GitHubインスタンスのルートURLを入力してください。」</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>3.2 Personal Access Tokenの入力チェック</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>チェック内容</th><th>エラーメッセージ</th></tr></thead>
+      <tbody>
+        <tr><td>SET-V05</td><td>初回登録時は必須。登録済みで空欄の場合は既存PATを変更しない。</td><td>初回空欄:「Personal Access Tokenを入力してください。」</td></tr>
+        <tr><td>SET-V06</td><td>4,096文字以内であること。入力値の前後・途中に空白文字を含まないこと。入力値はトリミングせず、空白をエラーとして扱う。</td><td>「Personal Access Tokenは空白を含めず4,096文字以内で入力してください。」</td></tr>
+        <tr><td>SET-V07</td><td>Classic PATは大文字・小文字を区別して<code>ghp_</code>で始まること。</td><td rowspan="2">「Personal Access TokenはClassic（ghp_）またはFine-grained（github_pat_）形式で入力してください。」</td></tr>
+        <tr><td>SET-V08</td><td>Fine-grained PATは大文字・小文字を区別して<code>github_pat_</code>で始まること。</td></tr>
+        <tr><td>SET-V09</td><td>プレフィックスの後に空白以外の文字が1文字以上存在すること。判定条件は<code>^(ghp_|github_pat_)\S+$</code>とする。</td><td>「Personal Access Tokenの値が不足しています。」</td></tr>
+        <tr><td>SET-V10</td><td>PATの権限内容およびGitHubへの疎通による有効性検証は、この入力チェックでは行わない。</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>3.3 操作</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>ID</th><th>操作</th><th>正常時の振る舞い</th><th>異常時の振る舞い</th></tr></thead>
+      <tbody>
+        <tr><td>SET-A01</td><td>GitHub URLを入力する</td><td>入力中は保存完了通知を非表示にする。保存時に正規化し、末尾の<code>/</code>を除去する。</td><td>入力チェックエラーを項目直下に表示する。</td></tr>
+        <tr><td>SET-A02</td><td>PATを入力する</td><td>入力文字をマスク表示する。コピーや貼り付けは許可し、画面離脱または保存後に入力欄をクリアする。</td><td>入力チェックエラーを項目直下に表示し、入力値をログへ出力しない。</td></tr>
+        <tr><td>SET-A03</td><td>保存する</td><td>全入力チェック後、GitHub URLとPATを安全な保存先へ一度だけ送信する。成功後はPAT入力欄を空にして保存完了通知を表示する。PATが登録済みで空欄ならURLのみ更新する。</td><td>入力エラー時は保存せず最初のエラーへフォーカスする。通信・保存エラー時はPATを除く安全なメッセージを表示し、再試行を可能にする。</td></tr>
+        <tr><td>SET-A04</td><td>保存完了通知を閉じる</td><td>通知を非表示にする。保存済み設定は変更しない。</td><td>非表示化できない場合も設定内容には影響しない。</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>4. 保存・表示仕様</h2>
+    <ul>
+      <li>登録済みPATの値は取得APIから返却せず、画面上では登録済みであることだけをマスク済みプレースホルダーで示す。</li>
+      <li>PATを別の値へ更新する場合のみ新しいPATを入力する。空欄保存は削除を意味しない。</li>
+      <li>PAT削除が必要な場合は、空欄保存と混同しない独立した削除操作を将来設ける。本画面モックアップには含まれない。</li>
+      <li>保存前のPAT権限検証は行わない。GitHub API利用時に認証・認可エラーが発生した場合は、その操作画面で再設定への導線を表示する。</li>
+    </ul>
+  </section>
+  <footer><a href="index.html">画面一覧へ戻る</a></footer>
+</main>
+</body>
+</html>
