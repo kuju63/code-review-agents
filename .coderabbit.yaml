@@ -19,6 +19,7 @@ reviews:
     - "!/.claude/skills/graphify/*"
     - "!/.claude/.worktrees/*"
     - "!/graphify-out/*"
+    - "!/graphify-out/GRAPH_REPORT.md" 
   finishing_touches:
     docstrings:
       enabled: false
