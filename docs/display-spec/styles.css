@@ -318,6 +318,178 @@ code {
   font-size: 13px;
 }
 
+.status-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.status-color-swatch {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.status-color-gray .status-color-swatch {
+  background: #e0e0e0;
+}
+
+.status-color-blue .status-color-swatch {
+  background: #d0e2ff;
+}
+
+.status-color-purple .status-color-swatch {
+  background: #e8daff;
+}
+
+.status-color-green .status-color-swatch {
+  background: #a7f0ba;
+}
+
+.status-color-red .status-color-swatch {
+  background: #ffd7d9;
+}
+
+.state-diagram {
+  margin: 20px 0 28px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.state-diagram svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.state-diagram text {
+  fill: var(--ink);
+  font-family: "IBM Plex Sans", "Noto Sans JP", system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.state-diagram .state-unimplemented rect,
+.state-diagram .state-terminal-edge {
+  fill: #e0e0e0;
+  stroke: #8f8f8f;
+}
+
+.state-diagram .state-inreview rect {
+  fill: #d0e2ff;
+  stroke: #0f62fe;
+}
+
+.state-diagram .state-waiting rect {
+  fill: #e8daff;
+  stroke: #7c3aed;
+}
+
+.state-diagram .state-complete rect {
+  fill: #a7f0ba;
+  stroke: var(--success);
+}
+
+.state-diagram .state-closed rect {
+  fill: #f4f4f4;
+  stroke: #525252;
+}
+
+.state-diagram .state-error rect {
+  fill: #ffd7d9;
+  stroke: var(--danger);
+}
+
+.state-diagram .state-condition-rect {
+  fill: #fff8e1;
+  stroke: #8e6a00;
+  stroke-dasharray: 5 4;
+  stroke-width: 2;
+}
+
+.state-diagram .state-condition-title {
+  fill: #684e00;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.state-diagram .state-node-rect,
+.state-diagram .state-node polygon {
+  stroke-width: 2;
+  rx: 12;
+}
+
+.state-diagram .state-node-text {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.state-diagram .state-node-sub {
+  fill: var(--muted);
+  font-size: 12px;
+}
+
+.state-diagram .state-edge {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.state-diagram .state-edge.state-auto {
+  stroke: var(--accent);
+}
+
+.state-diagram .state-edge.state-op {
+  stroke: var(--danger);
+  stroke-dasharray: 8 6;
+}
+
+.state-diagram .state-arrow-auto-head {
+  fill: var(--accent);
+}
+
+.state-diagram .state-arrow-op-head {
+  fill: var(--danger);
+}
+
+.state-diagram .state-edge-label {
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-linejoin: round;
+  stroke-width: 5px;
+}
+
+.state-diagram .state-legend text {
+  font-size: 13px;
+}
+
+.state-diagram .state-legend-text {
+  fill: var(--ink);
+  font-family: "IBM Plex Sans", "Noto Sans JP", system-ui, sans-serif;
+  font-size: 13px;
+}
+
+.state-diagram .state-leg-terminal {
+  fill: #e0e0e0;
+  stroke: #8f8f8f;
+  stroke-width: 2;
+}
+
+.state-diagram .state-leg-condition {
+  fill: #fff8e1;
+  stroke: #8e6a00;
+  stroke-dasharray: 3 2;
+  stroke-width: 2;
+}
+
+.state-diagram figcaption {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 footer {
   margin-top: 48px;
   padding-top: 16px;

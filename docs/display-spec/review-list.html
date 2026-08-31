@@ -85,14 +85,144 @@
     <div class="table-wrap"><table>
       <thead><tr><th>レビュー状態</th><th>色</th><th>判定条件</th></tr></thead>
       <tbody>
-        <tr><td>未実施</td><td>グレー</td><td>レビュー解析が未開始である。</td></tr>
-        <tr><td>レビュー中</td><td>青</td><td>レビュー解析が処理中である。</td></tr>
-        <tr><td>対応待ち</td><td>紫</td><td>レビュー済みで、未解決コメントが1件以上存在する。</td></tr>
-        <tr><td>完了</td><td>緑</td><td>レビュー済みで、未解決コメントが存在しない（全コメントが対応済みまたは誤検知）。</td></tr>
-        <tr><td>エラー</td><td>赤</td><td>レビュー処理でエラーが発生した。</td></tr>
+        <tr><td>未実施</td><td><span class="status-color status-color-gray"><span class="status-color-swatch" aria-hidden="true"></span>グレー <code>#E0E0E0</code></span></td><td>レビュー解析が未開始である。</td></tr>
+        <tr><td>レビュー中</td><td><span class="status-color status-color-blue"><span class="status-color-swatch" aria-hidden="true"></span>青 <code>#D0E2FF</code></span></td><td>レビュー解析が処理中である。</td></tr>
+        <tr><td>対応待ち</td><td><span class="status-color status-color-purple"><span class="status-color-swatch" aria-hidden="true"></span>紫 <code>#E8DAFF</code></span></td><td>レビュー済みで、未解決コメントが1件以上存在する。</td></tr>
+        <tr><td>完了</td><td><span class="status-color status-color-green"><span class="status-color-swatch" aria-hidden="true"></span>緑 <code>#A7F0BA</code></span></td><td>レビュー済みで、未解決コメントが存在しない（全コメントが対応済みまたは誤検知）。</td></tr>
+        <tr><td>エラー</td><td><span class="status-color status-color-red"><span class="status-color-swatch" aria-hidden="true"></span>赤 <code>#FFD7D9</code></span></td><td>レビュー処理でエラーが発生した。再試行要求の受付後は「未実施」へ戻る。</td></tr>
       </tbody>
     </table></div>
     <p>コメント列（LST-16）は検出コメントの件数を表示する。未解決件数はレビュー状態の判定に用いる。PRステータス（LST-15）はレビュー状態とは独立に、GitHub上のPR状態（Open／Closed／Merged）を表示する。</p>
+
+    <figure class="state-diagram">
+      <svg viewBox="0 0 1120 650" role="img" aria-labelledby="state-flow-title state-flow-desc" xmlns="http://www.w3.org/2000/svg">
+        <title id="state-flow-title">レビュー状態の判定と遷移図</title>
+        <desc id="state-flow-desc">レビュー依頼の受付後は未実施から始まり、解析開始でレビュー中へ遷移する。解析完了時は未解決コメントの有無により対応待ちまたは完了へ分岐し、処理エラー時はエラーへ遷移する。利用者がエラーの再試行を要求し、その要求が受け付けられると未実施へ戻る。解析が実際に開始された場合にのみ未実施からレビュー中へ遷移する。コメントを対応済みまたは誤検知にすると対応待ちから完了へ、未対応に戻すと完了から対応待ちへ遷移する。完了したレビュー、またはPRステータスがClosedかMergedでエラー以外のレビューは、利用者のクローズ操作でクローズ済みとなり一覧から除外される。</desc>
+        <defs>
+          <marker id="arrow-auto" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="state-arrow-auto-head"/>
+          </marker>
+          <marker id="arrow-op" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" class="state-arrow-op-head"/>
+          </marker>
+        </defs>
+
+        <g class="state-edges state-edges-auto" aria-label="エージェント処理による自動遷移">
+          <g aria-label="依頼受付から未実施へ">
+            <path d="M 150 236 H 190" class="state-edge state-auto" marker-end="url(#arrow-auto)"/>
+            <text x="170" y="220" text-anchor="middle" class="state-edge-label">受付</text>
+          </g>
+          <g aria-label="未実施からレビュー中へ">
+            <path d="M 340 236 H 390" class="state-edge state-auto" marker-end="url(#arrow-auto)"/>
+            <text x="365" y="220" text-anchor="middle" class="state-edge-label">解析開始</text>
+          </g>
+          <g aria-label="レビュー中から対応待ちへ">
+            <path d="M 540 218 C 580 218 570 116 610 116" class="state-edge state-auto" marker-end="url(#arrow-auto)"/>
+            <text x="568" y="154" text-anchor="middle" class="state-edge-label">
+              <tspan x="568">解析完了</tspan><tspan x="568" dy="18">未解決あり</tspan>
+            </text>
+          </g>
+          <g aria-label="レビュー中から完了へ">
+            <path d="M 540 254 C 580 254 570 316 610 316" class="state-edge state-auto" marker-end="url(#arrow-auto)"/>
+            <text x="568" y="292" text-anchor="end" class="state-edge-label">
+              <tspan x="568">解析完了</tspan><tspan x="568" dy="18">未解決なし</tspan>
+            </text>
+          </g>
+          <g aria-label="レビュー中からエラーへ">
+            <path d="M 495 272 V 430" class="state-edge state-auto" marker-end="url(#arrow-auto)"/>
+            <text x="508" y="354" class="state-edge-label">処理エラー</text>
+          </g>
+        </g>
+
+        <g class="state-edges state-edges-op" aria-label="利用者の操作による遷移">
+          <g aria-label="対応待ちから完了へ">
+            <path d="M 650 152 V 280" class="state-edge state-op" marker-end="url(#arrow-op)"/>
+            <text x="638" y="201" text-anchor="end" class="state-edge-label">
+              <tspan x="638">対応済み／誤検知</tspan><tspan x="638" dy="18">未解決0件</tspan>
+            </text>
+          </g>
+          <g aria-label="完了から対応待ちへ">
+            <path d="M 740 280 V 152" class="state-edge state-op" marker-end="url(#arrow-op)"/>
+            <text x="752" y="219" class="state-edge-label">未対応に戻す</text>
+          </g>
+          <g aria-label="エラーから未実施へ再試行要求を受け付ける">
+            <path d="M 390 466 C 310 466 265 380 265 272" class="state-edge state-op" marker-end="url(#arrow-op)"/>
+            <text x="302" y="398" text-anchor="middle" class="state-edge-label">
+              <tspan x="302">再試行要求</tspan><tspan x="302" dy="18">受付</tspan>
+            </text>
+          </g>
+          <g aria-label="完了したレビューをクローズ">
+            <path d="M 780 316 C 860 316 850 236 930 236" class="state-edge state-op" marker-end="url(#arrow-op)"/>
+            <text x="850" y="305" text-anchor="middle" class="state-edge-label">クローズ</text>
+          </g>
+          <g aria-label="ClosedまたはMergedのPRに対するレビューをクローズ">
+            <path d="M 890 512 C 1010 512 1020 310 995 272" class="state-edge state-op" marker-end="url(#arrow-op)"/>
+            <text x="1012" y="402" text-anchor="middle" class="state-edge-label">
+              <tspan x="1012">利用者が</tspan><tspan x="1012" dy="18">クローズ</tspan>
+            </text>
+          </g>
+        </g>
+
+        <g class="state-entry" aria-label="レビュー依頼受付">
+          <rect x="20" y="208" width="130" height="56" rx="28" class="state-terminal-edge"/>
+          <text x="85" y="230" text-anchor="middle" class="state-node-text">依頼登録</text>
+          <text x="85" y="250" text-anchor="middle" class="state-node-sub">SCR-02</text>
+        </g>
+
+        <g class="state-nodes" aria-label="レビュー状態">
+          <g class="state-node state-unimplemented" aria-label="未実施、解析未開始">
+            <rect x="190" y="200" width="150" height="72" rx="12" class="state-node-rect"/>
+            <text x="265" y="232" text-anchor="middle" class="state-node-text">未実施</text>
+            <text x="265" y="252" text-anchor="middle" class="state-node-sub">解析未開始</text>
+          </g>
+          <g class="state-node state-inreview" aria-label="レビュー中、解析処理中">
+            <rect x="390" y="200" width="150" height="72" rx="12" class="state-node-rect"/>
+            <text x="465" y="232" text-anchor="middle" class="state-node-text">レビュー中</text>
+            <text x="465" y="252" text-anchor="middle" class="state-node-sub">解析処理中</text>
+          </g>
+          <g class="state-node state-waiting" aria-label="対応待ち、未解決コメントあり">
+            <rect x="610" y="80" width="170" height="72" rx="12" class="state-node-rect"/>
+            <text x="695" y="112" text-anchor="middle" class="state-node-text">対応待ち</text>
+            <text x="695" y="132" text-anchor="middle" class="state-node-sub">未解決コメントあり</text>
+          </g>
+          <g class="state-node state-complete" aria-label="完了、未解決コメントなし">
+            <rect x="610" y="280" width="170" height="72" rx="12" class="state-node-rect"/>
+            <text x="695" y="312" text-anchor="middle" class="state-node-text">完了</text>
+            <text x="695" y="332" text-anchor="middle" class="state-node-sub">未解決コメントなし</text>
+          </g>
+          <g class="state-node state-error" aria-label="エラー、再試行可能">
+            <rect x="390" y="430" width="150" height="72" rx="12" class="state-node-rect"/>
+            <text x="465" y="462" text-anchor="middle" class="state-node-text">エラー</text>
+            <text x="465" y="482" text-anchor="middle" class="state-node-sub">再試行可</text>
+          </g>
+        </g>
+
+        <g class="state-condition" aria-label="PRステータスによるクローズ条件">
+          <rect x="670" y="472" width="220" height="80" rx="4" class="state-condition-rect"/>
+          <text x="780" y="498" text-anchor="middle" class="state-condition-title">PRステータス</text>
+          <text x="780" y="520" text-anchor="middle" class="state-node-text">Closed ／ Merged</text>
+          <text x="780" y="540" text-anchor="middle" class="state-node-sub">エラー以外のレビュー状態</text>
+        </g>
+
+        <g class="state-node state-closed" aria-label="クローズ済み、一覧から除外">
+          <rect x="930" y="200" width="150" height="72" rx="36" class="state-node-rect"/>
+          <text x="1005" y="232" text-anchor="middle" class="state-node-text">クローズ済み</text>
+          <text x="1005" y="252" text-anchor="middle" class="state-node-sub">一覧から除外</text>
+        </g>
+
+        <g class="state-legend" aria-label="凡例">
+          <line x1="190" y1="604" x2="242" y2="604" class="state-edge state-auto" marker-end="url(#arrow-auto)"/>
+          <text x="258" y="609" class="state-legend-text">エージェント処理（自動遷移）</text>
+          <line x1="480" y1="604" x2="532" y2="604" class="state-edge state-op" marker-end="url(#arrow-op)"/>
+          <text x="548" y="609" class="state-legend-text">利用者の操作</text>
+          <rect x="720" y="594" width="20" height="20" rx="4" class="state-leg-terminal"/>
+          <text x="752" y="609" class="state-legend-text">開始／終端</text>
+          <rect x="880" y="594" width="20" height="20" rx="2" class="state-leg-condition"/>
+          <text x="912" y="609" class="state-legend-text">独立した判定条件</text>
+        </g>
+      </svg>
+      <figcaption>※ クローズは利用者操作。レビュー状態が「完了」、またはPRステータスがClosed／Mergedのエラー以外の行で実行でき、クローズ済み行は一覧から除外する（LST-A08参照）。</figcaption>
+    </figure>
   </section>
 
   <section id="states">
