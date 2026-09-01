@@ -3,10 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { mockAgentCtor, mockInvoke, mockCreateModelProvider, mockCreateGithubMcpClient } =
   vi.hoisted(() => {
     const mockInvoke = vi.fn();
-    const mockAgentCtor = vi.fn().mockImplementation((config: unknown) => ({
-      __config: config,
-      invoke: mockInvoke,
-    }));
+    const mockAgentCtor = vi.fn(function (this: unknown, config: unknown) {
+      return {
+        __config: config,
+        invoke: mockInvoke,
+      };
+    });
     const mockCreateModelProvider = vi.fn().mockReturnValue({ __model: true });
     const mockCreateGithubMcpClient = vi.fn().mockImplementation(() => ({
       __ownedMcpClient: true,
@@ -43,9 +45,7 @@ vi.mock("../tools/github-mcp.js", async () => {
 });
 
 vi.mock("../tools/tool-result-sanitizer.js", () => ({
-  OllamaUnsupportedContentSanitizer: vi.fn().mockImplementation(() => ({
-    __plugin: "ollama-sanitizer",
-  })),
+  OllamaUnsupportedContentSanitizer: vi.fn(() => ({ __plugin: "ollama-sanitizer" })),
 }));
 
 vi.mock("../skills/agent-skills-factory.js", async () => {

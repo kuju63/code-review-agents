@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockAgentCtor, mockInvoke, mockCreateModelProvider } = vi.hoisted(() => {
   const mockInvoke = vi.fn();
-  const mockAgentCtor = vi.fn().mockImplementation((config: unknown) => ({
-    __config: config,
-    invoke: mockInvoke,
-  }));
+  const mockAgentCtor = vi.fn(function (this: unknown, config: unknown) {
+    return {
+      __config: config,
+      invoke: mockInvoke,
+    };
+  });
   const mockCreateModelProvider = vi.fn().mockReturnValue({ __model: true });
   return { mockAgentCtor, mockInvoke, mockCreateModelProvider };
 });
