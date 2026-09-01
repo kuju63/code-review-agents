@@ -5,7 +5,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSkillType, createAgentSkills, SKILLS_DIR } from "./agent-skills-factory.js";
 
 vi.mock("@strands-agents/sdk/vended-plugins/skills", () => ({
-  AgentSkills: vi.fn().mockImplementation((config: unknown) => ({ __config: config })),
+  AgentSkills: vi.fn(function (this: unknown, config: unknown) {
+    return { __config: config };
+  }),
 }));
 
 const mockedAgentSkills = vi.mocked(AgentSkills);

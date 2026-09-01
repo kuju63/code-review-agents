@@ -8,10 +8,12 @@ import type { PRInfoCollectorConfig } from "./pr-info-collector.js";
 const { mockAgentCtor, mockAgentInvoke, mockCreateGithubMcpClient, mockCreateModelProvider } =
   vi.hoisted(() => {
     const mockAgentInvoke = vi.fn();
-    const mockAgentCtor = vi.fn().mockImplementation((config: unknown) => ({
-      __config: config,
-      invoke: mockAgentInvoke,
-    }));
+    const mockAgentCtor = vi.fn(function (this: unknown, config: unknown) {
+      return {
+        __config: config,
+        invoke: mockAgentInvoke,
+      };
+    });
     const mockCreateGithubMcpClient = vi.fn();
     const mockCreateModelProvider = vi.fn().mockReturnValue({ __model: true });
     return { mockAgentCtor, mockAgentInvoke, mockCreateGithubMcpClient, mockCreateModelProvider };

@@ -5,10 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createModelProvider, ProviderType } from "./model-provider-factory.js";
 
 vi.mock("@strands-agents/sdk/models/openai", () => ({
-  OpenAIModel: vi.fn().mockImplementation(() => ({ kind: "openai" })),
+  OpenAIModel: vi.fn(function (this: unknown) {
+    return { kind: "openai" };
+  }),
 }));
 vi.mock("@strands-agents/sdk/models/vercel", () => ({
-  VercelModel: vi.fn().mockImplementation(() => ({ kind: "vercel" })),
+  VercelModel: vi.fn(function (this: unknown) {
+    return { kind: "vercel" };
+  }),
 }));
 vi.mock("ai-sdk-ollama", () => ({
   createOllama: vi.fn(),

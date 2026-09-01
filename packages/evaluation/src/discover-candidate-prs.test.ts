@@ -8,11 +8,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }));
 
 vi.mock("@strands-agents/sdk", () => ({
-  Agent: vi.fn().mockImplementation(() => ({ invoke: invokeMock })),
+  Agent: vi.fn(function (this: unknown) {
+    return { invoke: invokeMock };
+  }),
 }));
 
 vi.mock("@strands-agents/sdk/models/openai", () => ({
-  OpenAIModel: vi.fn().mockImplementation(() => ({ kind: "openai" })),
+  OpenAIModel: vi.fn(function (this: unknown) {
+    return { kind: "openai" };
+  }),
 }));
 
 import {
