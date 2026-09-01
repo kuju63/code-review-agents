@@ -12,9 +12,19 @@ export const A2ADataPartSchema = z.object({
 });
 export type A2ADataPart = z.infer<typeof A2ADataPartSchema>;
 
+const A2ATextPartDiscriminatedSchema = z.object({
+  kind: z.literal("text"),
+  text: z.string(),
+});
+
+const A2ADataPartDiscriminatedSchema = z.object({
+  kind: z.literal("data"),
+  data: z.record(z.string(), z.unknown()),
+});
+
 const A2APartDiscriminatedSchema = z.discriminatedUnion("kind", [
-  A2ATextPartSchema,
-  A2ADataPartSchema,
+  A2ATextPartDiscriminatedSchema,
+  A2ADataPartDiscriminatedSchema,
 ]);
 
 export const A2APartSchema = z.preprocess((value) => {
