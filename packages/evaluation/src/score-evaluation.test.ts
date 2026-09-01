@@ -3,10 +3,11 @@ import type { Finding, SemanticJudge } from "./score-evaluation.js";
 
 const { mockAgentCtor, mockCreateModelProvider, mockInvoke, mockReadJsonl } = vi.hoisted(() => {
   const mockInvoke = vi.fn();
+  const mockAgentCtor = vi.fn(function (this: unknown, config: unknown) {
+    return { config, invoke: mockInvoke };
+  });
   return {
-    mockAgentCtor: vi
-      .fn()
-      .mockImplementation((config: unknown) => ({ config, invoke: mockInvoke })),
+    mockAgentCtor,
     mockCreateModelProvider: vi.fn().mockReturnValue({ model: true }),
     mockInvoke,
     mockReadJsonl: vi.fn(),

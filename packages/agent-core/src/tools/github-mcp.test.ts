@@ -2,10 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockConnect, mockMcpClientCtor } = vi.hoisted(() => {
   const mockConnect = vi.fn();
-  const mockMcpClientCtor = vi.fn().mockImplementation((config: unknown) => ({
-    __config: config,
-    connect: mockConnect,
-  }));
+  const mockMcpClientCtor = vi.fn(function (this: unknown, config: unknown) {
+    return {
+      __config: config,
+      connect: mockConnect,
+    };
+  });
   return { mockConnect, mockMcpClientCtor };
 });
 
