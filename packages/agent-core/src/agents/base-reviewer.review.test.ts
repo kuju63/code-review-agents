@@ -45,7 +45,9 @@ vi.mock("../tools/github-mcp.js", async () => {
 });
 
 vi.mock("../tools/tool-result-sanitizer.js", () => ({
-  OllamaUnsupportedContentSanitizer: vi.fn(() => ({ __plugin: "ollama-sanitizer" })),
+  OllamaUnsupportedContentSanitizer: vi.fn(function (this: unknown) {
+    return { __plugin: "ollama-sanitizer" };
+  }),
 }));
 
 vi.mock("../skills/agent-skills-factory.js", async () => {
@@ -54,7 +56,9 @@ vi.mock("../skills/agent-skills-factory.js", async () => {
   );
   return {
     ...actual,
-    createAgentSkills: vi.fn().mockReturnValue({ __plugin: "agent-skills" }),
+    createAgentSkills: vi.fn(function (this: unknown) {
+      return { __plugin: "agent-skills" };
+    }),
   };
 });
 

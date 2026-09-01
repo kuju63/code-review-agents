@@ -141,9 +141,9 @@ describe("InMemoryTaskStore", () => {
 describe("PR Info service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    MockedPRInfoCollector.mockImplementation(
-      () => ({ collect: vi.fn(async () => prInfoResult) }) as unknown as PRInfoCollector,
-    );
+    MockedPRInfoCollector.mockImplementation(function (this: unknown) {
+      return { collect: vi.fn(async () => prInfoResult) } as unknown as PRInfoCollector;
+    });
   });
 
   it("returns an AgentCard using existing schemas", () => {
@@ -223,14 +223,13 @@ describe("PR Info service", () => {
     "removes %s from stored failures and logs",
     async (token) => {
       const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-      MockedPRInfoCollector.mockImplementation(
-        () =>
-          ({
-            collect: vi.fn(async () => {
-              throw new Error(`request failed: ${token}`);
-            }),
-          }) as unknown as PRInfoCollector,
-      );
+      MockedPRInfoCollector.mockImplementation(function (this: unknown) {
+        return {
+          collect: vi.fn(async () => {
+            throw new Error(`request failed: ${token}`);
+          }),
+        } as unknown as PRInfoCollector;
+      });
       const store = new InMemoryTaskStore();
       const service = createPrInfoService({ store });
 
