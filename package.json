@@ -10,7 +10,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format:check": "biome format .",
-    "typecheck": "pnpm -r --parallel exec tsc --noEmit",
+    "typecheck": "pnpm exec tsc --noEmit",
     "test": "vitest run --coverage"
   },
   "devDependencies": {
