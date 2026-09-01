@@ -10,16 +10,16 @@ importers:
     dependencies:
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.15.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.4.3))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.4.3))(zod@4.4.3)
+        version: 1.15.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(zod@4.5.4)
       ai-sdk-ollama:
         specifier: ^3.8.8
-        version: 3.8.8(ai@6.0.246(zod@4.4.3))(zod@4.4.3)
+        version: 3.8.8(ai@6.0.246(zod@4.5.4))(zod@4.5.4)
       openai:
         specifier: ^7.4.0
-        version: 7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.4.3)
+        version: 7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4)
       zod:
         specifier: ^4.1.12
-        version: 4.4.3
+        version: 4.5.4
     devDependencies:
       '@biomejs/biome':
         specifier: 2.5.11
@@ -50,7 +50,7 @@ importers:
         version: 2.1.1(hono@4.13.5)
       '@hono/zod-validator':
         specifier: ^0.9.0
-        version: 0.9.0(hono@4.13.5)(zod@4.4.3)
+        version: 0.9.0(hono@4.13.5)(zod@4.5.4)
       hono:
         specifier: ^4.13.1
         version: 4.13.5
@@ -66,10 +66,10 @@ importers:
     dependencies:
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.15.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.4.3))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.4.3))(zod@4.4.3)
+        version: 1.15.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(zod@4.5.4)
       ai-sdk-ollama:
         specifier: ^3.8.8
-        version: 3.8.8(ai@6.0.246(zod@4.4.3))(zod@4.4.3)
+        version: 3.8.8(ai@6.0.246(zod@4.5.4))(zod@4.5.4)
       yaml:
         specifier: ^2.9.0
         version: 2.9.0
@@ -81,13 +81,13 @@ importers:
         version: link:../agent-core
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.15.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.4.3))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.4.3))(zod@4.4.3)
+        version: 1.15.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(zod@4.5.4)
       commander:
         specifier: ^15.0.0
         version: 15.0.0
       zod:
         specifier: ^4.1.12
-        version: 4.4.3
+        version: 4.5.4
     devDependencies:
       '@types/node':
         specifier: ^26.2.0
@@ -1714,25 +1714,25 @@ packages:
     peerDependencies:
       zod: ^3.25.28 || ^4
 
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
+  zod@4.5.4:
+    resolution: {integrity: sha512-sC95tT5iHHH9gtpj6A81kh+NEaRAUFN+qlUPDUbRfOMvNf5QCBqsb3WgvnpVtK5Y+4UfA6KqufotuTvMGiTlsA==}
 
 snapshots:
 
-  '@ai-sdk/gateway@3.0.166(zod@4.4.3)':
+  '@ai-sdk/gateway@3.0.166(zod@4.5.4)':
     dependencies:
       '@ai-sdk/provider': 3.0.14
-      '@ai-sdk/provider-utils': 4.0.42(zod@4.4.3)
+      '@ai-sdk/provider-utils': 4.0.42(zod@4.5.4)
       '@vercel/oidc': 3.2.0
-      zod: 4.4.3
+      zod: 4.5.4
 
-  '@ai-sdk/provider-utils@4.0.42(zod@4.4.3)':
+  '@ai-sdk/provider-utils@4.0.42(zod@4.5.4)':
     dependencies:
       '@ai-sdk/provider': 3.0.14
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.0
       undici: 5.29.0
-      zod: 4.4.3
+      zod: 4.5.4
 
   '@ai-sdk/provider@3.0.14':
     dependencies:
@@ -2050,10 +2050,10 @@ snapshots:
     dependencies:
       hono: 4.13.5
 
-  '@hono/zod-validator@0.9.0(hono@4.13.5)(zod@4.4.3)':
+  '@hono/zod-validator@0.9.0(hono@4.13.5)(zod@4.5.4)':
     dependencies:
       hono: 4.13.5
-      zod: 4.4.3
+      zod: 4.5.4
 
   '@isaacs/cliui@8.0.2':
     dependencies:
@@ -2080,7 +2080,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.4.3)':
+  '@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4)':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.5)
       ajv: 8.20.0
@@ -2097,8 +2097,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.4.3
-      zod-to-json-schema: 3.25.2(zod@4.4.3)
+      zod: 4.5.4
+      zod-to-json-schema: 3.25.2(zod@4.5.4)
     transitivePeerDependencies:
       - supports-color
 
@@ -2220,21 +2220,21 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@strands-agents/sdk@1.15.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.4.3))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.4.3))(zod@4.4.3)':
+  '@strands-agents/sdk@1.15.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(zod@4.5.4)':
     dependencies:
       '@aws-sdk/client-bedrock-runtime': 3.1116.0
-      '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@4.4.3)
+      '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@4.5.4)
       '@opentelemetry/api': 1.9.1
       '@smithy/fetch-http-handler': 5.7.2
       '@types/json-schema': 7.0.15
       uuid: 14.0.2
       yaml: 2.9.0
-      zod: 4.4.3
+      zod: 4.5.4
     optionalDependencies:
       '@ai-sdk/provider': 3.0.14
       '@smithy/types': 4.17.2
       express: 5.2.1(supports-color@7.2.0)
-      openai: 7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.4.3)
+      openai: 7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4)
 
   '@types/chai@5.2.3':
     dependencies:
@@ -2379,23 +2379,23 @@ snapshots:
       mime-types: 3.0.2
       negotiator: 1.0.0
 
-  ai-sdk-ollama@3.8.8(ai@6.0.246(zod@4.4.3))(zod@4.4.3):
+  ai-sdk-ollama@3.8.8(ai@6.0.246(zod@4.5.4))(zod@4.5.4):
     dependencies:
       '@ai-sdk/provider': 3.0.14
-      '@ai-sdk/provider-utils': 4.0.42(zod@4.4.3)
-      ai: 6.0.246(zod@4.4.3)
+      '@ai-sdk/provider-utils': 4.0.42(zod@4.5.4)
+      ai: 6.0.246(zod@4.5.4)
       jsonrepair: 3.15.0
       ollama: 0.6.3
     transitivePeerDependencies:
       - zod
 
-  ai@6.0.246(zod@4.4.3):
+  ai@6.0.246(zod@4.5.4):
     dependencies:
-      '@ai-sdk/gateway': 3.0.166(zod@4.4.3)
+      '@ai-sdk/gateway': 3.0.166(zod@4.5.4)
       '@ai-sdk/provider': 3.0.14
-      '@ai-sdk/provider-utils': 4.0.42(zod@4.4.3)
+      '@ai-sdk/provider-utils': 4.0.42(zod@4.5.4)
       '@opentelemetry/api': 1.9.1
-      zod: 4.4.3
+      zod: 4.5.4
 
   ajv-formats@3.0.1(ajv@8.20.0):
     optionalDependencies:
@@ -2838,12 +2838,12 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.4.3):
+  openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.81
       '@smithy/signature-v4': 5.7.3
       undici: 5.29.0
-      zod: 4.4.3
+      zod: 4.5.4
 
   package-json-from-dist@1.0.1: {}
 
@@ -3223,8 +3223,8 @@ snapshots:
 
   yaml@2.9.0: {}
 
-  zod-to-json-schema@3.25.2(zod@4.4.3):
+  zod-to-json-schema@3.25.2(zod@4.5.4):
     dependencies:
-      zod: 4.4.3
+      zod: 4.5.4
 
-  zod@4.4.3: {}
+  zod@4.5.4: {}
