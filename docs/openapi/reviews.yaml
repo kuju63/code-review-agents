@@ -1,0 +1,1128 @@
+openapi: 3.1.0
+info:
+  title: Review Persistence API
+  version: "1.0.0"
+  summary: レビュー対象(PR)の登録・実行・結果保存・close管理を行う永続化REST API。
+  description: |
+    Issue #245 が扱うレビュー永続化層のREST契約。
+
+    ## 位置づけ
+    ADR-0012「呼び出しインターフェース抽象化（Web/CLI/A2A共有）」の決定に従う。
+    canonical契約は `packages/agent-core` の Zod schemas であり、本OpenAPI文書は
+    人間・レビュー向けの契約記述（documentation-first）である。Contract-First
+    codegenのcanonicalではない（ADR-0012 Decision 案3不採用）。
+
+    ## identity階層 (ADR-0012 §3)
+    - `Review`   : 永続・ユーザー管理対象。1つのPR登録単位 (id=reviewId)。0..N個の ReviewAttempt を持つ。
+    - `ReviewAttempt` : 1回の実行 (id=attemptId)。start/retry で毎回新規作成する。既存attemptの再実行はしない。
+    - `A2ATask`  : transport-level。`taskId := attemptId` とし新規識別子を導入しない。
+
+    ## レビュー状態のサーバ計算 (SCR-01 docs/display-spec/review-list.html §4)
+    一覧・詳細レスポンスの `reviewStatus` は、`Review.status`(ドメイン状態) と
+    最新 ReviewAttempt・未解決コメント数からサーバ側で導出した表示用の値である。
+    クライアントは導出ロジックを持たず、この値をそのまま表示する。
+
+    ## バージョニング (ADR-0012 §4)
+    全workspace packageが `private:true` のため npm semver は使わず、レスポンスの
+    `apiVersion` フィールドで契約バージョンを表現する。`/reviews` surface は当面
+    単一バージョンのみを公開し、破壊的変更時に `/v2/reviews` を検討する。
+  license:
+    name: UNLICENSED
+servers:
+  - url: http://localhost:3000
+    description: ローカル実行 (packages/a2a-server, 認証不要 — ADR-0012 §5 / #243)
+security: []
+
+tags:
+  - name: reviews-query
+    description: 参照系 (query)。GETのみ。副作用を持たない。
+  - name: reviews-command
+    description: 更新系 (command)。register/start/retry/close/disposition/cancel。
+
+paths:
+  /reviews:
+    get:
+      tags: [reviews-query]
+      operationId: listReviews
+      summary: レビュー対象一覧を取得する (SCR-01)
+      description: |
+        登録済みレビュー対象を絞り込み・検索・ページングして返す。
+        各要素の `reviewStatus` はサーバが表示用に計算した値。
+        既定では `closed` のReviewを除外する (LST-A08「クローズ済みは一覧から除外」)。
+      parameters:
+        - $ref: '#/components/parameters/OrgFilter'
+        - $ref: '#/components/parameters/RepoFilter'
+        - $ref: '#/components/parameters/ReviewStatusFilter'
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/IncludeClosed'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PerPage'
+      responses:
+        '200':
+          description: 一覧取得成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewListResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/ReviewListExample'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [reviews-command]
+      operationId: registerReview
+      summary: レビュー対象を登録する (register / SCR-02)
+      description: |
+        organization / repository / PR番号 (任意で commitSha) を登録し、
+        新しい `Review` を作成する。重複登録は許容し一意制約は設けない
+        (Issue #245 / ADR-0012 §3)。
+
+        登録直後は ReviewAttempt を持たないため `Review.status = draft`
+        (= `reviewStatus: not_started`)。この時点では `attemptId`/`taskId` は生成しない。
+
+        `Idempotency-Key` ヘッダを伴う再送 (同一payload) は新規Reviewを作成せず、
+        既存の reviewId と現在の status のみを返す (ADR-0012 §6)。
+        同一キーで異なるpayloadの場合は `409 conflict`。
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterReviewRequest'
+            examples:
+              default:
+                summary: acme-corp/web-frontend #482 を登録
+                value:
+                  organization: acme-corp
+                  repository: web-frontend
+                  pullRequest: 482
+      responses:
+        '201':
+          description: 登録成功 (新規Review作成)。`Location` に作成したReviewのURIを返す。
+          headers:
+            Location:
+              description: 作成したReviewを取得するためのURI (`/reviews/{reviewId}`)。
+              required: true
+              schema:
+                type: string
+                format: uri-reference
+              example: /reviews/pr-486
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+              examples:
+                default:
+                  $ref: '#/components/examples/ReviewDraftExample'
+        '200':
+          description: Idempotency-Key replay。既存Reviewを現在の状態で返す。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '502':
+          $ref: '#/components/responses/UpstreamGithubFailure'
+
+  /reviews/{reviewId}:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    get:
+      tags: [reviews-query]
+      operationId: getReview
+      summary: 単一レビュー対象を取得する (SCR-01 / SCR-03 見出し)
+      description: |
+        reviewIdに対応する永続Reviewと、サーバ計算済みの表示用 `reviewStatus`、
+        コメント件数、最新Attemptの識別子を返す。
+      responses:
+        '200':
+          description: 取得成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+              examples:
+                default:
+                  $ref: '#/components/examples/ReviewReviewedExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reviews/{reviewId}/report:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    get:
+      tags: [reviews-query]
+      operationId: getReviewReport
+      summary: レビュー結果 (差分×レビュー文言) を取得する (SCR-03)
+      description: |
+        PRの変更ファイル (`PRInfoResult.prInfo.fileChanges`) と
+        `LeadEngineerReport.decisions` をファイルパス・行番号でマッピングして返す
+        (Issue #245「結果取得エンドポイント」)。各コメントには対応状態
+        (`disposition`: open/resolved/false_positive) を含む。
+      responses:
+        '200':
+          description: 取得成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewReport'
+              examples:
+                default:
+                  $ref: '#/components/examples/ReviewReportExample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: |
+            レビュー結果が未確定 (最新Attemptが succeeded でない)。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reviews/{reviewId}/attempts:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    post:
+      tags: [reviews-command]
+      operationId: startReviewAttempt
+      summary: レビュー実行を開始/再試行する (start / retry / SCR-03 再試行)
+      description: |
+        対象Reviewに対し新しい `ReviewAttempt` を1件作成し、`/orchestrator` を
+        呼び出してレビューを実行する。最初のattempt作成が start、2回目以降が retry で
+        あり、いずれも既存attemptを対象に取らず新規作成する同一契約 (ADR-0012 §3)。
+        URLに attemptId は含めない。
+
+        sync受付 + async追跡 (ADR-0012 §6)。受付時に `202` と `attemptId(=taskId)` を返し、
+        進捗は `GET /reviews/{reviewId}/attempts/{attemptId}` でポーリングする。
+
+        `Idempotency-Key` 再送 (同一payload) は新規attemptを作成せず、直前の同一
+        attemptId を現在の状態とともに返す。`closed` 済みReviewへの新規開始は `409 conflict`
+        (ただし同一キー・同一payloadのreplayはconflictより優先し既存attemptを返す — ADR-0012 §6)。
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartAttemptRequest'
+      responses:
+        '202':
+          description: 受付成功 (attempt作成)。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewAttempt'
+              examples:
+                default:
+                  $ref: '#/components/examples/ReviewAttemptQueuedExample'
+        '200':
+          description: Idempotency-Key replay。既存attemptを現在の状態で返す。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewAttempt'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/QueueOverload'
+
+  /reviews/{reviewId}/attempts/{attemptId}:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+      - $ref: '#/components/parameters/AttemptId'
+    get:
+      tags: [reviews-query]
+      operationId: getReviewAttempt
+      summary: レビュー実行の状態を取得する (SCR-03 ポーリング)
+      description: |
+        受付後の失敗 (upstream_github_failure / upstream_model_failure / timeout) や
+        cancel は、HTTPは200のまま `status` の終端値 (failed/canceled) と
+        `errorCode`/`errorMessage` で表現する (ADR-0012 §6)。
+      responses:
+        '200':
+          description: 取得成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewAttempt'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reviews/{reviewId}/attempts/{attemptId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+      - $ref: '#/components/parameters/AttemptId'
+    post:
+      tags: [reviews-command]
+      operationId: cancelReviewAttempt
+      summary: 実行中のレビューをキャンセルする
+      description: |
+        cancelSignal を発火する (ADR-0010)。`canceled` はA2Aの4状態には存在しない
+        REST/CLI限定の終端状態で、エラー扱いしない (ADR-0012 §6, exit code 0相当)。
+      responses:
+        '200':
+          description: キャンセル受付。現在の attempt 状態を返す。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewAttempt'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 既に終端状態 (succeeded/failed/canceled) でキャンセル不可。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reviews/{reviewId}/attempts/{attemptId}/disposition:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+      - $ref: '#/components/parameters/AttemptId'
+    post:
+      tags: [reviews-command]
+      operationId: applyCommentDisposition
+      summary: レビューコメントの対応状態を変更する (SCR-03 RES-14/15/16)
+      description: |
+        finding(コメント)単位の対応状態を更新する。open→resolved / open→false_positive /
+        (resolved|false_positive)→open の遷移のみ許可する (SCR-03 RES-V05)。
+        disposition は status machine の一部ではなく別軸の属性 (ADR-0012 §3)。
+        この更新は一覧・詳細の `reviewStatus` (対応待ち/完了) の再計算に反映される。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispositionRequest'
+            examples:
+              resolve:
+                summary: コメントを対応済みにする
+                value:
+                  commentId: c2
+                  disposition: resolved
+      responses:
+        '200':
+          description: 更新成功。更新後のコメントを返す。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewComment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 不正な状態遷移 (RES-V05)。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /reviews/{reviewId}/close:
+    parameters:
+      - $ref: '#/components/parameters/ReviewId'
+    post:
+      tags: [reviews-command]
+      operationId: closeReview
+      summary: レビュー対象をクローズする (SCR-01 LST-A08)
+      description: |
+        対応完了済みレビューを管理対象から終了し `Review.status = closed` にする。
+        GitHub上のPRをクローズする操作ではない。既定の一覧からは除外される。
+        `closed` は `canceled` (Attempt側の実行結果) とは独立した軸であり、
+        同一Reviewが closed かつ 最新Attempt canceled の組合せも許容する (ADR-0012 §3)。
+      responses:
+        '200':
+          description: クローズ成功。更新後のReviewを返す。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: クローズ不可 (対応未完了 — LST-A08 表示条件を満たさない)。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    ReviewId:
+      name: reviewId
+      in: path
+      required: true
+      description: Review の永続識別子。
+      schema:
+        type: string
+        examples: ['pr-482']
+    AttemptId:
+      name: attemptId
+      in: path
+      required: true
+      description: ReviewAttempt の識別子 (transport-level taskId と同値)。
+      schema:
+        type: string
+        examples: ['att-9f2c']
+    OrgFilter:
+      name: org
+      in: query
+      required: false
+      description: organization/user 完全一致で絞り込む (LST-A02)。
+      schema:
+        type: string
+        examples: ['acme-corp']
+    RepoFilter:
+      name: repo
+      in: query
+      required: false
+      description: repository 名で絞り込む。`org` と組み合わせて `org/repo` 完全一致。
+      schema:
+        type: string
+        examples: ['web-frontend']
+    ReviewStatusFilter:
+      name: reviewStatus
+      in: query
+      required: false
+      description: 表示用レビュー状態で絞り込む (LST-08)。
+      schema:
+        $ref: '#/components/schemas/ReviewStatus'
+    SearchQuery:
+      name: q
+      in: query
+      required: false
+      description: |
+        PR番号・タイトル・ブランチ名を対象に部分一致検索する (LST-09)。
+        前後空白除去・大文字小文字非区別で照合する (LST-V04)。
+      schema:
+        type: string
+        examples: ['auth']
+    IncludeClosed:
+      name: includeClosed
+      in: query
+      required: false
+      description: true の場合 closed 済みReviewも含める。既定 false (LST-A08)。
+        closed のReviewでも `reviewStatus` は別軸として直前の表示状態を計算して返す。
+      schema:
+        type: boolean
+        default: false
+    Page:
+      name: page
+      in: query
+      required: false
+      description: ページ番号 (1始まり)。GitHub MCP のページング規約に合わせる。
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPage:
+      name: perPage
+      in: query
+      required: false
+      description: 1ページあたり件数。
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 30
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: |
+        同一論理リクエストの再送を識別するキー (ADR-0012 §6)。同一キー・同一payloadの
+        再送は同一リソースを現在の状態で返す。同一キー・異なるpayloadは 409 conflict。
+      schema:
+        type: string
+        examples: ['3f8c1e2a-...']
+
+  schemas:
+    ApiVersion:
+      type: string
+      description: 契約バージョン (ADR-0012 §4, npm semver不使用)。
+      examples: ['1.0.0']
+
+    PrState:
+      type: string
+      description: GitHub上のPR状態 (LST-15)。
+      enum: [open, closed, merged]
+
+    ReviewStatus:
+      type: string
+      description: |
+        サーバが計算した表示用レビュー状態 (SCR-01 §4)。
+        - not_started: 解析未開始 (draft / 最新attempt=queued)
+        - analyzing  : 解析処理中 (最新attempt=running)
+        - waiting    : レビュー済みで未解決コメントが1件以上
+        - completed  : レビュー済みで未解決コメントなし
+        - error      : レビュー処理でエラー (最新attempt=failed)
+      enum: [not_started, analyzing, waiting, completed, error]
+
+    ReviewDomainStatus:
+      type: string
+      description: |
+        Review の永続ドメイン状態 (ADR-0012 §3)。`reviewStatus` の計算元。
+        closed は管理操作、canceled は最新Attemptからの投影。
+      enum: [draft, reviewing, reviewed, failed, closed, canceled]
+
+    AttemptStatus:
+      type: string
+      description: ReviewAttempt の実行状態 (ADR-0012 §3 status mapping)。
+      enum: [queued, running, succeeded, failed, canceled]
+
+    ErrorCode:
+      type: string
+      description: 共通 error taxonomy (ADR-0012 §6)。
+      enum:
+        - validation_error
+        - not_found
+        - conflict
+        - queue_overload
+        - upstream_github_failure
+        - upstream_model_failure
+        - timeout
+        - canceled
+
+    CommentDisposition:
+      type: string
+      description: |
+        コメント(finding)の対応状態 (SCR-03 / mock COMMENT_STATE_TAG)。
+        status machine の一部ではない別軸属性 (ADR-0012 §3)。
+      enum: [open, resolved, false_positive]
+
+    FindingCategory:
+      type: string
+      description: レビューコメントのカテゴリ (SCR-03 RES-13)。
+      enum: [Security, Performance, Best Practice, Style]
+
+    FindingSeverity:
+      type: string
+      description: FindingDecision.severity (agent-core lead-engineer.ts)。
+      enum: [critical, high, medium, low]
+
+    FindingImpact:
+      type: string
+      description: FindingDecision.impactCategory (agent-core lead-engineer.ts)。
+      enum: [security, correctness, performance, maintainability]
+
+    FileChangeStatus:
+      type: string
+      description: 変更種別 (SCR-03 RES-08 / mock FILE_BADGE)。M=変更, A=追加, D=削除。
+      enum: [M, A, D]
+
+    CommentCounts:
+      type: object
+      description: |
+        コメント件数の内訳 (SCR-01 LST-16 / mock countComments)。
+        `open` が未解決件数で reviewStatus(waiting/completed) の判定に使う。
+      required: [total, open, resolved, falsePositive]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+        open:
+          type: integer
+          minimum: 0
+        resolved:
+          type: integer
+          minimum: 0
+        falsePositive:
+          type: integer
+          minimum: 0
+      examples:
+        - total: 4
+          open: 2
+          resolved: 1
+          falsePositive: 1
+
+    Review:
+      type: object
+      description: |
+        レビュー対象の登録単位 (ADR-0012 §3)。`status` は永続ドメイン状態、
+        `reviewStatus` はサーバ計算の表示値。一覧・詳細の主エンティティ。
+      required:
+        - apiVersion
+        - reviewId
+        - organization
+        - repository
+        - pullRequest
+        - prState
+        - status
+        - reviewStatus
+        - commentCounts
+        - createdAt
+        - updatedAt
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        reviewId:
+          type: string
+          examples: ['pr-482']
+        organization:
+          type: string
+          examples: ['acme-corp']
+        repository:
+          type: string
+          examples: ['web-frontend']
+        pullRequest:
+          type: integer
+          minimum: 1
+          description: PR番号。
+          examples: [482]
+        title:
+          type: [string, 'null']
+          default: null
+          description: PRタイトル (LST-12)。
+        branch:
+          type: [string, 'null']
+          default: null
+          description: 対象ブランチ (LST-13)。
+        baseBranch:
+          type: [string, 'null']
+          default: null
+        author:
+          type: [string, 'null']
+          default: null
+        commitSha:
+          type: [string, 'null']
+          default: null
+          description: 対象コミットSHA (40桁16進, 任意)。
+          examples: ['a3f9c2e8d4b1f67a2c9e5d0b8f3a71c6e9d4b2a1']
+        prState:
+          $ref: '#/components/schemas/PrState'
+        status:
+          $ref: '#/components/schemas/ReviewDomainStatus'
+        reviewStatus:
+          $ref: '#/components/schemas/ReviewStatus'
+        latestAttemptId:
+          type: [string, 'null']
+          default: null
+          description: 最新 ReviewAttempt の識別子。draft では null。
+        commentCounts:
+          $ref: '#/components/schemas/CommentCounts'
+        errorMessage:
+          type: [string, 'null']
+          default: null
+          description: reviewStatus=error のときのエラー理由 (SCR-01 エラー行)。
+        createdAt:
+          type: string
+          format: date-time
+          description: 登録日時 (RFC 3339)。
+        updatedAt:
+          type: string
+          format: date-time
+          description: レビュー状態が最後に更新された日時 (LST-17, RFC 3339)。
+
+    ReviewAttempt:
+      type: object
+      description: 1回のレビュー実行 (ADR-0012 §3)。attemptId は transport taskId と同値。
+      required: [apiVersion, attemptId, reviewId, status, createdAt]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        attemptId:
+          type: string
+          examples: ['att-9f2c']
+        reviewId:
+          type: string
+          examples: ['pr-482']
+        status:
+          $ref: '#/components/schemas/AttemptStatus'
+        errorCode:
+          oneOf:
+            - $ref: '#/components/schemas/ErrorCode'
+            - type: 'null'
+          default: null
+          description: status=failed/canceled のときの taxonomy code。
+        errorMessage:
+          type: [string, 'null']
+          default: null
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: [string, 'null']
+          format: date-time
+          default: null
+        finishedAt:
+          type: [string, 'null']
+          format: date-time
+          default: null
+
+    RegisterReviewRequest:
+      type: object
+      description: レビュー対象登録 (SCR-02 送信データ)。
+      required: [organization, repository, pullRequest]
+      properties:
+        organization:
+          type: string
+          description: organization または user の GitHub ログイン名。
+          minLength: 1
+          examples: ['acme-corp']
+        repository:
+          type: string
+          description: リポジトリ名 (所有者名を含めない)。
+          minLength: 1
+          examples: ['web-frontend']
+        pullRequest:
+          type: integer
+          minimum: 1
+          description: 対象リポジトリ内のPR番号 (正の整数)。
+          examples: [482]
+        commitSha:
+          type: string
+          description: 対象コミットSHA (40桁16進, 任意)。
+          pattern: '^[0-9a-f]{40}$'
+          examples: ['a3f9c2e8d4b1f67a2c9e5d0b8f3a71c6e9d4b2a1']
+
+    StartAttemptRequest:
+      type: object
+      description: |
+        レビュー実行開始の任意パラメータ。modelId のみクライアント指定可能で
+        サーバ側 allowlist で検証する。providerType/llmBaseUrl は指定不可 (ADR-0012 §5)。
+      properties:
+        modelId:
+          type: string
+          description: 使用モデルID (サーバ allowlist 内)。
+          examples: ['ornith:latest']
+
+    DispositionRequest:
+      type: object
+      required: [commentId, disposition]
+      properties:
+        commentId:
+          type: string
+          examples: ['c2']
+        disposition:
+          $ref: '#/components/schemas/CommentDisposition'
+
+    ReviewComment:
+      type: object
+      description: |
+        差分の対象行に紐づくレビューコメント。`LeadEngineerReport.decisions` の
+        1件に対応し、対応状態 (disposition) を付与したもの (SCR-03 RES-13)。
+      required: [commentId, category, severity, body, disposition]
+      properties:
+        commentId:
+          type: string
+          examples: ['c2']
+        filePath:
+          type: [string, 'null']
+          default: null
+          description: 対象ファイルパス (FindingDecision.finding.filePath)。
+        line:
+          type: [integer, 'null']
+          default: null
+          description: 対象行番号 (FindingDecision.finding.line)。
+        category:
+          $ref: '#/components/schemas/FindingCategory'
+        severity:
+          $ref: '#/components/schemas/FindingSeverity'
+        impactCategory:
+          $ref: '#/components/schemas/FindingImpact'
+        body:
+          type: string
+          description: レビュー文言 (FindingDecision.finding.comment)。
+        disposition:
+          $ref: '#/components/schemas/CommentDisposition'
+
+    DiffLine:
+      type: object
+      description: |
+        差分1行 (SCR-03 RES-12 / mock file.lines)。
+        type=ctx(文脈)/add(追加)/del(削除)。追加行は oldLine=null、削除行は newLine=null。
+      required: [type, text]
+      properties:
+        type:
+          type: string
+          enum: [ctx, add, del]
+        oldLine:
+          type: [integer, 'null']
+          default: null
+        newLine:
+          type: [integer, 'null']
+          default: null
+        text:
+          type: string
+
+    ReviewFileChange:
+      type: object
+      description: |
+        変更ファイル1件と、その行にマッピングされたレビューコメント (SCR-03)。
+        agent-core の FileChange を UI表示用に拡張したもの。
+      required: [filePath, status, additions, deletions]
+      properties:
+        filePath:
+          type: string
+          examples: ['src/components/Button.tsx']
+        status:
+          $ref: '#/components/schemas/FileChangeStatus'
+        additions:
+          type: integer
+          minimum: 0
+        deletions:
+          type: integer
+          minimum: 0
+        lines:
+          type: array
+          description: 差分行 (RES-12)。バイナリ等で差分なしの場合は空配列。
+          items:
+            $ref: '#/components/schemas/DiffLine'
+        comments:
+          type: array
+          description: 当該ファイルに紐づくレビューコメント (RES-13)。
+          items:
+            $ref: '#/components/schemas/ReviewComment'
+
+    ReviewReport:
+      type: object
+      description: |
+        レビュー結果 (SCR-03)。変更ファイル×レビューコメントのマッピング済み表現。
+        Issue #245「結果取得エンドポイント」の応答。
+      required:
+        - apiVersion
+        - reviewId
+        - overallSummary
+        - files
+        - commentCounts
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        reviewId:
+          type: string
+          examples: ['pr-482']
+        attemptId:
+          type: string
+          description: 結果の元になった ReviewAttempt。
+          examples: ['att-9f2c']
+        overallSummary:
+          type: string
+          description: LeadEngineerReport.overallSummary。
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewFileChange'
+        commentCounts:
+          $ref: '#/components/schemas/CommentCounts'
+
+    PageInfo:
+      type: object
+      required: [page, perPage, totalItems, totalPages]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        perPage:
+          type: integer
+          minimum: 1
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+
+    ReviewListResponse:
+      type: object
+      required: [apiVersion, items, pageInfo]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Review'
+        pageInfo:
+          $ref: '#/components/schemas/PageInfo'
+
+    ErrorResponse:
+      type: object
+      description: 共通エラー応答 (ADR-0012 §6 error taxonomy)。
+      required: [apiVersion, code, message]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        code:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          type: string
+          description: 利用者向けの安全なメッセージ (機密情報・PATを含めない)。
+        detail:
+          type: [string, 'null']
+          default: null
+
+  responses:
+    ValidationError:
+      description: 入力検証失敗 (validation_error)。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                apiVersion: '1.0.0'
+                code: validation_error
+                message: 'pullRequest は正の整数である必要があります。'
+                detail: null
+    NotFound:
+      description: 対象が存在しないか参照できない (not_found)。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                apiVersion: '1.0.0'
+                code: not_found
+                message: '指定されたレビューは存在しないか、参照できません。'
+                detail: null
+    Conflict:
+      description: |
+        状態競合 (conflict)。同一Idempotency-Keyで異なるpayload、close済みへのstart等。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                apiVersion: '1.0.0'
+                code: conflict
+                message: 'クローズ済みのレビューは再実行できません。'
+                detail: null
+    QueueOverload:
+      description: Gateway受付超過 (queue_overload)。Retry-After を伴う (ADR-0009)。
+      headers:
+        Retry-After:
+          description: 再試行までの秒数。
+          schema:
+            type: integer
+            examples: [1]
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                apiVersion: '1.0.0'
+                code: queue_overload
+                message: '現在混雑しています。しばらく待って再試行してください。'
+                detail: null
+    UpstreamGithubFailure:
+      description: |
+        受付前の同期検証でGitHub呼び出しに失敗 (upstream_github_failure)。
+        受付後(202)の失敗はポーリングの終端 failed 状態で表現する (ADR-0012 §6)。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                apiVersion: '1.0.0'
+                code: upstream_github_failure
+                message: 'GitHubへの接続に失敗しました。設定を確認してください。'
+                detail: null
+
+  examples:
+    ReviewListExample:
+      summary: 一覧 (mock REVIEWS 由来)
+      value:
+        apiVersion: '1.0.0'
+        items:
+          - apiVersion: '1.0.0'
+            reviewId: pr-482
+            organization: acme-corp
+            repository: web-frontend
+            pullRequest: 482
+            title: ユーザー認証フローの改善
+            branch: feature/auth-flow
+            baseBranch: main
+            author: sato.k
+            commitSha: a3f9c2e8d4b1f67a2c9e5d0b8f3a71c6e9d4b2a1
+            prState: open
+            status: reviewed
+            reviewStatus: waiting
+            latestAttemptId: att-9f2c
+            commentCounts:
+              total: 4
+              open: 2
+              resolved: 1
+              falsePositive: 1
+            errorMessage: null
+            createdAt: '2026-08-09T10:00:00Z'
+            updatedAt: '2026-08-09T10:24:00Z'
+          - apiVersion: '1.0.0'
+            reviewId: pr-490
+            organization: acme-corp
+            repository: web-frontend
+            pullRequest: 490
+            title: 国際化対応の追加
+            branch: feature/i18n
+            baseBranch: main
+            author: suzuki.t
+            commitSha: 5c1e8a9f2b6d4c7e0a3f9b5d1c8e6a2f4b7d9c0e
+            prState: open
+            status: reviewing
+            reviewStatus: analyzing
+            latestAttemptId: att-1b3d
+            commentCounts:
+              total: 0
+              open: 0
+              resolved: 0
+              falsePositive: 0
+            errorMessage: null
+            createdAt: '2026-08-09T12:00:00Z'
+            updatedAt: '2026-08-09T13:05:00Z'
+          - apiVersion: '1.0.0'
+            reviewId: pr-210
+            organization: acme-corp
+            repository: payments-api
+            pullRequest: 210
+            title: Webhookリトライ処理の実装
+            branch: feature/webhook-retry
+            baseBranch: main
+            author: suzuki.t
+            commitSha: f1e4d7c0b3a6f9e2d5c8b1a4f7e0d3c6b9a2f5e8
+            prState: open
+            status: failed
+            reviewStatus: error
+            latestAttemptId: att-7e0d
+            commentCounts:
+              total: 0
+              open: 0
+              resolved: 0
+              falsePositive: 0
+            errorMessage: 解析中にタイムアウトが発生し、レビューを完了できませんでした。
+            createdAt: '2026-08-09T11:00:00Z'
+            updatedAt: '2026-08-09T11:50:00Z'
+        pageInfo:
+          page: 1
+          perPage: 30
+          totalItems: 3
+          totalPages: 1
+
+    ReviewDraftExample:
+      summary: 登録直後 (draft / not_started)
+      value:
+        apiVersion: '1.0.0'
+        reviewId: pr-486
+        organization: acme-corp
+        repository: web-frontend
+        pullRequest: 486
+        title: null
+        branch: null
+        baseBranch: null
+        author: null
+        commitSha: null
+        prState: open
+        status: draft
+        reviewStatus: not_started
+        latestAttemptId: null
+        commentCounts:
+          total: 0
+          open: 0
+          resolved: 0
+          falsePositive: 0
+        errorMessage: null
+        createdAt: '2026-08-10T09:00:00Z'
+        updatedAt: '2026-08-10T09:00:00Z'
+
+    ReviewReviewedExample:
+      summary: レビュー済み (waiting)
+      value:
+        apiVersion: '1.0.0'
+        reviewId: pr-482
+        organization: acme-corp
+        repository: web-frontend
+        pullRequest: 482
+        title: ユーザー認証フローの改善
+        branch: feature/auth-flow
+        baseBranch: main
+        author: sato.k
+        commitSha: a3f9c2e8d4b1f67a2c9e5d0b8f3a71c6e9d4b2a1
+        prState: open
+        status: reviewed
+        reviewStatus: waiting
+        latestAttemptId: att-9f2c
+        commentCounts:
+          total: 4
+          open: 2
+          resolved: 1
+          falsePositive: 1
+        errorMessage: null
+        createdAt: '2026-08-09T10:00:00Z'
+        updatedAt: '2026-08-09T10:24:00Z'
+
+    ReviewAttemptQueuedExample:
+      summary: 受付直後 (queued)
+      value:
+        apiVersion: '1.0.0'
+        attemptId: att-9f2c
+        reviewId: pr-482
+        status: queued
+        errorCode: null
+        errorMessage: null
+        createdAt: '2026-08-09T10:20:00Z'
+        startedAt: null
+        finishedAt: null
+
+    ReviewReportExample:
+      summary: 結果 (mock pr-482 の Button.tsx 由来)
+      value:
+        apiVersion: '1.0.0'
+        reviewId: pr-482
+        attemptId: att-9f2c
+        overallSummary: 認証フローの改善。セキュリティ観点で2件の対応推奨。
+        commentCounts:
+          total: 2
+          open: 1
+          resolved: 1
+          falsePositive: 0
+        files:
+          - filePath: src/components/Button.tsx
+            status: M
+            additions: 3
+            deletions: 2
+            lines:
+              - type: ctx
+                oldLine: 12
+                newLine: 12
+                text: "  return ("
+              - type: del
+                oldLine: 14
+                newLine: null
+                text: "    <button onClick={onClick} disabled={disabled} className=\"btn\">"
+              - type: add
+                oldLine: null
+                newLine: 14
+                text: "    <button onClick={onClick} disabled={disabled || loading} className=\"btn\">"
+            comments:
+              - commentId: c1
+                filePath: src/components/Button.tsx
+                line: 12
+                category: Style
+                severity: low
+                impactCategory: maintainability
+                body: 'loading のような boolean フラグは isLoading のように is / has 接頭辞を付けると統一感が出ます。'
+                disposition: resolved
+              - commentId: c2
+                filePath: src/components/Button.tsx
+                line: 14
+                category: Best Practice
+                severity: medium
+                impactCategory: maintainability
+                body: '外部からも状態が伝わるよう aria-busy 属性の付与を推奨します。'
+                disposition: open
