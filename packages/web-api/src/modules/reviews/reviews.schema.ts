@@ -1,5 +1,12 @@
 import { z } from "@hono/zod-openapi";
-import { ErrorCodeSchema } from "./reviews.enums.js";
+import {
+  CommentDispositionSchema,
+  ErrorCodeSchema,
+  FileChangeStatusSchema,
+  FindingCategorySchema,
+  FindingImpactSchema,
+  FindingSeveritySchema,
+} from "./reviews.enums.js";
 
 /** 契約バージョン (ADR-0012 §4, npm semver不使用)。 */
 export const ApiVersionSchema = z.string().openapi("ApiVersion");
@@ -26,3 +33,50 @@ export const ErrorResponseSchema = z
     detail: z.string().nullable().default(null),
   })
   .openapi("ErrorResponse");
+
+/**
+ * 差分1行 (SCR-03 RES-12 / mock file.lines)。
+ * type=ctx(文脈)/add(追加)/del(削除)。追加行は oldLine=null、削除行は newLine=null。
+ */
+export const DiffLineSchema = z
+  .object({
+    type: z.enum(["ctx", "add", "del"]),
+    oldLine: z.number().int().nullable().default(null),
+    newLine: z.number().int().nullable().default(null),
+    text: z.string(),
+  })
+  .openapi("DiffLine");
+
+/**
+ * 差分の対象行に紐づくレビューコメント。`LeadEngineerReport.decisions` の
+ * 1件に対応し、対応状態 (disposition) を付与したもの (SCR-03 RES-13)。
+ * 他の2xxエンベロープと異なり apiVersion フィールドを持たない
+ * (`POST .../disposition` の200レスポンスがこのスキーマをそのまま返すため)。
+ */
+export const ReviewCommentSchema = z
+  .object({
+    commentId: z.string(),
+    filePath: z.string().nullable().default(null),
+    line: z.number().int().nullable().default(null),
+    category: FindingCategorySchema,
+    severity: FindingSeveritySchema,
+    impactCategory: FindingImpactSchema.optional(),
+    body: z.string(),
+    disposition: CommentDispositionSchema,
+  })
+  .openapi("ReviewComment");
+
+/**
+ * 変更ファイル1件と、その行にマッピングされたレビューコメント (SCR-03)。
+ * agent-core の FileChange を UI表示用に拡張したもの。
+ */
+export const ReviewFileChangeSchema = z
+  .object({
+    filePath: z.string(),
+    status: FileChangeStatusSchema,
+    additions: z.number().int().min(0),
+    deletions: z.number().int().min(0),
+    lines: z.array(DiffLineSchema).optional(),
+    comments: z.array(ReviewCommentSchema).optional(),
+  })
+  .openapi("ReviewFileChange");
