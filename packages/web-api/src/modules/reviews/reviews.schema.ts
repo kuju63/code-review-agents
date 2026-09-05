@@ -127,3 +127,33 @@ export const ReviewAttemptSchema = z
     finishedAt: z.string().datetime({ offset: true }).nullable().default(null),
   })
   .openapi("ReviewAttempt");
+
+/** レビュー対象登録 (SCR-02 送信データ)。 */
+export const RegisterReviewRequestSchema = z
+  .object({
+    organization: z.string().min(1),
+    repository: z.string().min(1),
+    pullRequest: z.number().int().min(1),
+    commitSha: z
+      .string()
+      .regex(/^[0-9a-f]{40}$/)
+      .optional(),
+  })
+  .openapi("RegisterReviewRequest");
+
+/**
+ * レビュー実行開始の任意パラメータ。modelId のみクライアント指定可能で
+ * サーバ側 allowlist で検証する。providerType/llmBaseUrl は指定不可 (ADR-0012 §5)。
+ */
+export const StartAttemptRequestSchema = z
+  .object({
+    modelId: z.string().optional(),
+  })
+  .openapi("StartAttemptRequest");
+
+export const DispositionRequestSchema = z
+  .object({
+    commentId: z.string(),
+    disposition: CommentDispositionSchema,
+  })
+  .openapi("DispositionRequest");

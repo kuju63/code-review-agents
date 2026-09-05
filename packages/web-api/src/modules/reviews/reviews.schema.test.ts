@@ -3,11 +3,14 @@ import {
   ApiVersionSchema,
   CommentCountsSchema,
   DiffLineSchema,
+  DispositionRequestSchema,
   ErrorResponseSchema,
+  RegisterReviewRequestSchema,
   ReviewAttemptSchema,
   ReviewCommentSchema,
   ReviewFileChangeSchema,
   ReviewSchema,
+  StartAttemptRequestSchema,
 } from "./reviews.schema.js";
 
 describe("ApiVersionSchema", () => {
@@ -228,5 +231,86 @@ describe("ReviewAttemptSchema", () => {
         false,
       );
     }
+  });
+});
+
+describe("RegisterReviewRequestSchema", () => {
+  it("requires organization, repository, and pullRequest", () => {
+    expect(
+      RegisterReviewRequestSchema.safeParse({ repository: "web-frontend", pullRequest: 482 })
+        .success,
+    ).toBe(false);
+    expect(
+      RegisterReviewRequestSchema.safeParse({ organization: "acme-corp", pullRequest: 482 })
+        .success,
+    ).toBe(false);
+    expect(
+      RegisterReviewRequestSchema.safeParse({
+        organization: "acme-corp",
+        repository: "web-frontend",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("accepts a valid 40-hex-digit commitSha", () => {
+    expect(
+      RegisterReviewRequestSchema.safeParse({
+        organization: "acme-corp",
+        repository: "web-frontend",
+        pullRequest: 482,
+        commitSha: "a3f9c2e8d4b1f67a2c9e5d0b8f3a71c6e9d4b2a1",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects a commitSha that is not exactly 40 hex digits", () => {
+    expect(
+      RegisterReviewRequestSchema.safeParse({
+        organization: "acme-corp",
+        repository: "web-frontend",
+        pullRequest: 482,
+        commitSha: "not-a-sha",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a non-positive pullRequest", () => {
+    expect(
+      RegisterReviewRequestSchema.safeParse({
+        organization: "acme-corp",
+        repository: "web-frontend",
+        pullRequest: 0,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("StartAttemptRequestSchema", () => {
+  it("accepts an empty body since all fields are optional", () => {
+    expect(StartAttemptRequestSchema.safeParse({}).success).toBe(true);
+  });
+
+  it("accepts an explicit modelId", () => {
+    expect(StartAttemptRequestSchema.parse({ modelId: "ornith:latest" }).modelId).toBe(
+      "ornith:latest",
+    );
+  });
+});
+
+describe("DispositionRequestSchema", () => {
+  it("requires commentId and disposition", () => {
+    expect(DispositionRequestSchema.safeParse({ commentId: "c2" }).success).toBe(false);
+    expect(DispositionRequestSchema.safeParse({ disposition: "resolved" }).success).toBe(false);
+  });
+
+  it("accepts a valid disposition value", () => {
+    const parsed = DispositionRequestSchema.parse({ commentId: "c2", disposition: "resolved" });
+    expect(parsed.disposition).toBe("resolved");
+  });
+
+  it("rejects a disposition outside the CommentDisposition enum", () => {
+    expect(
+      DispositionRequestSchema.safeParse({ commentId: "c2", disposition: "archived" }).success,
+    ).toBe(false);
   });
 });
