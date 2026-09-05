@@ -20,12 +20,12 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/agent-core/package.json packages/agent-core/
 COPY packages/a2a-server/package.json packages/a2a-server/
-COPY packages/evaluation/package.json packages/evaluation/
 
 RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.base.json tsconfig.json biome.json vitest.config.ts ./
-COPY packages/ packages/
+COPY packages/agent-core/ packages/agent-core/
+COPY packages/a2a-server/ packages/a2a-server/
 
 # ビルド検証: lint + 型チェックが通ることをコンテナビルド時にも保証する
 # (フルテストスイートは CI 側の別ジョブで実行し、ビルドを遅くしない)
@@ -34,9 +34,6 @@ RUN pnpm run lint && pnpm run typecheck
 ###############################################################################
 # Stage 2: node-runtime (Issue #250)
 # Red Hat Hardened Image — nonroot UID 65532 がビルトイン。
-# 本Sub-Issue時点ではプロダクションのエントリポイントはまだ存在しない
-# (agents/api/a2aの移行は #252/#253)。このステージは pnpm install や
-# 依存物のコピーが最終形で成立することを確認する「ビルド検証専用」ステージである。
 # デフォルトターゲット（ファイル末尾のステージ）: `docker build .` /
 # `podman build .` は --target 未指定時にこのステージを使う。Issue #255 で
 # Python版 (`runtime`) ステージを撤去したため、レジストリへのpush対象も
