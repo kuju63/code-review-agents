@@ -1,15 +1,6 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { createRoute, z } from "@hono/zod-openapi";
-import {
-  REVIEW_ATTEMPT_CANCELED_EXAMPLE,
-  REVIEW_ATTEMPT_QUEUED_EXAMPLE,
-  REVIEW_CLOSED_EXAMPLE,
-  REVIEW_COMMENT_EXAMPLE,
-  REVIEW_DRAFT_EXAMPLE,
-  REVIEW_LIST_EXAMPLE,
-  REVIEW_REPORT_EXAMPLE,
-  REVIEW_REVIEWED_EXAMPLE,
-} from "./reviews.fixtures.js";
+import { API_VERSION } from "../../app.js";
 import {
   AttemptIdParamSchema,
   IdempotencyKeyHeaderSchema,
@@ -27,6 +18,7 @@ import {
   ReviewSchema,
   StartAttemptRequestSchema,
 } from "./reviews.schema.js";
+import { createReviewsStore, type ReviewsStore } from "./reviews.store.js";
 
 const validationErrorResponse = {
   description: "入力検証失敗 (validation_error)。",
@@ -48,6 +40,12 @@ const reviewAndAttemptIdParams = z.object({
   reviewId: ReviewIdParamSchema,
   attemptId: AttemptIdParamSchema,
 });
+
+function errorResponse(code: "not_found" | "conflict", message: string) {
+  return ErrorResponseSchema.parse({ apiVersion: API_VERSION, code, message, detail: null });
+}
+
+const NOT_FOUND_MESSAGE = "指定されたレビューは存在しないか、参照できません。";
 
 const listReviewsRoute = createRoute({
   method: "get",
@@ -253,32 +251,118 @@ const closeReviewRoute = createRoute({
 });
 
 /**
- * Cycle 9 (スキーマ+ルート定義) 時点のハンドラは reviews.yaml の example を
- * 固定で返すスタブ。以下はスコープ外 (後続タスク):
- * - DB 永続化、実データの検索・フィルタ・ページング
+ * `store` (既定値は mock-data.js 由来のダミーストア `reviews.store.ts`) をDIし、
+ * その判別可能ユニオンの戻り値をHTTPステータス・ErrorResponseへ変換する。
+ * 以下は引き続きスコープ外 (後続タスク):
+ * - DB 永続化
  * - Idempotency-Key の重複排除・payload比較・200 replay分岐
- * - Review/ReviewAttempt の状態遷移検証、404/409/502/503 の実到達
  * - AI Agent 呼び出し、Valkey 流量制御
  */
-export function registerReviewsRoutes(app: OpenAPIHono) {
-  app.openapi(listReviewsRoute, (c) => c.json(REVIEW_LIST_EXAMPLE, 200));
-
-  app.openapi(registerReviewRoute, (c) => {
-    c.header("Location", `/reviews/${REVIEW_DRAFT_EXAMPLE.reviewId}`);
-    return c.json(REVIEW_DRAFT_EXAMPLE, 201);
+export function registerReviewsRoutes(
+  app: OpenAPIHono,
+  store: ReviewsStore = createReviewsStore(),
+) {
+  app.openapi(listReviewsRoute, (c) => {
+    const query = c.req.valid("query");
+    const { items, pageInfo } = store.listReviews(query);
+    return c.json({ apiVersion: API_VERSION, items, pageInfo }, 200);
   });
 
-  app.openapi(getReviewRoute, (c) => c.json(REVIEW_REVIEWED_EXAMPLE, 200));
+  app.openapi(registerReviewRoute, (c) => {
+    const body = c.req.valid("json");
+    const result = store.registerReview(body);
+    if (result.created) {
+      c.header("Location", `/reviews/${result.data.reviewId}`);
+      return c.json(result.data, 201);
+    }
+    return c.json(result.data, 200);
+  });
 
-  app.openapi(getReviewReportRoute, (c) => c.json(REVIEW_REPORT_EXAMPLE, 200));
+  app.openapi(getReviewRoute, (c) => {
+    const { reviewId } = c.req.valid("param");
+    const result = store.getReview(reviewId);
+    if (!result.ok) {
+      return c.json(errorResponse("not_found", NOT_FOUND_MESSAGE), 404);
+    }
+    return c.json(result.data, 200);
+  });
 
-  app.openapi(startReviewAttemptRoute, (c) => c.json(REVIEW_ATTEMPT_QUEUED_EXAMPLE, 202));
+  app.openapi(getReviewReportRoute, (c) => {
+    const { reviewId } = c.req.valid("param");
+    const result = store.getReport(reviewId);
+    if (!result.ok) {
+      if (result.code === "not_found") {
+        return c.json(errorResponse("not_found", NOT_FOUND_MESSAGE), 404);
+      }
+      return c.json(errorResponse("conflict", "レビュー結果はまだ確定していません。"), 409);
+    }
+    return c.json(result.data, 200);
+  });
 
-  app.openapi(getReviewAttemptRoute, (c) => c.json(REVIEW_ATTEMPT_QUEUED_EXAMPLE, 200));
+  app.openapi(startReviewAttemptRoute, (c) => {
+    const { reviewId } = c.req.valid("param");
+    const result = store.startAttempt(reviewId);
+    if (!result.ok) {
+      if (result.code === "not_found") {
+        return c.json(errorResponse("not_found", NOT_FOUND_MESSAGE), 404);
+      }
+      return c.json(errorResponse("conflict", "クローズ済みのレビューは再実行できません。"), 409);
+    }
+    return c.json(result.data, 202);
+  });
 
-  app.openapi(cancelReviewAttemptRoute, (c) => c.json(REVIEW_ATTEMPT_CANCELED_EXAMPLE, 200));
+  app.openapi(getReviewAttemptRoute, (c) => {
+    const { reviewId, attemptId } = c.req.valid("param");
+    const result = store.getAttempt(reviewId, attemptId);
+    if (!result.ok) {
+      return c.json(errorResponse("not_found", NOT_FOUND_MESSAGE), 404);
+    }
+    return c.json(result.data, 200);
+  });
 
-  app.openapi(applyCommentDispositionRoute, (c) => c.json(REVIEW_COMMENT_EXAMPLE, 200));
+  app.openapi(cancelReviewAttemptRoute, (c) => {
+    const { reviewId, attemptId } = c.req.valid("param");
+    const result = store.cancelAttempt(reviewId, attemptId);
+    if (!result.ok) {
+      if (result.code === "not_found") {
+        return c.json(errorResponse("not_found", NOT_FOUND_MESSAGE), 404);
+      }
+      return c.json(
+        errorResponse("conflict", "既に終了したレビュー実行はキャンセルできません。"),
+        409,
+      );
+    }
+    return c.json(result.data, 200);
+  });
 
-  app.openapi(closeReviewRoute, (c) => c.json(REVIEW_CLOSED_EXAMPLE, 200));
+  app.openapi(applyCommentDispositionRoute, (c) => {
+    const { reviewId, attemptId } = c.req.valid("param");
+    const { commentId, disposition } = c.req.valid("json");
+    const result = store.applyDisposition(reviewId, attemptId, commentId, disposition);
+    if (!result.ok) {
+      if (result.code === "not_found") {
+        return c.json(errorResponse("not_found", NOT_FOUND_MESSAGE), 404);
+      }
+      return c.json(
+        errorResponse("conflict", "指定された対応状態の遷移は許可されていません。"),
+        409,
+      );
+    }
+    return c.json(result.data, 200);
+  });
+
+  app.openapi(closeReviewRoute, (c) => {
+    const { reviewId } = c.req.valid("param");
+    const result = store.closeReview(reviewId);
+    if (!result.ok) {
+      if (result.code === "not_found") {
+        return c.json(errorResponse("not_found", NOT_FOUND_MESSAGE), 404);
+      }
+      return c.json(
+        errorResponse("conflict", "未対応のコメントが残っているためクローズできません。"),
+        409,
+      );
+    }
+    return c.json(result.data, 200);
+  });
 }

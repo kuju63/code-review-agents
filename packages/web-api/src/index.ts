@@ -2,10 +2,12 @@ import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 import { loadConfigFromEnv } from "./config.js";
 import { registerReviewsRoutes } from "./modules/reviews/reviews.route.js";
+import { createReviewsStore } from "./modules/reviews/reviews.store.js";
 
 const config = loadConfigFromEnv();
 const app = createApp();
-registerReviewsRoutes(app);
+const reviewsStore = createReviewsStore();
+registerReviewsRoutes(app, reviewsStore);
 
 serve(
   {
