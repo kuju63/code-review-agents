@@ -4,8 +4,10 @@ import {
   CommentCountsSchema,
   DiffLineSchema,
   ErrorResponseSchema,
+  ReviewAttemptSchema,
   ReviewCommentSchema,
   ReviewFileChangeSchema,
+  ReviewSchema,
 } from "./reviews.schema.js";
 
 describe("ApiVersionSchema", () => {
@@ -139,5 +141,92 @@ describe("ReviewFileChangeSchema", () => {
     expect(
       ReviewFileChangeSchema.safeParse({ status: "A", additions: 1, deletions: 0 }).success,
     ).toBe(false);
+  });
+});
+
+const REVIEW_REQUIRED_FIELDS = {
+  apiVersion: "1.0.0",
+  reviewId: "pr-486",
+  organization: "acme-corp",
+  repository: "web-frontend",
+  pullRequest: 486,
+  prState: "open",
+  status: "draft",
+  reviewStatus: "not_started",
+  commentCounts: { total: 0, open: 0, resolved: 0, falsePositive: 0 },
+  createdAt: "2026-09-05T00:00:00Z",
+  updatedAt: "2026-09-05T00:00:00Z",
+};
+
+describe("ReviewSchema", () => {
+  it("defaults every nullable field to null when omitted", () => {
+    const parsed = ReviewSchema.parse(REVIEW_REQUIRED_FIELDS);
+    expect(parsed.title).toBeNull();
+    expect(parsed.branch).toBeNull();
+    expect(parsed.baseBranch).toBeNull();
+    expect(parsed.author).toBeNull();
+    expect(parsed.commitSha).toBeNull();
+    expect(parsed.latestAttemptId).toBeNull();
+    expect(parsed.errorMessage).toBeNull();
+  });
+
+  it("requires all 11 required fields", () => {
+    for (const key of Object.keys(REVIEW_REQUIRED_FIELDS)) {
+      const value: Record<string, unknown> = { ...REVIEW_REQUIRED_FIELDS };
+      delete value[key];
+      expect(ReviewSchema.safeParse(value).success, `missing ${key} should fail`).toBe(false);
+    }
+  });
+
+  it("keeps status (ReviewDomainStatus) and reviewStatus (ReviewStatus) as separate required fields", () => {
+    const parsed = ReviewSchema.parse(REVIEW_REQUIRED_FIELDS);
+    expect(parsed.status).toBe("draft");
+    expect(parsed.reviewStatus).toBe("not_started");
+  });
+});
+
+const REVIEW_ATTEMPT_REQUIRED_FIELDS = {
+  apiVersion: "1.0.0",
+  attemptId: "att-9f2c",
+  reviewId: "pr-482",
+  status: "queued",
+  createdAt: "2026-09-05T00:00:00Z",
+};
+
+describe("ReviewAttemptSchema", () => {
+  it("defaults nullable fields to null when omitted, including the oneOf-encoded errorCode", () => {
+    const parsed = ReviewAttemptSchema.parse(REVIEW_ATTEMPT_REQUIRED_FIELDS);
+    expect(parsed.errorCode).toBeNull();
+    expect(parsed.errorMessage).toBeNull();
+    expect(parsed.startedAt).toBeNull();
+    expect(parsed.finishedAt).toBeNull();
+  });
+
+  it("accepts a valid ErrorCode value for errorCode", () => {
+    const parsed = ReviewAttemptSchema.parse({
+      ...REVIEW_ATTEMPT_REQUIRED_FIELDS,
+      status: "failed",
+      errorCode: "timeout",
+    });
+    expect(parsed.errorCode).toBe("timeout");
+  });
+
+  it("rejects an errorCode outside the ErrorCode taxonomy", () => {
+    expect(
+      ReviewAttemptSchema.safeParse({
+        ...REVIEW_ATTEMPT_REQUIRED_FIELDS,
+        errorCode: "not_a_real_code",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("requires apiVersion, attemptId, reviewId, status, and createdAt", () => {
+    for (const key of Object.keys(REVIEW_ATTEMPT_REQUIRED_FIELDS)) {
+      const value: Record<string, unknown> = { ...REVIEW_ATTEMPT_REQUIRED_FIELDS };
+      delete value[key];
+      expect(ReviewAttemptSchema.safeParse(value).success, `missing ${key} should fail`).toBe(
+        false,
+      );
+    }
   });
 });

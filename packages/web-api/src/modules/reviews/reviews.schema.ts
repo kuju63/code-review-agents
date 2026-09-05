@@ -1,11 +1,15 @@
 import { z } from "@hono/zod-openapi";
 import {
+  AttemptStatusSchema,
   CommentDispositionSchema,
   ErrorCodeSchema,
   FileChangeStatusSchema,
   FindingCategorySchema,
   FindingImpactSchema,
   FindingSeveritySchema,
+  PrStateSchema,
+  ReviewDomainStatusSchema,
+  ReviewStatusSchema,
 } from "./reviews.enums.js";
 
 /** 契約バージョン (ADR-0012 §4, npm semver不使用)。 */
@@ -80,3 +84,46 @@ export const ReviewFileChangeSchema = z
     comments: z.array(ReviewCommentSchema).optional(),
   })
   .openapi("ReviewFileChange");
+
+/**
+ * レビュー対象の登録単位 (ADR-0012 §3)。`status` は永続ドメイン状態、
+ * `reviewStatus` はサーバ計算の表示値。名前は似ているが別軸の必須フィールドであり、
+ * 統合しない (ReviewStatusSchema / ReviewDomainStatusSchema 参照)。
+ */
+export const ReviewSchema = z
+  .object({
+    apiVersion: ApiVersionSchema,
+    reviewId: z.string(),
+    organization: z.string(),
+    repository: z.string(),
+    pullRequest: z.number().int().min(1),
+    title: z.string().nullable().default(null),
+    branch: z.string().nullable().default(null),
+    baseBranch: z.string().nullable().default(null),
+    author: z.string().nullable().default(null),
+    commitSha: z.string().nullable().default(null),
+    prState: PrStateSchema,
+    status: ReviewDomainStatusSchema,
+    reviewStatus: ReviewStatusSchema,
+    latestAttemptId: z.string().nullable().default(null),
+    commentCounts: CommentCountsSchema,
+    errorMessage: z.string().nullable().default(null),
+    createdAt: z.string().datetime({ offset: true }),
+    updatedAt: z.string().datetime({ offset: true }),
+  })
+  .openapi("Review");
+
+/** 1回のレビュー実行 (ADR-0012 §3)。attemptId は transport taskId と同値。 */
+export const ReviewAttemptSchema = z
+  .object({
+    apiVersion: ApiVersionSchema,
+    attemptId: z.string(),
+    reviewId: z.string(),
+    status: AttemptStatusSchema,
+    errorCode: ErrorCodeSchema.nullable().default(null),
+    errorMessage: z.string().nullable().default(null),
+    createdAt: z.string().datetime({ offset: true }),
+    startedAt: z.string().datetime({ offset: true }).nullable().default(null),
+    finishedAt: z.string().datetime({ offset: true }).nullable().default(null),
+  })
+  .openapi("ReviewAttempt");
