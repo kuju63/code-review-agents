@@ -7,9 +7,11 @@ import {
 } from "./reviews.schema.js";
 
 /**
- * Cycle 9 時点のハンドラは DB 永続化を持たないため、reviews.yaml の examples を
- * `.parse()` で検証した固定値として返す。実データ検索・Idempotency-Key replay・
- * 状態遷移はスコープ外 (後続タスク) — reviews.route.ts の TODO を参照。
+ * reviews.yaml `components/examples` を `.parse()` で検証した固定値。
+ * Issue #245 以降、ハンドラの実データは reviews.store.ts (mock-data.js 由来の
+ * seed) から返るため、ここでの値はハンドラ応答として使われない。契約回帰テスト
+ * (reviews.fixtures.test.ts / openapi-contract.test.ts) の参照値、および
+ * reviews.route.test.ts の非mutatingな回帰アンカーとしてのみ残す。
  */
 
 /** reviews.yaml `components/examples/ReviewListExample` の再現。 */
