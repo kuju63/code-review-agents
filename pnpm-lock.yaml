@@ -10,13 +10,13 @@ importers:
     dependencies:
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.16.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(supports-color@7.2.0)(typescript@7.0.2)(zod@4.5.4)
+        version: 1.16.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(supports-color@7.2.0)(typescript@7.0.2)(zod@4.5.4)
       ai-sdk-ollama:
         specifier: ^3.8.8
         version: 3.8.8(ai@6.0.246(zod@4.5.4))(zod@4.5.4)
       openai:
         specifier: ^7.4.0
-        version: 7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4)
+        version: 7.10.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4)
       zod:
         specifier: ^4.1.12
         version: 4.5.4
@@ -66,7 +66,7 @@ importers:
     dependencies:
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.16.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(supports-color@7.2.0)(typescript@7.0.2)(zod@4.5.4)
+        version: 1.16.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(supports-color@7.2.0)(typescript@7.0.2)(zod@4.5.4)
       ai-sdk-ollama:
         specifier: ^3.8.8
         version: 3.8.8(ai@6.0.246(zod@4.5.4))(zod@4.5.4)
@@ -81,7 +81,7 @@ importers:
         version: link:../agent-core
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.16.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(supports-color@7.2.0)(typescript@7.0.2)(zod@4.5.4)
+        version: 1.16.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(supports-color@7.2.0)(typescript@7.0.2)(zod@4.5.4)
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -1690,8 +1690,8 @@ packages:
     resolution: {integrity: sha512-VXJjc87FScF88uafS3JllDgvAm+c/Slfz06lorj2uAY34rlUu0Nt+v8wreiImcrgAjjIHp1rXpTDlLOGw29WwQ==}
     engines: {node: '>=18'}
 
-  openai@7.8.0:
-    resolution: {integrity: sha512-/2g9JzdnXNcjX1W/UlSNu+OdSFDAaAVt0n9Onom0kPenH54o59G2WrX/xjTnr26UHNSh6hxcAf58doGYRme2rw==}
+  openai@7.10.0:
+    resolution: {integrity: sha512-sn9t2Kls7O52PwuF9BUTYNu4Gk/r0lXJyrgaNht4TNRlZFb3dJIGO0RciSgjARGCBRtWjySubAQFJttlzUvGQQ==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@aws-sdk/credential-provider-node': '>=3.972.0 <4'
@@ -2858,7 +2858,7 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@strands-agents/sdk@1.16.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(supports-color@7.2.0)(typescript@7.0.2)(zod@4.5.4)':
+  '@strands-agents/sdk@1.16.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.5.4))(@opentelemetry/api@1.9.1)(@smithy/types@4.17.2)(express@5.2.1(supports-color@7.2.0))(openai@7.10.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4))(supports-color@7.2.0)(typescript@7.0.2)(zod@4.5.4)':
     dependencies:
       '@aws-sdk/client-bedrock-runtime': 3.1116.0
       '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@4.5.4)
@@ -2873,7 +2873,7 @@ snapshots:
       '@smithy/types': 4.17.2
       '@tobilu/qmd': 2.8.3(supports-color@7.2.0)(typescript@7.0.2)
       express: 5.2.1(supports-color@7.2.0)
-      openai: 7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4)
+      openai: 7.10.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4)
     transitivePeerDependencies:
       - supports-color
       - tree-sitter
@@ -3747,7 +3747,7 @@ snapshots:
       mimic-function: 5.0.1
     optional: true
 
-  openai@7.8.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4):
+  openai@7.10.0(@aws-sdk/credential-provider-node@3.972.81)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(zod@4.5.4):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.81
       '@smithy/signature-v4': 5.7.3
