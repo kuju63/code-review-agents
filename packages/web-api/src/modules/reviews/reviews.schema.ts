@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+import { ErrorCodeSchema } from "./reviews.enums.js";
 
 /** 契約バージョン (ADR-0012 §4, npm semver不使用)。 */
 export const ApiVersionSchema = z.string().openapi("ApiVersion");
@@ -15,3 +16,13 @@ export const CommentCountsSchema = z
     falsePositive: z.number().int().min(0),
   })
   .openapi("CommentCounts");
+
+/** 共通エラー応答 (ADR-0012 §6 error taxonomy)。 */
+export const ErrorResponseSchema = z
+  .object({
+    apiVersion: ApiVersionSchema,
+    code: ErrorCodeSchema,
+    message: z.string(),
+    detail: z.string().nullable().default(null),
+  })
+  .openapi("ErrorResponse");

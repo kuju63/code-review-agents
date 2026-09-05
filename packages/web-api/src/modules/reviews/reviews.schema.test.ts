@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApiVersionSchema, CommentCountsSchema } from "./reviews.schema.js";
+import { ApiVersionSchema, CommentCountsSchema, ErrorResponseSchema } from "./reviews.schema.js";
 
 describe("ApiVersionSchema", () => {
   it("accepts a semver-like string", () => {
@@ -29,5 +29,46 @@ describe("CommentCountsSchema", () => {
     expect(
       CommentCountsSchema.safeParse({ total: -1, open: 0, resolved: 0, falsePositive: 0 }).success,
     ).toBe(false);
+  });
+});
+
+describe("ErrorResponseSchema", () => {
+  it("defaults detail to null when omitted", () => {
+    const parsed = ErrorResponseSchema.parse({
+      apiVersion: "1.0.0",
+      code: "validation_error",
+      message: "invalid request",
+    });
+    expect(parsed.detail).toBeNull();
+  });
+
+  it("accepts an explicit detail string", () => {
+    const parsed = ErrorResponseSchema.parse({
+      apiVersion: "1.0.0",
+      code: "not_found",
+      message: "not found",
+      detail: "reviewId pr-999 does not exist",
+    });
+    expect(parsed.detail).toBe("reviewId pr-999 does not exist");
+  });
+
+  it("rejects a code outside the ErrorCode taxonomy", () => {
+    expect(
+      ErrorResponseSchema.safeParse({
+        apiVersion: "1.0.0",
+        code: "totally_made_up",
+        message: "x",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("requires apiVersion, code, and message", () => {
+    expect(ErrorResponseSchema.safeParse({ code: "not_found", message: "x" }).success).toBe(false);
+    expect(ErrorResponseSchema.safeParse({ apiVersion: "1.0.0", message: "x" }).success).toBe(
+      false,
+    );
+    expect(ErrorResponseSchema.safeParse({ apiVersion: "1.0.0", code: "not_found" }).success).toBe(
+      false,
+    );
   });
 });
