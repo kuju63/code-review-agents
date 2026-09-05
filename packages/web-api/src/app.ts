@@ -19,9 +19,3 @@ export function createApp() {
     },
   });
 }
-
-export const app = createApp();
-
-app.get("/", (c) => {
-  return c.text("Hello Hono!");
-});

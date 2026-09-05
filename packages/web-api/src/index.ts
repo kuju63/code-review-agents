@@ -1,8 +1,11 @@
 import { serve } from "@hono/node-server";
-import { app } from "./app.js";
+import { createApp } from "./app.js";
 import { loadConfigFromEnv } from "./config.js";
+import { registerReviewsRoutes } from "./modules/reviews/reviews.route.js";
 
 const config = loadConfigFromEnv();
+const app = createApp();
+registerReviewsRoutes(app);
 
 serve(
   {
