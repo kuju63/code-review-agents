@@ -81,3 +81,52 @@ export function normalizeSchema(name: string, doc: unknown): NormalizedSchema {
 
   return { properties, required, nullableProperties };
 }
+
+/**
+ * OpenAPI の Path Item Object が持つキーのうち、実際の operation (HTTP method) を
+ * 表すもの。`parameters`/`summary`/`description` 等の path-level フィールドは含まない。
+ */
+export const HTTP_METHODS = ["get", "post", "put", "patch", "delete", "options", "head", "trace"];
+
+export function pathMethodSet(paths: Record<string, Record<string, unknown>>): Set<string> {
+  const set = new Set<string>();
+  for (const [pathKey, methods] of Object.entries(paths)) {
+    for (const method of Object.keys(methods)) {
+      if (HTTP_METHODS.includes(method)) {
+        set.add(`${method.toUpperCase()} ${pathKey}`);
+      }
+    }
+  }
+  return set;
+}
+
+interface OperationNode {
+  operationId?: string;
+  responses?: Record<string, unknown>;
+}
+
+export function forEachOperation(
+  paths: Record<string, Record<string, unknown>>,
+  fn: (operation: OperationNode) => void,
+): void {
+  for (const methods of Object.values(paths)) {
+    for (const [method, operation] of Object.entries(methods)) {
+      if (HTTP_METHODS.includes(method)) {
+        fn(operation as OperationNode);
+      }
+    }
+  }
+}
+
+/** ローカル `#/components/...` 参照のみを解決する (reviews.yaml に外部参照はない)。 */
+export function resolveRef<T = unknown>(node: unknown, doc: unknown): T {
+  if (node && typeof node === "object" && "$ref" in node && typeof node.$ref === "string") {
+    const parts = node.$ref.replace(/^#\//, "").split("/");
+    let current: unknown = doc;
+    for (const part of parts) {
+      current = (current as Record<string, unknown>)[part];
+    }
+    return current as T;
+  }
+  return node as T;
+}
