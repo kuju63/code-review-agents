@@ -5,10 +5,13 @@ import {
   DiffLineSchema,
   DispositionRequestSchema,
   ErrorResponseSchema,
+  PageInfoSchema,
   RegisterReviewRequestSchema,
   ReviewAttemptSchema,
   ReviewCommentSchema,
   ReviewFileChangeSchema,
+  ReviewListResponseSchema,
+  ReviewReportSchema,
   ReviewSchema,
   StartAttemptRequestSchema,
 } from "./reviews.schema.js";
@@ -312,5 +315,71 @@ describe("DispositionRequestSchema", () => {
     expect(
       DispositionRequestSchema.safeParse({ commentId: "c2", disposition: "archived" }).success,
     ).toBe(false);
+  });
+});
+
+describe("PageInfoSchema", () => {
+  it("requires page, perPage, totalItems, and totalPages", () => {
+    expect(PageInfoSchema.safeParse({ page: 1, perPage: 30, totalItems: 3 }).success).toBe(false);
+  });
+
+  it("accepts a valid page info object", () => {
+    const parsed = PageInfoSchema.parse({ page: 1, perPage: 30, totalItems: 3, totalPages: 1 });
+    expect(parsed).toEqual({ page: 1, perPage: 30, totalItems: 3, totalPages: 1 });
+  });
+});
+
+describe("ReviewListResponseSchema", () => {
+  it("requires apiVersion, items, and pageInfo", () => {
+    const parsed = ReviewListResponseSchema.parse({
+      apiVersion: "1.0.0",
+      items: [],
+      pageInfo: { page: 1, perPage: 30, totalItems: 0, totalPages: 0 },
+    });
+    expect(parsed.items).toEqual([]);
+
+    expect(
+      ReviewListResponseSchema.safeParse({
+        items: [],
+        pageInfo: { page: 1, perPage: 30, totalItems: 0, totalPages: 0 },
+      }).success,
+    ).toBe(false);
+  });
+});
+
+const REVIEW_REPORT_REQUIRED_FIELDS = {
+  apiVersion: "1.0.0",
+  reviewId: "pr-482",
+  overallSummary: "summary",
+  files: [],
+  commentCounts: { total: 0, open: 0, resolved: 0, falsePositive: 0 },
+};
+
+describe("ReviewReportSchema", () => {
+  it("treats attemptId as optional (not nullable) when omitted", () => {
+    const parsed = ReviewReportSchema.parse(REVIEW_REPORT_REQUIRED_FIELDS);
+    expect("attemptId" in parsed).toBe(false);
+  });
+
+  it("rejects an explicit null attemptId since it is optional, not nullable", () => {
+    expect(
+      ReviewReportSchema.safeParse({ ...REVIEW_REPORT_REQUIRED_FIELDS, attemptId: null }).success,
+    ).toBe(false);
+  });
+
+  it("accepts an explicit string attemptId", () => {
+    const parsed = ReviewReportSchema.parse({
+      ...REVIEW_REPORT_REQUIRED_FIELDS,
+      attemptId: "att-9f2c",
+    });
+    expect(parsed.attemptId).toBe("att-9f2c");
+  });
+
+  it("requires apiVersion, reviewId, overallSummary, files, and commentCounts", () => {
+    for (const key of Object.keys(REVIEW_REPORT_REQUIRED_FIELDS)) {
+      const value: Record<string, unknown> = { ...REVIEW_REPORT_REQUIRED_FIELDS };
+      delete value[key];
+      expect(ReviewReportSchema.safeParse(value).success, `missing ${key} should fail`).toBe(false);
+    }
   });
 });

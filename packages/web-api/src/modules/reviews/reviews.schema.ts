@@ -157,3 +157,36 @@ export const DispositionRequestSchema = z
     disposition: CommentDispositionSchema,
   })
   .openapi("DispositionRequest");
+
+export const PageInfoSchema = z
+  .object({
+    page: z.number().int().min(1),
+    perPage: z.number().int().min(1),
+    totalItems: z.number().int().min(0),
+    totalPages: z.number().int().min(0),
+  })
+  .openapi("PageInfo");
+
+export const ReviewListResponseSchema = z
+  .object({
+    apiVersion: ApiVersionSchema,
+    items: z.array(ReviewSchema),
+    pageInfo: PageInfoSchema,
+  })
+  .openapi("ReviewListResponse");
+
+/**
+ * レビュー結果 (SCR-03)。変更ファイル×レビューコメントのマッピング済み表現。
+ * `attemptId` は required リストになく `type:[T,'null']` でもないため、
+ * nullable ではなく optional として扱う (Review 等の他のnullableフィールドと混同しない)。
+ */
+export const ReviewReportSchema = z
+  .object({
+    apiVersion: ApiVersionSchema,
+    reviewId: z.string(),
+    attemptId: z.string().optional(),
+    overallSummary: z.string(),
+    files: z.array(ReviewFileChangeSchema),
+    commentCounts: CommentCountsSchema,
+  })
+  .openapi("ReviewReport");
