@@ -21,7 +21,7 @@ jobs:
         uses: pnpm/setup@v2
         with:
           runtime: node@${{ matrix.node-version }}
-          version: "11.25.0"
+          version: "12.3.4"
           cache: true
       - name: Run linter
         run: pnpm run lint
