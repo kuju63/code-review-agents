@@ -34,7 +34,7 @@ export const ReviewSchema = z.object({
   prState: PrStateSchema,
   reviewStatus: ReviewStatusSchema,
   commentCounts: CommentCountsSchema,
-  updatedAt: z.string(),
+  updatedAt: z.iso.datetime({ offset: true }),
 });
 
 export const PageInfoSchema = z.object({
