@@ -1,6 +1,6 @@
 ```
-npm install
-npm run dev
+nix develop --command pnpm install --frozen-lockfile
+nix develop --command pnpm --filter web-api run dev
 ```
 
 ```
