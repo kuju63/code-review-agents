@@ -62,6 +62,11 @@ export function resolveCommentSummary(
   return { kind: "count", count: review.commentCounts.total };
 }
 
+/** LST-12: `#<番号> <タイトル>` (falls back to just the number when title is null). */
+export function formatPrTitle(review: Pick<Review, "pullRequest" | "title">): string {
+  return review.title ? `#${review.pullRequest} ${review.title}` : `#${review.pullRequest}`;
+}
+
 /** LST-A04/LST-V04: PR number, title, and branch (server `q` covers only the first two). */
 export function matchesSearch(
   review: Pick<Review, "title" | "pullRequest" | "branch">,

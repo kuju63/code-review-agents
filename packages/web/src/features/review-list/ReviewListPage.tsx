@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { FilterBar } from "./FilterBar";
 import { RepoGroup } from "./RepoGroup";
 import styles from "./review-list.module.scss";
+import { formatPrTitle } from "./reviewStatus";
 import type { Review } from "./reviews.schema";
 import { closeReview, fetchReviews } from "./reviewsApi";
 import { TokenMissingNotice } from "./TokenMissingNotice";
@@ -165,13 +166,19 @@ export function ReviewListPage({ submittedTarget }: ReviewListPageProps) {
         open={closeTarget !== null}
         modalHeading={t("reviewList.closeConfirmTitle")}
         primaryButtonText={t("common.confirm")}
+        primaryButtonDisabled={closeMutation.isPending}
         secondaryButtonText={t("common.cancel")}
         danger
         onRequestClose={() => setCloseTarget(null)}
         onRequestSubmit={() => {
-          if (closeTarget) closeMutation.mutate(closeTarget.reviewId);
+          if (closeTarget && !closeMutation.isPending) closeMutation.mutate(closeTarget.reviewId);
         }}
       >
+        {closeTarget && (
+          <p>
+            <strong>{formatPrTitle(closeTarget)}</strong>
+          </p>
+        )}
         <p>{t("reviewList.closeConfirmBody")}</p>
       </Modal>
     </div>

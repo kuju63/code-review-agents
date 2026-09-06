@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setApiFetchHandler } from "../../test/setup";
@@ -149,8 +149,46 @@ describe("ReviewListPage", () => {
     renderPage();
 
     fireEvent.click(await screen.findByRole("button", { name: "クローズ" }));
-    fireEvent.click(await screen.findByRole("button", { name: "実行" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("#1 Fix login bug")).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "実行" }));
 
+    expect(await screen.findByText("条件に一致するPRがありません。")).toBeInTheDocument();
+  });
+
+  it("CB-01: disables the confirm button while the close request is in flight", async () => {
+    localStorage.setItem("hasGithubToken", "true");
+    let reviews = [review({ reviewStatus: "completed" })];
+    let resolveClose: (value: Response) => void = () => {};
+    const closeHandler = vi.fn(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveClose = resolve;
+        }),
+    );
+    setApiFetchHandler(
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.endsWith("/reviews/pr-1/close") && init?.method === "POST") {
+          return closeHandler();
+        }
+        return jsonResponse(listResponse(reviews));
+      }),
+    );
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("button", { name: "クローズ" }));
+    const dialog = await screen.findByRole("dialog");
+    const confirmButton = within(dialog).getByRole("button", { name: "実行" });
+    fireEvent.click(confirmButton);
+    await waitFor(() => expect(closeHandler).toHaveBeenCalledTimes(1));
+    expect(confirmButton).toBeDisabled();
+    fireEvent.click(confirmButton);
+
+    expect(closeHandler).toHaveBeenCalledTimes(1);
+    reviews = [];
+    resolveClose(jsonResponse(review({ reviewStatus: "completed", prState: "open" })));
     expect(await screen.findByText("条件に一致するPRがありません。")).toBeInTheDocument();
   });
 

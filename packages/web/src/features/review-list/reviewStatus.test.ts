@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatPrTitle,
   formatUpdatedAt,
   matchesSearch,
   resolveCommentSummary,
@@ -36,6 +37,18 @@ describe("resolveStatusTag", () => {
     const tag = resolveStatusTag(status);
     expect(tag.type).toBe(type);
     expect(tag.labelKey).toBe(`reviewList.status.${status}`);
+  });
+});
+
+describe("formatPrTitle (LST-12)", () => {
+  it("formats as #<number> <title>", () => {
+    expect(formatPrTitle(review({ pullRequest: 482, title: "Fix login bug" }))).toBe(
+      "#482 Fix login bug",
+    );
+  });
+
+  it("falls back to just the number when title is null", () => {
+    expect(formatPrTitle(review({ pullRequest: 482, title: null }))).toBe("#482");
   });
 });
 

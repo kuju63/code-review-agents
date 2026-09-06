@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import styles from "./review-list.module.scss";
 import {
+  formatPrTitle,
   formatUpdatedAt,
   resolveCommentSummary,
   resolvePrStateTag,
@@ -27,7 +28,7 @@ export function ReviewRow({ review, onRequestClose }: ReviewRowProps) {
     <div className={styles.row}>
       <span>
         <Link to="/review-result" search={{ id: review.reviewId }}>
-          {review.title ? `#${review.pullRequest} ${review.title}` : `#${review.pullRequest}`}
+          {formatPrTitle(review)}
         </Link>
       </span>
       <span className={styles.branchCell}>{review.branch ?? "—"}</span>
