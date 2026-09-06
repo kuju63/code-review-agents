@@ -12,7 +12,7 @@ export default mergeConfig(
       coverage: {
         provider: "v8",
         include: ["src/**/*.{ts,tsx}"],
-        exclude: ["src/**/*.{test,spec}.{ts,tsx}", "src/main.tsx"],
+        exclude: ["src/**/*.{test,spec}.{ts,tsx}", "src/main.tsx", "src/i18next.ts"],
         reporter: ["text", "html", "lcov"],
       },
     },

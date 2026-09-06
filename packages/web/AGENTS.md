@@ -46,10 +46,9 @@ packages/web/
 │  ├─ test/
 │  │  └─ setup.ts             # vitest セットアップ（@testing-library/jest-dom をインポート）
 │  └─ routes/                 # Tanstack Router ルート定義（後述）
-│     ├─ __root.tsx           # __root ルート
-│     ├─ __root.component.tsx  # __root ルート レイアウトコンポーネント
-│     ├─ index.route.tsx       # "/" ルート（現状 は App.tsx を差し込む）
-│     └─ *.route.tsx / *.component.tsx
+│     ├─ __root.tsx           # createRootRoute + RootLayout（最上位ルート）
+│     ├─ index.tsx            # "/" ルート
+│     └─ ...                  # 追加ルート（ディレクトリ／$param／_layout 等）
 │
 ├─ vite.config.ts
 ├─ vitest.config.ts
@@ -60,14 +59,14 @@ packages/web/
 
 ### routes/ 配下の命名ルール（Tanstack Router ルール）
 
-- `__root.*`：最上位ルート（`__root.tsx`／`__root.component.tsx`／`__root.notFoundComponent.tsx`）
-  - `__root.tsx`／`__root.component.tsx` でルート設定 ＋ レイアウトコンポーネントを定義
-- `index.route.ts`：`/` のルート
+- `__root.tsx`：最上位ルート。`createRootRoute` でルート設定 ＋ `RootLayout` コンポーネントを定義する
+  - `notFoundComponent` 等のルートオプションは別ファイルに分割せず `createRootRoute` の引数として `__root.tsx` 内に指定する
+- `index.tsx`：`/` のルート
 - ディレクトリ：サブルート ＋ レイアウト を構造化する
   - `posts/index.tsx`、`posts/$postId.tsx`、`posts.$postId.edit.tsx`
 - パラメータ：`$` は パラメータ を表す（例：`$postId`）
 - `_prefix` のない レイアウト：`_layout.tsx`／`_pathlessLayout.a.tsx` 等で URL に影響ないレイアウト をラップ する
-- グループ（URL 影響なし）：`（グループ）/` 等のディレクトリでグループ化する
+- グループ（URL 影響なし）：`(group)/` 等のディレクトリでグループ化する
 
 ## コマンド
 
