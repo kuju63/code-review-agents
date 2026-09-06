@@ -42,7 +42,7 @@ RUN pnpm run lint && pnpm run typecheck
 # Python版 (`runtime`) ステージを撤去したため、レジストリへのpush対象も
 # node-runtime に切り替わった (.github/workflows/build-image.yml参照)。
 ###############################################################################
-FROM registry.access.redhat.com/hi/nodejs:26@sha256:e0339e418c36b297a36bf45db55c7f1a7a393d3255d20493d40b98d1797df5a0 AS node-runtime
+FROM registry.access.redhat.com/hi/nodejs:26@sha256:1120c81fbe89f308b2c0fa8970d2eac56b36d128626dea8d645abd763711142d AS node-runtime
 
 WORKDIR /app
 
