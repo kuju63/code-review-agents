@@ -1,6 +1,15 @@
-import "@testing-library/jest-dom/vitest";
-import { afterEach, vi } from "vitest";
-import jaTranslation from "../../public/locales/ja/translation.json";
+import { GlobalRegistrator } from "@happy-dom/global-registrator";
+
+// Registers window/document/localStorage/etc. onto the Node global object in
+// one step. Vitest's own `environment: "happy-dom"` pool does this too, but
+// its copy silently skips localStorage because Node's own (inert, opt-in)
+// implementation already occupies that global name; the registrator handles
+// that conflict internally instead of us stubbing properties one at a time.
+await GlobalRegistrator.register({ url: "http://localhost/" });
+
+await import("@testing-library/jest-dom/vitest");
+const { afterEach, vi } = await import("vitest");
+const { default: jaTranslation } = await import("../../public/locales/ja/translation.json");
 
 type FetchLike = typeof fetch;
 
