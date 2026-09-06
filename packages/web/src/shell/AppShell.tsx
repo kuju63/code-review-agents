@@ -18,13 +18,23 @@ const NAV_ITEMS: readonly NavItem[] = [
   { to: "/settings", labelKey: "nav.settings", Icon: Settings },
 ];
 
+/**
+ * `/review-result` is a drill-down from a review row (ReviewRow.tsx), not a
+ * sidebar destination, so it's kept out of NAV_ITEMS but still needs its own
+ * breadcrumb label instead of falling back to NAV_ITEMS[0] ("list").
+ */
+const BREADCRUMB_ITEMS: readonly {
+  to: string;
+  labelKey: NavItem["labelKey"] | "reviewResult.title";
+}[] = [...NAV_ITEMS, { to: "/review-result", labelKey: "reviewResult.title" }];
+
 /** COM-01/03/04/05/06, minimal per the SCR-01 spec's scope boundary: no language switch (COM-02). */
 export function AppShell() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [collapsed, toggleCollapsed] = useSidebarCollapsed();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const current = NAV_ITEMS.find((item) => item.to === pathname) ?? NAV_ITEMS[0];
+  const current = BREADCRUMB_ITEMS.find((item) => item.to === pathname) ?? BREADCRUMB_ITEMS[0];
 
   return (
     <div className={styles.shell}>

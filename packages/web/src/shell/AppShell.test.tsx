@@ -5,7 +5,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { AppShell } from "./AppShell";
 
@@ -26,7 +26,17 @@ function buildRouter(initialPath: string) {
     path: "/settings",
     component: () => <p>settings-content</p>,
   });
-  const routeTree = rootRoute.addChildren([indexRoute, reviewRequestRoute, settingsRoute]);
+  const reviewResultRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/review-result",
+    component: () => <p>review-result-content</p>,
+  });
+  const routeTree = rootRoute.addChildren([
+    indexRoute,
+    reviewRequestRoute,
+    settingsRoute,
+    reviewResultRoute,
+  ]);
   const history = createMemoryHistory({ initialEntries: [initialPath] });
   return createRouter({ routeTree, history });
 }
@@ -67,5 +77,14 @@ describe("AppShell", () => {
 
     expect(screen.queryByRole("link", { name: /^設定$/ })).not.toBeInTheDocument();
     expect(localStorage.getItem("sidebarCollapsed")).toBe("true");
+  });
+
+  it("shows the review-result breadcrumb label instead of falling back to the list label", async () => {
+    renderShell("/review-result");
+    await screen.findByText("review-result-content");
+
+    const breadcrumb = within(screen.getByRole("navigation", { name: "Breadcrumb" }));
+    expect(breadcrumb.getByText("レビュー結果確認")).toBeInTheDocument();
+    expect(breadcrumb.queryByText("コードレビュー一覧")).not.toBeInTheDocument();
   });
 });
