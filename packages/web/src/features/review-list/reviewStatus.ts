@@ -1,4 +1,4 @@
-import type { Review, ReviewStatus } from "./reviews.schema";
+import type { PrState, Review, ReviewStatus } from "./reviews.schema";
 
 export type StatusTagType = "gray" | "blue" | "purple" | "green" | "red";
 
@@ -23,6 +23,22 @@ const STATUS_TAG_TYPE: Record<ReviewStatus, StatusTagType> = {
 
 export function resolveStatusTag(reviewStatus: ReviewStatus): StatusTag {
   return { type: STATUS_TAG_TYPE[reviewStatus], labelKey: `reviewList.status.${reviewStatus}` };
+}
+
+export interface PrStateTag {
+  type: StatusTagType;
+  labelKey: `reviewList.prState.${PrState}`;
+}
+
+/** LST-15: GitHub PR state, shown independently of the review status. */
+const PR_STATE_TAG_TYPE: Record<PrState, StatusTagType> = {
+  open: "green",
+  closed: "gray",
+  merged: "purple",
+};
+
+export function resolvePrStateTag(prState: PrState): PrStateTag {
+  return { type: PR_STATE_TAG_TYPE[prState], labelKey: `reviewList.prState.${prState}` };
 }
 
 /**

@@ -68,6 +68,9 @@
   "reviewRequest": {
     "title": "レビュー依頼登録"
   },
+  "reviewResult": {
+    "title": "レビュー結果確認"
+  },
   "settings": {
     "title": "GitHub連携設定"
   }

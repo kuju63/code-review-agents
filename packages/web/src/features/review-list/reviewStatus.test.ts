@@ -3,6 +3,7 @@ import {
   formatUpdatedAt,
   matchesSearch,
   resolveCommentSummary,
+  resolvePrStateTag,
   resolveStatusTag,
   shouldShowCloseButton,
 } from "./reviewStatus";
@@ -35,6 +36,18 @@ describe("resolveStatusTag", () => {
     const tag = resolveStatusTag(status);
     expect(tag.type).toBe(type);
     expect(tag.labelKey).toBe(`reviewList.status.${status}`);
+  });
+});
+
+describe("resolvePrStateTag (LST-15)", () => {
+  it.each([
+    ["open", "green"],
+    ["closed", "gray"],
+    ["merged", "purple"],
+  ] as const)("maps prState=%s to Carbon tag type=%s", (prState, type) => {
+    const tag = resolvePrStateTag(prState);
+    expect(tag.type).toBe(type);
+    expect(tag.labelKey).toBe(`reviewList.prState.${prState}`);
   });
 });
 

@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ReviewRequestRouteImport } from './routes/review-request'
+import { Route as ReviewResultRouteImport } from './routes/review-result'
 import { Route as SettingsRouteImport } from './routes/settings'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const ReviewRequestRoute = ReviewRequestRouteImport.update({
   path: '/review-request',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReviewResultRoute = ReviewResultRouteImport.update({
+  id: '/review-result',
+  path: '/review-result',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -32,30 +38,34 @@ const SettingsRoute = SettingsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/review-request': typeof ReviewRequestRoute
+  '/review-result': typeof ReviewResultRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/review-request': typeof ReviewRequestRoute
+  '/review-result': typeof ReviewResultRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/review-request': typeof ReviewRequestRoute
+  '/review-result': typeof ReviewResultRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/review-request' | '/settings'
+  fullPaths: '/' | '/review-request' | '/review-result' | '/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/review-request' | '/settings'
-  id: '__root__' | '/' | '/review-request' | '/settings'
+  to: '/' | '/review-request' | '/review-result' | '/settings'
+  id: '__root__' | '/' | '/review-request' | '/review-result' | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ReviewRequestRoute: typeof ReviewRequestRoute
+  ReviewResultRoute: typeof ReviewResultRoute
   SettingsRoute: typeof SettingsRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReviewRequestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/review-result': {
+      id: '/review-result'
+      path: '/review-result'
+      fullPath: '/review-result'
+      preLoaderRoute: typeof ReviewResultRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ReviewRequestRoute: ReviewRequestRoute,
+  ReviewResultRoute: ReviewResultRoute,
   SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport

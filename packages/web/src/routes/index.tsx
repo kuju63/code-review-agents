@@ -1,16 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
+import { z } from "zod";
+import { ReviewListPage } from "../features/review-list/ReviewListPage";
+
+const indexSearchSchema = z.object({ submitted: z.string().optional() });
 
 export const Route = createFileRoute("/")({
+  validateSearch: indexSearchSchema,
   component: Index,
 });
 
 function Index() {
-  const { t } = useTranslation();
-
-  return (
-    <div className="p-2">
-      <h3>{t("welcomeHome")}</h3>
-    </div>
-  );
+  const { submitted } = Route.useSearch();
+  return <ReviewListPage submittedTarget={submitted} />;
 }

@@ -3,7 +3,7 @@
   "root": false,
   "extends": "//",
   "files": {
-    "includes": ["**/*", "!**/dist", "!**/node_modules", "!src/routeTree.gen.ts"]
+    "includes": ["**/*", "!**/dist", "!**/coverage", "!**/node_modules", "!src/routeTree.gen.ts"]
   },
   "linter": {
     "rules": {
