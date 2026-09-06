@@ -11,25 +11,41 @@ export type CloseReviewResult =
   | { ok: true; data: Review }
   | { ok: false; code: "not_found" | "conflict" };
 
+async function fetchReviewsPage(page: number): Promise<ReviewListResponse> {
+  const response = await fetch(
+    `${API_BASE_URL}/reviews?includeClosed=false&perPage=100&page=${page}`,
+  );
+  if (!response.ok) {
+    throw new Error(`GET /reviews failed with status ${response.status}`);
+  }
+  return ReviewListResponseSchema.parse(await response.json());
+}
+
 /**
  * `q` on the server only matches title/PR number and `reviewStatus` accepts a
  * single value, so LST-07/08/09's AND-combined repo/status/branch filtering is
  * done client-side against the full (non-closed) set instead. `perPage=100` is
- * the schema max; revisit if `pageInfo.totalItems` regularly exceeds it.
+ * the schema max, so pages beyond the first are fetched sequentially (one
+ * request per page, not in parallel, to keep server load bounded) and their
+ * items concatenated — this makes total request count scale linearly with
+ * review volume; revisit if that becomes a problem.
  */
 export async function fetchReviews(): Promise<ReviewListResponse> {
-  const response = await fetch(`${API_BASE_URL}/reviews?includeClosed=false&perPage=100`);
-  if (!response.ok) {
-    throw new Error(`GET /reviews failed with status ${response.status}`);
+  const first = await fetchReviewsPage(1);
+  const items = [...first.items];
+  // Bound the loop by page 1's totalPages so a mid-fetch change in the
+  // server's total can't turn this into an unbounded chase.
+  for (let page = 2; page <= first.pageInfo.totalPages; page += 1) {
+    const next = await fetchReviewsPage(page);
+    items.push(...next.items);
   }
-  const body = ReviewListResponseSchema.parse(await response.json());
-  if (body.pageInfo.totalItems > body.items.length) {
+  if (first.pageInfo.totalItems > items.length) {
     console.warn(
-      `GET /reviews returned ${body.items.length} of ${body.pageInfo.totalItems} total reviews; ` +
-        "increase perPage or add server-side branch search before this becomes lossy.",
+      `GET /reviews returned ${items.length} of ${first.pageInfo.totalItems} total reviews across ` +
+        `${first.pageInfo.totalPages} page(s); the server's total may have changed mid-fetch.`,
     );
   }
-  return body;
+  return { ...first, items };
 }
 
 export async function closeReview(reviewId: string): Promise<CloseReviewResult> {

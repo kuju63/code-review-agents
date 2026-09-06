@@ -26,16 +26,25 @@ function review(overrides: Partial<Review> = {}): Review {
   };
 }
 
-function listResponse(items: Review[], totalItems = items.length): ReviewListResponse {
+function listResponse(
+  items: Review[],
+  totalItems = items.length,
+  page = 1,
+  totalPages = 1,
+): ReviewListResponse {
   return {
     apiVersion: "1.0.0",
     items,
-    pageInfo: { page: 1, perPage: 100, totalItems, totalPages: 1 },
+    pageInfo: { page, perPage: 100, totalItems, totalPages },
   };
 }
 
+function pageParam(url: string): string | null {
+  return new URL(url, "http://localhost").searchParams.get("page");
+}
+
 describe("fetchReviews", () => {
-  it("requests includeClosed=false and perPage=100, then returns parsed items", async () => {
+  it("requests includeClosed=false, perPage=100, and page=1, then returns parsed items", async () => {
     const handler = vi.fn().mockResolvedValue(jsonResponse(listResponse([review()])));
     setApiFetchHandler(handler);
 
@@ -46,6 +55,49 @@ describe("fetchReviews", () => {
     const requestedUrl = String(handler.mock.calls[0]?.[0]);
     expect(requestedUrl).toContain("includeClosed=false");
     expect(requestedUrl).toContain("perPage=100");
+    expect(requestedUrl).toContain("page=1");
+  });
+
+  it("fetches and concatenates all pages when totalPages > 1", async () => {
+    const handler = vi.fn().mockImplementation(async (input: string | URL) => {
+      const page = pageParam(String(input));
+      if (page === "2") {
+        return jsonResponse(listResponse([review({ reviewId: "pr-2" })], 2, 2, 2));
+      }
+      return jsonResponse(listResponse([review({ reviewId: "pr-1" })], 2, 1, 2));
+    });
+    setApiFetchHandler(handler);
+
+    const result = await fetchReviews();
+
+    expect(result.items.map((item) => item.reviewId)).toEqual(["pr-1", "pr-2"]);
+    expect(handler).toHaveBeenCalledTimes(2);
+    expect(pageParam(String(handler.mock.calls[1]?.[0]))).toBe("2");
+  });
+
+  it("does not issue extra requests when totalPages is 1", async () => {
+    const handler = vi.fn().mockResolvedValue(jsonResponse(listResponse([review()])));
+    setApiFetchHandler(handler);
+
+    await fetchReviews();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("fixes the page bound from page 1 and ignores a later page's different totalPages", async () => {
+    const handler = vi.fn().mockImplementation(async (input: string | URL) => {
+      const page = pageParam(String(input));
+      if (page === "2") {
+        // Simulates the server's total growing mid-fetch; must not chase page 3.
+        return jsonResponse(listResponse([review({ reviewId: "pr-2" })], 3, 2, 3));
+      }
+      return jsonResponse(listResponse([review({ reviewId: "pr-1" })], 2, 1, 2));
+    });
+    setApiFetchHandler(handler);
+
+    await fetchReviews();
+
+    expect(handler).toHaveBeenCalledTimes(2);
   });
 
   it("throws on a response that fails schema validation (contract drift)", async () => {

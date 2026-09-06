@@ -77,8 +77,8 @@ function repoKeyOf(review: Pick<Review, "organization" | "repository">): string 
 /**
  * LST-A02/A03/A04/A05/A06: repo/status/search filtering (AND-combined) and
  * repo-group collapse state, persisted per browser. `reviews` is expected to
- * already be the fully-loaded, non-closed list (fetchReviews' perPage=100
- * result) — this hook does no fetching of its own.
+ * already be the fully-loaded, non-closed list (fetchReviews' all-pages-
+ * concatenated result) — this hook does no fetching of its own.
  */
 export function useReviewListState(reviews: Review[]): UseReviewListState {
   const repoOptions = useMemo(() => {
