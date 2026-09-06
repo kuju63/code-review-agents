@@ -1,4 +1,4 @@
-import { Breadcrumb, BreadcrumbItem, IconButton } from "@carbon/react";
+import { Breadcrumb, BreadcrumbItem, IconButton, Theme } from "@carbon/react";
 import { Add, ChevronLeft, ChevronRight, Settings, View } from "@carbon/react/icons";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import type { ComponentType } from "react";
@@ -28,7 +28,10 @@ export function AppShell() {
 
   return (
     <div className={styles.shell}>
-      <header className={styles.header}>
+      {/* g100: Carbon components (IconButton's icon, tooltip, focus ring) are not
+          background-aware — without this they render in the white theme's dark
+          icon color, which disappears against this dark header. */}
+      <Theme theme="g100" as="header" className={styles.header}>
         <Link to="/" className={styles.brand}>
           {t("nav.brand")}
         </Link>
@@ -39,7 +42,7 @@ export function AppShell() {
         >
           <Settings />
         </IconButton>
-      </header>
+      </Theme>
       <div className={styles.body}>
         <nav
           className={collapsed ? `${styles.sidebar} ${styles.sidebarCollapsed}` : styles.sidebar}
