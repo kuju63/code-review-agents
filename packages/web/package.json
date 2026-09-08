@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",
+    "@happy-dom/global-registrator": "^20.14.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/router-plugin": "^1.168.35",
     "@testing-library/dom": "^10.4.1",

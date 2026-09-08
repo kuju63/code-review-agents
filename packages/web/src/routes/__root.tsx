@@ -1,27 +1,14 @@
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { createRootRoute, Link, Outlet } from "@tanstack/react-router";
+import { createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { useTranslation } from "react-i18next";
+import { AppShell } from "../shell/AppShell";
 
-const RootLayout = () => {
-  const { t } = useTranslation();
-
-  return (
-    <>
-      <div className="p-2 flex gap-2">
-        <Link to="/" className="[&.active]:font-bold">
-          {t("nav.home")}
-        </Link>{" "}
-        <Link to="/about" className="[&.active]:font-bold">
-          {t("nav.about")}
-        </Link>
-      </div>
-      <hr />
-      <Outlet />
-      <TanStackRouterDevtools />
-      <ReactQueryDevtools initialIsOpen={false} />
-    </>
-  );
-};
+const RootLayout = () => (
+  <>
+    <AppShell />
+    <TanStackRouterDevtools />
+    <ReactQueryDevtools initialIsOpen={false} />
+  </>
+);
 
 export const Route = createRootRoute({ component: RootLayout });

@@ -1,0 +1,77 @@
+{
+  "common": {
+    "close": "閉じる",
+    "retry": "再試行",
+    "cancel": "キャンセル",
+    "confirm": "実行"
+  },
+  "nav": {
+    "brand": "PR Review Agent",
+    "home": "ホーム",
+    "about": "概要",
+    "list": "コードレビュー一覧",
+    "reviewRequest": "レビュー依頼登録",
+    "settings": "設定"
+  },
+  "welcomeHome": "ホームへようこそ！",
+  "sidebar": {
+    "collapse": "サイドバーを折りたたむ",
+    "expand": "サイドバーを展開する"
+  },
+  "reviewList": {
+    "title": "コードレビュー一覧",
+    "subtitle": "登録済みのプルリクエストのレビュー状況を確認できます。",
+    "newReviewButton": "+ レビュー依頼を登録",
+    "loading": "読み込み中です…",
+    "loadErrorTitle": "一覧の取得に失敗しました。",
+    "loadErrorBody": "しばらくしてから再試行してください。",
+    "tokenMissingTitle": "GitHubアクセストークンが未設定です。",
+    "tokenMissingBody": "コードレビュー一覧を表示するには、設定画面でPersonal Access Tokenを設定してください。",
+    "goToSettingsButton": "設定画面を開く",
+    "filterRepoLabel": "リポジトリ",
+    "filterStatusLabel": "レビュー状態",
+    "filterAll": "すべて",
+    "searchLabel": "検索",
+    "searchPlaceholder": "PR番号やタイトルで検索",
+    "columnPR": "PR",
+    "columnBranch": "ブランチ",
+    "columnReviewStatus": "レビュー状態",
+    "columnPRStatus": "PRステータス",
+    "columnComments": "コメント",
+    "columnUpdatedAt": "更新日時",
+    "columnActions": "操作",
+    "noResults": "条件に一致するPRがありません。",
+    "commentsNone": "—",
+    "commentsCount": "{{count}}件",
+    "repoGroupCount": "{{count}}件",
+    "status": {
+      "not_started": "未実施",
+      "analyzing": "レビュー中",
+      "waiting": "対応待ち",
+      "completed": "完了",
+      "error": "エラー"
+    },
+    "prState": {
+      "open": "Open",
+      "closed": "Closed",
+      "merged": "Merged"
+    },
+    "closeButton": "クローズ",
+    "closeConfirmTitle": "このレビューをクローズしますか？",
+    "closeConfirmBody": "クローズすると一覧から除外されます。この操作は取り消せません。",
+    "closeConflictNotice": "未対応のコメントが残っているためクローズできません。",
+    "closeStaleNotice": "対象のレビューは更新または削除されています。一覧を更新しました。",
+    "closeGenericErrorNotice": "クローズに失敗しました。しばらくしてから再試行してください。",
+    "submittedNoticeTitle": "受付完了",
+    "submittedNoticeBody": "{{target}} の依頼を受け付けました。エージェントがレビューを開始します。"
+  },
+  "reviewRequest": {
+    "title": "レビュー依頼登録"
+  },
+  "reviewResult": {
+    "title": "レビュー結果確認"
+  },
+  "settings": {
+    "title": "GitHub連携設定"
+  }
+}

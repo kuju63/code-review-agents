@@ -5,7 +5,11 @@ export default mergeConfig(
   viteConfig,
   defineConfig({
     test: {
-      environment: "happy-dom",
+      // Registered manually via @happy-dom/global-registrator in test/setup.ts
+      // instead of Vitest's own happy-dom pool: that pool's copy of the window
+      // onto globalThis skips localStorage because Node's own (inert, opt-in)
+      // global shadows it first. The registrator handles that conflict itself.
+      environment: "node",
       globals: true,
       setupFiles: ["./src/test/setup.ts"],
       include: ["src/**/*.{test,spec}.{ts,tsx}"],

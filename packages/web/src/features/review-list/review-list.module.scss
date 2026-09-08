@@ -1,0 +1,99 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.headRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.loadingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filterRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.filterField {
+  min-width: 200px;
+  max-width: 280px;
+}
+
+.repoGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.repoGroupHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  color: #161616;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.repoCount {
+  color: #525252;
+  font-weight: 400;
+}
+
+.tableHead,
+.row {
+  display: grid;
+  grid-template-columns: 2.4fr 1.2fr 1fr 0.8fr 0.8fr 1.1fr 0.8fr;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+}
+
+.tableHead {
+  border-bottom: 1px solid #e0e0e0;
+  color: #525252;
+  font-size: 12px;
+}
+
+.row {
+  border-bottom: 1px solid #f4f4f4;
+  font-size: 14px;
+}
+
+.branchCell {
+  font-family: monospace;
+}
+
+.mutedCell {
+  color: #525252;
+}
+
+.noResults {
+  padding: 48px;
+  color: #525252;
+  font-size: 14px;
+  text-align: center;
+}
