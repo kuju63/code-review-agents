@@ -230,7 +230,7 @@ const pr471CheckoutLines = [
   diffLine("add", null, 35, "  return res.json();"),
   diffLine("ctx", 34, 36, "}"),
 ];
-const pr471Checkout = fileChange("src/lib/checkout.ts", "M", 5, 3, pr471CheckoutLines, [
+const pr471Checkout = fileChange("src/lib/checkout.ts", "M", 4, 2, pr471CheckoutLines, [
   commentFromMock(
     "src/lib/checkout.ts",
     pr471CheckoutLines,

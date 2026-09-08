@@ -26,6 +26,15 @@ export const CommentCountsSchema = z
     resolved: z.number().int().min(0),
     falsePositive: z.number().int().min(0),
   })
+  .superRefine((value, ctx) => {
+    if (value.total !== value.open + value.resolved + value.falsePositive) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "total must equal open + resolved + falsePositive",
+        path: ["total"],
+      });
+    }
+  })
   .openapi("CommentCounts");
 
 /** 共通エラー応答 (ADR-0012 §6 error taxonomy)。 */
@@ -48,6 +57,22 @@ export const DiffLineSchema = z
     oldLine: z.number().int().nullable().default(null),
     newLine: z.number().int().nullable().default(null),
     text: z.string(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.type === "add" && value.oldLine !== null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "oldLine must be null when type is add",
+        path: ["oldLine"],
+      });
+    }
+    if (value.type === "del" && value.newLine !== null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "newLine must be null when type is del",
+        path: ["newLine"],
+      });
+    }
   })
   .openapi("DiffLine");
 

@@ -44,9 +44,9 @@ describe("POST /reviews", () => {
     });
 
     expect(res.status).toBe(201);
-    expect(res.headers.get("Location")).toBe("/reviews/pr-486");
+    expect(res.headers.get("Location")).toBe("/reviews/acme-corp:web-frontend:pr-486");
     const body = await res.json();
-    expect(body.reviewId).toBe("pr-486");
+    expect(body.reviewId).toBe("acme-corp:web-frontend:pr-486");
     expect(body.status).toBe("draft");
   });
 

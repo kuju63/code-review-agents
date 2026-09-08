@@ -163,11 +163,20 @@ export function createReviewsStore(
     },
 
     registerReview(request) {
-      const reviewId = `pr-${request.pullRequest}`;
-      const existing = state.reviews.get(reviewId);
+      // reviewId ("pr-123" のような文字列) だけで既存判定すると、異なる
+      // organization/repository で同じ pullRequest 番号を登録した際に別テナントの
+      // Review を誤って返してしまう。pullRequest は repository 内でのみ一意なため、
+      // 既存判定は organization/repository/pullRequest の組で行う。
+      const existing = [...state.reviews.values()].find(
+        (review) =>
+          review.organization === request.organization &&
+          review.repository === request.repository &&
+          review.pullRequest === request.pullRequest,
+      );
       if (existing) {
         return { created: false, data: existing };
       }
+      const reviewId = `${request.organization}:${request.repository}:pr-${request.pullRequest}`;
       const timestamp = now();
       const review = ReviewSchema.parse({
         apiVersion: "1.0.0",

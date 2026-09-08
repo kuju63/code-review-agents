@@ -45,6 +45,18 @@ describe("CommentCountsSchema", () => {
       CommentCountsSchema.safeParse({ total: -1, open: 0, resolved: 0, falsePositive: 0 }).success,
     ).toBe(false);
   });
+
+  it("rejects a total that does not equal open + resolved + falsePositive", () => {
+    expect(
+      CommentCountsSchema.safeParse({ total: 5, open: 2, resolved: 1, falsePositive: 1 }).success,
+    ).toBe(false);
+  });
+
+  it("accepts a total that equals open + resolved + falsePositive", () => {
+    expect(
+      CommentCountsSchema.safeParse({ total: 4, open: 2, resolved: 1, falsePositive: 1 }).success,
+    ).toBe(true);
+  });
 });
 
 describe("ErrorResponseSchema", () => {
@@ -97,6 +109,36 @@ describe("DiffLineSchema", () => {
 
   it("rejects a type outside ctx/add/del", () => {
     expect(DiffLineSchema.safeParse({ type: "modify", text: "x" }).success).toBe(false);
+  });
+
+  it("rejects an add line with a non-null oldLine", () => {
+    expect(
+      DiffLineSchema.safeParse({ type: "add", oldLine: 10, newLine: 12, text: "+x" }).success,
+    ).toBe(false);
+  });
+
+  it("rejects a del line with a non-null newLine", () => {
+    expect(
+      DiffLineSchema.safeParse({ type: "del", oldLine: 10, newLine: 12, text: "-x" }).success,
+    ).toBe(false);
+  });
+
+  it("accepts a valid add line (oldLine null, newLine set)", () => {
+    const parsed = DiffLineSchema.parse({ type: "add", newLine: 12, text: "+x" });
+    expect(parsed.oldLine).toBeNull();
+    expect(parsed.newLine).toBe(12);
+  });
+
+  it("accepts a valid del line (newLine null, oldLine set)", () => {
+    const parsed = DiffLineSchema.parse({ type: "del", oldLine: 10, text: "-x" });
+    expect(parsed.newLine).toBeNull();
+    expect(parsed.oldLine).toBe(10);
+  });
+
+  it("accepts a valid ctx line with both oldLine and newLine set", () => {
+    const parsed = DiffLineSchema.parse({ type: "ctx", oldLine: 10, newLine: 12, text: " x" });
+    expect(parsed.oldLine).toBe(10);
+    expect(parsed.newLine).toBe(12);
   });
 });
 

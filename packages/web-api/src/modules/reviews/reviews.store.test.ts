@@ -102,7 +102,7 @@ describe("registerReview", () => {
 
     expect(result.created).toBe(true);
     expect(result.data).toMatchObject({
-      reviewId: "pr-486",
+      reviewId: "acme-corp:web-frontend:pr-486",
       status: "draft",
       reviewStatus: "not_started",
       latestAttemptId: null,
@@ -111,7 +111,7 @@ describe("registerReview", () => {
     });
 
     const listed = store.listReviews(BASE_PARAMS);
-    expect(listed.items.map((r) => r.reviewId)).toContain("pr-486");
+    expect(listed.items.map((r) => r.reviewId)).toContain("acme-corp:web-frontend:pr-486");
   });
 
   it("returns the existing review without creating a duplicate", () => {
@@ -127,6 +127,31 @@ describe("registerReview", () => {
     expect(result.created).toBe(false);
     expect(result.data.reviewId).toBe("pr-482");
     expect(store.listReviews(BASE_PARAMS).items.length).toBe(before);
+  });
+
+  it("creates a distinct review when the same PR number exists under a different org/repo", () => {
+    const store = buildStore({ now: () => "2026-08-11T00:00:00Z" });
+    const before = store.listReviews(BASE_PARAMS).items.length;
+
+    // pr-482 は既に organization=acme-corp/repository=web-frontend で登録済み。
+    // 同じ pullRequest=482 を別テナントで登録しても、既存の pr-482 を誤って返さない。
+    const result = store.registerReview({
+      organization: "other-corp",
+      repository: "other-repo",
+      pullRequest: 482,
+    });
+
+    expect(result.created).toBe(true);
+    expect(result.data.reviewId).not.toBe("pr-482");
+    expect(result.data).toMatchObject({
+      organization: "other-corp",
+      repository: "other-repo",
+      pullRequest: 482,
+    });
+
+    expect(store.listReviews(BASE_PARAMS).items.length).toBe(before + 1);
+    const original = store.getReview("pr-482");
+    expect(original).toMatchObject({ ok: true, data: { organization: "acme-corp" } });
   });
 });
 
