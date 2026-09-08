@@ -11,6 +11,9 @@ FROM registry.access.redhat.com/hi/nodejs:26-builder@sha256:329b9215d9ac6fe42e27
 
 USER root
 
+RUN dnf install -y python3 gcc make g++ \
+    && dnf clean all
+
 # packageManager (package.json) と一致させる
 RUN npm install --global pnpm@11.20.0
 
@@ -20,12 +23,18 @@ WORKDIR /app
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/agent-core/package.json packages/agent-core/
 COPY packages/a2a-server/package.json packages/a2a-server/
+COPY packages/evaluation/package.json packages/evaluation/
+COPY packages/web/package.json packages/web/
+COPY packages/web-api/package.json packages/web-api/
 
 RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.base.json tsconfig.json biome.json vitest.config.ts ./
 COPY packages/agent-core/ packages/agent-core/
 COPY packages/a2a-server/ packages/a2a-server/
+COPY packages/evaluation/ packages/evaluation/
+COPY packages/web/ packages/web/
+COPY packages/web-api/ packages/web-api/
 
 # ビルド検証: lint + 型チェックが通ることをコンテナビルド時にも保証する
 # (フルテストスイートは CI 側の別ジョブで実行し、ビルドを遅くしない)
