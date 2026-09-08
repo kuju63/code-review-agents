@@ -1,0 +1,17 @@
+extends:
+  - recommended
+
+apis:
+  reviews@v1:
+    root: ./reviews.yaml
+
+rules:
+  info-license-strict: off
+  no-server-example.com: off
+  no-unused-components: error
+  operation-4xx-response: error
+  operation-description: error
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-summary: error
+  security-defined: error
