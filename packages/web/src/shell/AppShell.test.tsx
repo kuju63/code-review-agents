@@ -68,14 +68,18 @@ describe("AppShell", () => {
     expect(await screen.findByText("review-request-content")).toBeInTheDocument();
   });
 
-  it("toggles sidebar label visibility and persists it (COM-05)", async () => {
+  it("toggles sidebar label visibility while preserving the link's accessible name and persists it (COM-05)", async () => {
     renderShell("/");
     await screen.findByText("list-content");
-    expect(screen.getByRole("link", { name: /設定/ })).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("link", { name: "設定" })).getByText("設定"),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "サイドバーを折りたたむ" }));
 
-    expect(screen.queryByRole("link", { name: /^設定$/ })).not.toBeInTheDocument();
+    const settingsLink = screen.getByRole("link", { name: "設定" });
+    expect(settingsLink).toBeInTheDocument();
+    expect(within(settingsLink).queryByText("設定")).not.toBeInTheDocument();
     expect(localStorage.getItem("sidebarCollapsed")).toBe("true");
   });
 

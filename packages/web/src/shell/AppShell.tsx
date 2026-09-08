@@ -65,6 +65,7 @@ export function AppShell() {
               className={styles.navLink}
               activeProps={{ className: styles.navLinkActive }}
               activeOptions={{ exact: to === "/" }}
+              aria-label={t(labelKey)}
             >
               <Icon aria-hidden />
               {!collapsed && <span className={styles.navLabel}>{t(labelKey)}</span>}
