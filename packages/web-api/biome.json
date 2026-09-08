@@ -6,11 +6,6 @@
     "includes": ["**/*"]
   },
   "linter": {
-    "rules": {
-      "a11y": {
-        "noAmbiguousAnchorText": "off",
-        "noSvgWithoutTitle": "off"
-      }
-    }
+    "rules": {}
   }
 }
