@@ -288,3 +288,7 @@ model provider port（差が出ない論点）: ADR-0008が`ModelProvider` Port�
   7. Idempotency-Key適用（ADR-0009 Gateway実装群 #366等と依存）
   8. Langflow/Dify受信/変換層のフロー構築（GitHub Webhook対応を第一弾、(1)(2)(7)依存）
   9. ドキュメント更新（`docs/a2a-api-design.md`、`.serena/memories/architecture.md`）
+
+## Addendum (2026-09-05)
+
+REST `/reviews` surface は `packages/web-api`（`packages/web` 専用の Backend for Frontend、`OpenAPIHono` + Zod + SQLite/Drizzle）としてホストする。本ADR執筆時点のDecision項番2〜7では `a2a-server` 内への追加を暗黙の前提としていたが、実装準備（依存関係の導入、`packages/web-api/AGENTS.md` によるディレクトリ構成・契約遵守ルールの明文化）は独立パッケージ `packages/web-api` に対して先行して行われた。ホスト先パッケージの変更のみであり、canonical契約（application層 use-caseの呼び出し方、REST/A2Aの2 surface構成、identity階層、error taxonomy、idempotency契約）や本ADRのDecision本文が定める内容は変更しない。
