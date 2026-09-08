@@ -1,16 +1,16 @@
-# Graph Report - code-review-agent  (2026-09-06)
+# Graph Report - code-review-agent  (2026-09-08)
 
 ## Corpus Check
-- 471 files · ~294,550 words
+- 473 files · ~294,637 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 3868 nodes · 5282 edges · 361 communities (269 shown, 92 thin omitted)
+- 3874 nodes · 5290 edges · 356 communities (265 shown, 91 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 31 edges (avg confidence: 0.69)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6d643500`
+- Built from commit: `9a143a23`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -69,7 +69,7 @@
 - required
 - 5. Re-render Optimization
 - scripts
-- base-reviewer.ts
+- スタック別 Gold-set ターゲット選定仕様
 - 05 Secrets Exposure (Underestimating Where Data Can Reach)
 - 08 Configuration & Environment (The Gap Between "Works" and "Works Safely")
 - 10 Software Integrity Failures (Trusting Without Verifying)
@@ -92,7 +92,7 @@
 - a2a/index.ts
 - generate-evaluation-report.ts
 - 2. 設計方針
-- review-orchestrator.test.ts
+- pr-info-collector.test.ts
 - A2A API 実装プラン
 - 10. 検証手順
 - Worktree Plugin Progress Notification Specification
@@ -113,7 +113,7 @@
 - 1. 背景と問題
 - Seeded set生成: mutation注入ロジック 要件と設計ドキュメント
 - run_evaluation_pipeline.sh
-- generate-evaluation-report.test.ts
+- Router Lifecycle and Events
 - remove-worktree.sh
 - setup-worktree.sh
 - 3.1 Phase 1: 決定論的改善 (即座に着手可能) — 実装済み (Issue #111)
@@ -121,14 +121,12 @@
 - 5. FastAPI アプリケーション構成
 - 7.4 対応方針
 - 2. A2A プロトコル実装仕様
-- lead-engineer.route.ts
+- a2a-server/src/index.ts
 - Build (Developer Setup)
-- docs/a2a-api-design.md
-- granite 構造化出力失敗: テスト・検証結果 (Python版)
+- docs/finding-location-silent-drop-spec.md
 - 2. Advanced CSS Animations
 - Frontend PR Review Agent — System Prompt
 - AGENTS.md
-- Injection Context
 - 0011. LocalLLM配信契約: Worker障害後の再配信・再起動回復・状態分離
 - Code Review Agent Evaluation Plan
 - 03 CSRF / CORS (Request Origin and Intent Verification)
@@ -145,8 +143,8 @@
 - 開発環境の初期セットアップ
 - Component Styling
 - Angular Review Guidelines
-- 0008-core-extension-boundaries.md
-- pr-info-collector.ts
+- 0007-Multi-Container-Architecture-for-Scalability
+- target-file.ts
 - Svelte checks
 - reviewing-web-security/SKILL.md
 - React Composition Patterns
@@ -163,7 +161,6 @@
 - エージェント開発ガイド — web-api パッケージ
 - PR Info Collector 正確性検証レポート（20回統計分析）
 - required
-- A2ASendTaskRequest
 - reviewing-universal/SKILL.md
 - React Composition Patterns
 - React Best Practices
@@ -205,10 +202,8 @@
 - web/biome.json
 - Contributing Guide
 - scripts
-- review.ts
 - エージェント開発ガイド — web パッケージ
 - Review Matching Rubric
-- pr-info-collector.test.ts
 - Dependency audit checks
 - @attach.md
 - snippet.md
@@ -222,7 +217,6 @@
 - Test quality checks
 - 1. Eliminating Waterfalls
 - a2a-server/package.json
-- createModelProvider
 - config.ts
 - pull_request_template.md
 - 位置情報欠落によるfinding/decisionのサイレントドロップ: 可視化と緩和 設計ドキュメント
@@ -244,7 +238,7 @@
 - 8. Advanced Patterns
 - async-cheap-condition-before-await.md
 - Prefer Statically Analyzable Paths
-- .error
+- pr-info-collector.ts
 - server-hoist-static-io.md
 - sass
 - @testing-library/jest-dom
@@ -281,7 +275,7 @@
 - task_completion.md
 - tech_stack.md
 - enum
-- ProjectType
+- base-reviewer.ts
 - bundle-conditional.md
 - bundle-defer-third-party.md
 - bundle-dynamic-imports.md
@@ -379,8 +373,8 @@
 10. `ReviewContext` - 17 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `DefaultLLMFakeReviewer` --inherits--> `LLMReviewAgent`  [EXTRACTED]
-  packages/agent-core/src/agents/base-reviewer.test.ts → packages/agent-core/src/agents/base-reviewer.ts
+- `ScoreEvaluationOptions` --references--> `ProviderType`  [EXTRACTED]
+  packages/evaluation/src/score-evaluation.ts → packages/agent-core/src/agents/model-provider-factory.ts
 - `DetectionRule` --references--> `ProjectType`  [EXTRACTED]
   packages/agent-core/src/agents/registry.ts → packages/agent-core/src/models/review.ts
 - `main()` --indirect_call--> `candidate()`  [INFERRED]
@@ -393,7 +387,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (361 total, 92 thin omitted)
+## Communities (356 total, 91 thin omitted)
 
 ### Community 0 - "dependencies"
 Cohesion: 0.07
@@ -408,8 +402,8 @@ Cohesion: 0.12
 Nodes (17): ADR-0012: 呼び出しインターフェース抽象化（Web/CLI/A2A共有）方針の決定, Consequences, Context, Decision, 案1: 自前Gateway実装, 案2: Langflow/Difyを受信/変換層としたGateway（採用）, 案3: Contract-First（OpenAPI/codegen canonical）, 検討事項 (+9 more)
 
 ### Community 3 - "reviewer-runtime.ts"
-Cohesion: 0.07
-Nodes (37): createAngularReviewerRoute(), AngularReviewerServiceOptions, createAngularReviewerService(), createReactReviewerRoute(), createReactReviewerService(), ReactReviewerServiceOptions, A2AReviewerSettings, createReviewerService() (+29 more)
+Cohesion: 0.06
+Nodes (38): createAngularReviewerRoute(), AngularReviewerServiceOptions, createAngularReviewerService(), createReactReviewerRoute(), createReactReviewerService(), ReactReviewerServiceOptions, A2AReviewerSettings, createReviewerService() (+30 more)
 
 ### Community 4 - "検討事項"
 Cohesion: 0.10
@@ -428,8 +422,8 @@ Cohesion: 0.14
 Nodes (8): MCP接続の安定化 実装計画 (Issue #115、Python版), テスト方針, 変更対象ファイル(Python版・完了済み), 検証手順, Ollamaバックエンドが処理できないツール結果コンテンツ型の除去 テスト・検証手順 (Python版), テスト方針(TDD), 検証手順, `agents/` + `tools/` TypeScript移行 計画からの逸脱記録 (Issue #252)
 
 ### Community 8 - "models/index.ts"
-Cohesion: 0.15
-Nodes (29): buildPromptAndIndex(), IndexEntry, LeadEngineerAgent, resolveDecisions(), acceptedDecisions(), byVerdict(), DecisionVerdict, EvaluationFormat (+21 more)
+Cohesion: 0.11
+Nodes (41): buildPromptAndIndex(), IndexEntry, LeadEngineerAgent, resolveDecisions(), acceptedDecisions(), byVerdict(), DecisionVerdict, EvaluationFormat (+33 more)
 
 ### Community 9 - "評価パイプライン: 構造化ロギングへの移行 設計ドキュメント"
 Cohesion: 0.09
@@ -460,8 +454,8 @@ Cohesion: 0.18
 Nodes (11): 1. 背景, 2. 決定, 3.1 `evaluation/tools/run_agent_evaluation.py`, 3.2 テスト — `tests/evaluation/tools/test_run_agent_evaluation.py`, 3. 実装, 4. ルーティング不一致の解消（Issue #238、旧・既知の逸脱）, 5. タイムアウト予算への影響, 6. テスト方針 (+3 more)
 
 ### Community 16 - "review-orchestrator.ts"
-Cohesion: 0.10
-Nodes (11): ReviewAgent, ReviewerClass, PlainFakeReviewer, FakeReviewer, makePrInfo(), withFiles(), ReviewOutcome, SelectedReviewer (+3 more)
+Cohesion: 0.08
+Nodes (12): ReviewAgent, ReviewerClass, PlainFakeReviewer, FakeReviewer, makePrInfo(), withFiles(), ReviewOutcome, SelectedReviewer (+4 more)
 
 ### Community 17 - "A2A API 実装計画・Python版設計の全文・検証手順"
 Cohesion: 0.20
@@ -544,8 +538,8 @@ Cohesion: 0.12
 Nodes (17): 1.1 発生した事象, 1.2 根本原因, 1.3 「特定PRでだけ起きる」理由, 1.4 将来の拡張との関係, 1. 背景と問題, 2.1 `file_read`のTOOL_SPECをラップして`mode="document"`の選択肢を消す, 2.2 `BeforeModelCallEvent`で会話履歴(`messages`)を書き換える, 2. 却下した設計 (+9 more)
 
 ### Community 37 - "angular-developer/SKILL.md"
-Cohesion: 0.09
-Nodes (17): Example: Testing with a `MatButtonHarness`, Key Concepts, Testing with Component Harnesses, Using a Harness in a Unit Test, Why Use Harnesses?, Custom & Enterprise Testing Tools, End-to-End (E2E) Testing, Setting Up and Running E2E Tests (+9 more)
+Cohesion: 0.10
+Nodes (16): Example: Testing with a `MatButtonHarness`, Key Concepts, Testing with Component Harnesses, Using a Harness in a Unit Test, Why Use Harnesses?, Custom & Enterprise Testing Tools, End-to-End (E2E) Testing, Setting Up and Running E2E Tests (+8 more)
 
 ### Community 38 - "Seeded set生成: (ファイル, ルール)組み合わせ重複 修正 設計ドキュメント"
 Cohesion: 0.22
@@ -556,7 +550,7 @@ Cohesion: 0.12
 Nodes (16): description, type, angular, react, svelte, vue, minimum, type (+8 more)
 
 ### Community 40 - "02 Authentication & Authorization (Confusing Identity with Permission)"
-Cohesion: 0.12
+Cohesion: 0.11
 Nodes (17): 02 Authentication & Authorization (Confusing Identity with Permission), Contents, Cryptographic Failures: When "Fast" Is a Vulnerability, JWT Misuse: Confusing "Verified" with "Trustworthy", Line of reasoning in code, Line of reasoning in code, Line of reasoning in code, Line of reasoning in code (+9 more)
 
 ### Community 41 - "package.json"
@@ -611,9 +605,9 @@ Nodes (16): 5.10 Subscribe to Derived State, 5.11 Use Functional setState Update
 Cohesion: 0.05
 Nodes (43): better-sqlite3, dotenv, drizzle-kit, drizzle-orm, @hono/zod-openapi, dependencies, better-sqlite3, dotenv (+35 more)
 
-### Community 54 - "base-reviewer.ts"
-Cohesion: 0.16
-Nodes (14): annotatePatch(), buildPrompt(), composeSystemPrompt(), ReviewerConfig, splitPatchLines(), context(), DefaultLLMFakeReviewer, makePrInfo() (+6 more)
+### Community 54 - "スタック別 Gold-set ターゲット選定仕様"
+Cohesion: 0.22
+Nodes (9): 1. 全体データフロー, 2. リポジトリ選定条件, 3. PR 選定条件, 4. severity / impact / priority の LLM 分類, 5. 出力スキーマ, 6. 再開と上限, 7. 評価実行対象の抽出, 8. テスト方針 (+1 more)
 
 ### Community 55 - "05 Secrets Exposure (Underestimating Where Data Can Reach)"
 Cohesion: 0.13
@@ -660,7 +654,7 @@ Cohesion: 0.25
 Nodes (7): 1. 背景と問題（Python版実装時点の記録）, 2. 調査済み事実(Python版実装時点), 3. パラメータ探索の実験結果, 4. `.env.example`, 5. スコープ外, 6. 変更ファイル一覧（Python版・完了済み。TS移植は `packages/agent-core/src/agents/model-provider-factory.ts` に統合済み）, LLM生成パラメータの安全弁(max_tokens / frequency_penalty) 実装記録 (Issue #208)
 
 ### Community 66 - "agent-core/src/index.ts"
-Cohesion: 0.30
+Cohesion: 0.37
 Nodes (7): AgentCardHttpResponse, AgentCardHttpResponseSchema, GetTaskHttpResponse, GetTaskHttpResponseSchema, SendTaskHttpResponse, SendTaskHttpResponseSchema, ReviewerSkillInputSchema
 
 ### Community 67 - "12 Exception Handling Failures (When Error Paths Are Not Designed)"
@@ -681,31 +675,31 @@ Nodes (6): PR Review Agent — 画面モックアップ (Issue #243), 動作確�
 
 ### Community 71 - "orchestrator.service.ts"
 Cohesion: 0.09
-Nodes (26): app, settings, createOrchestratorRoute(), CreateOrchestratorRouteOptions, requestBody, A2AOrchestratorSettings, createOrchestratorService(), DEFAULT_ORCHESTRATOR_SETTINGS (+18 more)
+Nodes (22): AgentCard, A2AOrchestratorSettings, createOrchestratorService(), DEFAULT_ORCHESTRATOR_SETTINGS, extractData(), InMemoryOrchestratorTaskStore, jsonSchemaWithOptionalDefaults(), LeadEngineerAgentClass (+14 more)
 
 ### Community 72 - "Code Review Agent"
 Cohesion: 0.14
 Nodes (14): Acknowledgments, Authors, Code Review Agent, Contributing, Evaluation Workflow (Current), License, Project Status, Roadmap (+6 more)
 
 ### Community 73 - "score-evaluation.ts"
-Cohesion: 0.13
-Nodes (30): defaultScore(), buildItemDetail(), EvalRow, exactMatch(), Finding, IMPACTS, isDirectExecution(), isMatch() (+22 more)
+Cohesion: 0.12
+Nodes (32): defaultScore(), buildItemDetail(), EvalRow, exactMatch(), Finding, IMPACTS, isDirectExecution(), isMatch() (+24 more)
 
 ### Community 74 - "a2a/index.ts"
 Cohesion: 0.08
-Nodes (46): A2ADataPart, A2ADataPartDiscriminatedSchema, A2ADataPartSchema, A2AMessageSchema, A2APartDiscriminatedSchema, A2APartSchema, A2ASendTaskRequestSchema, A2ATextPart (+38 more)
+Nodes (47): A2ADataPart, A2ADataPartDiscriminatedSchema, A2ADataPartSchema, A2AMessage, A2AMessageSchema, A2APartDiscriminatedSchema, A2APartSchema, A2ASendTaskRequestSchema (+39 more)
 
 ### Community 75 - "generate-evaluation-report.ts"
-Cohesion: 0.13
-Nodes (20): send_discord_notification(), defaultGetCommitHash(), errorMessage(), execFileAsync, formatExecutedAt(), formatTsStr(), generateReport(), GenerateReportArgs (+12 more)
+Cohesion: 0.10
+Nodes (32): send_discord_notification(), buildReport(), defaultGetCommitHash(), errorMessage(), EvaluationScores, execFileAsync, findingRow(), formatExecutedAt() (+24 more)
 
 ### Community 76 - "2. 設計方針"
 Cohesion: 0.17
 Nodes (10): 1. 背景と問題, 2.1 コンテナ起動への切り替え, 2.2 環境変数の転送方式: `--env-file` を使わない理由, 2.3 `GITHUB_TOKEN` はコンテナに渡さない, 2.4 `--network=host` が必須である理由, 2.5 停止機構をSKILL.md側に一本化する, 2.6 スクリプトの配置, 2. 設計方針 (+2 more)
 
-### Community 77 - "review-orchestrator.test.ts"
-Cohesion: 0.14
-Nodes (7): StructuredOutputMissingError, CONFIG, { mockConnect, mockDisconnect, mockCreateGithubMcpClient }, CreateGithubMcpClientOptions, GithubMcpConnectionError, RetryOptions, withRetry()
+### Community 77 - "pr-info-collector.test.ts"
+Cohesion: 0.13
+Nodes (13): StructuredOutputMissingError, BASE_CONFIG, createDispatch(), DispatchConfig, mcpErrorResult(), mcpJsonResult(), mcpTextResult(), { mockAgentCtor, mockAgentInvoke, mockCreateGithubMcpClient, mockCreateModelProvider } (+5 more)
 
 ### Community 78 - "A2A API 実装プラン"
 Cohesion: 0.29
@@ -783,9 +777,9 @@ Nodes (5): 1.1 発覚した事象, 1.2 直接原因: `inject_patch()` の挿入�
 Cohesion: 0.40
 Nodes (5): 2. 要件: mutation注入ロジックが満たすべき性質, 4. 対象外, 5. 検証観点 (実装時のテスト方針), 6. 今後の進め方, Seeded set生成: mutation注入ロジック 要件と設計ドキュメント
 
-### Community 98 - "generate-evaluation-report.test.ts"
-Cohesion: 0.18
-Nodes (13): buildReport(), EvaluationScores, findingRow(), getOr(), goldHeading(), refCell(), renderItemDetail(), sanitizeCell() (+5 more)
+### Community 98 - "Router Lifecycle and Events"
+Cohesion: 0.33
+Nodes (5): Common Router Events (Chronological), Common Use Cases, Debugging, Router Lifecycle and Events, Subscribing to Events
 
 ### Community 101 - "3.1 Phase 1: 決定論的改善 (即座に着手可能) — 実装済み (Issue #111)"
 Cohesion: 0.40
@@ -807,21 +801,17 @@ Nodes (4): 7.4.1 V2 (`verify_only_additions_changed`) への対応: 構造的原
 Cohesion: 0.67
 Nodes (3): 2.1 Pydantic モデル（`src/code_review_agent/a2a/models.py`）, 2.2 TaskStore（`src/code_review_agent/a2a/task_store.py`）, 2. A2A プロトコル実装仕様
 
-### Community 106 - "lead-engineer.route.ts"
-Cohesion: 0.22
-Nodes (8): createGithubAuthMiddleware(), GithubAuthEnv, GithubAuthMiddlewareOptions, GithubAuthVariables, callMiddleware(), createLeadEngineerRoute(), CreateLeadEngineerRouteOptions, requestBody
+### Community 106 - "a2a-server/src/index.ts"
+Cohesion: 0.11
+Nodes (14): app, settings, createGithubAuthMiddleware(), GithubAuthEnv, GithubAuthMiddlewareOptions, GithubAuthVariables, callMiddleware(), createLeadEngineerRoute() (+6 more)
 
 ### Community 107 - "Build (Developer Setup)"
 Cohesion: 0.22
 Nodes (9): 0. Requirements, 1. Clone and enter workspace, 2. Install dependencies, 3. Enable Git hooks (pre-commit), 4. Run application, 5. Test, 6. Lint, format, and type check (Biome / tsc), Build (Developer Setup) (+1 more)
 
-### Community 108 - "docs/a2a-api-design.md"
-Cohesion: 0.21
-Nodes (3): 位置情報欠落によるfinding/decisionのサイレントドロップ: 実装計画, 検証①: 欠落の可視化, 検証②: 位置情報の転記を明示的に指示
-
-### Community 109 - "granite 構造化出力失敗: テスト・検証結果 (Python版)"
-Cohesion: 0.33
-Nodes (6): granite 構造化出力失敗: テスト・検証結果 (Python版), 変更#2（緩和）のテスト, 変更#4（可視化）のテスト, 実際の失敗文言（#4 のログが捕捉）, 検証結果（granite4.1:8b, gold 5 + seeded 10, `--concurrency 2`）, 結論
+### Community 109 - "docs/finding-location-silent-drop-spec.md"
+Cohesion: 0.15
+Nodes (9): 位置情報欠落によるfinding/decisionのサイレントドロップ: 実装計画, 検証①: 欠落の可視化, 検証②: 位置情報の転記を明示的に指示, granite 構造化出力失敗: テスト・検証結果 (Python版), 変更#2（緩和）のテスト, 変更#4（可視化）のテスト, 実際の失敗文言（#4 のログが捕捉）, 検証結果（granite4.1:8b, gold 5 + seeded 10, `--concurrency 2`） (+1 more)
 
 ### Community 110 - "2. Advanced CSS Animations"
 Cohesion: 0.15
@@ -834,10 +824,6 @@ Nodes (12): Behavioral constraints, Frontend PR Review Agent — System Prompt, 
 ### Community 112 - "AGENTS.md"
 Cohesion: 0.14
 Nodes (8): Operating Constraints (Python-era workflow record), React/Angular Agent Skills Implementation Plan, Tests, Validation, Operating Constraints (Python-era workflow record), Svelte Agent Skills Implementation Plan, Tests, Validation
-
-### Community 113 - "Injection Context"
-Cohesion: 0.40
-Nodes (4): `assertInInjectionContext`, Injection Context, `runInInjectionContext`, Where is an Injection Context Available?
 
 ### Community 114 - "0011. LocalLLM配信契約: Worker障害後の再配信・再起動回復・状態分離"
 Cohesion: 0.14
@@ -856,8 +842,8 @@ Cohesion: 0.15
 Nodes (7): Function bindings, Keyed each blocks, CSP, Serialization, $inspect.trace(...), $inspect(...).with, createSubscriber
 
 ### Community 118 - "pr-info.service.ts"
-Cohesion: 0.11
-Nodes (18): A2AMessage, createPrInfoRoute(), CreatePrInfoRouteOptions, requestBody, A2AServerSettings, createPrInfoService(), DEFAULT_A2A_SERVER_SETTINGS, extractData() (+10 more)
+Cohesion: 0.09
+Nodes (19): A2ASendTaskRequest, A2ASendTaskResponse, createPrInfoRoute(), CreatePrInfoRouteOptions, requestBody, A2AServerSettings, createPrInfoService(), DEFAULT_A2A_SERVER_SETTINGS (+11 more)
 
 ### Community 119 - "3. 比較対象アプローチ"
 Cohesion: 0.10
@@ -876,8 +862,8 @@ Cohesion: 0.17
 Nodes (11): 07 File Upload & Path Traversal (The Dual Nature of Files), Contents, File Upload: Controlling What Gets Uploaded, Line of reasoning in code, Line of reasoning in code, Mechanism of impact, Mechanism of impact, Path Traversal: The Danger of "Path" as Input (+3 more)
 
 ### Community 123 - "EVALUATION_PLAN.md"
-Cohesion: 0.12
-Nodes (13): 1. 全体データフロー, 2. リポジトリ選定条件, 3. PR 選定条件, 4. severity / impact / priority の LLM 分類, 5. 出力スキーマ, 6. 再開と上限, 7. 評価実行対象の抽出, 8. テスト方針 (+5 more)
+Cohesion: 0.22
+Nodes (4): Seeded set生成: 専用Seedリポジトリ方式 実装計画, テスト方針, 移行チェックリスト・作業順序, 指摘単位3軸評価 テスト方針 (Issue #168)
 
 ### Community 124 - "build-gold-set.ts"
 Cohesion: 0.10
@@ -903,20 +889,20 @@ Nodes (10): Component Styling, Defining Styles, External Styles, `:host`, `:host
 Cohesion: 0.18
 Nodes (11): Angular Aria, Angular Review Guidelines, Components, Dependency Injection, Forms, Pipes, Reactivity and Data Management, Routing (+3 more)
 
-### Community 130 - "0008-core-extension-boundaries.md"
-Cohesion: 0.21
+### Community 130 - "0007-Multi-Container-Architecture-for-Scalability"
+Cohesion: 0.22
 Nodes (9): 0007-Multi-Container-Architecture-for-Scalability, 影響・フォローアップ, 案A: 単純なコンテナ・レプリカ構成 (Monolithic Container Scale-out), 案B: API Gateway + Worker Queue 構成 (Asynchronous Task Processing), 案C: 分離されたマイクロサービス構成 (Microservices with Shared State), 検討事項, 検討内容, 検討結果 (+1 more)
 
-### Community 131 - "pr-info-collector.ts"
-Cohesion: 0.25
-Nodes (12): ADR-0004, CallMcpTool, createMcpToolCaller(), extractToolTextBlocks(), LOCKFILE_CONTENT_NAMES, McpToolInstance, DEPENDENCY_FILENAMES, isDependencyFile() (+4 more)
+### Community 131 - "target-file.ts"
+Cohesion: 0.62
+Nodes (5): DEPENDENCY_FILENAMES, isDependencyFile(), isTargetFile(), TARGET_EXTENSIONS, TARGET_FILENAMES
 
 ### Community 132 - "Svelte checks"
 Cohesion: 0.18
 Nodes (11): Contents, Context7 trigger examples, each block key, {@html} XSS, Issue format, onMount cleanup, Reactivity tracking (Svelte 4), Runes migration consistency (+3 more)
 
 ### Community 133 - "reviewing-web-security/SKILL.md"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (10): 2021 (reference), 2025 (current), How to Review, OWASP Top 10 Coverage, Reference Files, Stating Review Limits, Step 1: Characterize the PR (30 seconds), Step 2: Select references by signal (+2 more)
 
 ### Community 134 - "React Composition Patterns"
@@ -975,10 +961,6 @@ Nodes (12): 1. 正解データ（Ground Truth）, 2. 統計サマリ（成功試
 Cohesion: 0.14
 Nodes (13): $id, file_changes, id, pr_number, repository, stack, required, $schema (+5 more)
 
-### Community 148 - "A2ASendTaskRequest"
-Cohesion: 0.16
-Nodes (5): A2ASendTaskRequest, A2ASendTaskResponse, AgentCard, LeadEngineerService, PrInfoService
-
 ### Community 149 - "reviewing-universal/SKILL.md"
 Cohesion: 0.25
 Nodes (3): Quick triage, Reference files, Reviewing universal concerns
@@ -1020,12 +1002,12 @@ Cohesion: 0.22
 Nodes (8): 1. Via `ActivatedRoute` (Traditional), 2. Via Component Inputs (Modern), Accessing Resolved Data, Best Practices, Configuring the Route, Creating a Resolver, Data Resolvers, Error Handling
 
 ### Community 159 - "logging.ts"
-Cohesion: 0.16
-Nodes (10): defaultConfig(), emit(), getLogger(), LEVEL_RANK, Logger, LoggingConfig, LoggingOptions, LogLevel (+2 more)
+Cohesion: 0.17
+Nodes (9): defaultConfig(), emit(), getLogger(), LEVEL_RANK, Logger, LoggingConfig, LoggingOptions, LogLevel (+1 more)
 
 ### Community 160 - "A2ATask"
-Cohesion: 0.09
-Nodes (6): A2APart, A2ATask, LeadEngineerTaskStore, OrchestratorTaskStore, TaskStore, ReviewerTaskStore
+Cohesion: 0.13
+Nodes (5): A2APart, A2ATask, LeadEngineerTaskStore, OrchestratorTaskStore, TaskStore
 
 ### Community 161 - "ADR-0006: 指摘単位の severity / impact / priority 評価方式"
 Cohesion: 0.10
@@ -1143,10 +1125,6 @@ Nodes (11): 1. Principles, 2. Development Flow (Spec-Driven + TDD), 3. Local Dev
 Cohesion: 0.18
 Nodes (11): scripts, build, check, check:write, dev, format, format:check, lint (+3 more)
 
-### Community 190 - "review.ts"
-Cohesion: 0.22
-Nodes (12): FileChangeSchema, PRInfo, PRInfoResultSchema, PRInfoSchema, RepositoryInfo, RepositoryInfoSchema, ReviewFindingSchema, ReviewOutput (+4 more)
-
 ### Community 191 - "エージェント開発ガイド — web パッケージ"
 Cohesion: 0.22
 Nodes (9): routes/ 配下の命名ルール（Tanstack Router ルール）, エージェント開発ガイド — web パッケージ, コマンド, ツールチェーン 備忘, テストの実行, 技術スタック, 概要, 構成（フォルダ構成） (+1 more)
@@ -1154,10 +1132,6 @@ Nodes (9): routes/ 配下の命名ルール（Tanstack Router ルール）, エ�
 ### Community 192 - "Review Matching Rubric"
 Cohesion: 0.22
 Nodes (8): Category Mapping, Impact Mapping, Matching Levels, Priority Mapping, Purpose, Review Decision Scoring (Lead Engineer), Review Matching Rubric, Severity Mapping
-
-### Community 193 - "pr-info-collector.test.ts"
-Cohesion: 0.25
-Nodes (9): PRInfoCollectorConfig, BASE_CONFIG, createDispatch(), DispatchConfig, mcpErrorResult(), mcpJsonResult(), mcpTextResult(), { mockAgentCtor, mockAgentInvoke, mockCreateGithubMcpClient, mockCreateModelProvider } (+1 more)
 
 ### Community 194 - "Dependency audit checks"
 Cohesion: 0.25
@@ -1210,10 +1184,6 @@ Nodes (7): 1.1 Check Cheap Conditions Before Async Flags, 1.2 Defer Await Until 
 ### Community 206 - "a2a-server/package.json"
 Cohesion: 0.10
 Nodes (20): @hono/zod-validator, dependencies, @code-review-agent/agent-core, hono, @hono/node-server, @hono/zod-validator, devDependencies, tsx (+12 more)
-
-### Community 207 - "createModelProvider"
-Cohesion: 0.28
-Nodes (7): createModelProvider(), CreateModelProviderOptions, ProviderType, mockedCreateOllama, mockedOpenAIModel, mockedVercelModel, ScoreEvaluationOptions
 
 ### Community 208 - "config.ts"
 Cohesion: 0.43
@@ -1291,9 +1261,9 @@ Nodes (5): 8.1 Do Not Put Effect Events in Dependency Arrays, 8.2 Initialize App
 Cohesion: 0.50
 Nodes (3): File-System Paths, Import Paths, Prefer Statically Analyzable Paths
 
-### Community 230 - ".error"
-Cohesion: 0.22
-Nodes (6): isInfraError(), extractHeadRef(), extractLabelNames(), isPlainRecord(), PRInfoCollector, makeLlmSemanticJudge()
+### Community 230 - "pr-info-collector.ts"
+Cohesion: 0.09
+Nodes (23): ADR-0004, ReviewerConfig, isInfraError(), createModelProvider(), CreateModelProviderOptions, ProviderType, mockedCreateOllama, mockedOpenAIModel (+15 more)
 
 ### Community 239 - "2. 要検討事項（比較表 + 採用/却下理由）"
 Cohesion: 0.33
@@ -1315,6 +1285,10 @@ Nodes (5): AIエージェント上でのシェルスクリプト実施時, Devel
 Cohesion: 0.40
 Nodes (4): ModelProviderFactory によるOllamaネイティブ対応 実装計画 (Issue #214), テスト方針(TDD), 変更ファイル一覧（Python版・完了済み。TS移植は `packages/agent-core/src/agents/model-provider-factory.ts` として完了済み）, 検証計画
 
+### Community 259 - "web-api/src/index.ts"
+Cohesion: 0.32
+Nodes (5): app, AppConfig, envSchema, loadConfigFromEnv(), config
+
 ### Community 261 - "Agent Architecture"
 Cohesion: 0.50
 Nodes (3): Agent Architecture, Layering, Reviewer plugin pattern (`packages/agent-core/src/agents/registry.ts` + `base-reviewer.ts`)
@@ -1323,9 +1297,9 @@ Nodes (3): Agent Architecture, Layering, Reviewer plugin pattern (`packages/agen
 Cohesion: 0.29
 Nodes (7): angular, react, svelte, vue, stack, enum, type
 
-### Community 273 - "ProjectType"
-Cohesion: 0.26
-Nodes (13): LLMReviewAgent, NoMcpLLMFakeReviewer, registerReviewer(), AngularReviewer, ReactReviewer, reviewers, SecurityReviewer, SvelteReviewer (+5 more)
+### Community 273 - "base-reviewer.ts"
+Cohesion: 0.19
+Nodes (21): annotatePatch(), buildPrompt(), composeSystemPrompt(), LLMReviewAgent, splitPatchLines(), context(), DefaultLLMFakeReviewer, makePrInfo() (+13 more)
 
 ### Community 352 - "registry.ts"
 Cohesion: 0.19
@@ -1348,8 +1322,8 @@ Cohesion: 0.17
 Nodes (12): 1. 決定済み事項（Issue #250コメントより。比較検討は不要、決定と理由のみ記録する）, 3. Nix flakeに関する運用上の注意（重要）, 4.1 Python/Node.js併存とpush対象の固定（ユーザー確認済み決定事項）, 4.2 Node hardened imageの調査結果（`podman`で検証済み）, 4. コンテナビルド方針, 5. モデルプロバイダ・スパイクの結果, 6. Stacked PR運用（`gh` + `gh-stack`）, 7. #251以降への申し送り (+4 more)
 
 ### Community 378 - "merge-predictions.ts"
-Cohesion: 0.18
-Nodes (12): failedIdsPath(), isNonEmptyString(), logger, main(), merge(), MergeOptions, ParsedOptions, readJsonl() (+4 more)
+Cohesion: 0.16
+Nodes (14): loadFailedIds(), failedIdsPath(), isNonEmptyString(), logger, main(), merge(), MergeOptions, ParsedOptions (+6 more)
 
 ### Community 382 - "agent-core/package.json"
 Cohesion: 0.04
@@ -1364,12 +1338,12 @@ Cohesion: 0.13
 Nodes (13): `models/` TypeScript移行 コミット粒度・PRタイトル規約 (Issue #251), 1. 決定済み事項（本Issue着手前に確定していたもの）, 2.1 Zodのバージョン, 2.2 Enum表現, 2.3 フィールド命名（camelCase化）, 2.4 Nullable値の表現, 2.5 `ReviewContext.shared_mcp_client`の扱い, 2.6 `LeadEngineerReport`の振る舞い(accepted/rejected/to_markdown/to_evaluation_format) (+5 more)
 
 ### Community 385 - "agent-skills-factory.ts"
-Cohesion: 0.32
-Nodes (11): buildAngularReviewSkills(), buildReactReviewSkills(), buildSvelteReviewSkills(), buildVueReviewSkills(), buildWebSecurityReviewSkills(), createAgentSkills(), skillPath(), SKILLS_DIR (+3 more)
+Cohesion: 0.23
+Nodes (13): buildAngularReviewSkills(), buildReactReviewSkills(), buildSvelteReviewSkills(), buildVueReviewSkills(), buildWebSecurityReviewSkills(), createAgentSkills(), skillPath(), SKILLS_DIR (+5 more)
 
 ### Community 387 - "lead-engineer.service.ts"
 Cohesion: 0.12
-Nodes (17): A2ATaskSchema, A2ALeadEngineerSettings, createLeadEngineerService(), DEFAULT_LEAD_ENGINEER_SETTINGS, extractData(), InMemoryLeadEngineerTaskStore, jsonSchemaWithOptionalDefaults(), LeadEngineerAgentClass (+9 more)
+Nodes (19): A2ATaskSchema, A2ALeadEngineerSettings, createLeadEngineerService(), DEFAULT_LEAD_ENGINEER_SETTINGS, extractData(), InMemoryLeadEngineerTaskStore, jsonSchemaWithOptionalDefaults(), LeadEngineerAgentClass (+11 more)
 
 ### Community 388 - "base-reviewer.review.test.ts"
 Cohesion: 0.20
@@ -1428,24 +1402,24 @@ Cohesion: 0.29
 Nodes (7): ADR-0002: ワークフロー外部化(LangFlow/Dify)の検討, Consequences, Context, Decision, Decision Drivers, Message-based vs 構造化出力の比較, 所見
 
 ## Knowledge Gaps
-- **2138 isolated node(s):** `uvx`, `start-mcp-server`, `$schema`, `root`, `packages/**` (+2133 more)
+- **2140 isolated node(s):** `uvx`, `start-mcp-server`, `$schema`, `root`, `packages/**` (+2135 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **92 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **91 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `main()` connect `discover-candidate-prs.ts` to `.error`?**
+- **Why does `main()` connect `discover-candidate-prs.ts` to `pr-info-collector.ts`?**
   _High betweenness centrality (0.010) - this node is a cross-community bridge._
-- **Why does `Development environment setup` connect `Development environment setup` to `開発環境の初期セットアップ`, `docs/typescript-toolchain-spec.md`?**
-  _High betweenness centrality (0.006) - this node is a cross-community bridge._
+- **Why does `Seeded set生成: mutation注入ロジック 要件と設計ドキュメント` connect `Seeded set生成: mutation注入ロジック 要件と設計ドキュメント` to `3.1 Phase 1: 決定論的改善 (即座に着手可能) — 実装済み (Issue #111)`, `9. fallback率30%未満の目標に対する構造的対応 (プロンプトのみでは不足)`, `8. Phase 2生成プロンプトの改善`, `EVALUATION_PLAN.md`, `7. Phase 2運用後に判明した問題 (Issue #131)`, `1. 背景と問題`?**
+  _High betweenness centrality (0.008) - this node is a cross-community bridge._
+- **Why does ``agents/` + `tools/` TypeScript移行 設計ドキュメント (Issue #252)` connect `2. 要検討事項（比較表 + 採用/却下理由）` to `docs/mcp-connection-stabilization-spec.md`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
 - **What connects `uvx`, `start-mcp-server`, `$schema` to the rest of the system?**
-  _2138 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _2140 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `dependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
 - **Should `検討事項` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
 - **Should `reviewer-runtime.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.07319347319347319 - nodes in this community are weakly interconnected._
-- **Should `検討事項` be split into smaller, more focused modules?**
-  _Cohesion score 0.09523809523809523 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06416275430359937 - nodes in this community are weakly interconnected._
