@@ -147,6 +147,41 @@ nix develop --command pnpm --filter web exec vitest run --coverage
 確認パネル）についてレイアウト・見出し・項目順序・進捗表示の構造的な一致を
 確認する。ピクセル単位の一致はCarbon採用（#340と同じ方針）により対象外。
 
+## Playwright-cliでの確認結果
+
+`docs/mocks/review-request.html`（簡易HTTPサーバー経由）と実装
+(`http://localhost:5173/review-request`、`packages/web-api`をローカル起動)を
+`playwright-cli`で比較した。本環境には実GitHub認証情報が無いため、
+Organization/リポジトリ/PR選択後の状態は`playwright-cli route`で
+`/api/github/{orgs,repos,prs}`をフィクスチャ応答にモックして再現した。
+
+- **ST-01/§4「未設定」「無効/期限切れ」の2状態が両方到達可能であることを確認**:
+  本環境は`packages/web-api`にGitHub認証情報が未設定のため、
+  `hasGithubToken`フラグのみ`true`にすると`/github/orgs`が401を返し、
+  設計時に区別した「無効/期限切れ」状態（RR-13の「未設定」とは別文言）が
+  実際に表示されることを確認した。
+- **Carbon `Dropdown`の`selectedItem`にDownshiftの制御/非制御切替バグを検出・
+  修正**: `orgs.find(...)`の戻り値（未選択時`undefined`）をそのまま
+  `selectedItem`に渡すと、Carbonの`Dropdown.js`は`selectedItem !== undefined`
+  の場合のみDownshiftへ値を転送する実装のため、未選択時は非制御、選択後は
+  制御という切り替えになり、Downshiftのconsole error
+  （"A component has changed the uncontrolled prop 'selectedItem' to be
+  controlled"）が発生した。宣言された型は`ItemType | undefined`のみだが、
+  実装は`null`を"制御された空選択"として扱うため、`undefined`ではなく`null`を
+  渡すよう修正した（`ReviewRequestPage.tsx`、型は`as GithubOrg | undefined`で
+  意図的にキャスト）。
+- **選択中PRカードのhover時に選択色が消えるCSS詳細度バグを検出・修正**:
+  `.prCard:hover`（詳細度0,2,0）が`.prCardSelected`（詳細度0,1,0）より高く、
+  選択中カードにカーソルを乗せると非選択色に戻っていた。
+  `.prCardSelected:hover`を追加して解決した。
+- **進捗ラベルの省略表示(ellipsis)はCarbon既定動作として許容**: `.page`の
+  幅をモックの`screen-narrow`と同じ760pxに広げても、長い日本語ラベルは
+  Carbon `ProgressStep`の既定CSSで省略される。`title`属性でフルテキストが
+  取得できるため、Carbon採用に伴う構造差異として許容し、モック同一幅への
+  追従以上の対応はしない。
+- レイアウト（ヘッダー/サイドバー/パンくず/タイトル/進捗表示/フィールド行/
+  PRカード一覧/送信確認パネル）と項目順序はモックと一致した。
+
 ## 未確定/次に変化しうる箇所
 
 - 送信直前のPR状態再検証（VL-04）・所有権限再検証・Idempotency-Key照合による
