@@ -42,7 +42,7 @@ describe("listGithubOrgs", () => {
 
     expect(result).toEqual({ ok: true, data: [{ name: "acme-corp", id: 1 }] });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("https://api.github.com/user/orgs");
+    expect(url).toBe("https://api.github.com/user/orgs?per_page=100");
     expect(init.headers.authorization).toBe(`Bearer ${credentials.personalAccessToken}`);
   });
 
@@ -89,6 +89,47 @@ describe("listGithubOrgs", () => {
       message: expect.any(String),
     });
   });
+
+  it("returns upstream_github_failure when the body is not valid JSON (e.g. a proxy error page)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response("<html>502 Bad Gateway</html>", {
+        status: 200,
+        headers: { "content-type": "text/html" },
+      }),
+    );
+
+    const result = await listGithubOrgs(credentials, { fetch: fetchMock });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "upstream_github_failure",
+      message: expect.any(String),
+    });
+  });
+
+  it("returns upstream_github_failure when the payload is not an array", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { message: "not an array" }));
+
+    const result = await listGithubOrgs(credentials, { fetch: fetchMock });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "upstream_github_failure",
+      message: expect.any(String),
+    });
+  });
+
+  it("returns upstream_github_failure when an item is missing required fields", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, [{ login: "acme-corp" }]));
+
+    const result = await listGithubOrgs(credentials, { fetch: fetchMock });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "upstream_github_failure",
+      message: expect.any(String),
+    });
+  });
 });
 
 describe("listGithubRepositories", () => {
@@ -108,7 +149,7 @@ describe("listGithubRepositories", () => {
       data: [{ name: "web-frontend", id: 789012, defaultBranch: "main", openIssuesCount: 3 }],
     });
     const [url] = fetchMock.mock.calls[0];
-    expect(url).toBe("https://api.github.com/orgs/acme-corp/repos");
+    expect(url).toBe("https://api.github.com/orgs/acme-corp/repos?per_page=100");
   });
 
   it("URL-encodes the org so it cannot escape the path segment", async () => {
@@ -117,7 +158,19 @@ describe("listGithubRepositories", () => {
     await listGithubRepositories(credentials, "acme/../evil", { fetch: fetchMock });
 
     const [url] = fetchMock.mock.calls[0];
-    expect(url).toBe("https://api.github.com/orgs/acme%2F..%2Fevil/repos");
+    expect(url).toBe("https://api.github.com/orgs/acme%2F..%2Fevil/repos?per_page=100");
+  });
+
+  it("returns upstream_github_failure when an item is missing required fields", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, [{ name: "web-frontend" }]));
+
+    const result = await listGithubRepositories(credentials, "acme-corp", { fetch: fetchMock });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "upstream_github_failure",
+      message: expect.any(String),
+    });
   });
 });
 
@@ -154,6 +207,33 @@ describe("listGithubPullRequests", () => {
       ],
     });
     const [url] = fetchMock.mock.calls[0];
-    expect(url).toBe("https://api.github.com/repos/acme-corp/web-frontend/pulls?state=open");
+    expect(url).toBe(
+      "https://api.github.com/repos/acme-corp/web-frontend/pulls?state=open&per_page=100",
+    );
+  });
+
+  it("returns upstream_github_failure when the PR author has been deleted (user: null)", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(200, [
+        {
+          number: 482,
+          title: "x",
+          state: "open",
+          created_at: "2026-08-01T09:00:00Z",
+          user: null,
+          base: { ref: "main" },
+        },
+      ]),
+    );
+
+    const result = await listGithubPullRequests(credentials, "acme-corp", "web-frontend", {
+      fetch: fetchMock,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "upstream_github_failure",
+      message: expect.any(String),
+    });
   });
 });
