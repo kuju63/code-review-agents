@@ -1,2 +1,12 @@
 .opencode/
 .claude/
+.serena/
+.vscode/
+.devcontainer/
+evaluation/input/
+evaluation/schema/
+scripts/
+mcp.json
+opencode.jsonc
+renovate.json
+Review-Aget.json
