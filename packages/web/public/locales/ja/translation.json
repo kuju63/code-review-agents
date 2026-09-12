@@ -102,8 +102,7 @@
     "submitErrorBody": "しばらくしてから再試行してください。",
     "submitConflictTitle": "このPRには既に有効なレビュー依頼が存在します。",
     "submitConflictBody": "新しい依頼は作成されませんでした。コードレビュー一覧から既存の依頼を確認してください。",
-    "goToListButton": "コードレビュー一覧を開く",
-    "prUnavailableNotice": "選択したPRは対象外になりました。最新のPR一覧を取得し直しました。"
+    "goToListButton": "コードレビュー一覧を開く"
   },
   "reviewResult": {
     "title": "レビュー結果確認"
