@@ -1,4 +1,9 @@
 import type { GithubCredentials } from "../settings/settings.store.js";
+import {
+  GithubOrgSchema,
+  GithubPullRequestSchema,
+  GithubRepositorySchema,
+} from "./github.schema.js";
 
 export type GithubApiResult<T> =
   | { ok: true; data: T }
@@ -106,19 +111,22 @@ async function githubApiGet(
 
 /**
  * GitHub REST呼び出し結果 (`githubApiGet` の `data`) を厳格な型へ変換する。
- * `map*` はペイロードが不正な形状のとき常に `TypeError` を投げ、呼び出し元の
+ * `map*` はペイロードが不正な形状のとき常に例外 (`TypeError` または
+ * `github.schema.ts` の対応スキーマが投げる `ZodError`) を投げ、呼び出し元の
  * `listGithub*` がそれを捕捉して `upstream_github_failure` へ変換する
  * (欠落フィールドを `String(undefined)` のように黙って文字列化しない)。
+ * 数値・日時の制約 (整数／非負／有効範囲／RFC3339) は `github.schema.ts` の
+ * response schema を単一の正本として検証し、ここでは重複定義しない。
  */
 function mapOrgs(data: unknown): GithubOrg[] {
   if (!Array.isArray(data)) {
     throw new TypeError("GitHub orgs response must be an array");
   }
   return data.map((item) => {
-    if (!isRecord(item) || typeof item.login !== "string" || typeof item.id !== "number") {
+    if (!isRecord(item) || typeof item.login !== "string") {
       throw new TypeError("GitHub org item is malformed");
     }
-    return { name: item.login, id: item.id };
+    return GithubOrgSchema.parse({ name: item.login, id: item.id });
   });
 }
 
@@ -130,18 +138,16 @@ function mapRepositories(data: unknown): GithubRepository[] {
     if (
       !isRecord(item) ||
       typeof item.name !== "string" ||
-      typeof item.id !== "number" ||
-      typeof item.default_branch !== "string" ||
-      typeof item.open_issues_count !== "number"
+      typeof item.default_branch !== "string"
     ) {
       throw new TypeError("GitHub repository item is malformed");
     }
-    return {
+    return GithubRepositorySchema.parse({
       name: item.name,
       id: item.id,
       defaultBranch: item.default_branch,
       openIssuesCount: item.open_issues_count,
-    };
+    });
   });
 }
 
@@ -152,10 +158,7 @@ function mapPullRequests(data: unknown): GithubPullRequest[] {
   return data.map((item) => {
     if (
       !isRecord(item) ||
-      typeof item.number !== "number" ||
       typeof item.title !== "string" ||
-      typeof item.state !== "string" ||
-      typeof item.created_at !== "string" ||
       !isRecord(item.user) ||
       typeof item.user.login !== "string" ||
       !isRecord(item.base) ||
@@ -163,14 +166,14 @@ function mapPullRequests(data: unknown): GithubPullRequest[] {
     ) {
       throw new TypeError("GitHub pull request item is malformed");
     }
-    return {
+    return GithubPullRequestSchema.parse({
       number: item.number,
       title: item.title,
       state: item.state,
       createdAt: item.created_at,
       author: item.user.login,
       baseBranch: item.base.ref,
-    };
+    });
   });
 }
 
