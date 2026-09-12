@@ -15,7 +15,7 @@
     "test": "vitest run --coverage"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.12",
+    "@biomejs/biome": "2.5.13",
     "@redocly/cli": "^2.51.1",
     "@types/node": "^26.2.0",
     "@vitest/coverage-v8": "^4.0.0",
