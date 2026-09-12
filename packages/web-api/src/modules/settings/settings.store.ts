@@ -9,9 +9,20 @@ export type UpdateSettingsResult =
   | { ok: true; data: GithubSettingsResponse }
   | { ok: false; code: "validation_error"; message: string };
 
+export interface GithubCredentials {
+  githubUrl: string;
+  personalAccessToken: string;
+}
+
 export interface SettingsStore {
   getGithubSettings(): GithubSettingsResponse;
   updateGithubSettings(input: UpdateGithubSettingsInput): UpdateSettingsResult;
+  /**
+   * GitHub呼び出しに使う生のPATを返す (Issue #335 `/github/*` カタログAPI専用)。
+   * PAT未登録の場合は null。`getGithubSettings()` は `hasPersonalAccessToken`
+   * のみを返し値そのものを露出しないため、このメソッドを別途設ける。
+   */
+  getCredentials(): GithubCredentials | null;
 }
 
 export interface SettingsStoreDeps {
@@ -63,6 +74,10 @@ export function createSettingsStore(deps: SettingsStoreDeps = {}): SettingsStore
         updatedAt: now(),
       };
       return { ok: true, data: toResponse() };
+    },
+    getCredentials() {
+      if (state.personalAccessToken === null) return null;
+      return { githubUrl: state.githubUrl, personalAccessToken: state.personalAccessToken };
     },
   };
 }
