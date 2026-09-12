@@ -72,6 +72,36 @@
     "title": "レビュー結果確認"
   },
   "settings": {
-    "title": "GitHub連携設定"
+    "title": "GitHub連携設定",
+    "subtitle": "レビューエージェントが接続するGitHubのURLとPersonal Access Tokenを登録します。",
+    "loading": "読み込み中です…",
+    "loadErrorTitle": "設定の取得に失敗しました。",
+    "loadErrorBody": "しばらくしてから再試行してください。",
+    "savedNoticeTitle": "設定を保存しました。",
+    "githubUrlLabel": "GitHub URL",
+    "githubUrlHelper": "GitHub Enterprise Server利用時はインスタンスのルートURLを入力してください。",
+    "tokenLabel": "Personal Access Token",
+    "tokenHelper": "入力値は保存後に画面へ再表示されません。",
+    "tokenPlaceholderRegistered": "登録済み（変更する場合のみ入力してください）",
+    "tokenPlaceholderNew": "ghp_xxxxxxxxxxxxxxxxxxxx",
+    "tokenShowLabel": "Personal Access Tokenを表示",
+    "tokenHideLabel": "Personal Access Tokenを非表示",
+    "saveButton": "保存",
+    "saveErrorTitle": "保存に失敗しました。",
+    "saveErrorBody": "しばらくしてから再試行してください。",
+    "errors": {
+      "githubUrl": {
+        "required": "GitHub URLを入力してください。",
+        "tooLong": "GitHub URLは2,048文字以内で入力してください。",
+        "invalidHttps": "HTTPS形式のGitHub URLを入力してください。",
+        "invalidRoot": "GitHubインスタンスのルートURLを入力してください。"
+      },
+      "personalAccessToken": {
+        "required": "Personal Access Tokenを入力してください。",
+        "invalidLength": "Personal Access Tokenは空白を含めず4,096文字以内で入力してください。",
+        "invalidPrefix": "Personal Access TokenはClassic（ghp_）またはFine-grained（github_pat_）形式で入力してください。",
+        "incomplete": "Personal Access Tokenの値が不足しています。"
+      }
+    }
   }
 }
