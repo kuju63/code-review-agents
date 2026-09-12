@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
+import { ReviewRequestPage } from "../features/review-request/ReviewRequestPage";
 
 export const Route = createFileRoute("/review-request")({
-  component: ReviewRequestPlaceholder,
+  component: ReviewRequestPage,
 });
-
-function ReviewRequestPlaceholder() {
-  const { t } = useTranslation();
-  return <h1>{t("reviewRequest.title")}</h1>;
-}
