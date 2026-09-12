@@ -75,6 +75,7 @@ describe("ErrorCodeSchema", () => {
       "upstream_model_failure",
       "timeout",
       "canceled",
+      "unauthorized",
     ]);
   });
 });
