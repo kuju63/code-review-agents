@@ -130,6 +130,20 @@ describe("listGithubOrgs", () => {
       message: expect.any(String),
     });
   });
+
+  it("returns upstream_github_failure when id is not an integer", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, [{ login: "acme-corp", id: 1.5 }]));
+
+    const result = await listGithubOrgs(credentials, { fetch: fetchMock });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "upstream_github_failure",
+      message: expect.any(String),
+    });
+  });
 });
 
 describe("listGithubRepositories", () => {
@@ -163,6 +177,42 @@ describe("listGithubRepositories", () => {
 
   it("returns upstream_github_failure when an item is missing required fields", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, [{ name: "web-frontend" }]));
+
+    const result = await listGithubRepositories(credentials, "acme-corp", { fetch: fetchMock });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "upstream_github_failure",
+      message: expect.any(String),
+    });
+  });
+
+  it("returns upstream_github_failure when open_issues_count is negative", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse(200, [
+          { name: "web-frontend", id: 1, default_branch: "main", open_issues_count: -1 },
+        ]),
+      );
+
+    const result = await listGithubRepositories(credentials, "acme-corp", { fetch: fetchMock });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "upstream_github_failure",
+      message: expect.any(String),
+    });
+  });
+
+  it("returns upstream_github_failure when open_issues_count is not an integer", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse(200, [
+          { name: "web-frontend", id: 1, default_branch: "main", open_issues_count: 2.5 },
+        ]),
+      );
 
     const result = await listGithubRepositories(credentials, "acme-corp", { fetch: fetchMock });
 
@@ -221,6 +271,56 @@ describe("listGithubPullRequests", () => {
           state: "open",
           created_at: "2026-08-01T09:00:00Z",
           user: null,
+          base: { ref: "main" },
+        },
+      ]),
+    );
+
+    const result = await listGithubPullRequests(credentials, "acme-corp", "web-frontend", {
+      fetch: fetchMock,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "upstream_github_failure",
+      message: expect.any(String),
+    });
+  });
+
+  it("returns upstream_github_failure when the PR number is zero", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(200, [
+        {
+          number: 0,
+          title: "x",
+          state: "open",
+          created_at: "2026-08-01T09:00:00Z",
+          user: { login: "sato.k" },
+          base: { ref: "main" },
+        },
+      ]),
+    );
+
+    const result = await listGithubPullRequests(credentials, "acme-corp", "web-frontend", {
+      fetch: fetchMock,
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      code: "upstream_github_failure",
+      message: expect.any(String),
+    });
+  });
+
+  it("returns upstream_github_failure when created_at is not a valid RFC3339 datetime", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse(200, [
+        {
+          number: 482,
+          title: "x",
+          state: "open",
+          created_at: "not-a-date",
+          user: { login: "sato.k" },
           base: { ref: "main" },
         },
       ]),

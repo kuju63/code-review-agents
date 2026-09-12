@@ -67,6 +67,19 @@ describe("GET /github/orgs", () => {
     const body = await res.json();
     expect(body.code).toBe("upstream_github_failure");
   });
+
+  it("returns 502 upstream_github_failure when GitHub returns a malformed id on 200", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(200, [{ login: "acme-corp", id: 1.5 }]));
+    const app = buildTestApp(fetchMock);
+
+    const res = await app.request("/github/orgs");
+
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body.code).toBe("upstream_github_failure");
+  });
 });
 
 describe("GET /github/repos", () => {
