@@ -100,3 +100,23 @@ describe("createSettingsStore — updateGithubSettings", () => {
     expect(first.data.updatedAt).not.toBe(second.data.updatedAt);
   });
 });
+
+describe("createSettingsStore — getCredentials", () => {
+  it("returns null before any PAT has been saved (Issue #335)", () => {
+    const store = createSettingsStore();
+    expect(store.getCredentials()).toBeNull();
+  });
+
+  it("returns the githubUrl and raw PAT once saved", () => {
+    const store = createSettingsStore();
+    store.updateGithubSettings({
+      githubUrl: "https://github.example.com",
+      personalAccessToken: "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
+    });
+
+    expect(store.getCredentials()).toEqual({
+      githubUrl: "https://github.example.com",
+      personalAccessToken: "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
+    });
+  });
+});
