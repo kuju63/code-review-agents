@@ -246,6 +246,50 @@ describe("ReviewRequestPage", () => {
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
+  it("clears a stale submit notice once a different PR is selected", async () => {
+    localStorage.setItem("hasGithubToken", "true");
+    setApiFetchHandler(
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/github/orgs")) return jsonResponse(orgsResponse());
+        if (url.includes("/github/repos")) return jsonResponse(reposResponse());
+        if (url.includes("/github/prs")) {
+          return jsonResponse(
+            prsResponse([
+              { number: 482, title: "Fix login bug" },
+              { number: 490, title: "Add i18n support" },
+            ]),
+          );
+        }
+        if (url.includes("/reviews") && init?.method === "POST") {
+          return jsonResponse(
+            { apiVersion: "1.0.0", code: "conflict", message: "duplicate", detail: null },
+            409,
+          );
+        }
+        throw new Error(`unexpected request: ${url}`);
+      }),
+    );
+
+    renderPage();
+
+    fireEvent.click(await screen.findByRole("combobox", { name: "Organization / ユーザー" }));
+    fireEvent.click(await screen.findByText("acme-corp"));
+    fireEvent.click(await screen.findByRole("combobox", { name: "リポジトリ" }));
+    fireEvent.click(await screen.findByText("web-frontend"));
+    fireEvent.click(await screen.findByText("#482 Fix login bug"));
+    fireEvent.click(screen.getByRole("button", { name: "レビュー依頼を送信" }));
+    expect(
+      await screen.findByText("このPRには既に有効なレビュー依頼が存在します。"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByText("#490 Add i18n support"));
+
+    expect(
+      screen.queryByText("このPRには既に有効なレビュー依頼が存在します。"),
+    ).not.toBeInTheDocument();
+  });
+
   it("OP-06: cancel is a link back to the review list, without submitting", async () => {
     localStorage.setItem("hasGithubToken", "true");
     setApiFetchHandler(defaultHandler());

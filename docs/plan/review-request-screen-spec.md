@@ -190,3 +190,18 @@ Organization/リポジトリ/PR選択後の状態は`playwright-cli route`で
 - 作業ブランチ（head branch）の表示は`/github/prs`のAPI契約拡張が前提のため
   別Issueとする。
 - 言語切替・Storybookは#340と同じ理由でスコープ外。
+- **`ReviewRequestPage`のPATゲート判定は`localStorage.hasGithubToken`のみで、
+  マウント時にサーバーへ照会しない**（coderabbit指摘、#340
+  `ReviewListPage`と同じ設計）。設定画面でPATを保存した後の初回訪問など、
+  フラグが実際のサーバー状態と一時的にずれる window が理論上ありうる。
+  `/github/orgs`が401を返す場合は本画面の「認証情報が無効または期限切れ」
+  状態で救済されるが、逆方向（フラグ`false`だがサーバーにPATが設定済み）は
+  未対応。`GET /settings/github`の`hasPersonalAccessToken`を正本として画面
+  ごとに問い合わせる設計へ変更する場合は、review-listとreview-requestの
+  両方を対象に別Issueとして扱う（本タスク単独での修正は#340との実装方針の
+  分岐を生むため見送る）。
+- **`packages/web-api/src/modules/github/github.client.ts`のページング未対応・
+  Organization限定のオーナーモデル**（coderabbit指摘）は本タスク以前に
+  マージ済みの既存コードであり、Issue #341の対象（`packages/web`のみ）外。
+  100件を超えるOrganization/リポジトリや個人ユーザーの所有物を選択したい
+  場合に影響するため、`packages/web-api`側の別Issueとして扱う。
