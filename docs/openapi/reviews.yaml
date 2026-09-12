@@ -38,6 +38,10 @@ tags:
     description: 参照系 (query)。GETのみ。副作用を持たない。
   - name: reviews-command
     description: 更新系 (command)。register/start/retry/close/disposition/cancel。
+  - name: settings-query
+    description: 参照系 (query)。GitHub連携設定の取得。副作用を持たない。
+  - name: settings-command
+    description: 更新系 (command)。GitHub連携設定 (URL / Personal Access Token) の保存。
 
 paths:
   /reviews:
@@ -354,6 +358,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /settings/github:
+    get:
+      tags: [settings-query]
+      operationId: getGithubSettings
+      summary: GitHub連携設定を取得する (SCR-04)
+      description: |
+        接続先GitHub URLと、Personal Access Tokenの登録有無を取得する
+        (Issue #335 GitHub設定API)。設定はデプロイ単位に1つだけ存在する単一
+        リソースとして扱うため、未登録でも 404 にはならず、既定値
+        (`githubUrl: https://github.com`, `hasPersonalAccessToken: false`) を返す。
+        PATの値そのものはレスポンスに含めない (SCR-04 §4)。
+      responses:
+        '200':
+          description: 取得成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubSettings'
+              examples:
+                default:
+                  $ref: '#/components/examples/GithubSettingsExample'
+    put:
+      tags: [settings-command]
+      operationId: updateGithubSettings
+      summary: GitHub連携設定を保存する (SCR-04 SET-A03)
+      description: |
+        GitHub URLと、必要に応じてPersonal Access Tokenを保存する。
+        `personalAccessToken` を省略した場合は既存のPATを変更しない
+        (SCR-04 §4「空欄保存は削除を意味しない」)。未登録の状態で省略した場合は
+        `422 validation_error` とする (SET-V05)。
+
+        `githubUrl` は保存前に正規化し、末尾の連続する `/` を除去する (SET-A01)。
+        現時点ではプロセス内メモリのダミーストアであり、暗号化・DB永続化は
+        未実装 (`reviews.store.ts` と同じ成熟度。後続タスクで対応)。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGithubSettingsRequest'
+            examples:
+              default:
+                summary: GitHub Enterprise Server への初回登録
+                value:
+                  githubUrl: https://github.example.com
+                  personalAccessToken: ghp_abcdefghijklmnopqrstuvwxyz0123456789
+      responses:
+        '200':
+          description: 保存成功。更新後の設定を返す。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubSettings'
+              examples:
+                default:
+                  $ref: '#/components/examples/GithubSettingsExample'
+        '422':
+          $ref: '#/components/responses/ValidationError'
 
 components:
   parameters:
@@ -860,6 +923,55 @@ components:
           type: [string, 'null']
           default: null
 
+    GithubSettings:
+      type: object
+      description: |
+        GitHub連携設定 (SCR-04)。デプロイ単位に1つだけ存在する単一リソース。
+        Personal Access Tokenの値そのものは含まず、登録有無のみを
+        `hasPersonalAccessToken` で表現する (SCR-04 §4)。
+      required: [apiVersion, githubUrl, hasPersonalAccessToken, updatedAt]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        githubUrl:
+          type: string
+          description: |
+            保存済みのGitHubインスタンスルートURL。末尾の連続する `/` は
+            保存時に除去済み。未設定時は既定値 `https://github.com`。
+          examples: ['https://github.com']
+        hasPersonalAccessToken:
+          type: boolean
+          description: Personal Access Tokenが登録済みかどうか。
+        updatedAt:
+          type: string
+          format: date-time
+          description: 設定が最後に保存された日時 (RFC 3339)。
+
+    UpdateGithubSettingsRequest:
+      type: object
+      description: GitHub連携設定の保存 (SCR-04 送信データ)。
+      required: [githubUrl]
+      properties:
+        githubUrl:
+          type: string
+          minLength: 1
+          maxLength: 2048
+          description: |
+            接続先GitHubのルートURL (SET-V01〜V04)。前後空白除去後 1〜2048文字、
+            スキームは `https`、ホスト名必須、ユーザー情報・クエリ・フラグメントを
+            含まないこと。パスは空または `/` のみ許容する。
+          examples: ['https://github.example.com']
+        personalAccessToken:
+          type: string
+          maxLength: 4096
+          pattern: '^(ghp_|github_pat_)\S+$'
+          description: |
+            Classic (`ghp_`) または Fine-grained (`github_pat_`) PAT
+            (SET-V06〜V09)。空白を含まないこと。省略した場合、登録済みの
+            既存PATは変更しない。初回登録時に省略した場合は
+            `422 validation_error` となる (SET-V05)。
+          examples: ['ghp_abcdefghijklmnopqrstuvwxyz0123456789']
+
   responses:
     ValidationError:
       description: 入力検証失敗 (validation_error)。
@@ -1126,3 +1238,11 @@ components:
                 impactCategory: maintainability
                 body: '外部からも状態が伝わるよう aria-busy 属性の付与を推奨します。'
                 disposition: open
+
+    GithubSettingsExample:
+      summary: 登録済みGitHub連携設定
+      value:
+        apiVersion: '1.0.0'
+        githubUrl: https://github.example.com
+        hasPersonalAccessToken: true
+        updatedAt: '2026-08-09T10:00:00Z'

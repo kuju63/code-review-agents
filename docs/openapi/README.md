@@ -1,6 +1,7 @@
 # Review Persistence API (OpenAPI)
 
-Issue #245 のレビュー対象登録・実行・結果保存・close管理を記述するREST契約です。
+Issue #245 のレビュー対象登録・実行・結果保存・close管理、および Issue #335 の
+GitHub連携設定 (`/settings/github`, SCR-04) を記述するREST契約です。
 OpenAPI 3.1定義の実体は [`reviews.yaml`](./reviews.yaml) にあり、`lint:openapi` の検証対象です。
 
 この`ReviewReport`（OpenAPI）は、`agents/review-orchestrator.ts`が出力する内部処理形式
