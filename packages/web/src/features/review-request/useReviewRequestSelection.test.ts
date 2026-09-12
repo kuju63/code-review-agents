@@ -11,7 +11,7 @@ describe("useReviewRequestSelection", () => {
     expect(result.current.step).toBe(0);
   });
 
-  it("stays at step 0 once an organization is selected (OP-01, org-only counts as step 1)", () => {
+  it("stays at step index 0 once an organization is selected (OP-01, org-only is still the design's first progress step)", () => {
     const { result } = renderHook(() => useReviewRequestSelection());
     act(() => result.current.selectOrganization("acme-corp"));
     expect(result.current.organization).toBe("acme-corp");

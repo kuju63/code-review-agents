@@ -34,7 +34,13 @@ function hasGithubToken(): boolean {
   }
 }
 
-type SubmitNotice = { kind: "conflict"; message: string } | { kind: "error" };
+/**
+ * `key` is the idempotencyKey the notice was raised for. Selecting a
+ * different PR regenerates useReviewRequestSelection's idempotencyKey, so a
+ * key mismatch means the notice refers to a since-abandoned selection and
+ * must not be shown for the new one.
+ */
+type SubmitNotice = { key: string } & ({ kind: "conflict"; message: string } | { kind: "error" });
 
 /** SCR-02: PAT gate, org→repo→PR cascade selection, and the submit/cancel flow (ST-01〜ST-06). */
 export function ReviewRequestPage() {
@@ -87,12 +93,16 @@ export function ReviewRequestPage() {
         return;
       }
       if (result.code === "conflict") {
-        setSubmitNotice({ kind: "conflict", message: result.message });
+        setSubmitNotice({
+          key: selection.idempotencyKey,
+          kind: "conflict",
+          message: result.message,
+        });
         return;
       }
-      setSubmitNotice({ kind: "error" });
+      setSubmitNotice({ key: selection.idempotencyKey, kind: "error" });
     },
-    onError: () => setSubmitNotice({ kind: "error" }),
+    onError: () => setSubmitNotice({ key: selection.idempotencyKey, kind: "error" }),
   });
 
   const unauthorized =
@@ -251,51 +261,62 @@ export function ReviewRequestPage() {
 
         {selection.organization !== null &&
           selection.repository !== null &&
-          selection.pullRequest !== null && (
-            <div className={styles.summaryPanel}>
-              <div className={styles.summaryHeading}>{t("reviewRequest.summaryHeading")}</div>
-              <pre className={styles.summaryList}>
-                {t("reviewRequest.summaryOrganizationLabel")}: {selection.organization}
-                {"\n"}
-                {t("reviewRequest.summaryRepositoryLabel")}: {selection.repository}
-                {"\n"}
-                {t("reviewRequest.summaryPullRequestLabel")}: {selection.pullRequest}
-              </pre>
+          selection.pullRequest !== null &&
+          (() => {
+            // A notice raised for a since-abandoned selection (e.g. the user
+            // picked a different PR after a conflict/error) must not carry
+            // over onto the new one.
+            const activeSubmitNotice =
+              submitNotice?.key === selection.idempotencyKey ? submitNotice : null;
+            return (
+              <div className={styles.summaryPanel}>
+                <div className={styles.summaryHeading}>{t("reviewRequest.summaryHeading")}</div>
+                <pre className={styles.summaryList}>
+                  {t("reviewRequest.summaryOrganizationLabel")}: {selection.organization}
+                  {"\n"}
+                  {t("reviewRequest.summaryRepositoryLabel")}: {selection.repository}
+                  {"\n"}
+                  {t("reviewRequest.summaryPullRequestLabel")}: {selection.pullRequest}
+                </pre>
 
-              {submitNotice?.kind === "conflict" && (
-                <InlineNotification
-                  kind="warning"
-                  lowContrast
-                  hideCloseButton
-                  title={t("reviewRequest.submitConflictTitle")}
-                  subtitle={t("reviewRequest.submitConflictBody")}
-                />
-              )}
-              {submitNotice?.kind === "error" && (
-                <InlineNotification
-                  kind="error"
-                  lowContrast
-                  hideCloseButton
-                  title={t("reviewRequest.submitErrorTitle")}
-                  subtitle={t("reviewRequest.submitErrorBody")}
-                />
-              )}
-              {submitNotice?.kind === "conflict" && (
-                <CarbonLink onClick={() => navigate({ to: "/" })}>
-                  {t("reviewRequest.goToListButton")}
-                </CarbonLink>
-              )}
+                {activeSubmitNotice?.kind === "conflict" && (
+                  <InlineNotification
+                    kind="warning"
+                    lowContrast
+                    hideCloseButton
+                    title={t("reviewRequest.submitConflictTitle")}
+                    subtitle={t("reviewRequest.submitConflictBody")}
+                  />
+                )}
+                {activeSubmitNotice?.kind === "error" && (
+                  <InlineNotification
+                    kind="error"
+                    lowContrast
+                    hideCloseButton
+                    title={t("reviewRequest.submitErrorTitle")}
+                    subtitle={t("reviewRequest.submitErrorBody")}
+                  />
+                )}
+                {activeSubmitNotice?.kind === "conflict" && (
+                  <CarbonLink onClick={() => navigate({ to: "/" })}>
+                    {t("reviewRequest.goToListButton")}
+                  </CarbonLink>
+                )}
 
-              <div className={styles.actionsRow}>
-                <Button disabled={submitMutation.isPending} onClick={() => submitMutation.mutate()}>
-                  {submitMutation.isPending
-                    ? t("reviewRequest.submitting")
-                    : t("reviewRequest.submitButton")}
-                </Button>
-                <Link to="/">{t("reviewRequest.cancelLink")}</Link>
+                <div className={styles.actionsRow}>
+                  <Button
+                    disabled={submitMutation.isPending}
+                    onClick={() => submitMutation.mutate()}
+                  >
+                    {submitMutation.isPending
+                      ? t("reviewRequest.submitting")
+                      : t("reviewRequest.submitButton")}
+                  </Button>
+                  <Link to="/">{t("reviewRequest.cancelLink")}</Link>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
       </>
     );
   }
