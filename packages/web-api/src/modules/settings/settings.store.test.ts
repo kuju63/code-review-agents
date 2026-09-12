@@ -1,3 +1,4 @@
+import assert from "node:assert/strict";
 import { describe, expect, it } from "vitest";
 import { createSettingsStore } from "./settings.store.js";
 
@@ -19,21 +20,17 @@ describe("createSettingsStore — updateGithubSettings", () => {
       personalAccessToken: "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
     });
 
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.data.githubUrl).toBe("https://github.example.com");
-      expect(result.data.hasPersonalAccessToken).toBe(true);
-    }
+    assert(result.ok);
+    expect(result.data.githubUrl).toBe("https://github.example.com");
+    expect(result.data.hasPersonalAccessToken).toBe(true);
   });
 
   it("rejects first registration when the PAT is omitted (SET-V05)", () => {
     const store = createSettingsStore();
     const result = store.updateGithubSettings({ githubUrl: "https://github.example.com" });
 
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.code).toBe("validation_error");
-    }
+    assert(!result.ok);
+    expect(result.code).toBe("validation_error");
   });
 
   it("keeps the existing PAT when omitted on a subsequent update (SCR-04 §4)", () => {
@@ -45,11 +42,9 @@ describe("createSettingsStore — updateGithubSettings", () => {
 
     const result = store.updateGithubSettings({ githubUrl: "https://github2.example.com" });
 
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.data.githubUrl).toBe("https://github2.example.com");
-      expect(result.data.hasPersonalAccessToken).toBe(true);
-    }
+    assert(result.ok);
+    expect(result.data.githubUrl).toBe("https://github2.example.com");
+    expect(result.data.hasPersonalAccessToken).toBe(true);
   });
 
   it("replaces the PAT when a new value is supplied", () => {
@@ -64,10 +59,8 @@ describe("createSettingsStore — updateGithubSettings", () => {
       personalAccessToken: "ghp_second00000000000000000000000000000",
     });
 
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.data.hasPersonalAccessToken).toBe(true);
-    }
+    assert(result.ok);
+    expect(result.data.hasPersonalAccessToken).toBe(true);
   });
 
   it("normalizes trailing slashes on save (SET-A01)", () => {
@@ -77,10 +70,8 @@ describe("createSettingsStore — updateGithubSettings", () => {
       personalAccessToken: "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
     });
 
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.data.githubUrl).toBe("https://github.example.com");
-    }
+    assert(result.ok);
+    expect(result.data.githubUrl).toBe("https://github.example.com");
   });
 
   it("never exposes the raw PAT value from getGithubSettings after saving", () => {
@@ -104,6 +95,8 @@ describe("createSettingsStore — updateGithubSettings", () => {
     });
     const second = store.updateGithubSettings({ githubUrl: "https://github2.example.com" });
 
-    expect(first.ok && first.data.updatedAt).not.toBe(second.ok && second.data.updatedAt);
+    assert(first.ok);
+    assert(second.ok);
+    expect(first.data.updatedAt).not.toBe(second.data.updatedAt);
   });
 });

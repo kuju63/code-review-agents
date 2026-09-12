@@ -1,14 +1,9 @@
-export interface GithubSettingsResponse {
-  apiVersion: string;
-  githubUrl: string;
-  hasPersonalAccessToken: boolean;
-  updatedAt: string;
-}
+import type { z } from "@hono/zod-openapi";
+import type { GithubSettingsSchema, UpdateGithubSettingsRequestSchema } from "./settings.schema.js";
 
-export interface UpdateGithubSettingsInput {
-  githubUrl: string;
-  personalAccessToken?: string;
-}
+export type GithubSettingsResponse = z.infer<typeof GithubSettingsSchema>;
+
+export type UpdateGithubSettingsInput = z.infer<typeof UpdateGithubSettingsRequestSchema>;
 
 export type UpdateSettingsResult =
   | { ok: true; data: GithubSettingsResponse }
