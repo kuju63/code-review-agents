@@ -30,6 +30,8 @@ export interface GithubPullRequest {
   baseBranch: string;
 }
 
+const MALFORMED_RESPONSE_MESSAGE = "GitHubからの応答を解釈できませんでした。";
+
 /**
  * `githubUrl` から REST API base を導出する。github.com は `api.github.com`
  * サブドメイン、GitHub Enterprise Server (GHES) はルートURL配下の `/api/v3`
@@ -91,45 +93,83 @@ async function githubApiGet(
     };
   }
 
-  return { ok: true, data: (await response.json()) as unknown };
+  try {
+    return { ok: true, data: (await response.json()) as unknown };
+  } catch {
+    return {
+      ok: false,
+      code: "upstream_github_failure",
+      message: MALFORMED_RESPONSE_MESSAGE,
+    };
+  }
 }
 
+/**
+ * GitHub REST呼び出し結果 (`githubApiGet` の `data`) を厳格な型へ変換する。
+ * `map*` はペイロードが不正な形状のとき常に `TypeError` を投げ、呼び出し元の
+ * `listGithub*` がそれを捕捉して `upstream_github_failure` へ変換する
+ * (欠落フィールドを `String(undefined)` のように黙って文字列化しない)。
+ */
 function mapOrgs(data: unknown): GithubOrg[] {
   if (!Array.isArray(data)) {
     throw new TypeError("GitHub orgs response must be an array");
   }
-  return data.filter(isRecord).map((item) => ({
-    name: String(item.login),
-    id: Number(item.id),
-  }));
+  return data.map((item) => {
+    if (!isRecord(item) || typeof item.login !== "string" || typeof item.id !== "number") {
+      throw new TypeError("GitHub org item is malformed");
+    }
+    return { name: item.login, id: item.id };
+  });
 }
 
 function mapRepositories(data: unknown): GithubRepository[] {
   if (!Array.isArray(data)) {
     throw new TypeError("GitHub repos response must be an array");
   }
-  return data.filter(isRecord).map((item) => ({
-    name: String(item.name),
-    id: Number(item.id),
-    defaultBranch: String(item.default_branch),
-    openIssuesCount: Number(item.open_issues_count),
-  }));
+  return data.map((item) => {
+    if (
+      !isRecord(item) ||
+      typeof item.name !== "string" ||
+      typeof item.id !== "number" ||
+      typeof item.default_branch !== "string" ||
+      typeof item.open_issues_count !== "number"
+    ) {
+      throw new TypeError("GitHub repository item is malformed");
+    }
+    return {
+      name: item.name,
+      id: item.id,
+      defaultBranch: item.default_branch,
+      openIssuesCount: item.open_issues_count,
+    };
+  });
 }
 
 function mapPullRequests(data: unknown): GithubPullRequest[] {
   if (!Array.isArray(data)) {
     throw new TypeError("GitHub pulls response must be an array");
   }
-  return data.filter(isRecord).map((item) => {
-    const user = isRecord(item.user) ? item.user : {};
-    const base = isRecord(item.base) ? item.base : {};
+  return data.map((item) => {
+    if (
+      !isRecord(item) ||
+      typeof item.number !== "number" ||
+      typeof item.title !== "string" ||
+      typeof item.state !== "string" ||
+      typeof item.created_at !== "string" ||
+      !isRecord(item.user) ||
+      typeof item.user.login !== "string" ||
+      !isRecord(item.base) ||
+      typeof item.base.ref !== "string"
+    ) {
+      throw new TypeError("GitHub pull request item is malformed");
+    }
     return {
-      number: Number(item.number),
-      title: String(item.title),
-      state: String(item.state),
-      createdAt: String(item.created_at),
-      author: String(user.login),
-      baseBranch: String(base.ref),
+      number: item.number,
+      title: item.title,
+      state: item.state,
+      createdAt: item.created_at,
+      author: item.user.login,
+      baseBranch: item.base.ref,
     };
   });
 }
@@ -139,9 +179,17 @@ export async function listGithubOrgs(
   options: GithubApiClientOptions = {},
 ): Promise<GithubApiResult<GithubOrg[]>> {
   const base = resolveGithubApiBase(credentials.githubUrl);
-  const result = await githubApiGet(`${base}/user/orgs`, credentials.personalAccessToken, options);
+  const result = await githubApiGet(
+    `${base}/user/orgs?per_page=100`,
+    credentials.personalAccessToken,
+    options,
+  );
   if (!result.ok) return result;
-  return { ok: true, data: mapOrgs(result.data) };
+  try {
+    return { ok: true, data: mapOrgs(result.data) };
+  } catch {
+    return { ok: false, code: "upstream_github_failure", message: MALFORMED_RESPONSE_MESSAGE };
+  }
 }
 
 export async function listGithubRepositories(
@@ -150,10 +198,14 @@ export async function listGithubRepositories(
   options: GithubApiClientOptions = {},
 ): Promise<GithubApiResult<GithubRepository[]>> {
   const base = resolveGithubApiBase(credentials.githubUrl);
-  const url = `${base}/orgs/${encodeURIComponent(org)}/repos`;
+  const url = `${base}/orgs/${encodeURIComponent(org)}/repos?per_page=100`;
   const result = await githubApiGet(url, credentials.personalAccessToken, options);
   if (!result.ok) return result;
-  return { ok: true, data: mapRepositories(result.data) };
+  try {
+    return { ok: true, data: mapRepositories(result.data) };
+  } catch {
+    return { ok: false, code: "upstream_github_failure", message: MALFORMED_RESPONSE_MESSAGE };
+  }
 }
 
 export async function listGithubPullRequests(
@@ -163,8 +215,12 @@ export async function listGithubPullRequests(
   options: GithubApiClientOptions = {},
 ): Promise<GithubApiResult<GithubPullRequest[]>> {
   const base = resolveGithubApiBase(credentials.githubUrl);
-  const url = `${base}/repos/${encodeURIComponent(org)}/${encodeURIComponent(repo)}/pulls?state=open`;
+  const url = `${base}/repos/${encodeURIComponent(org)}/${encodeURIComponent(repo)}/pulls?state=open&per_page=100`;
   const result = await githubApiGet(url, credentials.personalAccessToken, options);
   if (!result.ok) return result;
-  return { ok: true, data: mapPullRequests(result.data) };
+  try {
+    return { ok: true, data: mapPullRequests(result.data) };
+  } catch {
+    return { ok: false, code: "upstream_github_failure", message: MALFORMED_RESPONSE_MESSAGE };
+  }
 }
