@@ -17741,8 +17741,8 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "packages_web_package_devdependencies_tanstack_router_plugin",
-      "community": 29,
-      "community_name": "devDependencies",
+      "community": 181,
+      "community_name": "@tanstack/router-plugin",
       "norm_label": "@tanstack/router-plugin"
     },
     {
@@ -17752,8 +17752,8 @@
       "source_location": "L38",
       "_origin": "ast",
       "id": "tanstack_router_plugin",
-      "community": 29,
-      "community_name": "devDependencies",
+      "community": 181,
+      "community_name": "@tanstack/router-plugin",
       "norm_label": "@tanstack/router-plugin"
     },
     {
@@ -17939,8 +17939,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "packages_web_package_devdependencies_babel_plugin_react_compiler",
-      "community": 181,
-      "community_name": "babel-plugin-react-compiler",
+      "community": 29,
+      "community_name": "devDependencies",
       "norm_label": "babel-plugin-react-compiler"
     },
     {
@@ -17950,8 +17950,8 @@
       "source_location": "L47",
       "_origin": "ast",
       "id": "babel_plugin_react_compiler",
-      "community": 181,
-      "community_name": "babel-plugin-react-compiler",
+      "community": 29,
+      "community_name": "devDependencies",
       "norm_label": "babel-plugin-react-compiler"
     },
     {
@@ -19135,7 +19135,7 @@
       "label": "SubmitNotice",
       "file_type": "code",
       "source_file": "packages/web/src/features/review-request/ReviewRequestPage.tsx",
-      "source_location": "L37",
+      "source_location": "L43",
       "_origin": "ast",
       "id": "packages_web_src_features_review_request_reviewrequestpage_submitnotice",
       "community": 51,
@@ -19146,7 +19146,7 @@
       "label": "ReviewRequestPage()",
       "file_type": "code",
       "source_file": "packages/web/src/features/review-request/ReviewRequestPage.tsx",
-      "source_location": "L40",
+      "source_location": "L46",
       "_origin": "ast",
       "id": "packages_web_src_features_review_request_reviewrequestpage_reviewrequestpage",
       "community": 51,
@@ -70652,7 +70652,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/web/src/features/review-request/ReviewRequestPage.tsx",
-      "source_location": "L40",
+      "source_location": "L46",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_web_src_features_review_request_reviewrequestpage",
@@ -70674,7 +70674,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "packages/web/src/features/review-request/ReviewRequestPage.tsx",
-      "source_location": "L37",
+      "source_location": "L43",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_web_src_features_review_request_reviewrequestpage",
@@ -70746,7 +70746,7 @@
       "context": "call",
       "confidence": "EXTRACTED",
       "source_file": "packages/web/src/features/review-request/ReviewRequestPage.tsx",
-      "source_location": "L44",
+      "source_location": "L50",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_web_src_features_review_request_reviewrequestpage_reviewrequestpage",
@@ -70759,7 +70759,7 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "packages/web/src/features/review-request/ReviewRequestPage.tsx",
-      "source_location": "L50",
+      "source_location": "L56",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_web_src_features_review_request_reviewrequestpage_reviewrequestpage",
@@ -70771,7 +70771,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/web/src/features/review-request/ReviewRequestPage.tsx",
-      "source_location": "L63",
+      "source_location": "L69",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_web_src_features_review_request_reviewrequestpage_reviewrequestpage",
@@ -70783,7 +70783,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/web/src/features/review-request/ReviewRequestPage.tsx",
-      "source_location": "L56",
+      "source_location": "L62",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_web_src_features_review_request_reviewrequestpage_reviewrequestpage",
@@ -70795,7 +70795,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/web/src/features/review-request/ReviewRequestPage.tsx",
-      "source_location": "L69",
+      "source_location": "L75",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_web_src_features_review_request_reviewrequestpage_reviewrequestpage",
@@ -70807,7 +70807,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "packages/web/src/features/review-request/ReviewRequestPage.tsx",
-      "source_location": "L45",
+      "source_location": "L51",
       "weight": 1.0,
       "_origin": "ast",
       "source": "packages_web_src_features_review_request_reviewrequestpage_reviewrequestpage",
@@ -82338,5 +82338,5 @@
       "source_file": "packages/web-api/AGENTS.md"
     }
   ],
-  "built_at_commit": "e457e55a184977801e15c474f500cc0807d5f570"
+  "built_at_commit": "e2cb0c545d57642e0738143bd5083a72a435418d"
 }

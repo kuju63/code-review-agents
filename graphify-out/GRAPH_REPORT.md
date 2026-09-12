@@ -1,7 +1,7 @@
 # Graph Report - code-review-agent  (2026-09-13)
 
 ## Corpus Check
-- 520 files · ~314,719 words
+- 520 files · ~314,977 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e457e55a`
+- Built from commit: `e2cb0c54`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -190,7 +190,7 @@
 - Angular Developer Agent Skill (SKILL.md)
 - PullRequestCard.tsx
 - createModelProvider ファクトリ関数
-- babel-plugin-react-compiler
+- @tanstack/router-plugin
 
 ## God Nodes (most connected - your core abstractions)
 1. `A2ATask` - 26 edges
@@ -380,7 +380,7 @@ Nodes (25): compilerOptions, allowArbitraryExtensions, allowImportingTsExtension
 
 ### Community 29 - "devDependencies"
 Cohesion: 0.08
-Nodes (25): @babel/core, happy-dom, @happy-dom/global-registrator, devDependencies, @babel/core, happy-dom, @happy-dom/global-registrator, @tanstack/router-plugin (+17 more)
+Nodes (25): @babel/core, babel-plugin-react-compiler, happy-dom, @happy-dom/global-registrator, devDependencies, @babel/core, babel-plugin-react-compiler, happy-dom (+17 more)
 
 ### Community 30 - "web-api/src/index.ts"
 Cohesion: 0.11
