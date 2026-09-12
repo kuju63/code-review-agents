@@ -142,8 +142,18 @@ export function ReviewRequestPage() {
   } else {
     const orgs: GithubOrg[] = orgsQuery.data ?? [];
     const repos: GithubRepository[] = reposQuery.data ?? [];
-    const selectedOrg = orgs.find((org) => org.name === selection.organization);
-    const selectedRepo = repos.find((repo) => repo.name === selection.repository);
+    // Carbon's Dropdown only forwards `selectedItem` to its underlying Downshift
+    // instance when the prop is `!== undefined` (Dropdown.js), so passing
+    // `undefined` while nothing is selected leaves it uncontrolled and then
+    // switches it to controlled once a value exists — Downshift's disallowed
+    // controlled/uncontrolled toggle. Passing `null` keeps it controlled from
+    // the first render; the declared prop type just doesn't list `null`.
+    const selectedOrg = (orgs.find((org) => org.name === selection.organization) ?? null) as
+      | GithubOrg
+      | undefined;
+    const selectedRepo = (repos.find((repo) => repo.name === selection.repository) ?? null) as
+      | GithubRepository
+      | undefined;
 
     body = (
       <>
