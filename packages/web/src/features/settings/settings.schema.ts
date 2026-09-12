@@ -24,11 +24,20 @@ export type PersonalAccessTokenErrorCode =
 /**
  * `URL#pathname` check for SET-V04: empty, `/`, or a single fixed base-path
  * segment (GHE subpath deployments) only — rejects `//` runs and deeper paths.
+ * `URL#pathname` keeps percent-encoding as-is, so the check decodes first;
+ * an encoded `/` or `\` (e.g. `%2F`, `%5C`) would otherwise smuggle an extra
+ * path segment past the single-segment check. A decode failure is rejected.
  * Mirrors packages/web-api/src/modules/settings/settings.schema.ts.
  */
 function isAllowedRootPath(pathname: string): boolean {
-  if (pathname === "" || pathname === "/") return true;
-  return /^\/[^/]+$/.test(pathname);
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return false;
+  }
+  if (decoded === "" || decoded === "/") return true;
+  return /^\/[^/\\]+$/.test(decoded);
 }
 
 /** SET-V01〜V04. Returns an error code (mapped to a message by the caller via i18n) or undefined. */

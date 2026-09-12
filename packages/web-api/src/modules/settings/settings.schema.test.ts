@@ -73,6 +73,20 @@ describe("UpdateGithubSettingsRequestSchema — githubUrl (SET-V01〜V04)", () =
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects a path segment containing an encoded slash (%2F) (SET-V04)", () => {
+    const result = UpdateGithubSettingsRequestSchema.safeParse({
+      githubUrl: "https://ghe.example.com/foo%2Fbar",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a path segment containing an encoded backslash (%5C) (SET-V04)", () => {
+    const result = UpdateGithubSettingsRequestSchema.safeParse({
+      githubUrl: "https://ghe.example.com/foo%5Cbar",
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("UpdateGithubSettingsRequestSchema — personalAccessToken (SET-V05〜V09)", () => {

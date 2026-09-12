@@ -35,6 +35,14 @@ describe("validateGithubUrl (SET-V01〜V04)", () => {
     expect(validateGithubUrl("https://github.example.com/a/b")).toBe("invalidRoot");
   });
 
+  it("SET-V04: rejects a path segment containing an encoded slash (%2F)", () => {
+    expect(validateGithubUrl("https://github.example.com/foo%2Fbar")).toBe("invalidRoot");
+  });
+
+  it("SET-V04: rejects a path segment containing an encoded backslash (%5C)", () => {
+    expect(validateGithubUrl("https://github.example.com/foo%5Cbar")).toBe("invalidRoot");
+  });
+
   it("accepts a bare root URL", () => {
     expect(validateGithubUrl("https://github.com")).toBeUndefined();
   });

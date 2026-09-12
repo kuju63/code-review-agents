@@ -6,10 +6,20 @@ import { ApiVersionSchema } from "../reviews/reviews.schema.js";
  * 固定ベースパスセグメント (GHE サブパス運用) のみ許容し、`//` の連続や
  * 多階層パスは拒否する。ベースパスの正当性そのもの (どの文字列が「正しい
  * ベースパス」か) はテナント固有の外部設定に依存するため判定しない。
+ * `URL#pathname` はパーセントエンコードをデコードせず保持するため、まず
+ * decode してから判定する。エンコードされた `/` や `\`（`%2F`／`%5C`）を
+ * デコード前提で見逃すと、単一セグメントの判定を回避できてしまう。
+ * decode に失敗した値は拒否する。
  */
 function isAllowedRootPath(pathname: string): boolean {
-  if (pathname === "" || pathname === "/") return true;
-  return /^\/[^/]+$/.test(pathname);
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return false;
+  }
+  if (decoded === "" || decoded === "/") return true;
+  return /^\/[^/\\]+$/.test(decoded);
 }
 
 /** GitHub連携先のルートURL (SCR-04 SET-V01〜V04)。 */

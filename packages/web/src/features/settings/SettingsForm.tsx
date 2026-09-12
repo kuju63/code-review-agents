@@ -19,9 +19,12 @@ export interface SettingsFormProps {
 
 /**
  * SCR-04 SET-03〜SET-05: owns the editable copy of the GitHub settings, seeded
- * once from `settings` (the GET result held by the parent's query). PAT input
- * never carries a persisted value across mounts (SET-A02) — component state
- * is discarded on unmount, so no explicit "clear on leave" handler is needed.
+ * from `settings` (the GET result held by the parent's query) and re-synced
+ * whenever a fresh `settings` prop arrives (e.g. a background refetch) as
+ * long as the user hasn't started editing — edits always take priority over
+ * a refresh. PAT input never carries a persisted value across mounts
+ * (SET-A02) — component state is discarded on unmount, so no explicit
+ * "clear on leave" handler is needed.
  */
 export function SettingsForm({ settings }: SettingsFormProps) {
   const { t } = useTranslation();
@@ -36,6 +39,17 @@ export function SettingsForm({ settings }: SettingsFormProps) {
   const [tokenError, setTokenError] = useState<PersonalAccessTokenErrorCode>();
   const [saved, setSaved] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
+  const [isEdited, setIsEdited] = useState(false);
+  const [syncedSettings, setSyncedSettings] = useState(settings);
+
+  if (settings !== syncedSettings) {
+    setSyncedSettings(settings);
+    if (!isEdited) {
+      setGithubUrl(settings.githubUrl);
+      setHasExistingToken(settings.hasPersonalAccessToken);
+      setTokenError(undefined);
+    }
+  }
 
   const mutation = useMutation({
     mutationFn: updateGithubSettings,
@@ -45,6 +59,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
         setHasExistingToken(result.data.hasPersonalAccessToken);
         setGithubUrl(result.data.githubUrl);
         setPersonalAccessToken("");
+        setIsEdited(false);
         setSaved(true);
         setSubmitError(undefined);
         queryClient.setQueryData(SETTINGS_QUERY_KEY, result.data);
@@ -115,6 +130,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
         invalidText={githubUrlError ? t(`settings.errors.githubUrl.${githubUrlError}`) : undefined}
         onChange={(event) => {
           setGithubUrl(event.target.value);
+          setIsEdited(true);
           setSaved(false);
           setGithubUrlError(undefined);
         }}
@@ -138,6 +154,7 @@ export function SettingsForm({ settings }: SettingsFormProps) {
         hidePasswordLabel={t("settings.tokenHideLabel")}
         onChange={(event) => {
           setPersonalAccessToken(event.target.value);
+          setIsEdited(true);
           setSaved(false);
           setTokenError(undefined);
         }}

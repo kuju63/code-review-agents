@@ -24,11 +24,12 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  render(
     <QueryClientProvider client={queryClient}>
       <SettingsPage />
     </QueryClientProvider>,
   );
+  return queryClient;
 }
 
 beforeEach(() => {
@@ -223,6 +224,68 @@ describe("SettingsPage", () => {
     expect(
       await screen.findByText("Personal Access Tokenを入力してください。"),
     ).toBeInTheDocument();
+  });
+
+  it("refreshes the displayed GitHub URL when settings refetch and the form hasn't been edited", async () => {
+    const handler = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(settings({ githubUrl: "https://github.example.com" })))
+      .mockResolvedValueOnce(jsonResponse(settings({ githubUrl: "https://ghe.example.com" })));
+    setApiFetchHandler(handler);
+    const queryClient = renderPage();
+
+    expect(await screen.findByDisplayValue("https://github.example.com")).toBeInTheDocument();
+
+    await queryClient.refetchQueries({ queryKey: ["settings", "github"] });
+
+    expect(await screen.findByDisplayValue("https://ghe.example.com")).toBeInTheDocument();
+  });
+
+  it("does not overwrite an in-progress URL edit when settings refetch in the background", async () => {
+    const handler = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(settings({ githubUrl: "https://github.example.com" })))
+      .mockResolvedValueOnce(jsonResponse(settings({ githubUrl: "https://ghe.example.com" })));
+    setApiFetchHandler(handler);
+    const queryClient = renderPage();
+
+    const urlInput = await screen.findByLabelText("GitHub URL");
+    fireEvent.change(urlInput, { target: { value: "https://in-progress-edit.example.com" } });
+
+    await queryClient.refetchQueries({ queryKey: ["settings", "github"] });
+    await waitFor(() => expect(handler).toHaveBeenCalledTimes(2));
+
+    expect(urlInput).toHaveValue("https://in-progress-edit.example.com");
+  });
+
+  it("refreshes the PAT placeholder and empty-PAT validation state when hasPersonalAccessToken changes via refetch", async () => {
+    let getCallCount = 0;
+    const handler = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "PUT") return jsonResponse(settings({ hasPersonalAccessToken: true }));
+      getCallCount += 1;
+      return jsonResponse(settings({ hasPersonalAccessToken: getCallCount > 1 }));
+    });
+    setApiFetchHandler(handler);
+    const queryClient = renderPage();
+
+    await screen.findByLabelText("GitHub URL");
+    expect(screen.getByLabelText("Personal Access Token")).toHaveAttribute(
+      "placeholder",
+      "ghp_xxxxxxxxxxxxxxxxxxxx",
+    );
+
+    await queryClient.refetchQueries({ queryKey: ["settings", "github"] });
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Personal Access Token")).toHaveAttribute(
+        "placeholder",
+        "登録済み（変更する場合のみ入力してください）",
+      ),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    expect(screen.queryByText("Personal Access Tokenを入力してください。")).not.toBeInTheDocument();
+    expect(await screen.findByText("設定を保存しました。")).toBeInTheDocument();
   });
 
   it("shows a generic error notice on an unexpected save failure", async () => {
