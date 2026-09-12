@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
 import { registerReviewsRoutes } from "./modules/reviews/reviews.route.js";
+import { registerSettingsRoutes } from "./modules/settings/settings.route.js";
 import {
   forEachOperation,
   loadReviewsYamlDoc,
@@ -33,6 +34,8 @@ const SCHEMA_NAMES = [
   "PageInfo",
   "ReviewListResponse",
   "ReviewReport",
+  "GithubSettings",
+  "UpdateGithubSettingsRequest",
 ];
 
 interface OpenApiDoc {
@@ -42,6 +45,7 @@ interface OpenApiDoc {
 function buildAppDocument(): OpenApiDoc {
   const app = createApp();
   registerReviewsRoutes(app);
+  registerSettingsRoutes(app);
   return app.getOpenAPI31Document({
     openapi: "3.1.0",
     info: { title: "Review Persistence API", version: "1.0.0" },
