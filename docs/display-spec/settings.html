@@ -43,7 +43,7 @@
         <tr><td>SET-V02</td><td>URLとして解析可能な絶対URLであり、スキームが<code>https</code>であること。</td><td>「HTTPS形式のGitHub URLを入力してください。」</td></tr>
         <tr><td>SET-V03</td><td>ホスト名が存在すること。ユーザー情報、クエリパラメータ、フラグメントを含まないこと。</td><td>「GitHubインスタンスのルートURLを入力してください。」</td></tr>
         <tr><td>SET-V04</td><td>パスは空、<code>/</code>、またはGitHub Enterprise Serverがサブパス運用される場合の固定ベースパスであること。末尾の連続する<code>/</code>は保存時に除去する。</td><td>「GitHubインスタンスのルートURLを入力してください。」</td></tr>
-        <tr><td>SET-V11</td><td>ホスト名が、サーバー環境変数<code>GITHUB_ALLOWED_HOST</code>で指定された許可ホスト（既定値<code>github.com</code>）と一致すること。クライアント側では事前検証せず、保存時にサーバー側でのみ判定する。</td><td>「許可されていないGitHubホストです。管理者に確認してください。」</td></tr>
+        <tr><td>SET-V11</td><td>ホスト名がサーバー環境変数<code>GITHUB_ALLOWED_HOST</code>で指定された許可ホスト（既定値<code>github.com</code>）と一致し、かつパスがルート（空・<code>/</code>・末尾の連続する<code>/</code>のみ）であること。GHEサブパス運用の1セグメントパス（SET-V04で許容）はここでは許可しない。クライアント側では事前検証せず、保存時にサーバー側でのみ判定する。</td><td>「許可されていないGitHub URLです。管理者に確認してください。」</td></tr>
       </tbody>
     </table></div>
 
