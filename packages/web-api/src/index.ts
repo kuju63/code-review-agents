@@ -11,7 +11,7 @@ const config = loadConfigFromEnv();
 const app = createApp();
 const reviewsStore = createReviewsStore();
 registerReviewsRoutes(app, reviewsStore);
-const settingsStore = createSettingsStore();
+const settingsStore = createSettingsStore({ allowedGithubHost: config.githubAllowedHost });
 registerSettingsRoutes(app, settingsStore);
 registerGithubRoutes(app, settingsStore);
 

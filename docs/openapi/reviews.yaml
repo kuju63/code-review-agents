@@ -395,12 +395,16 @@ paths:
         `422 validation_error` とする (SET-V05)。
 
         `githubUrl` は保存前に正規化し、末尾の連続する `/` を除去する (SET-A01)。
-        `githubUrl` のホスト名はサーバー環境変数 `GITHUB_ALLOWED_HOST`
-        (既定値 `github.com`) と一致する必要があり、一致しない場合は
-        `422 validation_error` とする (SET-V11)。GitHub Enterprise Server等の
-        別ホストを使う場合は運用者が `GITHUB_ALLOWED_HOST` を設定する。この
-        制限は本エンドポイントがまだ無認証で保存を受け付けるための暫定的な
-        緩和策であり、認可機構の追加を代替するものではない。
+        `githubUrl` はホスト名がサーバー環境変数 `GITHUB_ALLOWED_HOST`
+        (既定値 `github.com`) と一致し、かつパスがルート (空・`/`・末尾の連続
+        する `/` のみ) である必要がある。いずれかを満たさない場合は
+        `422 validation_error` とする (SET-V11)。SET-V04が許容するGHEサブ
+        パスの1セグメントパスは、ここでは許可しない
+        (ホストだけを見てパスを見ないと `https://github.com/evil` のような
+        同一ホスト配下の任意パスへPATが送信され得るため)。GitHub Enterprise
+        Server等の別ホストを使う場合は運用者が `GITHUB_ALLOWED_HOST` を
+        設定する。この制限は本エンドポイントがまだ無認証で保存を受け付ける
+        ための暫定的な緩和策であり、認可機構の追加を代替するものではない。
         現時点ではプロセス内メモリのダミーストアであり、暗号化・DB永続化は
         未実装 (`reviews.store.ts` と同じ成熟度。後続タスクで対応)。
       requestBody:
@@ -1070,9 +1074,10 @@ components:
           description: |
             接続先GitHubのルートURL (SET-V01〜V04)。前後空白除去後 1〜2048文字、
             スキームは `https`、ホスト名必須、ユーザー情報・クエリ・フラグメントを
-            含まないこと。パスは空または `/` のみ許容する。ホスト名はさらに
-            サーバー環境変数 `GITHUB_ALLOWED_HOST` (既定値 `github.com`) と
-            一致する必要がある (SET-V11)。
+            含まないこと。パスは空または `/` のみ許容する。さらにホスト名と
+            パスの両方が、サーバー環境変数 `GITHUB_ALLOWED_HOST` (既定値
+            `github.com`) が示すオリジンのルートと一致する必要がある
+            (SET-V11)。
           examples: ['https://github.com']
         personalAccessToken:
           type: string
