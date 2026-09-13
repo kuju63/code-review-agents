@@ -1,6 +1,5 @@
 import {
   Button,
-  Link as CarbonLink,
   Dropdown,
   InlineNotification,
   Loading,
@@ -298,9 +297,7 @@ export function ReviewRequestPage() {
                   />
                 )}
                 {activeSubmitNotice?.kind === "conflict" && (
-                  <CarbonLink onClick={() => navigate({ to: "/" })}>
-                    {t("reviewRequest.goToListButton")}
-                  </CarbonLink>
+                  <Link to="/">{t("reviewRequest.goToListButton")}</Link>
                 )}
 
                 <div className={styles.actionsRow}>

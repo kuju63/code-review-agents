@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export interface UseReviewRequestSelection {
   organization: string | null;
@@ -47,12 +47,17 @@ export function useReviewRequestSelection(): UseReviewRequestSelection {
 
   // Stable across re-renders/retries of the same (org, repo, pr) selection
   // (OP-05/ST-06 double-submit prevention); regenerates only when the
-  // selection actually changes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional — the UUID must regenerate on selection change, not on every render.
-  const idempotencyKey = useMemo(
-    () => crypto.randomUUID(),
-    [organization, repository, pullRequest],
-  );
+  // selection actually changes. Held in a ref (not useMemo) because useMemo
+  // is only a cache React may discard and recompute at any time, which would
+  // silently break double-submit prevention.
+  const selectionSignature = [organization, repository, pullRequest].join("|");
+  const selectionSignatureRef = useRef(selectionSignature);
+  const idempotencyKeyRef = useRef(crypto.randomUUID());
+  if (selectionSignatureRef.current !== selectionSignature) {
+    selectionSignatureRef.current = selectionSignature;
+    idempotencyKeyRef.current = crypto.randomUUID();
+  }
+  const idempotencyKey = idempotencyKeyRef.current;
 
   return {
     organization,
