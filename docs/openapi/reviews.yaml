@@ -395,6 +395,12 @@ paths:
         `422 validation_error` とする (SET-V05)。
 
         `githubUrl` は保存前に正規化し、末尾の連続する `/` を除去する (SET-A01)。
+        `githubUrl` のホスト名はサーバー環境変数 `GITHUB_ALLOWED_HOST`
+        (既定値 `github.com`) と一致する必要があり、一致しない場合は
+        `422 validation_error` とする (SET-V11)。GitHub Enterprise Server等の
+        別ホストを使う場合は運用者が `GITHUB_ALLOWED_HOST` を設定する。この
+        制限は本エンドポイントがまだ無認証で保存を受け付けるための暫定的な
+        緩和策であり、認可機構の追加を代替するものではない。
         現時点ではプロセス内メモリのダミーストアであり、暗号化・DB永続化は
         未実装 (`reviews.store.ts` と同じ成熟度。後続タスクで対応)。
       requestBody:
@@ -405,9 +411,9 @@ paths:
               $ref: '#/components/schemas/UpdateGithubSettingsRequest'
             examples:
               default:
-                summary: GitHub Enterprise Server への初回登録
+                summary: github.com への初回登録
                 value:
-                  githubUrl: https://github.example.com
+                  githubUrl: https://github.com
                   personalAccessToken: ghp_abcdefghijklmnopqrstuvwxyz0123456789
       responses:
         '200':
@@ -1064,8 +1070,10 @@ components:
           description: |
             接続先GitHubのルートURL (SET-V01〜V04)。前後空白除去後 1〜2048文字、
             スキームは `https`、ホスト名必須、ユーザー情報・クエリ・フラグメントを
-            含まないこと。パスは空または `/` のみ許容する。
-          examples: ['https://github.example.com']
+            含まないこと。パスは空または `/` のみ許容する。ホスト名はさらに
+            サーバー環境変数 `GITHUB_ALLOWED_HOST` (既定値 `github.com`) と
+            一致する必要がある (SET-V11)。
+          examples: ['https://github.com']
         personalAccessToken:
           type: string
           maxLength: 4096
@@ -1464,7 +1472,7 @@ components:
       summary: 登録済みGitHub連携設定
       value:
         apiVersion: '1.0.0'
-        githubUrl: https://github.example.com
+        githubUrl: https://github.com
         hasPersonalAccessToken: true
         updatedAt: '2026-08-09T10:00:00Z'
 
