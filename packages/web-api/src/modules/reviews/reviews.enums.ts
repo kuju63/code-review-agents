@@ -24,7 +24,11 @@ export const AttemptStatusSchema = z
   .enum(["queued", "running", "succeeded", "failed", "canceled"])
   .openapi("AttemptStatus");
 
-/** 共通 error taxonomy (ADR-0012 §6)。 */
+/**
+ * 共通 error taxonomy (ADR-0012 §6)。`unauthorized` はADR-0012 §6の
+ * review実行フロー taxonomyには含まれない追加値で、`/github/*` カタログAPI
+ * (Issue #335) がPAT未登録・無効Tokenを表現するために用いる。
+ */
 export const ErrorCodeSchema = z
   .enum([
     "validation_error",
@@ -35,6 +39,7 @@ export const ErrorCodeSchema = z
     "upstream_model_failure",
     "timeout",
     "canceled",
+    "unauthorized",
   ])
   .openapi("ErrorCode");
 
