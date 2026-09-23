@@ -23,4 +23,12 @@ describe("loadConfigFromEnv", () => {
   it("rejects an empty GITHUB_ALLOWED_HOST", () => {
     expect(() => loadConfigFromEnv({ GITHUB_ALLOWED_HOST: "   " })).toThrow();
   });
+
+  it("rejects a GITHUB_ALLOWED_HOST containing a port", () => {
+    expect(() => loadConfigFromEnv({ GITHUB_ALLOWED_HOST: "github.example.com:443" })).toThrow();
+  });
+
+  it("rejects a GITHUB_ALLOWED_HOST containing a path", () => {
+    expect(() => loadConfigFromEnv({ GITHUB_ALLOWED_HOST: "github.example.com/path" })).toThrow();
+  });
 });

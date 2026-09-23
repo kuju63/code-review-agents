@@ -10,6 +10,13 @@ describe("createSettingsStore — getGithubSettings", () => {
     expect(settings.githubUrl).toBe("https://github.com");
     expect(settings.hasPersonalAccessToken).toBe(false);
   });
+
+  it("returns the operator-configured allowed host as the initial githubUrl (GHES)", () => {
+    const store = createSettingsStore({ allowedGithubHost: "github.example.com" });
+    const settings = store.getGithubSettings();
+
+    expect(settings.githubUrl).toBe("https://github.example.com");
+  });
 });
 
 describe("createSettingsStore — updateGithubSettings", () => {
@@ -170,6 +177,19 @@ describe("createSettingsStore — githubUrl host pinning (SET-V11)", () => {
 
     assert(!result.ok);
     expect(result.code).toBe("validation_error");
+  });
+
+  it("accepts the initial githubUrl unchanged on first registration for a custom allowed host (GET/PUT consistency)", () => {
+    const store = createSettingsStore({ allowedGithubHost: "github.example.com" });
+    const initial = store.getGithubSettings();
+
+    const result = store.updateGithubSettings({
+      githubUrl: initial.githubUrl,
+      personalAccessToken: "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
+    });
+
+    assert(result.ok);
+    expect(result.data.githubUrl).toBe("https://github.example.com");
   });
 });
 

@@ -66,8 +66,11 @@ function isRootOnlyPath(pathname: string): boolean {
 export function createSettingsStore(deps: SettingsStoreDeps = {}): SettingsStore {
   const now = deps.now ?? (() => new Date().toISOString());
   const allowedGithubHost = (deps.allowedGithubHost ?? DEFAULT_ALLOWED_GITHUB_HOST).toLowerCase();
+  // 初期値もallowedGithubHostから正規化する。固定値のままだと、
+  // allowedGithubHostをgithub.com以外に設定した運用でGETの初期値をそのまま
+  // PUTに送り返した際にホスト不一致で拒否されてしまう (GET/PUTの不整合)。
   let state = {
-    githubUrl: "https://github.com",
+    githubUrl: normalizeGithubUrl(`https://${allowedGithubHost}`),
     personalAccessToken: null as string | null,
     updatedAt: now(),
   };
