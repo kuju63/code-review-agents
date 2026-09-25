@@ -105,8 +105,8 @@ importers:
         specifier: ^1.115.0
         version: 1.115.0(react-dom@19.2.8(react@19.2.8))(react-is@18.3.1)(react@19.2.8)(sass@1.104.1)
       '@tanstack/markdown':
-        specifier: ^0.0.13
-        version: 0.0.13(react@19.2.8)
+        specifier: ^0.0.15
+        version: 0.0.15(react@19.2.8)
       '@tanstack/react-form':
         specifier: ^1.33.5
         version: 1.33.5(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -1771,8 +1771,8 @@ packages:
     resolution: {integrity: sha512-utTS5L2OkeYUzXGohL1Z8sefu1GLNOJcxe8Hd6iIdc/Xo1K1nDB2JEp4iSFhvYh33xKC9V91TxrS8qfrpoKobQ==}
     engines: {node: '>=20.19'}
 
-  '@tanstack/markdown@0.0.13':
-    resolution: {integrity: sha512-ZSQP2ulBvlPzdpZeRheBJnaELo7e4ET/D/XrfgweHyqhhLMN5vUJJAUl7ufSRd7GlfO/vwdzjKPh0E0JwqJkDA==}
+  '@tanstack/markdown@0.0.15':
+    resolution: {integrity: sha512-8hZFgCxGzYcBogffndvOm/prhdDt8nATQ4jzd9b0ziU0j4ofW/5guC1sknO2JyBNSXPgeLrrdXlJA8sbb1zw8w==}
     peerDependencies:
       octane: '>=0.1.12'
       react: '>=18'
@@ -5179,7 +5179,7 @@ snapshots:
 
   '@tanstack/history@1.162.4': {}
 
-  '@tanstack/markdown@0.0.13(react@19.2.8)':
+  '@tanstack/markdown@0.0.15(react@19.2.8)':
     optionalDependencies:
       react: 19.2.8
 
