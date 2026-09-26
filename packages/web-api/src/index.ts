@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.js";
 import { loadConfigFromEnv } from "./config.js";
+import { registerGithubRoutes } from "./modules/github/github.route.js";
 import { registerReviewsRoutes } from "./modules/reviews/reviews.route.js";
 import { createReviewsStore } from "./modules/reviews/reviews.store.js";
 import { registerSettingsRoutes } from "./modules/settings/settings.route.js";
@@ -10,8 +11,9 @@ const config = loadConfigFromEnv();
 const app = createApp();
 const reviewsStore = createReviewsStore();
 registerReviewsRoutes(app, reviewsStore);
-const settingsStore = createSettingsStore();
+const settingsStore = createSettingsStore({ allowedGithubHost: config.githubAllowedHost });
 registerSettingsRoutes(app, settingsStore);
+registerGithubRoutes(app, settingsStore);
 
 serve(
   {

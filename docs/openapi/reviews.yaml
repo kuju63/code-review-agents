@@ -42,6 +42,10 @@ tags:
     description: 参照系 (query)。GitHub連携設定の取得。副作用を持たない。
   - name: settings-command
     description: 更新系 (command)。GitHub連携設定 (URL / Personal Access Token) の保存。
+  - name: github-query
+    description: |
+      参照系 (query)。GitHub上のOrganization・Repository・Open PR一覧を取得する
+      カタログAPI (Issue #335)。副作用を持たない。
 
 paths:
   /reviews:
@@ -391,6 +395,16 @@ paths:
         `422 validation_error` とする (SET-V05)。
 
         `githubUrl` は保存前に正規化し、末尾の連続する `/` を除去する (SET-A01)。
+        `githubUrl` はホスト名がサーバー環境変数 `GITHUB_ALLOWED_HOST`
+        (既定値 `github.com`) と一致し、かつパスがルート (空・`/`・末尾の連続
+        する `/` のみ) である必要がある。いずれかを満たさない場合は
+        `422 validation_error` とする (SET-V11)。SET-V04が許容するGHEサブ
+        パスの1セグメントパスは、ここでは許可しない
+        (ホストだけを見てパスを見ないと `https://github.com/evil` のような
+        同一ホスト配下の任意パスへPATが送信され得るため)。GitHub Enterprise
+        Server等の別ホストを使う場合は運用者が `GITHUB_ALLOWED_HOST` を
+        設定する。この制限は本エンドポイントがまだ無認証で保存を受け付ける
+        ための暫定的な緩和策であり、認可機構の追加を代替するものではない。
         現時点ではプロセス内メモリのダミーストアであり、暗号化・DB永続化は
         未実装 (`reviews.store.ts` と同じ成熟度。後続タスクで対応)。
       requestBody:
@@ -401,9 +415,9 @@ paths:
               $ref: '#/components/schemas/UpdateGithubSettingsRequest'
             examples:
               default:
-                summary: GitHub Enterprise Server への初回登録
+                summary: github.com への初回登録
                 value:
-                  githubUrl: https://github.example.com
+                  githubUrl: https://github.com
                   personalAccessToken: ghp_abcdefghijklmnopqrstuvwxyz0123456789
       responses:
         '200':
@@ -417,6 +431,85 @@ paths:
                   $ref: '#/components/examples/GithubSettingsExample'
         '422':
           $ref: '#/components/responses/ValidationError'
+
+  /github/orgs:
+    get:
+      tags: [github-query]
+      operationId: listGithubOrgs
+      summary: GitHub上のOrganization一覧を取得する (Issue #335)
+      description: |
+        `/settings/github` に保存済みの接続先URLとPersonal Access Tokenを用いて
+        `GET /user/orgs` を呼び出し、PATの持ち主が所属するOrganization一覧を返す。
+        PAT未登録の場合は `401 unauthorized` とする。
+      responses:
+        '200':
+          description: 取得成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubOrgListResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/GithubOrgListExample'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '502':
+          $ref: '#/components/responses/UpstreamGithubFailure'
+
+  /github/repos:
+    get:
+      tags: [github-query]
+      operationId: listGithubRepositories
+      summary: Organization配下のRepository一覧を取得する (Issue #335)
+      description: |
+        `GET /orgs/{org}/repos` を呼び出し、指定したOrganization配下の
+        Repository一覧を返す。PAT未登録の場合は `401 unauthorized` とする。
+      parameters:
+        - $ref: '#/components/parameters/GithubOrgQuery'
+      responses:
+        '200':
+          description: 取得成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubRepositoryListResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/GithubRepositoryListExample'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '502':
+          $ref: '#/components/responses/UpstreamGithubFailure'
+
+  /github/prs:
+    get:
+      tags: [github-query]
+      operationId: listGithubPullRequests
+      summary: Repository配下のOpen PR一覧を取得する (Issue #335)
+      description: |
+        `GET /repos/{org}/{repo}/pulls?state=open` を呼び出し、指定した
+        Repositoryのopen PR一覧を返す。PAT未登録の場合は `401 unauthorized` とする。
+      parameters:
+        - $ref: '#/components/parameters/GithubOrgQuery'
+        - $ref: '#/components/parameters/GithubRepoQuery'
+      responses:
+        '200':
+          description: 取得成功。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GithubPullRequestListResponse'
+              examples:
+                default:
+                  $ref: '#/components/examples/GithubPullRequestListExample'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '502':
+          $ref: '#/components/responses/UpstreamGithubFailure'
 
 components:
   parameters:
@@ -507,6 +600,24 @@ components:
       schema:
         type: string
         examples: ['3f8c1e2a-...']
+    GithubOrgQuery:
+      name: org
+      in: query
+      required: true
+      description: 対象のGitHub organization/user ログイン名 (Issue #335)。
+      schema:
+        type: string
+        minLength: 1
+        examples: ['acme-corp']
+    GithubRepoQuery:
+      name: repo
+      in: query
+      required: true
+      description: 対象のrepository名 (所有者名を含めない、Issue #335)。
+      schema:
+        type: string
+        minLength: 1
+        examples: ['web-frontend']
 
   schemas:
     ApiVersion:
@@ -544,7 +655,10 @@ components:
 
     ErrorCode:
       type: string
-      description: 共通 error taxonomy (ADR-0012 §6)。
+      description: |
+        共通 error taxonomy (ADR-0012 §6)。`unauthorized` は ADR-0012 §6 の
+        review実行フロー taxonomyには含まれない追加値で、`/github/*` カタログAPI
+        (Issue #335) がPAT未登録・無効Tokenを表現するために用いる。
       enum:
         - validation_error
         - not_found
@@ -554,6 +668,7 @@ components:
         - upstream_model_failure
         - timeout
         - canceled
+        - unauthorized
 
     CommentDisposition:
       type: string
@@ -959,8 +1074,11 @@ components:
           description: |
             接続先GitHubのルートURL (SET-V01〜V04)。前後空白除去後 1〜2048文字、
             スキームは `https`、ホスト名必須、ユーザー情報・クエリ・フラグメントを
-            含まないこと。パスは空または `/` のみ許容する。
-          examples: ['https://github.example.com']
+            含まないこと。パスは空または `/` のみ許容する。さらにホスト名と
+            パスの両方が、サーバー環境変数 `GITHUB_ALLOWED_HOST` (既定値
+            `github.com`) が示すオリジンのルートと一致する必要がある
+            (SET-V11)。
+          examples: ['https://github.com']
         personalAccessToken:
           type: string
           maxLength: 4096
@@ -971,6 +1089,105 @@ components:
             既存PATは変更しない。初回登録時に省略した場合は
             `422 validation_error` となる (SET-V05)。
           examples: ['ghp_abcdefghijklmnopqrstuvwxyz0123456789']
+
+    GithubOrg:
+      type: object
+      description: GitHub Organization/user (Issue #335 `/github/orgs`)。
+      required: [name, id]
+      properties:
+        name:
+          type: string
+          description: organization/user のログイン名。
+          examples: ['acme-corp']
+        id:
+          type: integer
+          description: GitHub上のnumeric ID。
+          examples: [123456]
+
+    GithubOrgListResponse:
+      type: object
+      required: [apiVersion, items]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GithubOrg'
+
+    GithubRepository:
+      type: object
+      description: GitHub Repository (Issue #335 `/github/repos`)。
+      required: [name, id, defaultBranch, openIssuesCount]
+      properties:
+        name:
+          type: string
+          description: リポジトリ名 (所有者名を含めない)。
+          examples: ['web-frontend']
+        id:
+          type: integer
+          description: GitHub上のnumeric ID。
+          examples: [789012]
+        defaultBranch:
+          type: string
+          description: デフォルトブランチ名。
+          examples: ['main']
+        openIssuesCount:
+          type: integer
+          minimum: 0
+          description: オープン中のissue数 (GitHub APIの仕様上、open PR数を含む)。
+          examples: [3]
+
+    GithubRepositoryListResponse:
+      type: object
+      required: [apiVersion, items]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GithubRepository'
+
+    GithubPullRequest:
+      type: object
+      description: GitHub Open Pull Request (Issue #335 `/github/prs`)。
+      required: [number, title, state, createdAt, author, baseBranch]
+      properties:
+        number:
+          type: integer
+          minimum: 1
+          description: PR番号。
+          examples: [482]
+        title:
+          type: string
+          description: PRタイトル。
+          examples: ['ユーザー認証フローの改善']
+        state:
+          $ref: '#/components/schemas/PrState'
+        createdAt:
+          type: string
+          format: date-time
+          description: PR作成日時 (RFC 3339)。
+        author:
+          type: string
+          description: PR作成者のログイン名。
+          examples: ['sato.k']
+        baseBranch:
+          type: string
+          description: マージ先ブランチ名。
+          examples: ['main']
+
+    GithubPullRequestListResponse:
+      type: object
+      required: [apiVersion, items]
+      properties:
+        apiVersion:
+          $ref: '#/components/schemas/ApiVersion'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GithubPullRequest'
 
   responses:
     ValidationError:
@@ -1036,6 +1253,8 @@ components:
       description: |
         受付前の同期検証でGitHub呼び出しに失敗 (upstream_github_failure)。
         受付後(202)の失敗はポーリングの終端 failed 状態で表現する (ADR-0012 §6)。
+        `/github/*` カタログAPI (Issue #335) はこのresponseを、GitHub側の
+        401以外のエラー (5xx・rate limit等) にも共通して用いる。
       content:
         application/json:
           schema:
@@ -1046,6 +1265,21 @@ components:
                 apiVersion: '1.0.0'
                 code: upstream_github_failure
                 message: 'GitHubへの接続に失敗しました。設定を確認してください。'
+                detail: null
+    Unauthorized:
+      description: |
+        GitHub連携未設定、またはPersonal Access Tokenが無効 (unauthorized、
+        Issue #335)。`/settings/github` での再設定を促す。
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            default:
+              value:
+                apiVersion: '1.0.0'
+                code: unauthorized
+                message: 'GitHub連携が未設定か、Personal Access Tokenが無効です。設定を確認してください。'
                 detail: null
 
   examples:
@@ -1243,6 +1477,42 @@ components:
       summary: 登録済みGitHub連携設定
       value:
         apiVersion: '1.0.0'
-        githubUrl: https://github.example.com
+        githubUrl: https://github.com
         hasPersonalAccessToken: true
         updatedAt: '2026-08-09T10:00:00Z'
+
+    GithubOrgListExample:
+      summary: Organization一覧
+      value:
+        apiVersion: '1.0.0'
+        items:
+          - name: acme-corp
+            id: 123456
+          - name: sato-k
+            id: 234567
+
+    GithubRepositoryListExample:
+      summary: Repository一覧
+      value:
+        apiVersion: '1.0.0'
+        items:
+          - name: web-frontend
+            id: 789012
+            defaultBranch: main
+            openIssuesCount: 3
+          - name: payments-api
+            id: 789013
+            defaultBranch: main
+            openIssuesCount: 0
+
+    GithubPullRequestListExample:
+      summary: Open PR一覧
+      value:
+        apiVersion: '1.0.0'
+        items:
+          - number: 482
+            title: ユーザー認証フローの改善
+            state: open
+            createdAt: '2026-08-01T09:00:00Z'
+            author: sato.k
+            baseBranch: main

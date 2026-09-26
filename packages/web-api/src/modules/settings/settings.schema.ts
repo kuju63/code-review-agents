@@ -10,6 +10,10 @@ import { ApiVersionSchema } from "../reviews/reviews.schema.js";
  * decode してから判定する。エンコードされた `/` や `\`（`%2F`／`%5C`）を
  * デコード前提で見逃すと、単一セグメントの判定を回避できてしまう。
  * decode に失敗した値は拒否する。
+ * 注意: ここで許容する単一セグメントのGHEサブパスは、現状
+ * settings.store.ts の SET-V11 (ホスト固定) がルートパスのみしか
+ * 受け付けないため実質的に到達不能。GHEサブパス運用を復活させる場合は
+ * 両方の層を合わせて見直すこと。
  */
 function isAllowedRootPath(pathname: string): boolean {
   let decoded: string;

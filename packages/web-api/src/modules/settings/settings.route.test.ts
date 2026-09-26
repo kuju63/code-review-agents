@@ -30,14 +30,14 @@ describe("PUT /settings/github", () => {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        githubUrl: "https://github.example.com",
+        githubUrl: "https://github.com",
         personalAccessToken: "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
       }),
     });
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.githubUrl).toBe("https://github.example.com");
+    expect(body.githubUrl).toBe("https://github.com");
     expect(body.hasPersonalAccessToken).toBe(true);
   });
 
@@ -47,7 +47,7 @@ describe("PUT /settings/github", () => {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        githubUrl: "http://github.example.com",
+        githubUrl: "http://github.com",
         personalAccessToken: "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
       }),
     });
@@ -62,7 +62,7 @@ describe("PUT /settings/github", () => {
     const res = await app.request("/settings/github", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ githubUrl: "https://github.example.com" }),
+      body: JSON.stringify({ githubUrl: "https://github.com" }),
     });
 
     expect(res.status).toBe(422);
@@ -76,7 +76,7 @@ describe("PUT /settings/github", () => {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        githubUrl: "https://github.example.com",
+        githubUrl: "https://github.com",
         personalAccessToken: "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
       }),
     });
@@ -84,12 +84,12 @@ describe("PUT /settings/github", () => {
     const res = await app.request("/settings/github", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ githubUrl: "https://github2.example.com" }),
+      body: JSON.stringify({ githubUrl: "https://github.com/" }),
     });
 
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.githubUrl).toBe("https://github2.example.com");
+    expect(body.githubUrl).toBe("https://github.com");
     expect(body.hasPersonalAccessToken).toBe(true);
   });
 
@@ -100,12 +100,31 @@ describe("PUT /settings/github", () => {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        githubUrl: "http://github.example.com",
+        githubUrl: "http://github.com",
         personalAccessToken: secretToken,
       }),
     });
 
     const rawText = await res.text();
+    expect(rawText).not.toContain(secretToken);
+  });
+
+  it("returns 422 validation_error when githubUrl points at a host other than the allowed one (SET-V11)", async () => {
+    const app = buildTestApp();
+    const secretToken = "ghp_thisIsASecretValueThatMustNotLeak00";
+    const res = await app.request("/settings/github", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        githubUrl: "https://attacker.example.com",
+        personalAccessToken: secretToken,
+      }),
+    });
+
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.code).toBe("validation_error");
+    const rawText = JSON.stringify(body);
     expect(rawText).not.toContain(secretToken);
   });
 });
