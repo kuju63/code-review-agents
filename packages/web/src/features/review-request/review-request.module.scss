@@ -1,0 +1,125 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 760px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.loadingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fieldRow {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.field {
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.prList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.prListHeading {
+  font-size: 12px;
+  color: #525252;
+}
+
+.prCards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.prCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f4f4f4;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+
+  &:hover {
+    background: #e8e8e8;
+  }
+}
+
+.prCardSelected {
+  &:hover {
+    background: #edf5ff;
+  }
+
+  border-color: #0f62fe;
+  background: #edf5ff;
+}
+
+.prCardMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.prCardTitle {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.prCardMeta {
+  font-size: 12px;
+  color: #525252;
+  font-family: monospace;
+}
+
+.noResults {
+  padding: 24px;
+  color: #525252;
+  font-size: 14px;
+}
+
+.summaryPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #f4f4f4;
+  padding: 20px;
+  max-width: 480px;
+}
+
+.summaryHeading {
+  font-size: 12px;
+  color: #525252;
+}
+
+.summaryList {
+  margin: 0;
+  font-family: monospace;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.actionsRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}

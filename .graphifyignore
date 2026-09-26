@@ -10,3 +10,6 @@ mcp.json
 opencode.jsonc
 renovate.json
 Review-Aget.json
+**/*.svg
+**/*.png
+**/*.jpg
