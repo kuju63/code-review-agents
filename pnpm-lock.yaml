@@ -50,13 +50,13 @@ importers:
         version: link:../agent-core
       '@hono/node-server':
         specifier: ^2.1.0
-        version: 2.1.1(hono@4.13.8)
+        version: 2.1.1(hono@4.13.9)
       '@hono/zod-validator':
         specifier: ^0.9.0
-        version: 0.9.1(hono@4.13.8)(zod@4.5.4)
+        version: 0.9.1(hono@4.13.9)(zod@4.5.4)
       hono:
         specifier: ^4.13.1
-        version: 4.13.8
+        version: 4.13.9
     devDependencies:
       '@types/node':
         specifier: ^26.1.1
@@ -200,10 +200,10 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: ^2.1.1
-        version: 2.1.1(hono@4.13.8)
+        version: 2.1.1(hono@4.13.9)
       '@hono/zod-openapi':
         specifier: ^1.6.2
-        version: 1.6.3(hono@4.13.8)(zod@4.5.4)
+        version: 1.6.3(hono@4.13.9)(zod@4.5.4)
       '@valkey/valkey-glide':
         specifier: ^2.5.2
         version: 2.5.3
@@ -218,7 +218,7 @@ importers:
         version: 0.45.3(@opentelemetry/api@1.9.1)(better-sqlite3@13.0.3)
       hono:
         specifier: ^4.13.7
-        version: 4.13.8
+        version: 4.13.9
       zod:
         specifier: ^4.5.4
         version: 4.5.4
@@ -2801,6 +2801,10 @@ packages:
     resolution: {integrity: sha512-/Gng7NfoykZl2pjukW5Z6+8Yxm3BPRf86GTbQnt0SbySkvax4fyL4H3HhY1cCpBGmiW9XDRFzRV+CXK2W8QudQ==}
     engines: {node: '>=16.9.0'}
 
+  hono@4.13.9:
+    resolution: {integrity: sha512-7dMkQmZoC4E6F7AtaQSPhlWAdnBti+j7rreMZl8QB4jFiEhP9TWbGWUMi8WYzBCgmgulxuvLQupKqo+Co6Omyg==}
+    engines: {node: '>=16.9.0'}
+
   html-parse-stringify@4.0.1:
     resolution: {integrity: sha512-0zHsZJrK7S3K2aucXWL6ycoYJ/iNtIcFHC/nYQgFklPtrv5LpJctIiSCroWZWeuoXvuyFdzp6KzjJQ+OT5MfFw==}
 
@@ -4670,17 +4674,21 @@ snapshots:
     dependencies:
       hono: 4.13.8
 
-  '@hono/zod-openapi@1.6.3(hono@4.13.8)(zod@4.5.4)':
+  '@hono/node-server@2.1.1(hono@4.13.9)':
+    dependencies:
+      hono: 4.13.9
+
+  '@hono/zod-openapi@1.6.3(hono@4.13.9)(zod@4.5.4)':
     dependencies:
       '@asteasolutions/zod-to-openapi': 9.1.0(zod@4.5.4)
-      '@hono/zod-validator': 0.9.1(hono@4.13.8)(zod@4.5.4)
-      hono: 4.13.8
+      '@hono/zod-validator': 0.9.1(hono@4.13.9)(zod@4.5.4)
+      hono: 4.13.9
       openapi3-ts: 4.6.1
       zod: 4.5.4
 
-  '@hono/zod-validator@0.9.1(hono@4.13.8)(zod@4.5.4)':
+  '@hono/zod-validator@0.9.1(hono@4.13.9)(zod@4.5.4)':
     dependencies:
-      hono: 4.13.8
+      hono: 4.13.9
       zod: 4.5.4
 
   '@huggingface/jinja@0.5.9':
@@ -6175,6 +6183,8 @@ snapshots:
       function-bind: 1.1.2
 
   hono@4.13.8: {}
+
+  hono@4.13.9: {}
 
   html-parse-stringify@4.0.1: {}
 
