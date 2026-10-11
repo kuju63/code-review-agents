@@ -50,7 +50,7 @@ importers:
         version: link:../agent-core
       '@hono/node-server':
         specifier: ^2.1.0
-        version: 2.1.1(hono@4.13.9)
+        version: 2.1.4(hono@4.13.9)
       '@hono/zod-validator':
         specifier: ^0.9.0
         version: 0.9.1(hono@4.13.9)(zod@4.6.5)
@@ -200,7 +200,7 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: ^2.1.1
-        version: 2.1.1(hono@4.13.9)
+        version: 2.1.4(hono@4.13.9)
       '@hono/zod-openapi':
         specifier: ^1.6.2
         version: 1.6.3(hono@4.13.9)(zod@4.6.5)
@@ -1021,6 +1021,12 @@ packages:
     engines: {node: '>=20'}
     peerDependencies:
       hono: ^4
+
+  '@hono/node-server@2.1.4':
+    resolution: {integrity: sha512-2g1qeHl4BduwDn6L8nkAvDrPUWPMlkQ//a5NhP/zIyaXKMjZNRV+cG9Csu+BiJFf6+68pqzjf4Hi5sJGKHuS1g==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4 || ^5.0.0-0
 
   '@hono/zod-openapi@1.6.3':
     resolution: {integrity: sha512-VYR82Y60plu8g3pN60OUXMVKpmxh3R04Qs++3DY9vtwZ9/sA/BRY0PcRIR+Z37/3itWtM7pYwT9bKiH9JhqV6Q==}
@@ -4681,6 +4687,10 @@ snapshots:
       - utf-8-validate
 
   '@hono/node-server@2.1.1(hono@4.13.9)':
+    dependencies:
+      hono: 4.13.9
+
+  '@hono/node-server@2.1.4(hono@4.13.9)':
     dependencies:
       hono: 4.13.9
 
