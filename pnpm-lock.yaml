@@ -10,16 +10,16 @@ importers:
     dependencies:
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.19.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.6))(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(@tobilu/qmd@2.8.3(supports-color@7.2.0)(typescript@7.0.2))(express@5.2.1(supports-color@7.2.0))(openai@7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.6))(zod@4.6.6)
+        version: 1.19.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.5))(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(@tobilu/qmd@2.8.3(supports-color@7.2.0)(typescript@7.0.2))(express@5.2.1(supports-color@7.2.0))(openai@7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.5))(zod@4.6.5)
       ai-sdk-ollama:
         specifier: ^3.8.8
-        version: 3.8.8(ai@6.0.246(zod@4.6.6))(zod@4.6.6)
+        version: 3.8.8(ai@6.0.246(zod@4.6.5))(zod@4.6.5)
       openai:
         specifier: ^7.4.0
-        version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.6)
+        version: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.5)
       zod:
         specifier: ^4.1.12
-        version: 4.6.6
+        version: 4.6.5
     devDependencies:
       '@biomejs/biome':
         specifier: 2.5.15
@@ -41,7 +41,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: ^5.0.0
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.5.1)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.5.1)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.6)(vite@8.3.4(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/a2a-server:
     dependencies:
@@ -53,7 +53,7 @@ importers:
         version: 2.1.4(hono@4.13.13)
       '@hono/zod-validator':
         specifier: ^0.9.0
-        version: 0.9.1(hono@4.13.13)(zod@4.6.6)
+        version: 0.9.1(hono@4.13.13)(zod@4.6.5)
       hono:
         specifier: ^4.13.1
         version: 4.13.13
@@ -69,10 +69,10 @@ importers:
     dependencies:
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.19.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.6))(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(@tobilu/qmd@2.8.3(supports-color@7.2.0)(typescript@7.0.2))(express@5.2.1(supports-color@7.2.0))(openai@7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.6))(zod@4.6.6)
+        version: 1.19.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.5))(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(@tobilu/qmd@2.8.3(supports-color@7.2.0)(typescript@7.0.2))(express@5.2.1(supports-color@7.2.0))(openai@7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.5))(zod@4.6.5)
       ai-sdk-ollama:
         specifier: ^3.8.8
-        version: 3.8.8(ai@6.0.246(zod@4.6.6))(zod@4.6.6)
+        version: 3.8.8(ai@6.0.246(zod@4.6.5))(zod@4.6.5)
       yaml:
         specifier: ^2.9.0
         version: 2.9.1
@@ -84,13 +84,13 @@ importers:
         version: link:../agent-core
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.19.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.6))(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(@tobilu/qmd@2.8.3(supports-color@7.2.0)(typescript@7.0.2))(express@5.2.1(supports-color@7.2.0))(openai@7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.6))(zod@4.6.6)
+        version: 1.19.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.5))(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(@tobilu/qmd@2.8.3(supports-color@7.2.0)(typescript@7.0.2))(express@5.2.1(supports-color@7.2.0))(openai@7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.5))(zod@4.6.5)
       commander:
         specifier: ^15.0.0
         version: 15.0.0
       zod:
         specifier: ^4.1.12
-        version: 4.6.6
+        version: 4.6.5
     devDependencies:
       '@types/node':
         specifier: ^26.2.0
@@ -142,14 +142,14 @@ importers:
         version: 1.104.1
       zod:
         specifier: ^4.4.3
-        version: 4.6.6
+        version: 4.6.5
     devDependencies:
       '@babel/core':
         specifier: ^7.29.7
         version: 7.29.7(supports-color@7.2.0)
       '@happy-dom/global-registrator':
         specifier: ^20.14.0
-        version: 20.14.5
+        version: 20.14.6
       '@rolldown/plugin-babel':
         specifier: ^0.2.3
         version: 0.2.4(@babel/core@7.29.7(supports-color@7.2.0))(@babel/runtime@8.0.0)(rolldown@1.2.13)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
@@ -185,7 +185,7 @@ importers:
         version: 1.0.0
       happy-dom:
         specifier: ^20.11.0
-        version: 20.14.5
+        version: 20.14.6
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
@@ -194,7 +194,7 @@ importers:
         version: 8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1)
       vitest:
         specifier: ^5.0.0
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.2)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.2)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.6)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/web-api:
     dependencies:
@@ -203,7 +203,7 @@ importers:
         version: 2.1.4(hono@4.13.13)
       '@hono/zod-openapi':
         specifier: ^1.6.2
-        version: 1.6.3(hono@4.13.13)(zod@4.6.6)
+        version: 1.6.3(hono@4.13.13)(zod@4.6.5)
       '@valkey/valkey-glide':
         specifier: ^2.5.2
         version: 2.5.3
@@ -221,7 +221,7 @@ importers:
         version: 4.13.13
       zod:
         specifier: ^4.5.4
-        version: 4.6.6
+        version: 4.6.5
     devDependencies:
       '@types/node':
         specifier: ^26.1.1
@@ -237,7 +237,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: ^5.0.0
-        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.5.1)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.5.1)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.6)(vite@8.3.4(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
       yaml:
         specifier: ^2.9.0
         version: 2.9.1
@@ -1012,8 +1012,8 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@happy-dom/global-registrator@20.14.5':
-    resolution: {integrity: sha512-B05ID9DhSwLs6mlm1fzlkAtTIvB3duCvjJjfr19LBrlTK7VZtRjDqoTRIVv13GuYuNdhByu8LSZgThwV3Rkj7g==}
+  '@happy-dom/global-registrator@20.14.6':
+    resolution: {integrity: sha512-Xd2FwCdm0cAZ+EG0upp69tpxBT9jtvVxaZv1lnbgWsNaZyEuPs0PojYgvCmtQ1RRdRCYCyWTeLjn3Z0aSxDchA==}
     engines: {node: '>=20.0.0'}
 
   '@hono/node-server@2.1.4':
@@ -2796,8 +2796,8 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  happy-dom@20.14.5:
-    resolution: {integrity: sha512-x/RzkpWO40bTjIoT30iQtt64FLLmH/iRcUCN2X//bLx7H3ifkdfPXyqsro/OYtqzIAhiLMMA7mmiOR9C3NOKjQ==}
+  happy-dom@20.14.6:
+    resolution: {integrity: sha512-5DDsf4QmEIlRL6NkCv/fxSjYHHkZceL/IaYQdJc2h3G7DRTEai++VTjbfL0LB9geW2VrA3+vrjF3Efx+OTtX0Q==}
     engines: {node: '>=20.0.0'}
 
   has-flag@4.0.0:
@@ -3964,36 +3964,33 @@ packages:
   zod@4.6.5:
     resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
 
-  zod@4.6.6:
-    resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
-
 snapshots:
 
   '@adobe/css-tools@4.5.0': {}
 
-  '@ai-sdk/gateway@3.0.166(zod@4.6.6)':
+  '@ai-sdk/gateway@3.0.166(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 3.0.14
-      '@ai-sdk/provider-utils': 4.0.42(zod@4.6.6)
+      '@ai-sdk/provider-utils': 4.0.42(zod@4.6.5)
       '@vercel/oidc': 3.2.0
-      zod: 4.6.6
+      zod: 4.6.5
 
-  '@ai-sdk/provider-utils@4.0.42(zod@4.6.6)':
+  '@ai-sdk/provider-utils@4.0.42(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 3.0.14
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.0
       undici: 5.29.0
-      zod: 4.6.6
+      zod: 4.6.5
 
   '@ai-sdk/provider@3.0.14':
     dependencies:
       json-schema: 0.4.0
 
-  '@asteasolutions/zod-to-openapi@9.1.0(zod@4.6.6)':
+  '@asteasolutions/zod-to-openapi@9.1.0(zod@4.6.5)':
     dependencies:
       openapi3-ts: 4.6.1
-      zod: 4.6.6
+      zod: 4.6.5
 
   '@aws-sdk/client-bedrock-runtime@3.1140.0':
     dependencies:
@@ -4679,10 +4676,10 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@happy-dom/global-registrator@20.14.5':
+  '@happy-dom/global-registrator@20.14.6':
     dependencies:
       '@types/node': 26.5.1
-      happy-dom: 20.14.5
+      happy-dom: 20.14.6
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -4691,18 +4688,18 @@ snapshots:
     dependencies:
       hono: 4.13.13
 
-  '@hono/zod-openapi@1.6.3(hono@4.13.13)(zod@4.6.6)':
+  '@hono/zod-openapi@1.6.3(hono@4.13.13)(zod@4.6.5)':
     dependencies:
-      '@asteasolutions/zod-to-openapi': 9.1.0(zod@4.6.6)
-      '@hono/zod-validator': 0.9.1(hono@4.13.13)(zod@4.6.6)
+      '@asteasolutions/zod-to-openapi': 9.1.0(zod@4.6.5)
+      '@hono/zod-validator': 0.9.1(hono@4.13.13)(zod@4.6.5)
       hono: 4.13.13
       openapi3-ts: 4.6.1
-      zod: 4.6.6
+      zod: 4.6.5
 
-  '@hono/zod-validator@0.9.1(hono@4.13.13)(zod@4.6.6)':
+  '@hono/zod-validator@0.9.1(hono@4.13.13)(zod@4.6.5)':
     dependencies:
       hono: 4.13.13
-      zod: 4.6.6
+      zod: 4.6.5
 
   '@huggingface/jinja@0.5.9':
     optional: true
@@ -4788,7 +4785,7 @@ snapshots:
       zod: 4.6.5
     optional: true
 
-  '@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.6)':
+  '@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.5)':
     dependencies:
       '@hono/node-server': 2.1.4(hono@4.13.13)
       ajv: 8.20.0
@@ -4805,8 +4802,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.6.6
-      zod-to-json-schema: 3.25.2(zod@4.6.6)
+      zod: 4.6.5
+      zod-to-json-schema: 3.25.2(zod@4.6.5)
     transitivePeerDependencies:
       - supports-color
 
@@ -5178,22 +5175,22 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@strands-agents/sdk@1.19.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.6))(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(@tobilu/qmd@2.8.3(supports-color@7.2.0)(typescript@7.0.2))(express@5.2.1(supports-color@7.2.0))(openai@7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.6))(zod@4.6.6)':
+  '@strands-agents/sdk@1.19.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/sdk@1.30.0(supports-color@7.2.0)(zod@4.6.5))(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(@tobilu/qmd@2.8.3(supports-color@7.2.0)(typescript@7.0.2))(express@5.2.1(supports-color@7.2.0))(openai@7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.5))(zod@4.6.5)':
     dependencies:
       '@aws-sdk/client-bedrock-runtime': 3.1140.0
-      '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@4.6.6)
+      '@modelcontextprotocol/sdk': 1.30.0(supports-color@7.2.0)(zod@4.6.5)
       '@opentelemetry/api': 1.9.1
       '@smithy/fetch-http-handler': 5.8.0
       '@types/json-schema': 7.0.15
       uuid: 14.0.2
       yaml: 2.9.1
-      zod: 4.6.6
+      zod: 4.6.5
     optionalDependencies:
       '@ai-sdk/provider': 3.0.14
       '@smithy/types': 4.19.0
       '@tobilu/qmd': 2.8.3(supports-color@7.2.0)(typescript@7.0.2)
       express: 5.2.1(supports-color@7.2.0)
-      openai: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.6)
+      openai: 7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.5)
 
   '@swc/helpers@0.5.23':
     dependencies:
@@ -5355,7 +5352,7 @@ snapshots:
       picocolors: 1.1.1
       redent: 3.0.0
     optionalDependencies:
-      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.2)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
+      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.2)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.6)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
 
   '@testing-library/react@16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.2.7(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
@@ -5563,7 +5560,7 @@ snapshots:
       obug: 2.1.4
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.5.1)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
+      vitest: 5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.5.1)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.6)(vite@8.3.4(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
 
   '@vitest/istanbul-lib-coverage@1.0.1': {}
 
@@ -5596,23 +5593,23 @@ snapshots:
       mime-types: 3.0.2
       negotiator: 1.0.0
 
-  ai-sdk-ollama@3.8.8(ai@6.0.246(zod@4.6.6))(zod@4.6.6):
+  ai-sdk-ollama@3.8.8(ai@6.0.246(zod@4.6.5))(zod@4.6.5):
     dependencies:
       '@ai-sdk/provider': 3.0.14
-      '@ai-sdk/provider-utils': 4.0.42(zod@4.6.6)
-      ai: 6.0.246(zod@4.6.6)
+      '@ai-sdk/provider-utils': 4.0.42(zod@4.6.5)
+      ai: 6.0.246(zod@4.6.5)
       jsonrepair: 3.15.0
       ollama: 0.6.3
     transitivePeerDependencies:
       - zod
 
-  ai@6.0.246(zod@4.6.6):
+  ai@6.0.246(zod@4.6.5):
     dependencies:
-      '@ai-sdk/gateway': 3.0.166(zod@4.6.6)
+      '@ai-sdk/gateway': 3.0.166(zod@4.6.5)
       '@ai-sdk/provider': 3.0.14
-      '@ai-sdk/provider-utils': 4.0.42(zod@4.6.6)
+      '@ai-sdk/provider-utils': 4.0.42(zod@4.6.5)
       '@opentelemetry/api': 1.9.1
-      zod: 4.6.6
+      zod: 4.6.5
 
   ajv-formats@3.0.1(ajv@8.20.0):
     optionalDependencies:
@@ -6182,7 +6179,7 @@ snapshots:
   graceful-fs@4.2.11:
     optional: true
 
-  happy-dom@20.14.5:
+  happy-dom@20.14.6:
     dependencies:
       '@types/node': 26.5.1
       '@types/whatwg-mimetype': 3.0.2
@@ -6585,13 +6582,13 @@ snapshots:
       mimic-function: 5.0.1
     optional: true
 
-  openai@7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.6):
+  openai@7.23.0(@aws-sdk/credential-provider-node@3.972.84)(@smithy/signature-v4@5.7.3)(undici@5.29.0)(ws@8.21.3)(zod@4.6.5):
     optionalDependencies:
       '@aws-sdk/credential-provider-node': 3.972.84
       '@smithy/signature-v4': 5.7.3
       undici: 5.29.0
       ws: 8.21.3
-      zod: 4.6.6
+      zod: 4.6.5
 
   openapi3-ts@4.6.1:
     dependencies:
@@ -6849,7 +6846,7 @@ snapshots:
     dependencies:
       chokidar: 5.0.0
       immutable: 5.1.9
-      source-map-js: 1.2.1
+      source-map-js: 1.2.2
     optionalDependencies:
       '@parcel/watcher': 2.6.0
 
@@ -7242,7 +7239,7 @@ snapshots:
       tsx: 4.23.15
       yaml: 2.9.1
 
-  vitest@5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.2)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1)):
+  vitest@5.0.2(@opentelemetry/api@1.9.1)(@types/node@24.19.2)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.6)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/mocker': 5.0.2(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
@@ -7262,11 +7259,11 @@ snapshots:
       '@opentelemetry/api': 1.9.1
       '@types/node': 24.19.2
       '@vitest/coverage-v8': 5.0.2(vitest@5.0.2)
-      happy-dom: 20.14.5
+      happy-dom: 20.14.6
     transitivePeerDependencies:
       - msw
 
-  vitest@5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.5.1)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.5)(vite@8.3.4(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1)):
+  vitest@5.0.2(@opentelemetry/api@1.9.1)(@types/node@26.5.1)(@vitest/coverage-v8@5.0.2)(happy-dom@20.14.6)(vite@8.3.4(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/mocker': 5.0.2(vite@8.3.4(@types/node@26.5.1)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.1)(tsx@4.23.15)(yaml@2.9.1))
@@ -7286,7 +7283,7 @@ snapshots:
       '@opentelemetry/api': 1.9.1
       '@types/node': 26.5.1
       '@vitest/coverage-v8': 5.0.2(vitest@5.0.2)
-      happy-dom: 20.14.5
+      happy-dom: 20.14.6
     transitivePeerDependencies:
       - msw
 
@@ -7351,13 +7348,11 @@ snapshots:
   yoctocolors@2.2.0:
     optional: true
 
-  zod-to-json-schema@3.25.2(zod@4.6.6):
+  zod-to-json-schema@3.25.2(zod@4.6.5):
     dependencies:
-      zod: 4.6.6
+      zod: 4.6.5
 
   zod@4.2.1:
     optional: true
 
   zod@4.6.5: {}
-
-  zod@4.6.6: {}
