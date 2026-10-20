@@ -9,9 +9,9 @@ function idleTimeoutError(): Error {
 }
 
 function setup() {
-  const handlers: Array<(error: Error) => void> = [];
+  const handlers: Array<(error: Error, origin: string) => void> = [];
   const target = {
-    on: vi.fn((_event: "uncaughtException", handler: (error: Error) => void) => {
+    on: vi.fn((_event: "uncaughtException", handler: (error: Error, origin: string) => void) => {
       handlers.push(handler);
     }),
   };
@@ -52,7 +52,7 @@ describe("installUndiciIdleErrorGuard", () => {
   it("keeps the process alive and logs code and message for an idle timeout", () => {
     const { handlers, exit, warn } = setup();
 
-    handlers[0]?.(idleTimeoutError());
+    handlers[0]?.(idleTimeoutError(), "uncaughtException");
 
     expect(exit).not.toHaveBeenCalled();
     expect(warn).toHaveBeenCalledTimes(1);
@@ -63,8 +63,18 @@ describe("installUndiciIdleErrorGuard", () => {
   it("logs and exits with code 1 for any other uncaught exception", () => {
     const { handlers, exit, error } = setup();
 
-    handlers[0]?.(new Error("boom"));
+    handlers[0]?.(new Error("boom"), "uncaughtException");
 
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(exit).toHaveBeenCalledWith(1);
+  });
+
+  it("still exits for an idle timeout that arrives as an unhandled rejection", () => {
+    const { handlers, exit, warn, error } = setup();
+
+    handlers[0]?.(idleTimeoutError(), "unhandledRejection");
+
+    expect(warn).not.toHaveBeenCalled();
     expect(error).toHaveBeenCalledTimes(1);
     expect(exit).toHaveBeenCalledWith(1);
   });

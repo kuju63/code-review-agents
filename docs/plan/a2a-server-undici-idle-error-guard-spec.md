@@ -40,7 +40,7 @@ Node.js が `Unhandled 'error' event` を投げてプロセス全体が終了す
 
 - 根本原因(切断済みセッションにエラーが届く理由)の特定と除去。これは**別途調査**し、判明したら
   このガードを撤去できるかを再評価する。
-- `unhandledRejection` の扱い変更。
+- `unhandledRejection` の扱い変更。Node はハンドラ未登録時の未処理 rejection を `uncaughtException` に `origin === "unhandledRejection"` で渡すため、ガードは `origin === "uncaughtException"` のときだけ無視し、rejection は従来どおり致命的とする。
 
 ## 6. 変化しうる箇所(前提が崩れる条件)
 

@@ -6,7 +6,7 @@
 type GuardLogger = Pick<Console, "warn" | "error">;
 
 type UncaughtExceptionTarget = {
-  on(event: "uncaughtException", handler: (error: Error) => void): unknown;
+  on(event: "uncaughtException", handler: (error: Error, origin: string) => void): unknown;
 };
 
 export type UndiciIdleErrorGuardOptions = {
@@ -35,14 +35,18 @@ export function isUndiciIdleTimeoutError(error: unknown): boolean {
  * `error` (Issue #296). This treats the symptom, not the root cause. Every
  * other uncaught exception is logged and still terminates the process, so
  * registering the handler does not weaken Node's default crash behavior.
+ *
+ * Node also routes unhandled Promise rejections here (origin
+ * `"unhandledRejection"`); those stay fatal, so only `origin ===
+ * "uncaughtException"` is eligible to be ignored.
  */
 export function installUndiciIdleErrorGuard({
   target = process,
   exit = (code) => process.exit(code),
   logger = console,
 }: UndiciIdleErrorGuardOptions = {}): void {
-  target.on("uncaughtException", (error) => {
-    if (isUndiciIdleTimeoutError(error)) {
+  target.on("uncaughtException", (error, origin) => {
+    if (origin === "uncaughtException" && isUndiciIdleTimeoutError(error)) {
       const code = (error as Error & { code?: unknown }).code;
       logger.warn(`Ignored undici idle timeout error (code=${String(code)}): ${error.message}`);
       return;
