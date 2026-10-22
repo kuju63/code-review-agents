@@ -7,7 +7,7 @@
 # - corepack は同梱されていないため pnpm は npm 経由で直接インストールする
 # - multi-arch index ダイジェスト固定: amd64 / arm64 を同一参照で提供
 ###############################################################################
-FROM registry.access.redhat.com/hi/nodejs:26-builder@sha256:b72ab1eb0bd6d2ecc0dfe17eb4263aadc0039fd5731accbf0c291ebc48e3984b AS node-builder
+FROM registry.access.redhat.com/hi/nodejs:26-builder@sha256:725a6c512bc8398edba683c8ccfab10763df01ca83aed893f3d8f19c5d2e7381 AS node-builder
 
 USER root
 
@@ -48,7 +48,7 @@ RUN pnpm run lint && pnpm run typecheck
 # Python版 (`runtime`) ステージを撤去したため、レジストリへのpush対象も
 # node-runtime に切り替わった (.github/workflows/build-image.yml参照)。
 ###############################################################################
-FROM registry.access.redhat.com/hi/nodejs:26@sha256:d9a12cc3c74880ef4ff177d7e9590d791cfbf0f7244ad79d069accb016e0a974 AS node-runtime
+FROM registry.access.redhat.com/hi/nodejs:26@sha256:b35af6812e3643289b939f19b86cdb52e357b4b7a636d3f4a27fbbb3bc7c2179 AS node-runtime
 
 WORKDIR /app
 

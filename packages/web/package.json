@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@carbon/react": "^1.115.0",
-    "@tanstack/markdown": "^0.0.16",
+    "@tanstack/markdown": "^1.0.0",
     "@tanstack/react-form": "^1.33.5",
     "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-query-devtools": "^5.102.8",
@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@babel/core": "^8.0.0",
-    "@happy-dom/global-registrator": "^20.14.0",
+    "@happy-dom/global-registrator": "^21.0.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/router-plugin": "^1.168.35",
     "@testing-library/dom": "^10.4.1",
@@ -45,7 +45,7 @@
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
     "babel-plugin-react-compiler": "^1.0.0",
-    "happy-dom": "^20.11.0",
+    "happy-dom": "^21.0.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vitest": "^5.0.0"
