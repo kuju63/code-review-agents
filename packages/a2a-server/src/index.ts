@@ -14,6 +14,9 @@ import {
   createSvelteReviewerRoute,
   createVueReviewerRoute,
 } from "./modules/reviewers/index.js";
+import { installUndiciIdleErrorGuard } from "./process-guards.js";
+
+installUndiciIdleErrorGuard();
 
 const settings = loadServerSettingsFromEnv();
 
