@@ -370,7 +370,7 @@ importers:
         version: 13.0.3
       dotenv:
         specifier: ^18.0.0
-        version: 18.0.8
+        version: 18.0.9
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.4(@opentelemetry/api@1.9.1)(better-sqlite3@13.0.3)
@@ -2530,8 +2530,8 @@ packages:
   dom-accessibility-api@0.6.3:
     resolution: {integrity: sha512-7ZgogeTnjuHbo+ct10G9Ffp0mif17idi0IyWNVA/wcwcm7NPOD/WEHVP3n7n3MhXqxoIYm8d6MuZohYWIZ4T3w==}
 
-  dotenv@18.0.8:
-    resolution: {integrity: sha512-2KDeoFoK/zRtcnbunCDlLG5VWVMcyqeQc6iK65o231nfNAcuGrKoqUQfJFUtBI+QlShk5HKIHxwebBtUl3rEfA==}
+  dotenv@18.0.9:
+    resolution: {integrity: sha512-3fVOW4cB02R066PUSwn8O4TJyz9NckQl7F81blIbaq9jKBm2tSmOKky7ZHIXzGvkVPXCSn6jkpziBPZdGFs8Tw==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -5479,7 +5479,7 @@ snapshots:
 
   dom-accessibility-api@0.6.3: {}
 
-  dotenv@18.0.8: {}
+  dotenv@18.0.9: {}
 
   downshift@9.4.0(react@19.3.1):
     dependencies:
