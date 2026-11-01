@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { loadServerSettingsFromEnv } from "./config.js";
+import { createHealthRoute } from "./modules/health/health.route.js";
 import { createLeadEngineerRoute } from "./modules/lead-engineer/lead-engineer.route.js";
 import { createLeadEngineerService } from "./modules/lead-engineer/lead-engineer.service.js";
 import { createOrchestratorRoute } from "./modules/orchestrator/orchestrator.route.js";
@@ -21,6 +22,7 @@ installUndiciIdleErrorGuard();
 const settings = loadServerSettingsFromEnv();
 
 const app = new Hono();
+app.route("/health", createHealthRoute());
 app.route("/pr-info-collector", createPrInfoRoute({ service: createPrInfoService({ settings }) }));
 app.route("/react-reviewer", createReactReviewerRoute({ settings }));
 app.route("/vue-reviewer", createVueReviewerRoute({ settings }));
