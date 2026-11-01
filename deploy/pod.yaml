@@ -22,7 +22,7 @@ spec:
     - name: code-review-agent
       image: quay.io/kuju63/code-review-agent:latest
       ports:
-        - containerPort: 8000
+        - containerPort: 3000
           hostPort: 8000
           protocol: TCP
       envFrom:
@@ -49,12 +49,22 @@ spec:
       #   podman kube play は httpGet を "curl -f URL" に変換するが、
       #   runtime イメージにはシェルも curl も存在しないため失敗する。
       #   exec プローブは CMD-SHELL を経由せず Python を直接実行するため動作する。
+      startupProbe:
+        exec:
+          command:
+            - /usr/bin/python
+            - -c
+            - "import urllib.request; urllib.request.urlopen('http://localhost:3000/health')"
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
       livenessProbe:
         exec:
           command:
             - /usr/bin/python
             - -c
-            - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+            - "import urllib.request; urllib.request.urlopen('http://localhost:3000/health')"
         initialDelaySeconds: 10
         periodSeconds: 30
         timeoutSeconds: 5
@@ -64,7 +74,7 @@ spec:
           command:
             - /usr/bin/python
             - -c
-            - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+            - "import urllib.request; urllib.request.urlopen('http://localhost:3000/health')"
         initialDelaySeconds: 5
         periodSeconds: 10
         timeoutSeconds: 5
