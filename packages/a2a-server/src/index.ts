@@ -1,4 +1,6 @@
+import { serve } from "@hono/node-server";
 import { Hono } from "hono";
+import { loadServerSettingsFromEnv } from "./config.js";
 import { createHealthRoute } from "./modules/health/health.route.js";
 import { createLeadEngineerRoute } from "./modules/lead-engineer/lead-engineer.route.js";
 import { createLeadEngineerService } from "./modules/lead-engineer/lead-engineer.service.js";
