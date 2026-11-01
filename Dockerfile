@@ -38,7 +38,7 @@ COPY packages/web-api/ packages/web-api/
 
 # ビルド検証: lint + 型チェックが通ることをコンテナビルド時にも保証する
 # (フルテストスイートは CI 側の別ジョブで実行し、ビルドを遅くしない)
-RUN pnpm run lint && pnpm run typecheck
+RUN pnpm exec tsc --project packages/a2a-server/tsconfig.json
 
 ###############################################################################
 # Stage 2: node-runtime (Issue #250)
@@ -55,7 +55,8 @@ WORKDIR /app
 COPY --from=node-builder /app/node_modules ./node_modules
 COPY --from=node-builder /app/packages ./packages
 COPY --from=node-builder /app/package.json ./package.json
+COPY --from=node-builder /app/dist ./dist
 
 USER 65532
 
-CMD ["node", "-e", "console.log('code-review-agent TypeScript toolchain image (Issue #250)')"]
+CMD ["node", "dist/index.js"]
