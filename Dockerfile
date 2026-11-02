@@ -7,7 +7,7 @@
 # - corepack は同梱されていないため pnpm は npm 経由で直接インストールする
 # - multi-arch index ダイジェスト固定: amd64 / arm64 を同一参照で提供
 ###############################################################################
-FROM registry.access.redhat.com/hi/nodejs:26-builder@sha256:55fa253292249f520927d1b66c55635568e2a05ca76eb13e895ce82c06c847a0 AS node-builder
+FROM registry.access.redhat.com/hi/nodejs:26-builder@sha256:55fa253292249f520927d1b66c55635568e2a05ca76eb13e895ce82c06c847a0 AS base
 
 USER root
 
@@ -15,7 +15,7 @@ RUN dnf install -y python3 gcc make g++ \
     && dnf clean all
 
 # packageManager (package.json) と一致させる
-RUN npm install --global pnpm@11.20.0
+RUN npm install --global pnpm@12.16.1
 
 WORKDIR /app
 
@@ -30,15 +30,26 @@ COPY packages/web-api/package.json packages/web-api/
 RUN pnpm install --frozen-lockfile
 
 COPY tsconfig.base.json tsconfig.json biome.json vitest.config.ts ./
+
+FROM base AS a2a-builder
+
 COPY packages/agent-core/ packages/agent-core/
 COPY packages/a2a-server/ packages/a2a-server/
-COPY packages/evaluation/ packages/evaluation/
+
+WORKDIR packages/a2a-server
+RUN pnpm run build
+
+FROM base AS frontend-builder
 COPY packages/web/ packages/web/
+
+WORKDIR packages/web
+RUN pnpm run build
+
+FROM base AS api-builder
 COPY packages/web-api/ packages/web-api/
 
-# ビルド検証: lint + 型チェックが通ることをコンテナビルド時にも保証する
-# (フルテストスイートは CI 側の別ジョブで実行し、ビルドを遅くしない)
-RUN pnpm run lint && pnpm run typecheck
+WORKDIR packages/web-api
+RUN pnpm run build
 
 ###############################################################################
 # Stage 2: node-runtime (Issue #250)
@@ -48,14 +59,13 @@ RUN pnpm run lint && pnpm run typecheck
 # Python版 (`runtime`) ステージを撤去したため、レジストリへのpush対象も
 # node-runtime に切り替わった (.github/workflows/build-image.yml参照)。
 ###############################################################################
-FROM registry.access.redhat.com/hi/nodejs:26@sha256:b32f0fcf592ba3cb9a278141e048cdaf0af4d425492b091f2f5d2efd66cd08f3 AS node-runtime
-
-WORKDIR /app
-
-COPY --from=node-builder /app/node_modules ./node_modules
-COPY --from=node-builder /app/packages ./packages
-COPY --from=node-builder /app/package.json ./package.json
+FROM base AS node-runtime
 
 USER 65532
 
-CMD ["node", "-e", "console.log('code-review-agent TypeScript toolchain image (Issue #250)')"]
+WORKDIR /app
+
+COPY --from=a2a-builder /app/packages/agent-core/dist ./packages/agent-core/dist
+COPY --from=a2a-builder /app/packages/a2a-server/dist ./packages/a2a-server/dist
+
+CMD ["node", "/app/packages/a2a-server/dist/index.js"]
