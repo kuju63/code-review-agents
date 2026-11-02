@@ -59,3 +59,7 @@ __MACOSX/
 
 # Kubernetes/Podman デプロイ設定
 /deploy
+
+# TypeScript ビルドキャッシュ
+tsconfig.tsbuildinfo
+node_modules

@@ -120,9 +120,9 @@ describe("Orchestrator service", () => {
     collectorResult?: PRInfoResult;
     orchestratorResult?: ReviewReport;
     leadEngineerResult?: LeadEngineerReport;
-    onCollectorConstruct?: ReturnType<typeof vi.fn>;
-    onOrchestratorConstruct?: ReturnType<typeof vi.fn>;
-    onLeadEngineerConstruct?: ReturnType<typeof vi.fn>;
+    onCollectorConstruct?: (config: ConstructorParameters<PRInfoCollectorClass>[0]) => void;
+    onOrchestratorConstruct?: (config: ConstructorParameters<OrchestratorAgentClass>[0]) => void;
+    onLeadEngineerConstruct?: (config: ConstructorParameters<LeadEngineerAgentClass>[0]) => void;
   } = {}) {
     const collect = vi.fn<(owner: string, repo: string, prNumber: number) => Promise<PRInfoResult>>(
       async () => collectorResult,
@@ -140,7 +140,9 @@ describe("Orchestrator service", () => {
 
     const collectorClass: PRInfoCollectorClass = class FakePRInfoCollector {
       constructor(config: ConstructorParameters<PRInfoCollectorClass>[0]) {
-        onCollectorConstruct(config);
+        (onCollectorConstruct as (config: ConstructorParameters<PRInfoCollectorClass>[0]) => void)(
+          config,
+        );
       }
 
       collect(owner: string, repo: string, prNumber: number): Promise<PRInfoResult> {
@@ -150,7 +152,11 @@ describe("Orchestrator service", () => {
 
     const orchestratorClass: OrchestratorAgentClass = class FakeReviewOrchestrator {
       constructor(config: ConstructorParameters<OrchestratorAgentClass>[0]) {
-        onOrchestratorConstruct(config);
+        (
+          onOrchestratorConstruct as (
+            config: ConstructorParameters<OrchestratorAgentClass>[0],
+          ) => void
+        )(config);
       }
 
       run(context: ReviewContext): Promise<ReviewReport> {
@@ -160,7 +166,11 @@ describe("Orchestrator service", () => {
 
     const leadEngineerClass: LeadEngineerAgentClass = class FakeLeadEngineerAgent {
       constructor(config: ConstructorParameters<LeadEngineerAgentClass>[0]) {
-        onLeadEngineerConstruct(config);
+        (
+          onLeadEngineerConstruct as (
+            config: ConstructorParameters<LeadEngineerAgentClass>[0],
+          ) => void
+        )(config);
       }
 
       evaluate(report: ReviewReport): Promise<LeadEngineerReport> {
@@ -250,7 +260,7 @@ describe("Orchestrator service", () => {
         mcpStartupRetryBackoffSeconds: 4.2,
       }),
     );
-    const reviewerConfig = fakes.onOrchestratorConstruct.mock.calls[0]?.[0];
+    const reviewerConfig = vi.mocked(fakes.onOrchestratorConstruct).mock.calls[0]?.[0];
     expect(reviewerConfig).toEqual(
       expect.objectContaining({
         githubToken: "ghp_testtoken",

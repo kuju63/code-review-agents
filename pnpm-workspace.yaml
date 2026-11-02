@@ -35,3 +35,10 @@ allowBuilds:
   tree-sitter-typescript: true
 minimumReleaseAgeExclude:
   - hono@4.13.7
+permissions:
+  '@tanstack/markdown':
+    skills: false
+  '@tanstack/react-router':
+    skills: false
+  '@tanstack/router-plugin':
+    skills: false
