@@ -360,3 +360,4 @@ graphify-out/.graphify_root
 # Graphify dated backup snapshots (auto-created by `graphify update`,
 # not meant for version control)
 graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+.playwright-cli/
