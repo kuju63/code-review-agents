@@ -4,6 +4,7 @@
     "config:recommended",
     ":gitSignOff"
   ],
+  "minimumReleaseAge": "3 days",
   "packageRules": [
     {
       "matchUpdateTypes": ["patch", "pin", "digest"],
@@ -16,6 +17,10 @@
     {
       "matchPackageNames": ["ai-sdk-ollama"],
       "allowedVersions": "/^3\\.8\\./"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "minimumReleaseAge": null
     }
   ],
   "customManagers": [
