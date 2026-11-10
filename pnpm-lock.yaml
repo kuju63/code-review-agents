@@ -168,7 +168,7 @@ importers:
     dependencies:
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.23.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/client@2.3.1)(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(express@5.2.1(supports-color@7.2.0))(openai@7.53.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(undici@5.29.0)(ws@8.21.3)(zod@4.6.7))(zod@4.6.7)
+        version: 1.24.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/client@2.3.1)(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(express@5.2.1(supports-color@7.2.0))(openai@7.53.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(undici@5.29.0)(ws@8.21.3)(zod@4.6.7))(zod@4.6.7)
       ai-sdk-ollama:
         specifier: ^3.8.8
         version: 3.8.8(ai@6.0.246(zod@4.6.7))(zod@4.6.7)
@@ -227,7 +227,7 @@ importers:
     dependencies:
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.23.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/client@2.3.1)(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(express@5.2.1(supports-color@7.2.0))(openai@7.53.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(undici@5.29.0)(ws@8.21.3)(zod@4.6.7))(zod@4.6.7)
+        version: 1.24.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/client@2.3.1)(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(express@5.2.1(supports-color@7.2.0))(openai@7.53.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(undici@5.29.0)(ws@8.21.3)(zod@4.6.7))(zod@4.6.7)
       ai-sdk-ollama:
         specifier: ^3.8.8
         version: 3.8.8(ai@6.0.246(zod@4.6.7))(zod@4.6.7)
@@ -242,7 +242,7 @@ importers:
         version: link:../agent-core
       '@strands-agents/sdk':
         specifier: ^1.12.0
-        version: 1.23.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/client@2.3.1)(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(express@5.2.1(supports-color@7.2.0))(openai@7.53.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(undici@5.29.0)(ws@8.21.3)(zod@4.6.7))(zod@4.6.7)
+        version: 1.24.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/client@2.3.1)(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(express@5.2.1(supports-color@7.2.0))(openai@7.53.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(undici@5.29.0)(ws@8.21.3)(zod@4.6.7))(zod@4.6.7)
       commander:
         specifier: ^15.0.0
         version: 15.0.0
@@ -1727,11 +1727,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@smithy/core@3.35.0':
-    resolution: {integrity: sha512-zRMhfkByhT2snNdr1si24vJitU6Cr9ix2MikUfWmkAgp4jrNP0GcKSP5YvwQ+TlI8AZXER5QOGJn3JsVtSD9/A==}
-    engines: {node: '>=18.0.0'}
-    deprecated: Deprecated due to a bug in custom logger data redaction. See https://github.com/aws/aws-sdk-js-v3/issues/8393.
-
   '@smithy/core@3.38.1':
     resolution: {integrity: sha512-U/mB2XiwTLaf+NSgLSWwJfptsMT/H8aBi0aTAA/E5e2/TagFeGCqAyhKGG0w0A9IWTkm4qYEmLoD/HB6aYfnRA==}
     engines: {node: '>=18.0.0'}
@@ -1824,8 +1819,8 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@strands-agents/sdk@1.23.0':
-    resolution: {integrity: sha512-3H0D8gGT1Lk89iQ6LFIZp1Rs5RX9HOrXFNW61uCzDqPIYp2EABJVQWgM2VBFzsZYdvw+xiQ4ur3gEO6rgF/sSQ==}
+  '@strands-agents/sdk@1.24.0':
+    resolution: {integrity: sha512-vR37jjJN1C3xk0LIsOUCz0SMFnIAzJhydBxzJl1eGzFmQdhdGAMWZVR8WAjZymzeWc0xHs94kltwr3ddhSeSDA==}
     engines: {node: '>=22.0.0'}
     peerDependencies:
       '@a2a-js/sdk': ^0.3.10
@@ -4780,11 +4775,6 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.62.4':
     optional: true
 
-  '@smithy/core@3.35.0':
-    dependencies:
-      '@smithy/types': 4.19.0
-      tslib: 2.8.1
-
   '@smithy/core@3.38.1':
     dependencies:
       '@smithy/types': 4.19.0
@@ -4798,7 +4788,7 @@ snapshots:
 
   '@smithy/fetch-http-handler@5.8.0':
     dependencies:
-      '@smithy/core': 3.35.0
+      '@smithy/core': 3.38.1
       '@smithy/types': 4.19.0
       tslib: 2.8.1
 
@@ -4888,7 +4878,7 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@strands-agents/sdk@1.23.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/client@2.3.1)(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(express@5.2.1(supports-color@7.2.0))(openai@7.53.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(undici@5.29.0)(ws@8.21.3)(zod@4.6.7))(zod@4.6.7)':
+  '@strands-agents/sdk@1.24.0(@ai-sdk/provider@3.0.14)(@modelcontextprotocol/client@2.3.1)(@opentelemetry/api@1.9.1)(@smithy/types@4.19.0)(express@5.2.1(supports-color@7.2.0))(openai@7.53.0(@aws-sdk/credential-provider-node@3.972.92)(@smithy/signature-v4@5.7.5)(undici@5.29.0)(ws@8.21.3)(zod@4.6.7))(zod@4.6.7)':
     dependencies:
       '@aws-sdk/client-bedrock-runtime': 3.1161.0
       '@modelcontextprotocol/client': 2.3.1
